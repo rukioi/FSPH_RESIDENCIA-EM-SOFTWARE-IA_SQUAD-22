@@ -1,0 +1,87 @@
+# Regras de colaboração
+
+Vale para pessoas e para assistentes de IA (Claude Code, Codex, Cursor e outros). Leia inteiro antes de alterar qualquer arquivo. Contexto do produto em [README.md](./README.md); decisões já tomadas em [docs/decisions.md](./docs/decisions.md).
+
+Os documentos referenciados ainda podem estar pendentes. Não invente seu conteúdo nem os crie sem uma tarefa que os solicite.
+
+## 1. Regra principal: faça só o que a tarefa pede
+
+- Cada mudança nasce de **uma tarefa** do backlog. A tarefa lista os arquivos, o checklist e o critério de aceite. Esse é o escopo.
+- **Não** faça refatorações, renomeações, reformatações, atualizações de dependência ou melhorias que a tarefa não pediu, mesmo que pareçam boas. Anote no PR, na seção "Fora do escopo", e siga.
+- Se a tarefa exigir tocar um arquivo que ela não lista, explique o porquê no PR.
+- Se a tarefa estiver ambígua ou conflitar com [docs/decisions.md](./docs/decisions.md), **pare e pergunte** antes de codar. Não invente regra de negócio.
+- Prefira a menor mudança que atende ao critério de aceite. Código que a tarefa não exige é código que alguém precisa revisar.
+
+## 2. Fluxo obrigatório
+
+```text
+tarefa → atualizar main local → branch de trabalho → alteração + testes → push da branch → PR para main → revisão → merge (feito pelo responsável do projeto)
+```
+
+- Antes de **iniciar cada tarefa**, confira se o diretório está limpo e atualize a referência remota: `git fetch origin`.
+- Confirme que a `main` local corresponde à remota: `git switch main` e `git pull --ff-only origin main`. Inicie a tarefa somente depois disso; crie sua branch de trabalho a partir dessa `main` atualizada.
+- Se a tarefa já tiver uma branch, atualize-a com a `main` antes de continuar ou abrir PR. Preserve o trabalho existente e resolva conflitos sem descartar alterações.
+- Cada integrante trabalha e publica em sua própria branch de tarefa. O pull request tem como destino a `main`; somente o responsável do projeto faz o merge.
+- Branch: `feat/<slug>`, `fix/<slug>`, `chore/<slug>`, `docs/<slug>`, `test/<slug>`. Um assunto por branch.
+- Commits em inglês, no imperativo, explicando o porquê (`fix: keep the seller filter after reload`).
+- PR em português, usando o template (`.github/pull_request_template.md`), com o checklist preenchido e o link da tarefa.
+- **Nunca** faça merge, push direto na `main`, `vercel deploy --prod`, `vercel promote` ou alteração no banco de produção. O responsável do projeto decide e executa o merge.
+- Antes de abrir o PR, confirme que a branch contém as alterações atuais da `main` e resolva conflitos sem descartar o trabalho de outras pessoas. Não use force push.
+
+## 3. Verificação antes do PR
+
+```bash
+npm run lint
+npm run typecheck
+npm test                 # unitários + integração
+npm run build
+npm run test:e2e         # quando a tarefa toca telas, rotas ou fluxos
+```
+
+- Toda regra de negócio nova ou corrigida ganha teste. Correção de bug começa por um teste que falha.
+- Rota de API nova ou alterada: teste de integração em `tests/integration/` cobrindo sem sessão (401), papel errado ou vínculo inativo (403), outra organização (nunca vaza dados), entrada inválida (400) e caminho feliz.
+- Tela alterada: confira no preview em 390 px, 768 px e 1280 px e anexe capturas ao PR.
+- Detalhes e exemplos em [docs/testing.md](./docs/testing.md).
+- Não desligue, pule (`.skip`) ou afrouxe teste para o CI passar. Se um teste antigo estiver errado, corrija e explique no PR.
+- Se os comandos ou a infraestrutura de verificação ainda não existirem, registre essa limitação explicitamente. Não declare a tarefa concluída sem executar a verificação desta seção.
+
+## 4. Organização do repositório
+
+- Frontend e backend ficam juntos no repositório, em `frontend/` e `backend/`.
+- A raiz `frota-svo/` deve oferecer `npm run dev` para iniciar frontend e backend juntos. Os comandos da seção 3 também devem ser executáveis a partir dessa raiz.
+- A estrutura deve comportar visualizações distintas para Responsável SVO, Gerente e Motorista, com páginas e layouts próprios quando necessários e componentes compartilhados quando apropriado.
+- A existência dessas visualizações não define permissões, hierarquia de perfis ou regras de negócio. Essas decisões serão documentadas posteriormente.
+- Migrations e seeds ficam centralizados em `backend/src/database/`. Não mantenha versões concorrentes do esquema do banco.
+
+## 5. Centralização e padrões obrigatórios
+
+- Regras de negócio devem ficar nos módulos responsáveis do backend, em `backend/src/modules/`. Não duplique a mesma regra em controllers, páginas ou outros módulos; reutilize a operação responsável.
+- Contratos e convenções de endpoints têm uma fonte de referência em [docs/api/README.md](./docs/api/README.md). Use o padrão inicial e detalhe os contratos conforme as funcionalidades forem entregues.
+- A comunicação HTTP do frontend deve usar a infraestrutura compartilhada em `frontend/src/shared/services/`, respeitando os contratos definidos.
+- Autenticação, autorização e controles de segurança devem usar mecanismos compartilhados do backend. Não implemente soluções independentes por tela ou endpoint.
+- A matriz de acesso é centralizada em [docs/permissoes.md](./docs/permissoes.md) e o padrão de segurança em [docs/seguranca.md](./docs/seguranca.md). As permissões de negócio serão definidas por funcionalidade.
+- Ocultar controles no frontend não substitui a autorização no backend. Toda operação protegida deve passar pelo mecanismo central de autorização.
+- Use os padrões iniciais para avançar. Decisões técnicas reversíveis dentro da tarefa podem ser registradas no PR. Quando faltar uma definição de negócio, permissão ou mudança que afete outros módulos, pergunte antes de implementar a parte dependente e continue o trabalho independente.
+- Não crie os documentos, mecanismos ou abstrações desta seção sem uma tarefa que solicite sua implementação.
+
+## 6. Interface
+
+- Textos da interface em português do Brasil, claros e sem jargão técnico.
+- Responsivo em 390 px (celular), 768 px (tablet) e 1280 px (desktop), sem rolagem horizontal e com alvos de toque de pelo menos 40 px.
+- Estilos em `frontend/src/app/<modulo>.css`. Reaproveite os tokens e componentes existentes; não crie uma nova paleta, fonte ou camada global de CSS sem tarefa para isso.
+- Toda ação mostra estado de carregamento, sucesso e erro acionável. Nada aparece como salvo antes de o servidor confirmar.
+- Acessibilidade: rótulos em campos, `aria-label` em botões só com ícone, foco visível, contraste AA.
+
+## 7. Documentação e evolução
+
+- [docs/decisions.md](./docs/decisions.md) registra as decisões iniciais e como evoluí-las com entregas pequenas.
+- Atualize contratos de API, segurança e permissões no mesmo PR em que a definição mudar. Não é necessário fechar toda a documentação antes de desenvolver.
+- As verificações de organização e vínculo da seção 3 dependem da definição correspondente; não introduza esse modelo de dados apenas por ele aparecer no checklist.
+
+## 8. O que um assistente de IA não deve fazer
+
+- Não executar comandos destrutivos (`rm -rf`, `git reset --hard`, `git push --force`, `drop table`) nem comandos contra produção.
+- Não ler, imprimir ou copiar o conteúdo de `.env*`, chaves ou tokens.
+- Não instalar ferramentas globais nem alterar configurações do usuário.
+- Não criar arquivos de documentação, scripts ou abstrações que a tarefa não pediu.
+- Não declarar uma tarefa concluída sem ter rodado a verificação da seção 3. Diga exatamente o que foi testado e o que não foi.
