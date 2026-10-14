@@ -4,7 +4,7 @@ import { dashboardRoute } from './modules/dashboard/dashboard.routes.js';
 
 export function createApp() {
   return createServer((request, response) => {
-    if (request.method === 'GET' && request.url === '/api/dashboard') {
+    if (request.method === 'GET' && new URL(request.url ?? '/', 'http://localhost').pathname === '/api/dashboard') {
       void dashboardRoute(request, response);
       return;
     }
