@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import './Dashboard.css'
+import { AguardandoAnalise } from "../../features/dashboard/AguardandoAnalise";
+import { useState } from "react";
+import "./Dashboard.css";
 
-const periodos = ['Hoje', '7 dias', '30 dias', 'Personalizado']
+const periodos = ["Hoje", "7 dias", "30 dias", "Personalizado"];
 
 export function Dashboard() {
-  const [periodo, setPeriodo] = useState('Hoje')
+  const [periodo, setPeriodo] = useState("Hoje");
 
   return (
     <>
@@ -21,7 +22,11 @@ export function Dashboard() {
               key={nome}
               type="button"
               aria-pressed={periodo === nome}
-              className={periodo === nome ? 'periodo__botao periodo__botao--ativo' : 'periodo__botao'}
+              className={
+                periodo === nome
+                  ? "periodo__botao periodo__botao--ativo"
+                  : "periodo__botao"
+              }
               onClick={() => setPeriodo(nome)}
             >
               {nome}
@@ -31,7 +36,10 @@ export function Dashboard() {
       </div>
 
       {/* Espaço reservado para os próximos blocos do dashboard */}
-      <section className="reservado">Os blocos do dashboard entram aqui.</section>
+      <section className="reservado">
+        Os blocos do dashboard entram aqui.
+      </section>
+      <AguardandoAnalise />
     </>
-  )
+  );
 }
