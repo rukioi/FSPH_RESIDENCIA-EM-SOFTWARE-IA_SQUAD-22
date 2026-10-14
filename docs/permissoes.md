@@ -28,3 +28,7 @@ Esses princípios seguem a orientação de [autorização da OWASP](https://chea
 Registre aqui quem pode fazer o quê e em quais registros; implemente e teste no mesmo PR. Apenas o acesso ainda indefinido precisa de confirmação — não é necessário preencher toda a matriz antes de trabalhar.
 
 Organizações, vínculos e múltiplos papéis só entram no modelo se houver necessidade confirmada.
+
+## Dashboard — KPIs (BE-02)
+
+`GET /api/dashboard/kpis` reutiliza os perfis `ADMINISTRADOR` e `GESTOR_FROTA` da rota base do dashboard. Outros perfis recebem 403; token ausente, inválido ou expirado recebe 401. As contagens abrangem a instalação, pois não existe modelo de organizações ou vínculos.

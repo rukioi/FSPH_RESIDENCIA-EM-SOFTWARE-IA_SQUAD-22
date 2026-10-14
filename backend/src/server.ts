@@ -1,4 +1,5 @@
 import { createApp } from './app.js';
+import { closeDatabase } from './database/connection.js';
 
 const server = createApp();
 
@@ -12,5 +13,5 @@ server.listen(3000, '127.0.0.1', () => {
 });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-  process.on(signal, () => server.close());
+  process.on(signal, () => server.close(() => { void closeDatabase(); }));
 }

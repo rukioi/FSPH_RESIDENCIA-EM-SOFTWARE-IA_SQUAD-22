@@ -19,7 +19,7 @@ Estas decisões orientam a próxima entrega e podem evoluir. O código mostra o 
 | Desenvolvimento | `npm ci` e `npm run dev` na raiz. |
 | Backend | Uma aplicação modular; regras ficam no módulo responsável. |
 | Frontend | Páginas por área de visualização, funcionalidades por domínio e recursos comuns em `shared/`. |
-| Banco | PostgreSQL previsto; migrations e seeds em `backend/src/database/`. Conexão e biblioteca de acesso ainda pendentes. |
+| Banco | PostgreSQL com driver `pg` e conexão por `DATABASE_URL` na BE-02; migrations e seeds em `backend/src/database/`. Testes de SQL em PostgreSQL embarcado (PGlite), isolado em memória. |
 | API | Convenções mínimas em [api/README.md](./api/README.md). |
 | Acesso | Mecanismo compartilhado; matriz evolui por funcionalidade em [permissoes.md](./permissoes.md). |
 | Qualidade | Testes das regras e integrações alteradas; E2E dos fluxos relevantes. Veja [testing.md](./testing.md). |

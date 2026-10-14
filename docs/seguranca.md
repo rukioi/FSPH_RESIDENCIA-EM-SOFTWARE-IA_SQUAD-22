@@ -27,3 +27,7 @@ Se a sessão usar cookies, configure `HttpOnly`, `Secure` em produção, `SameSi
 Mantenha o lockfile e instale com `npm ci`. Não faça atualizações sem relação com a tarefa. Segredos ficam fora do Git e do frontend; assistentes seguem a proibição de acessar `.env*` do AGENTS.
 
 Referência: [segurança de APIs REST da OWASP](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html). Detalhes de retenção, backup e infraestrutura serão definidos nas tarefas correspondentes.
+
+## Dashboard — KPIs (BE-02)
+
+O endpoint de KPIs reutiliza a validação JWT compartilhada e os perfis autorizados da rota base do dashboard. Valida os parâmetros antes de consultar o banco, usa SQL parametrizado e retorna erro genérico em falhas de persistência. `DATABASE_URL` é usada somente no backend. Migrations são aplicadas explicitamente em banco de desenvolvimento; iniciar o servidor não altera o esquema. Os testes usam banco isolado em memória.

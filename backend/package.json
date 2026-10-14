@@ -10,9 +10,12 @@
     "start": "node dist/server.js"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "@types/pg": "^8.23.1",
     "tsx": "^4.23.15"
   },
   "dependencies": {
-    "jose": "^6.2.12"
+    "jose": "^6.2.12",
+    "pg": "^8.23.1"
   }
 }

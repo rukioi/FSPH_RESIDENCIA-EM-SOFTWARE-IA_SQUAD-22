@@ -16,3 +16,9 @@ test('o proxy de desenvolvimento alcança o backend', async ({ request }) => {
   expect(response.status()).toBe(404);
   expect(await response.text()).toBe('Não encontrado.');
 });
+
+test('o proxy encaminha KPIs e preserva a exigência de autenticação', async ({ request }) => {
+  const response = await request.get('/api/dashboard/kpis?periodo=7dias');
+  expect(response.status()).toBe(401);
+  expect(await response.json()).toMatchObject({ error: { code: 'NAO_AUTENTICADO' } });
+});

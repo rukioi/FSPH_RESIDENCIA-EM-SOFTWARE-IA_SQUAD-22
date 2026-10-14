@@ -1,11 +1,13 @@
 
 import { createServer } from 'node:http';
 import { dashboardRoute } from './modules/dashboard/dashboard.routes.js';
+import type { DashboardDependencies } from './modules/dashboard/dashboard.service.js';
 
-export function createApp() {
+export function createApp(dependencies: DashboardDependencies = {}) {
   return createServer((request, response) => {
-    if (request.method === 'GET' && new URL(request.url ?? '/', 'http://localhost').pathname === '/api/dashboard') {
-      void dashboardRoute(request, response);
+    const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
+    if (request.method === 'GET' && ['/api/dashboard', '/api/dashboard/kpis'].includes(pathname)) {
+      void dashboardRoute(request, response, dependencies);
       return;
     }
 
