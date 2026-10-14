@@ -1,7 +1,6 @@
-
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { validarJwt } from '../../security/jwt.js';
-import { dashboardController } from './dashboard.controller.js';
+import { dashboardController, dashboardGraficosController } from './dashboard.controller.js';
 
 function enviarErro(
   response: ServerResponse,
@@ -34,6 +33,13 @@ export async function dashboardRoute(
     usuario.perfil !== 'GESTOR_FROTA'
   ) {
     enviarErro(response, 403, 'ACESSO_NEGADO', 'Acesso não permitido.');
+    return;
+  }
+
+  const parsedUrl = new URL(request.url ?? '', `http://${request.headers.host ?? 'localhost'}`);
+
+  if (parsedUrl.pathname === '/api/dashboard/graficos') {
+    await dashboardGraficosController(response);
     return;
   }
 
