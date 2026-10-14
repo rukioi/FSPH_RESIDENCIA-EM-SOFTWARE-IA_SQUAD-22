@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "tsx": "^4.23.15"
+  },
+  "dependencies": {
+    "jose": "^6.2.12"
   }
 }
