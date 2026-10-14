@@ -1,0 +1,57 @@
+/* Título da página + seletor */
+.cabecalho-pagina {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-bottom: 28px;
+}
+.cabecalho-pagina h1 {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+.cabecalho-pagina p {
+  margin-top: 4px;
+  font-size: 17px;
+  color: var(--texto-suave);
+}
+
+/* Seletor de período */
+.periodo {
+  display: inline-flex;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: var(--branco);
+}
+.periodo__botao {
+  flex: none;
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--texto-suave);
+  font-weight: 700;
+}
+.periodo__botao:hover {
+  color: var(--texto);
+}
+.periodo__botao--ativo {
+  background: var(--azul-escuro);
+  color: #fff;
+}
+
+.reservado {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  border: 2px dashed var(--borda);
+  border-radius: 16px;
+  color: var(--texto-suave);
+}

@@ -1,8 +1,10 @@
+import { GestorLayout } from "../layouts/GestorLayout";
+import { Dashboard } from "../pages/gerente/Dashboard";
+
 export function App() {
   return (
-    <main>
-      <h1>Gestão de Frota e Transporte</h1>
-      <p>As funcionalidades serão disponibilizadas nas próximas entregas.</p>
-    </main>
+    <GestorLayout>
+      <Dashboard />
+    </GestorLayout>
   );
 }
