@@ -1,7 +1,6 @@
-
-import type { IncomingMessage, ServerResponse } from 'node:http';
+﻿import type { IncomingMessage, ServerResponse } from 'node:http';
 import { validarJwt } from '../../security/jwt.js';
-import { dashboardController } from './dashboard.controller.js';
+import { dashboardController, pendenciasController } from './dashboard.controller.js';
 
 function enviarErro(
   response: ServerResponse,
@@ -34,6 +33,13 @@ export async function dashboardRoute(
     usuario.perfil !== 'GESTOR_FROTA'
   ) {
     enviarErro(response, 403, 'ACESSO_NEGADO', 'Acesso não permitido.');
+    return;
+  }
+
+  const caminho = new URL(request.url ?? '/', 'http://localhost').pathname;
+
+  if (caminho === '/api/dashboard/pendencias') {
+    await pendenciasController(response);
     return;
   }
 
