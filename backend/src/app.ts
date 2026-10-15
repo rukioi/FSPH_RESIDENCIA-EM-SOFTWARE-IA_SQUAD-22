@@ -1,10 +1,14 @@
-
-import { createServer } from 'node:http';
+﻿import { createServer } from 'node:http';
 import { dashboardRoute } from './modules/dashboard/dashboard.routes.js';
 
 export function createApp() {
   return createServer((request, response) => {
-    if (request.method === 'GET' && new URL(request.url ?? '/', 'http://localhost').pathname === '/api/dashboard') {
+    const caminho = new URL(request.url ?? '/', 'http://localhost').pathname;
+
+    if (
+      request.method === 'GET' &&
+      (caminho === '/api/dashboard' || caminho === '/api/dashboard/pendencias')
+    ) {
       void dashboardRoute(request, response);
       return;
     }
