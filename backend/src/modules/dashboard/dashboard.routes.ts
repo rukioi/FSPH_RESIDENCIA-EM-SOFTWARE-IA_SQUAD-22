@@ -1,6 +1,6 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
+﻿import type { IncomingMessage, ServerResponse } from 'node:http';
 import { validarJwt } from '../../security/jwt.js';
-import { dashboardController, dashboardGraficosController } from './dashboard.controller.js';
+import { dashboardController, pendenciasController } from './dashboard.controller.js';
 
 function enviarErro(
   response: ServerResponse,
@@ -36,10 +36,10 @@ export async function dashboardRoute(
     return;
   }
 
-  const parsedUrl = new URL(request.url ?? '', `http://${request.headers.host ?? 'localhost'}`);
+  const caminho = new URL(request.url ?? '/', 'http://localhost').pathname;
 
-  if (parsedUrl.pathname === '/api/dashboard/graficos') {
-    await dashboardGraficosController(response);
+  if (caminho === '/api/dashboard/pendencias') {
+    await pendenciasController(response);
     return;
   }
 
