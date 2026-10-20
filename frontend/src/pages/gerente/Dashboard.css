@@ -50,8 +50,21 @@
 .reservado {
   display: grid;
   place-items: center;
-  min-height: 240px;
+  min-height: 200px;
   border: 2px dashed var(--borda);
   border-radius: 16px;
   color: var(--texto-suave);
 }
+
+.linha-cards-inferiores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  width: 100%;
+  
+}
+
+
+
+
+

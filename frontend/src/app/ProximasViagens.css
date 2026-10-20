@@ -1,0 +1,215 @@
+.caixa-proximasviagens {
+  --cor-fundo: #ffffff;
+  --cor-texto: #0f172a;
+  --cor-texto-suave: #64748b;
+  --cor-borda: #e2e8f0;
+  --cor-azul-link: #2563eb;
+  --cor-azul-link-hover: #1d4ed8;
+  --cor-selo-agendada-fundo: #e0edff;
+  --cor-selo-agendada-texto: #0369a1;
+  --cor-selo-aguardando-fundo: #fef3c7;
+  --cor-selo-aguardando-texto: #b45309;
+  --sombra: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  margin-top: 15px;
+  margin-left: -35px;
+  width: 100%;
+  min-width: 0;
+  background-color: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  box-shadow: var(--sombra);
+  font-family: inherit;
+}
+
+.caixa-proximasviagens *,
+.caixa-proximasviagens *::before,
+.caixa-proximasviagens *::after {
+  box-sizing: border-box;
+}
+
+.proximasviagens-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.proximasviagens-titulo {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.proximasviagens-botao-acao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cor-azul-link);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.proximasviagens-botao-acao:hover {
+  color: var(--cor-azul-link-hover);
+}
+
+.proximasviagens-botao-acao svg {
+  width: 14px;
+  height: 14px;
+}
+
+.proximasviagens-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 20;
+  display: flex;
+  flex-direction: column;
+}
+
+.proximasviagens-item {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 14px;
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.proximasviagens-item:last-child {
+  border-bottom: none;
+}
+
+.proximasviagens-hora {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cor-texto);
+  line-height: 1.3;
+}
+
+.proximasviagens-detalhes {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.proximasviagens-codigo {
+  font-size: 12px;
+  color: var(--cor-texto-suave);
+  line-height: 1.2;
+}
+
+.proximasviagens-itinerario {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cor-texto);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.proximasviagens-selo {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.proximasviagens-selo-agendada {
+  background-color: var(--cor-selo-agendada-fundo);
+  color: var(--cor-selo-agendada-texto);
+}
+
+.proximasviagens-selo-aguardando_inicio {
+  background-color: var(--cor-selo-aguardando-fundo);
+  color: var(--cor-selo-aguardando-texto);
+}
+
+.proximasviagens-vazio {
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--cor-texto-suave);
+}
+
+.proximasviagens-veu {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+}
+
+.proximasviagens-modal {
+  background-color: var(--cor-fundo);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.proximasviagens-modal-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.proximasviagens-fechar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--cor-texto-suave);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.proximasviagens-fechar:hover {
+  background-color: #f1f5f9;
+  color: var(--cor-texto);
+}
+
+.proximasviagens-fechar svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caixa-atividadesrecentes *,
+  .caixa-atividadesrecentes *::before,
+  .caixa-atividadesrecentes *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
