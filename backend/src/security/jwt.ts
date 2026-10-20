@@ -1,3 +1,4 @@
+
 import { jwtVerify } from 'jose';
 
 export type PerfilDashboard = 'ADMINISTRADOR' | 'GESTOR_FROTA';
@@ -15,9 +16,9 @@ export async function validarJwt(
   }
 
   const token = authorization.slice(7).trim();
-  const segredo = process.env.JWT_SECRET || 'fallback_secret_para_desenvolvimento';
+  const segredo = process.env.JWT_SECRET;
 
-  if (!token) {
+  if (!token || !segredo) {
     return null;
   }
 
@@ -39,8 +40,7 @@ export async function validarJwt(
       id: payload.sub,
       perfil: payload.perfil,
     };
-  } catch (err) {
-    console.error('Erro detalhado ao validar JWT:', err);
+  } catch {
     return null;
   }
 }
