@@ -1,0 +1,351 @@
+.dashboard-modulos {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.painel-operacional {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: var(--branco);
+  box-shadow: 0 1px 3px rgba(15, 31, 56, 0.08);
+}
+
+.painel-operacional--chamados {
+  grid-column: span 7;
+}
+
+.painel-operacional--atividade {
+  grid-column: span 5;
+}
+
+.painel-operacional--frota,
+.painel-operacional--viagens,
+.painel-operacional--pendencias {
+  grid-column: span 4;
+}
+
+.painel-operacional__cabecalho {
+  min-height: 53px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.painel-operacional__cabecalho h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.painel-operacional__cabecalho a {
+  color: var(--azul);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.painel-operacional__cabecalho a:hover {
+  text-decoration: underline;
+}
+
+.painel-operacional__conteudo {
+  min-height: 224px;
+  padding: 16px 24px;
+}
+
+.painel-operacional__vazio {
+  display: grid;
+  min-height: 185px;
+  place-items: center;
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+
+/* Visão dos chamados */
+.chamados-resumo {
+  min-height: 190px;
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+}
+
+.chamados-resumo__grafico {
+  width: 168px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.chamados-resumo__centro {
+  width: 116px;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border-radius: 50%;
+  background: var(--branco);
+}
+
+.chamados-resumo__centro span,
+.chamados-resumo__centro small {
+  color: var(--texto-suave);
+  font-size: 12px;
+}
+
+.chamados-resumo__centro strong {
+  margin: 2px 0;
+  font-size: 24px;
+}
+
+.chamados-resumo__legenda {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chamados-resumo__legenda li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--texto-suave);
+}
+
+.chamados-resumo__legenda strong {
+  color: var(--texto);
+}
+
+.ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.ponto--pendente { background: #c98000; }
+.ponto--pronto,
+.ponto--concluido { background: #218b50; }
+.ponto--agendado { background: #5d9de0; }
+.ponto--andamento { background: #2d68c4; }
+.ponto--reprovado { background: #d52f38; }
+
+/* Atividade recente */
+.atividade-recente,
+.proximas-viagens,
+.lista-pendencias {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.atividade-recente {
+  display: grid;
+  gap: 16px;
+}
+
+.atividade-recente li {
+  display: grid;
+  grid-template-columns: 46px 8px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.atividade-recente time {
+  color: var(--texto-suave);
+  font-size: 13px;
+}
+
+.atividade-recente__ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2d68c4;
+}
+
+/* Situação da frota */
+.situacao-frota {
+  display: grid;
+  gap: 15px;
+}
+
+.situacao-frota__rotulo,
+.situacao-frota__total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.situacao-frota__rotulo span,
+.situacao-frota__total span {
+  color: var(--texto-suave);
+}
+
+.situacao-frota__trilho {
+  height: 6px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf1f6;
+}
+
+.situacao-frota__barra {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.situacao-frota__barra--verde { background: #218b50; }
+.situacao-frota__barra--azul { background: #2d68c4; }
+.situacao-frota__barra--amarelo { background: #c98000; }
+.situacao-frota__barra--vermelho { background: #d52f38; }
+
+.situacao-frota__total {
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+
+/* Próximas viagens */
+.proximas-viagens li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  padding: 2px 0 14px;
+}
+
+.proximas-viagens li + li {
+  padding-top: 14px;
+  border-top: 1px solid var(--borda);
+}
+
+.proximas-viagens time {
+  font-weight: 700;
+}
+
+.proximas-viagens small,
+.lista-pendencias small {
+  display: block;
+  color: var(--texto-suave);
+  font-size: 12px;
+}
+
+.proximas-viagens p {
+  margin: 3px 0 6px;
+}
+
+.etiqueta-viagem {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.etiqueta-viagem--azul {
+  background: #e3efff;
+  color: #245fae;
+}
+
+.etiqueta-viagem--amarelo {
+  background: #fff1cc;
+  color: #a66c00;
+}
+
+/* Pendências */
+.lista-pendencias li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 12px;
+}
+
+.lista-pendencias li + li {
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+
+.lista-pendencias__icone {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.lista-pendencias__icone--critica {
+  background: #ffebeb;
+  color: #d52f38;
+}
+
+.lista-pendencias__icone--atencao {
+  background: #fff1cc;
+  color: #c98000;
+}
+
+@media (max-width: 1000px) {
+  .dashboard-modulos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .painel-operacional--chamados,
+  .painel-operacional--atividade,
+  .painel-operacional--frota,
+  .painel-operacional--viagens,
+  .painel-operacional--pendencias {
+    grid-column: span 1;
+  }
+
+  .painel-operacional--chamados {
+    grid-column: span 2;
+  }
+
+  .chamados-resumo {
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .dashboard-modulos {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .painel-operacional--chamados,
+  .painel-operacional--atividade,
+  .painel-operacional--frota,
+  .painel-operacional--viagens,
+  .painel-operacional--pendencias {
+    grid-column: span 1;
+  }
+
+  .painel-operacional__cabecalho {
+    padding: 0 16px;
+  }
+
+  .painel-operacional__conteudo {
+    padding: 16px;
+  }
+
+  .chamados-resumo {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .chamados-resumo__legenda {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+}
