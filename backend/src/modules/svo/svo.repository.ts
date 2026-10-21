@@ -1,6 +1,7 @@
 
 import { sql } from '../../database/connection.js';
 
+/** Lista ordens de coleta que ainda aguardam alocação de motorista e veículo. */
 export async function listarOrdensPendentes() {
   return await sql`
     SELECT *
@@ -26,6 +27,23 @@ export interface DadosDespacho {
   veiculoId: number;
 }
 
+export interface OrdemDespachada {
+  id: number;
+  motorista_id: number;
+  veiculo_id: number;
+  status: string;
+}
+
+export type ResultadoDespacho =
+  | { tipo: 'despachada'; ordem: OrdemDespachada }
+  | { tipo: 'ordem_indisponivel' }
+  | { tipo: 'referencia_inexistente' }
+  | { tipo: 'recurso_inelegivel' }
+  | { tipo: 'conflito_alocacao' };
+
+/**
+ * Cria a solicitação, a ordem de coleta e os registros de atividade na mesma transação.
+ */
 export async function criarSolicitacao(
   dados: NovaSolicitacaoObito
 ) {
@@ -121,19 +139,126 @@ export async function criarSolicitacao(
   });
 }
 
+/**
+ * Despacha a ordem na mesma transação, com bloqueio das linhas envolvidas.
+ *
+ * A ordem precisa estar em PENDENTE_ALOCACAO. Motorista e veículo precisam
+ * existir e estar DISPONIVEL, que é o único estado elegível já definido
+ * para os dois. Nenhum dos dois pode estar em outra ordem EM_DESLOCAMENTO.
+ * Pendência de CNH ou de documento do veículo não entra nesta regra: o
+ * painel só avisa, e não há restrição de despacho definida para isso.
+ *
+ * O perfil ATENDENTE_SVO continua sendo exigido na rota. Esta função não
+ * grava auditoria do responsável porque o contrato atual não pede isso.
+ *
+ * @returns Resultado de domínio para o controller responder 200, 404 ou 409.
+ */
 export async function despacharOrdem(
   dados: DadosDespacho
-) {
-  const ordens = await sql`
-    UPDATE public.ordem_coleta
-    SET
-      motorista_id = ${dados.motoristaId},
-      veiculo_id = ${dados.veiculoId},
-      status = 'EM_DESLOCAMENTO'
-    WHERE id = ${dados.ordemId}
-      AND status = 'PENDENTE_ALOCACAO'
-    RETURNING id, motorista_id, veiculo_id, status
-  `;
+): Promise<ResultadoDespacho> {
+  try {
+    return await sql.begin(async (transacao) => {
+      const ordens = await transacao`
+        SELECT id
+        FROM public.ordem_coleta
+        WHERE id = ${dados.ordemId}
+          AND status = 'PENDENTE_ALOCACAO'
+        FOR UPDATE
+      `;
 
-  return ordens[0] ?? null;
+      if (ordens.length === 0) {
+        return { tipo: 'ordem_indisponivel' };
+      }
+
+      const motoristas = await transacao`
+        SELECT id, status
+        FROM public.motorista
+        WHERE id = ${dados.motoristaId}
+        FOR UPDATE
+      `;
+
+      const veiculos = await transacao`
+        SELECT id, status
+        FROM public.veiculo
+        WHERE id = ${dados.veiculoId}
+        FOR UPDATE
+      `;
+
+      if (motoristas.length !== 1 || veiculos.length !== 1) {
+        return { tipo: 'referencia_inexistente' };
+      }
+
+      if (
+        String(motoristas[0].status) !== 'DISPONIVEL'
+        || String(veiculos[0].status) !== 'DISPONIVEL'
+      ) {
+        return { tipo: 'recurso_inelegivel' };
+      }
+
+      const conflitos = await transacao`
+        SELECT id
+        FROM public.ordem_coleta
+        WHERE status = 'EM_DESLOCAMENTO'
+          AND (
+            motorista_id = ${dados.motoristaId}
+            OR veiculo_id = ${dados.veiculoId}
+          )
+        ORDER BY id
+        FOR UPDATE
+      `;
+
+      if (conflitos.length > 0) {
+        return { tipo: 'conflito_alocacao' };
+      }
+
+      const atualizadas = await transacao`
+        UPDATE public.ordem_coleta
+        SET
+          motorista_id = ${dados.motoristaId},
+          veiculo_id = ${dados.veiculoId},
+          status = 'EM_DESLOCAMENTO'
+        WHERE id = ${dados.ordemId}
+          AND status = 'PENDENTE_ALOCACAO'
+        RETURNING id, motorista_id, veiculo_id, status
+      `;
+
+      const ordem = atualizadas[0];
+
+      if (!ordem) {
+        return { tipo: 'ordem_indisponivel' };
+      }
+
+      return {
+        tipo: 'despachada',
+        ordem: {
+          id: Number(ordem.id),
+          motorista_id: Number(ordem.motorista_id),
+          veiculo_id: Number(ordem.veiculo_id),
+          status: String(ordem.status),
+        },
+      };
+    });
+  } catch (erro) {
+    const codigo = codigoPostgres(erro);
+
+    if (codigo === '23503') {
+      return { tipo: 'referencia_inexistente' };
+    }
+
+    if (codigo === '23505') {
+      return { tipo: 'conflito_alocacao' };
+    }
+
+    throw erro;
+  }
+}
+
+/** Lê o código SQLSTATE de um erro do PostgreSQL, quando ele existir. */
+function codigoPostgres(erro: unknown): string | undefined {
+  if (typeof erro !== 'object' || erro === null || !('code' in erro)) {
+    return undefined;
+  }
+
+  const codigo = erro.code;
+  return typeof codigo === 'string' ? codigo : undefined;
 }

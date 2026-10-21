@@ -1,4 +1,15 @@
-import { createApp } from './app.js';
+import { existsSync } from 'node:fs';
+import { loadEnvFile } from 'node:process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const caminhoEnv = resolve(dirname(fileURLToPath(import.meta.url)), '../../.env');
+
+if (existsSync(caminhoEnv)) {
+  loadEnvFile(caminhoEnv);
+}
+
+const { createApp } = await import('./app.js');
 
 const server = createApp();
 
