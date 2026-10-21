@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { AguardandoAnalise } from "../../features/dashboard/AguardandoAnalise";
+import { Widgets } from "../../features/dashboard/Widgets";
 import { KpiCards } from "../../features/dashboard/KpiCards";
 import { buscarDashboardKpis } from "../../shared/services/dashboard.service";
+
 import type {
   DashboardKpis,
   DashboardPeriodo,
@@ -110,6 +112,8 @@ export function Dashboard() {
 
       <KpiCards kpis={kpis} />
 
+      <Widgets />
+      
       <AguardandoAnalise />
     </>
   );
