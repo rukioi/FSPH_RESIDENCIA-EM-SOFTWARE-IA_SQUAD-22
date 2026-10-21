@@ -8,7 +8,7 @@ import { sql } from '../../src/database/connection.js';
 import { buscarPendencias } from '../../src/modules/dashboard/dashboard.pendencias.js';
 
 test('BE-05 identifica CNHs e documentos pendentes', async () => {
-  const consulta = vi.mocked(sql);
+  const consulta = sql as unknown as ReturnType<typeof vi.fn>;
 
   consulta
     .mockResolvedValueOnce([
@@ -24,7 +24,7 @@ test('BE-05 identifica CNHs e documentos pendentes', async () => {
         vencimento: '2026-10-20',
         situacao: 'PROXIMO_VENCIMENTO',
       },
-    ] as never)
+    ])
     .mockResolvedValueOnce([
       {
         id: 3,
@@ -34,7 +34,7 @@ test('BE-05 identifica CNHs e documentos pendentes', async () => {
         vencimento: '2026-10-12',
         situacao: 'VENCIDO',
       },
-    ] as never);
+    ]);
 
   const resultado = await buscarPendencias();
 
