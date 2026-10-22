@@ -22,6 +22,7 @@ Use este padrão nos novos endpoints. São decisões iniciais de integração; o
 | 403 | Usuário sem autorização para a operação. |
 | 404 | Recurso inexistente ou ocultado para não revelar dados fora do alcance do usuário. |
 | 409 | Conflito de estado ou alocação. |
+| 413 | Corpo da requisição maior que o limite aceito. |
 | 500 | Falha inesperada, sem detalhes internos na resposta. |
 
 Formato de erro nos endpoints implementados:

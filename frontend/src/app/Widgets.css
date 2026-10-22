@@ -1,0 +1,259 @@
+:root {
+  --widgets-borda: #dfe5ec;
+  --widgets-texto: #14213a;
+  --widgets-suave: #64748b;
+  --widgets-azul: #2866c7;
+  --widgets-fundo-pagina: #f4f6f8;
+}
+
+.dashboard-modulos {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.painel-operacional {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--widgets-borda);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(16 24 40 / 8%);
+  color: var(--widgets-texto);
+}
+
+.painel-operacional--chamados {
+  grid-column: span 7;
+}
+
+.painel-operacional--atividade {
+  grid-column: span 5;
+}
+
+.painel-operacional--frota,
+.painel-operacional--viagens,
+.painel-operacional--pendencias {
+  grid-column: span 4;
+}
+
+.painel-operacional__cabecalho {
+  display: flex;
+  min-height: 53px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--widgets-borda);
+}
+
+.painel-operacional__cabecalho h2 {
+  min-width: 0;
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.painel-operacional__conteudo {
+  min-width: 0;
+  padding: 18px 24px;
+}
+
+.painel-operacional__vazio {
+  margin: 0;
+  padding: 8px 0;
+  color: var(--widgets-suave);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.painel-operacional__etiqueta-demo {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.painel-operacional--chamados .painel-operacional__conteudo {
+  display: flex;
+  min-height: 226px;
+  align-items: center;
+  transform: translateX(-50px);
+}
+
+.painel-operacional--chamados .chamados-resumo {
+  width: 100%;
+}
+
+.painel-operacional--chamados .chamados-resumo__legenda li {
+  min-width: 0;
+}
+
+.painel-operacional--pendencias .painel-operacional__conteudo {
+  padding-top: 5px;
+}
+
+
+.atividade-recente__lista {
+  display: grid;
+  gap: 4px;
+}
+
+.atividade-recente__item {
+  min-width: 0;
+}
+
+.atividade-recente__item > span:last-child {
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.frota-resumo {
+  min-width: 0;
+  
+}
+
+.proximas-viagens__lista {
+  min-width: 0;
+}
+
+.proximas-viagens__item:last-child {
+  border-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.pendencias__lista {
+  min-width: 0;
+}
+
+.pendencias__item:last-child {
+  border-bottom: 0 !important;
+}
+
+.pendencias__item strong,
+.pendencias__item small {
+  overflow-wrap: anywhere;
+  line-height: 1.48;
+}
+
+.painel-operacional__cabecalho a,
+.painel-operacional__cabecalho a:visited {
+  color: #2866c7;
+  text-decoration: none;
+}
+
+.painel-operacional__cabecalho a:hover {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+
+@media (max-width: 1100px) {
+  .dashboard-modulos {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .painel-operacional--chamados,
+  .painel-operacional--atividade {
+    grid-column: span 3;
+  }
+
+  .painel-operacional--frota,
+  .painel-operacional--viagens,
+  .painel-operacional--pendencias {
+    grid-column: span 2;
+  }
+
+  .painel-operacional__cabecalho {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .painel-operacional__conteudo {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-modulos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .painel-operacional--chamados,
+  .painel-operacional--atividade {
+    grid-column: span 2;
+  }
+
+  .painel-operacional--frota,
+  .painel-operacional--viagens,
+  .painel-operacional--pendencias {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-modulos {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .painel-operacional--chamados,
+  .painel-operacional--atividade,
+  .painel-operacional--frota,
+  .painel-operacional--viagens,
+  .painel-operacional--pendencias {
+    grid-column: 1;
+  }
+
+  .painel-operacional__cabecalho {
+    min-height: 50px;
+    padding: 10px 16px;
+  }
+
+  .painel-operacional__conteudo {
+    padding: 16px;
+  }
+
+  .painel-operacional--chamados .painel-operacional__conteudo {
+    min-height: 0;
+  }
+
+  .painel-operacional--chamados .chamados-resumo {
+    gap: 18px !important;
+  }
+
+  .painel-operacional--chamados .chamados-resumo__legenda {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .atividade-recente__item {
+    grid-template-columns: 42px 10px minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .painel-operacional {
+    transition: box-shadow 160ms ease, border-color 160ms ease;
+  }
+
+  .painel-operacional:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgb(16 24 40 / 9%);
+  }
+}
+
+
