@@ -20,6 +20,8 @@ const icones = {
   seta: 'm6 9 6 6 6-6',
 }
 
+
+
 type NomeIcone = keyof typeof icones
 
 function Icone({ nome, tamanho = 20 }: { nome: NomeIcone; tamanho?: number }) {
@@ -145,3 +147,4 @@ export function GestorLayout({ children }: { children: ReactNode }) {
     </div>
   )
 }
+

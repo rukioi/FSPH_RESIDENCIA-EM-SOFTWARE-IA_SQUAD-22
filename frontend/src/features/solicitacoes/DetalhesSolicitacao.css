@@ -1,0 +1,385 @@
+.detalhes {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 24px 32px 40px;
+  color: #10233f;
+  background: #f1f5f9;
+}
+
+.detalhes__voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+  color: #183b61;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.detalhes__voltar:hover {
+  color: #0068b5;
+}
+
+.detalhes__cabecalho {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.detalhes__cabecalho h2 {
+  margin: 0 0 8px;
+  color: #10233f;
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.detalhes__cabecalho p {
+  margin: 0;
+  color: #52708f;
+  font-size: 16px;
+}
+
+.detalhes__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.detalhes__status--pendente {
+  border-color: #f6c66a;
+  color: #915500;
+  background: #fff1cf;
+}
+
+.detalhes__status--agendada {
+  border-color: #8bc3ff;
+  color: #07579a;
+  background: #e3f2ff;
+}
+
+.detalhes__status--aprovada,
+.detalhes__status--concluida {
+  border-color: #7bc99a;
+  color: #126c3a;
+  background: #d9f5e4;
+}
+
+.detalhes__status--recusada {
+  border-color: #ff9d96;
+  color: #bd1616;
+  background: #ffe7e5;
+}
+
+.detalhes__status--em-andamento {
+  border-color: #66c5ee;
+  color: #075d85;
+  background: #d9f4ff;
+}
+
+.detalhes__recusa {
+  display: flex;
+  gap: 14px;
+  margin: 0 0 24px;
+  padding: 20px;
+  border: 1px solid #ff9d96;
+  border-radius: 9px;
+  color: #bd1616;
+  background: #ffe7e5;
+}
+
+.detalhes__recusa-icone {
+  display: grid;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.detalhes__recusa strong,
+.detalhes__recusa b {
+  display: block;
+}
+
+.detalhes__recusa strong {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.detalhes__recusa b {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.detalhes__recusa p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.detalhes__grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
+  align-items: stretch;
+  gap: 24px;
+}
+
+.detalhes__cartao {
+  min-width: 0;
+  padding: 26px 24px;
+  border: 1px solid #dce4ed;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgb(16 35 63 / 8%);
+}
+
+.detalhes__cartao h3 {
+  margin: 0 0 26px;
+  color: #10233f;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.detalhes__campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 28px;
+  margin: 0;
+}
+
+.detalhes__campo {
+  min-width: 0;
+}
+
+.detalhes__campo--largo {
+  grid-column: 1 / -1;
+}
+
+.detalhes__campo dt {
+  margin: 0 0 6px;
+  color: #52708f;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.detalhes__campo dd {
+  margin: 0;
+  color: #10233f;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.detalhes__etapas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detalhes__etapas::before {
+  position: absolute;
+  top: 13px;
+  bottom: 13px;
+  left: 12px;
+  width: 1px;
+  background: #d7e0eb;
+  content: "";
+}
+
+.detalhes__etapa {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  min-height: 52px;
+  color: #61758c;
+}
+
+.detalhes__marcador {
+  z-index: 1;
+  display: inline-flex;
+  flex: 0 0 25px;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  border: 1px solid #d9e2ed;
+  border-radius: 50%;
+  color: #fff;
+  background: #f1f5f9;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.detalhes__etapa--concluida,
+.detalhes__etapa--atual {
+  color: #10233f;
+}
+
+.detalhes__etapa--concluida .detalhes__marcador {
+  border-color: #0865b5;
+  background: #0865b5;
+}
+
+.detalhes__etapa--atual .detalhes__marcador {
+  border-color: #0865b5;
+  background: #fff;
+}
+
+.detalhes__etapa--atual .detalhes__marcador::after {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #0865b5;
+  content: "";
+}
+
+.detalhes__etapa--recusada {
+  color: #e00000;
+}
+
+.detalhes__etapa--recusada .detalhes__marcador {
+  border-color: #e00000;
+  background: #e00000;
+}
+
+.detalhes__etapa--recusada .detalhes__marcador {
+  font-size: 17px;
+}
+
+.detalhes__nome-etapa {
+  display: block;
+  padding-top: 3px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.detalhes__legenda-atual {
+  display: block;
+  margin-top: 3px;
+  color: #52708f;
+  font-size: 12px;
+}
+
+.detalhes__viagem {
+  margin-top: 24px;
+  padding: 26px 24px;
+  border: 1px solid #c8dced;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgb(16 35 63 / 8%);
+}
+
+.detalhes__viagem-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 28px;
+  color: #10233f;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.detalhes__viagem-titulo > svg {
+  color: #0870c4;
+}
+
+.detalhes__viagem-itens {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px 24px;
+}
+
+.detalhes__viagem-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.detalhes__viagem-icone {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 8px;
+  color: #07579a;
+  background: #d5eaff;
+}
+
+.detalhes__viagem-item small,
+.detalhes__viagem-item strong {
+  display: block;
+}
+
+.detalhes__viagem-item small {
+  margin-bottom: 4px;
+  color: #52708f;
+  font-size: 12px;
+}
+
+.detalhes__viagem-item strong {
+  color: #10233f;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .detalhes__grade {
+    grid-template-columns: 1fr;
+  }
+
+  .detalhes__viagem-itens {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .detalhes {
+    padding: 20px 16px 32px;
+  }
+
+  .detalhes__cabecalho {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .detalhes__cabecalho h2 {
+    font-size: 24px;
+  }
+
+  .detalhes__cartao,
+  .detalhes__viagem {
+    padding: 22px 18px;
+  }
+
+  .detalhes__campos,
+  .detalhes__viagem-itens {
+    grid-template-columns: 1fr;
+  }
+
+  .detalhes__campo--largo {
+    grid-column: auto;
+  }
+}

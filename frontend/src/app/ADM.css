@@ -1,0 +1,519 @@
+.dashboard-info {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-top: 24px;
+}
+
+.dashboard-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.dashboard-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-kpi-card,
+.dashboard-panel {
+  min-width: 0;
+  border: 1px solid #d5deea;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.dashboard-kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 116px;
+  padding: 18px;
+}
+
+.dashboard-kpi-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.dashboard-kpi-icon.warning {
+  color: #a85b00;
+  background: #fff0d4;
+}
+
+.dashboard-kpi-icon.blue {
+  color: #0076d6;
+  background: #e1f0ff;
+}
+
+.dashboard-kpi-copy {
+  min-width: 0;
+}
+
+.dashboard-kpi-copy p,
+.dashboard-kpi-copy strong,
+.dashboard-kpi-copy small {
+  display: block;
+}
+
+.dashboard-kpi-copy p {
+  margin: 0 0 4px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.dashboard-kpi-copy strong {
+  margin-bottom: 2px;
+  color: #101828;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.dashboard-kpi-copy small {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.dashboard-middle-grid,
+.dashboard-bottom-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard-middle-grid {
+  grid-template-columns: 1.2fr 0.88fr;
+}
+
+.dashboard-bottom-grid {
+  grid-template-columns: 0.85fr 1.2fr;
+}
+
+.dashboard-panel {
+  padding: 20px 22px;
+}
+
+.dashboard-middle-grid > .dashboard-panel {
+  min-height: 308px;
+}
+
+.dashboard-bottom-grid > .dashboard-panel {
+  min-height: 264px;
+}
+
+.dashboard-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.dashboard-panel-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dashboard-panel-header p {
+  margin: 5px 0 0;
+  color: #718096;
+  font-size: 11px;
+}
+
+.dashboard-text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 2px 0;
+  border: 0;
+  color: #0076d6;
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dashboard-text-button .dashboard-icon {
+  width: 15px;
+  height: 15px;
+  flex-basis: 15px;
+}
+
+.dashboard-chart-content {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(190px, 1.2fr);
+  align-items: center;
+  gap: 22px;
+  min-height: 220px;
+}
+
+.dashboard-donut-wrap {
+  display: grid;
+  place-items: center;
+}
+
+.dashboard-donut {
+  position: relative;
+  display: grid;
+  width: 166px;
+  height: 166px;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, #fff 74%, transparent 76%),
+    conic-gradient(
+      from -90deg,
+      #e8a33f 0deg 88deg,
+      #fff 88deg 90deg,
+      #dd7771 90deg 133deg,
+      #fff 133deg 135deg,
+      #a9c8e4 135deg 178deg,
+      #fff 178deg 180deg,
+      #194a80 180deg 223deg,
+      #fff 223deg 225deg,
+      #5aa6cf 225deg 268deg,
+      #fff 268deg 270deg,
+      #0874c9 270deg 358deg,
+      #fff 358deg 360deg
+    );
+}
+
+.dashboard-donut-center {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  color: #718096;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.dashboard-donut-center strong {
+  color: #101828;
+  font-size: 27px;
+  line-height: 1.05;
+}
+
+.dashboard-status-list,
+.dashboard-activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-status-list li {
+  display: grid;
+  grid-template-columns: 9px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  color: #1f2937;
+  font-size: 12px;
+}
+
+.dashboard-status-list li strong {
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.dashboard-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dashboard-status-dot.orange {
+  background: #e8a33f;
+}
+
+.dashboard-status-dot.blue {
+  background: #0874c9;
+}
+
+.dashboard-status-dot.cyan {
+  background: #5aa6cf;
+}
+
+.dashboard-status-dot.navy {
+  background: #194a80;
+}
+
+.dashboard-status-dot.pale-blue {
+  background: #a9c8e4;
+}
+
+.dashboard-status-dot.red {
+  background: #dd7771;
+}
+
+.dashboard-activity-list {
+  display: flex;
+  flex-direction: column;
+  padding-top: 2px;
+}
+
+.dashboard-activity-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.dashboard-activity-item:not(:last-child) {
+  padding-bottom: 10px;
+}
+
+.dashboard-activity-item:not(:last-child)::after {
+  position: absolute;
+  top: 34px;
+  bottom: -1px;
+  left: 14px;
+  width: 1px;
+  background: #d8e1ec;
+  content: "";
+}
+
+.dashboard-activity-icon {
+  z-index: 1;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.dashboard-activity-icon .dashboard-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.dashboard-activity-icon.green {
+  color: #087a45;
+  background: #def5e8;
+}
+
+.dashboard-activity-icon.blue {
+  color: #0874c9;
+  background: #e1f0ff;
+}
+
+.dashboard-activity-icon.cyan {
+  color: #087c9c;
+  background: #dff6fc;
+}
+
+.dashboard-activity-icon.orange {
+  color: #a85b00;
+  background: #fff0d4;
+}
+
+.dashboard-activity-item p {
+  margin: 0 0 3px;
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.dashboard-activity-item time {
+  color: #718096;
+  font-size: 10px;
+}
+
+.dashboard-fleet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.dashboard-fleet-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-fleet-label {
+  display: flex;
+  justify-content: space-between;
+  color: #1f2937;
+  font-size: 12px;
+}
+
+.dashboard-fleet-label strong {
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.dashboard-progress-track {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #edf1f6;
+}
+
+.dashboard-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.dashboard-progress-fill.green {
+  background: #119b58;
+}
+
+.dashboard-progress-fill.blue {
+  background: #0874c9;
+}
+
+.dashboard-progress-fill.orange {
+  background: #e69a0b;
+}
+
+.dashboard-progress-fill.red {
+  background: #e74747;
+}
+
+.dashboard-trip-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-trip-row {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+}
+
+.dashboard-trip-row + .dashboard-trip-row {
+  border-top: 1px solid #d8e1ec;
+}
+
+.dashboard-trip-time {
+  color: #101828;
+  font-size: 14px;
+}
+
+.dashboard-trip-route p {
+  margin: 0 0 3px;
+  color: #111827;
+  font-size: 12px;
+}
+
+.dashboard-trip-route a {
+  color: #0076d6;
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.dashboard-trip-route a:hover {
+  text-decoration: underline;
+}
+
+.dashboard-trip-status {
+  padding: 4px 8px;
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.dashboard-trip-status.scheduled {
+  border-color: #a5ddf4;
+  color: #08749f;
+  background: #e2f7ff;
+}
+
+.dashboard-trip-status.ready {
+  border-color: #ffd28a;
+  color: #9a5700;
+  background: #fff1d8;
+}
+
+@media (max-width: 1000px) {
+  .dashboard-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-middle-grid,
+  .dashboard-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-middle-grid > .dashboard-panel,
+  .dashboard-bottom-grid > .dashboard-panel {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-info {
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .dashboard-kpis {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .dashboard-kpi-card {
+    min-height: 88px;
+  }
+
+  .dashboard-panel {
+    padding: 17px 15px;
+  }
+
+  .dashboard-chart-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 8px 0;
+  }
+
+  .dashboard-donut {
+    width: 150px;
+    height: 150px;
+  }
+
+  .dashboard-status-list {
+    width: 100%;
+    gap: 13px;
+  }
+
+  .dashboard-trip-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  .dashboard-trip-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .dashboard-panel-header {
+    gap: 8px;
+  }
+
+  .dashboard-text-button {
+    font-size: 10px;
+  }
+}
