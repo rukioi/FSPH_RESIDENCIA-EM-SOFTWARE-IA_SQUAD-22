@@ -1,6 +1,8 @@
 ﻿import { createServer, type ServerResponse } from 'node:http';
 import { dashboardRoute } from './modules/dashboard/dashboard.routes.js';
 import { svoRoute } from './modules/svo/svo.routes.js';
+import { solicitanteRoute } from './modules/solicitacoes/solicitante.routes.js';
+import { motoristaRoute } from './modules/viagens/motorista.routes.js';
 
 /**
  * Executa a rota e, se a promise rejeitar, responde 500 sem derrubar o processo.
@@ -42,6 +44,17 @@ export function createApp() {
       return;
     }
 
+    if (
+  (request.method === 'POST' || request.method === 'GET') &&
+  caminho === '/api/solicitante/solicitacoes'
+) {
+  isolarFalhaDaRequisicao(response, solicitanteRoute(request, response));
+  return;
+}
+if (request.method === 'GET' && caminho === '/api/motorista/viagens') {
+  isolarFalhaDaRequisicao(response, motoristaRoute(request, response));
+  return;
+}
     if (request.method === 'GET' && caminho === '/api/svo/ordens-coleta') {
       isolarFalhaDaRequisicao(response, svoRoute(request, response));
       return;
@@ -66,3 +79,4 @@ export function createApp() {
     response.end('Não encontrado.');
   });
 }
+
