@@ -1,0 +1,134 @@
+.svo-formulario {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.svo-formulario__cabecalho {
+  margin-bottom: 28px;
+}
+
+.svo-formulario__cabecalho h1 {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.svo-formulario__cabecalho p {
+  margin-top: 4px;
+  color: var(--texto-suave);
+  font-size: 17px;
+}
+
+.svo-formulario form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  padding: 28px;
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  background: var(--branco);
+}
+
+.svo-formulario form > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.svo-formulario label {
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.svo-formulario input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--branco);
+  color: var(--texto);
+  font: inherit;
+}
+
+.svo-formulario input:focus {
+  outline: 3px solid rgba(31, 94, 255, 0.15);
+  border-color: var(--azul);
+}
+
+.svo-formulario button[type="submit"] {
+  grid-column: 1 / -1;
+  justify-self: end;
+  min-width: 140px;
+  height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--azul);
+  color: #fff;
+  font-weight: 900;
+}
+
+.svo-formulario button[type="submit"]:hover {
+  background: var(--azul-medio);
+}
+
+@media (max-width: 700px) {
+  .svo-formulario form {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  .svo-formulario button[type="submit"] {
+    width: 100%;
+    justify-self: stretch;
+  }
+}
+
+.svo-formulario__acoes {
+  grid-column: 1 / -1;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end;
+  gap: 12px !important;
+}
+
+.svo-formulario__voltar,
+.svo-formulario__confirmar {
+  min-width: 130px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.svo-formulario__voltar {
+  border: 1px solid var(--borda);
+  background: var(--branco);
+  color: var(--texto);
+}
+
+.svo-formulario__voltar:hover {
+  background: var(--fundo);
+}
+
+.svo-formulario__confirmar {
+  border: 0;
+  background: var(--azul);
+  color: #fff;
+}
+
+.svo-formulario__confirmar:hover {
+  background: var(--azul-medio);
+}
+
+@media (max-width: 700px) {
+  .svo-formulario__acoes {
+    flex-direction: column-reverse !important;
+  }
+
+  .svo-formulario__voltar,
+  .svo-formulario__confirmar {
+    width: 100%;
+  }
+}
