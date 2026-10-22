@@ -1,6 +1,11 @@
 import { createServer, type ServerResponse } from 'node:http';
 import { dashboardRoute } from './modules/dashboard/dashboard.routes.js';
 import { svoRoute } from './modules/svo/svo.routes.js';
+// 1. IMPORTAR OS NOVOS MÓDULOS
+import { veiculosRoute } from './modules/veiculos/veiculos.routes.js';
+import { motoristasRoute } from './modules/motoristas/motoristas.routes.js';
+import { abastecimentosRoute } from './modules/abastecimentos/abastecimentos.routes.js';
+import { documentosRoute } from './modules/documentos/documentos.routes.js';
 
 export function isolarFalhaDaRequisicao(
   response: ServerResponse,
@@ -29,13 +34,13 @@ export function isolarFalhaDaRequisicao(
 
 export function createApp() {
   return createServer((request, response) => {
-    const caminho = new URL(request.url ?? '/', 'http://localhost').pathname;
+    const caminho = new URL(request.url ?? '', 'http://localhost').pathname;
 
     if (
-      request.method === 'GET' &&
-      (caminho === '/api/dashboard' ||
-        caminho === '/api/dashboard/pendencias' ||
-        caminho === '/api/dashboard/graficos')
+      caminho === '/api/dashboard' ||
+      caminho === '/api/dashboard/pendencias' ||
+      caminho === '/api/dashboard/graficos' ||
+      caminho === '/api/dashboard/gestor'
     ) {
       isolarFalhaDaRequisicao(response, dashboardRoute(request, response));
       return;
@@ -56,6 +61,26 @@ export function createApp() {
       /^\/api\/svo\/ordens-coleta\/[0-9]+\/despachar$/.test(caminho)
     ) {
       isolarFalhaDaRequisicao(response, svoRoute(request, response));
+      return;
+    }
+    
+    if (caminho.startsWith('/api/veiculos')) {
+      isolarFalhaDaRequisicao(response, veiculosRoute(request, response));
+      return;
+    }
+
+    if (caminho.startsWith('/api/motoristas')) {
+      isolarFalhaDaRequisicao(response, motoristasRoute(request, response));
+      return;
+    }
+
+    if (caminho.startsWith('/api/abastecimentos')) {
+      isolarFalhaDaRequisicao(response, abastecimentosRoute(request, response));
+      return;
+    }
+
+    if (caminho.startsWith('/api/documentos')) {
+      isolarFalhaDaRequisicao(response, documentosRoute(request, response));
       return;
     }
 

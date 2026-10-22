@@ -4,6 +4,7 @@ import {
   dashboardController,
   dashboardGraficosController,
   pendenciasController,
+  dashboardGestorController,
 } from './dashboard.controller.js';
 
 function enviarErro(
@@ -54,6 +55,11 @@ export async function dashboardRoute(
 
   if (caminho === '/api/dashboard/pendencias') {
     await pendenciasController(response);
+    return;
+  }
+
+  if (caminho === '/api/dashboard/gestor') {
+    await dashboardGestorController(response);
     return;
   }
 
