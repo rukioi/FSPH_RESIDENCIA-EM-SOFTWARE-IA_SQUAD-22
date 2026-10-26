@@ -1,6 +1,7 @@
 import "./AguardandoDespacho.css";
 
 export type OrdemColeta = {
+  apiId: number;
   id: string;
   falecido: string;
   endereco: string;

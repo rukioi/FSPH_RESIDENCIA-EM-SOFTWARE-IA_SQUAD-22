@@ -3,13 +3,16 @@ import "./NovaSolicitacaoSvo.css";
 
 export type NovaSolicitacaoDados = {
   nomeFalecido: string;
+  localFalecimento: string;
   endereco: string;
   nomeSolicitante: string;
   telefoneSolicitante: string;
 };
 
 type NovaSolicitacaoSvoProps = {
-  onConfirmar?: (dados: NovaSolicitacaoDados) => void;
+  onConfirmar?: (
+    dados: NovaSolicitacaoDados,
+  ) => void | Promise<void>;
   onVoltar?: () => void;
 };
 
@@ -18,19 +21,38 @@ export function NovaSolicitacaoSvo({
   onVoltar,
 }: NovaSolicitacaoSvoProps) {
   const [nomeFalecido, setNomeFalecido] = useState("");
+  const [localFalecimento, setLocalFalecimento] = useState("");
   const [endereco, setEndereco] = useState("");
   const [nomeSolicitante, setNomeSolicitante] = useState("");
   const [telefoneSolicitante, setTelefoneSolicitante] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
-    onConfirmar?.({
-      nomeFalecido,
-      endereco,
-      nomeSolicitante,
-      telefoneSolicitante,
-    });
+    setErro("");
+    setEnviando(true);
+
+    try {
+      await onConfirmar?.({
+        nomeFalecido,
+        localFalecimento,
+        endereco,
+        nomeSolicitante,
+        telefoneSolicitante,
+      });
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível criar a solicitação.",
+      );
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -44,34 +66,64 @@ export function NovaSolicitacaoSvo({
 
       <form onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="nomeFalecido">Nome do falecido</label>
+          <label htmlFor="nomeFalecido">
+            Nome do falecido
+          </label>
+
           <input
             id="nomeFalecido"
             type="text"
             value={nomeFalecido}
-            onChange={(event) => setNomeFalecido(event.target.value)}
+            onChange={(event) =>
+              setNomeFalecido(event.target.value)
+            }
+          />
+        </div>
+
+        <div>
+          <label htmlFor="localFalecimento">
+            Local do falecimento
+          </label>
+
+          <input
+            id="localFalecimento"
+            type="text"
+            value={localFalecimento}
+            onChange={(event) =>
+              setLocalFalecimento(event.target.value)
+            }
             required
           />
         </div>
 
         <div>
-          <label htmlFor="endereco">Endereço da ocorrência</label>
+          <label htmlFor="endereco">
+            Endereço de remoção
+          </label>
+
           <input
             id="endereco"
             type="text"
             value={endereco}
-            onChange={(event) => setEndereco(event.target.value)}
+            onChange={(event) =>
+              setEndereco(event.target.value)
+            }
             required
           />
         </div>
 
         <div>
-          <label htmlFor="nomeSolicitante">Nome do solicitante</label>
+          <label htmlFor="nomeSolicitante">
+            Nome do solicitante
+          </label>
+
           <input
             id="nomeSolicitante"
             type="text"
             value={nomeSolicitante}
-            onChange={(event) => setNomeSolicitante(event.target.value)}
+            onChange={(event) =>
+              setNomeSolicitante(event.target.value)
+            }
             required
           />
         </div>
@@ -80,6 +132,7 @@ export function NovaSolicitacaoSvo({
           <label htmlFor="telefoneSolicitante">
             Telefone do solicitante
           </label>
+
           <input
             id="telefoneSolicitante"
             type="tel"
@@ -87,15 +140,21 @@ export function NovaSolicitacaoSvo({
             onChange={(event) =>
               setTelefoneSolicitante(event.target.value)
             }
-            required
           />
         </div>
+
+        {erro && (
+          <p className="svo-formulario__erro">
+            {erro}
+          </p>
+        )}
 
         <div className="svo-formulario__acoes">
           <button
             type="button"
             className="svo-formulario__voltar"
             onClick={onVoltar}
+            disabled={enviando}
           >
             ← Voltar
           </button>
@@ -103,8 +162,9 @@ export function NovaSolicitacaoSvo({
           <button
             type="submit"
             className="svo-formulario__confirmar"
+            disabled={enviando}
           >
-            Confirmar
+            {enviando ? "Confirmando..." : "Confirmar"}
           </button>
         </div>
       </form>

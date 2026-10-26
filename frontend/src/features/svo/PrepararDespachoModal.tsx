@@ -1,38 +1,55 @@
 import { useState } from "react";
+import type {
+  MotoristaApi,
+  VeiculoApi,
+} from "../../shared/types/svo";
 import "./PrepararDespachoModal.css";
 
 type PrepararDespachoModalProps = {
   ordemId: string;
+  motoristas: MotoristaApi[];
+  veiculos: VeiculoApi[];
   onFechar: () => void;
-  onConfirmar: (veiculo: string, motorista: string) => void;
+  onConfirmar: (
+    motoristaId: number,
+    veiculoId: number,
+  ) => void | Promise<void>;
 };
-
-const veiculos = [
-  "Veículo 01 - ABC1D23",
-  "Veículo 02 - DEF4G56",
-  "Veículo 03 - HIJ7K89",
-];
-
-const motoristas = [
-  "Carlos Silva",
-  "Marcos Santos",
-  "João Oliveira",
-];
 
 export function PrepararDespachoModal({
   ordemId,
+  motoristas,
+  veiculos,
   onFechar,
   onConfirmar,
 }: PrepararDespachoModalProps) {
-  const [veiculo, setVeiculo] = useState("");
-  const [motorista, setMotorista] = useState("");
+  const [motoristaId, setMotoristaId] = useState("");
+  const [veiculoId, setVeiculoId] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
 
-  function handleConfirmar() {
-    if (!veiculo || !motorista) {
+  async function handleConfirmar() {
+    if (!motoristaId || !veiculoId) {
       return;
     }
 
-    onConfirmar(veiculo, motorista);
+    setErro("");
+    setEnviando(true);
+
+    try {
+      await onConfirmar(
+        Number(motoristaId),
+        Number(veiculoId),
+      );
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível realizar o despacho.",
+      );
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -45,7 +62,9 @@ export function PrepararDespachoModal({
       >
         <header className="svo-modal__cabecalho">
           <div>
-            <h2 id="svo-modal-titulo">Preparar despacho</h2>
+            <h2 id="svo-modal-titulo">
+              Preparar despacho
+            </h2>
             <p>Ordem de coleta #{ordemId}</p>
           </div>
 
@@ -53,6 +72,7 @@ export function PrepararDespachoModal({
             type="button"
             className="svo-modal__fechar"
             onClick={onFechar}
+            disabled={enviando}
             aria-label="Fechar"
           >
             ×
@@ -65,14 +85,22 @@ export function PrepararDespachoModal({
 
             <select
               id="veiculo"
-              value={veiculo}
-              onChange={(event) => setVeiculo(event.target.value)}
+              value={veiculoId}
+              onChange={(event) =>
+                setVeiculoId(event.target.value)
+              }
+              disabled={enviando}
             >
-              <option value="">Selecione um veículo</option>
+              <option value="">
+                Selecione um veículo
+              </option>
 
-              {veiculos.map((item) => (
-                <option key={item} value={item}>
-                  {item}
+              {veiculos.map((veiculo) => (
+                <option
+                  key={veiculo.id}
+                  value={veiculo.id}
+                >
+                  {veiculo.modelo} - {veiculo.placa}
                 </option>
               ))}
             </select>
@@ -83,18 +111,30 @@ export function PrepararDespachoModal({
 
             <select
               id="motorista"
-              value={motorista}
-              onChange={(event) => setMotorista(event.target.value)}
+              value={motoristaId}
+              onChange={(event) =>
+                setMotoristaId(event.target.value)
+              }
+              disabled={enviando}
             >
-              <option value="">Selecione um motorista</option>
+              <option value="">
+                Selecione um motorista
+              </option>
 
-              {motoristas.map((item) => (
-                <option key={item} value={item}>
-                  {item}
+              {motoristas.map((motorista) => (
+                <option
+                  key={motorista.id}
+                  value={motorista.id}
+                >
+                  {motorista.nome}
                 </option>
               ))}
             </select>
           </div>
+
+          {erro && (
+            <p className="svo-modal__erro">{erro}</p>
+          )}
         </div>
 
         <footer className="svo-modal__acoes">
@@ -102,6 +142,7 @@ export function PrepararDespachoModal({
             type="button"
             className="svo-modal__cancelar"
             onClick={onFechar}
+            disabled={enviando}
           >
             Cancelar
           </button>
@@ -109,10 +150,14 @@ export function PrepararDespachoModal({
           <button
             type="button"
             className="svo-modal__confirmar"
-            disabled={!veiculo || !motorista}
             onClick={handleConfirmar}
+            disabled={
+              enviando || !veiculoId || !motoristaId
+            }
           >
-            Confirmar despacho
+            {enviando
+              ? "Confirmando..."
+              : "Confirmar despacho"}
           </button>
         </footer>
       </div>

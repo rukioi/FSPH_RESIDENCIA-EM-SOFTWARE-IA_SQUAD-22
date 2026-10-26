@@ -132,3 +132,14 @@
     width: 100%;
   }
 }
+
+.svo-formulario__erro {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #fdeaea;
+  color: var(--vermelho);
+  font-size: 14px;
+  font-weight: 700;
+}

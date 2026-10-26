@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { DashboardSvo } from "./DashboardSvo";
 import {
   NovaSolicitacaoSvo,
@@ -7,181 +7,207 @@ import {
 import type { OrdemColeta } from "./AguardandoDespacho";
 import type { OrdemPronta } from "./ProntasParaIniciar";
 import type { AtividadeSvo } from "./AtividadeRecente";
+import {
+  criarSolicitacaoSvo,
+  despacharOrdemSvo,
+  listarMotoristasDisponiveis,
+  listarOrdensAguardandoSvo,
+  listarVeiculosDisponiveis,
+} from "../../shared/services/svo.service";
+import type {
+  MotoristaApi,
+  VeiculoApi,
+} from "../../shared/types/svo";
 
 type TelaSvo = "dashboard" | "nova-solicitacao";
-
-const ordensAguardandoIniciais: OrdemColeta[] = [
-  {
-    id: "OC-1001",
-    falecido: "José da Silva",
-    endereco: "Rua das Flores, 120",
-    horario: "10:30",
-  },
-  {
-    id: "OC-1002",
-    falecido: "Maria de Souza",
-    endereco: "Av. Central, 450",
-    horario: "11:15",
-  },
-  {
-    id: "OC-1003",
-    falecido: "Antônio Santos",
-    endereco: "Rua São José, 88",
-    horario: "13:40",
-  },
-];
-
-const ordensProntasIniciais: OrdemPronta[] = [
-  {
-    id: "OC-0999",
-    falecido: "João Oliveira",
-    endereco: "Rua A, 100",
-    horario: "08:30",
-    veiculo: "Veículo 01 - ABC1D23",
-    motorista: "Carlos Silva",
-  },
-  {
-    id: "OC-1000",
-    falecido: "Ana Costa",
-    endereco: "Av. B, 250",
-    horario: "09:15",
-    veiculo: "Veículo 02 - DEF4G56",
-    motorista: "Marcos Santos",
-  },
-];
-
-const atividadesIniciais: AtividadeSvo[] = [
-  {
-    id: 1,
-    titulo: "Ordem preparada para despacho",
-    descricao: "OC-1000 atribuída ao motorista Marcos Santos.",
-    horario: "09:15",
-  },
-  {
-    id: 2,
-    titulo: "Nova solicitação confirmada",
-    descricao: "OC-1003 criada para Antônio Santos.",
-    horario: "13:40",
-  },
-  {
-    id: 3,
-    titulo: "Nova solicitação confirmada",
-    descricao: "OC-1002 criada para Maria de Souza.",
-    horario: "11:15",
-  },
-];
 
 export function Svo() {
   const [telaAtual, setTelaAtual] =
     useState<TelaSvo>("dashboard");
 
-  const [solicitacoesConfirmadas, setSolicitacoesConfirmadas] =
-    useState(8);
-
   const [ordensAguardando, setOrdensAguardando] =
-    useState<OrdemColeta[]>(ordensAguardandoIniciais);
+    useState<OrdemColeta[]>([]);
 
   const [ordensProntas, setOrdensProntas] =
-    useState<OrdemPronta[]>(ordensProntasIniciais);
+    useState<OrdemPronta[]>([]);
 
   const [atividades, setAtividades] =
-    useState<AtividadeSvo[]>(atividadesIniciais);
+    useState<AtividadeSvo[]>([]);
 
-  const proximaOrdem = useRef(1004);
-  const proximaAtividade = useRef(4);
+  const [solicitacoesConfirmadas, setSolicitacoesConfirmadas] =
+    useState(0);
 
-  function horarioAtual() {
-    return new Date().toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const [motoristas, setMotoristas] =
+    useState<MotoristaApi[]>([]);
+
+  const [veiculos, setVeiculos] =
+    useState<VeiculoApi[]>([]);
+
+  function obterToken() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error(
+        "Token de autenticação não encontrado.",
+      );
+    }
+
+    return token;
   }
+
+  async function carregarOrdens() {
+    const token = obterToken();
+    const ordens = await listarOrdensAguardandoSvo(token);
+
+    setOrdensAguardando(
+      ordens.map((ordem) => ({
+        apiId: ordem.id,
+        id: `OC-${ordem.id}`,
+        falecido:
+          ordem.nome_falecido?.trim() ||
+          "Não informado",
+        endereco: ordem.endereco_remocao,
+        horario: "—",
+      })),
+    );
+  }
+
+  useEffect(() => {
+    Promise.all([
+      carregarOrdens(),
+      listarMotoristasDisponiveis().then(setMotoristas),
+      listarVeiculosDisponiveis().then(setVeiculos),
+    ]).catch((erro) => {
+      console.error(
+        "Erro ao carregar dados do SVO:",
+        erro,
+      );
+    });
+  }, []);
 
   function adicionarAtividade(
     titulo: string,
     descricao: string,
   ) {
-    const novaAtividade: AtividadeSvo = {
-      id: proximaAtividade.current,
-      titulo,
-      descricao,
-      horario: horarioAtual(),
-    };
-
-    proximaAtividade.current += 1;
-
-    setAtividades((lista) =>
-      [novaAtividade, ...lista].slice(0, 6),
+    const horario = new Date().toLocaleTimeString(
+      "pt-BR",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      },
     );
+
+    setAtividades((lista) => [
+      {
+        id: Date.now(),
+        titulo,
+        descricao,
+        horario,
+      },
+      ...lista,
+    ]);
   }
 
-  function confirmarNovaSolicitacao(
+  async function confirmarNovaSolicitacao(
     dados: NovaSolicitacaoDados,
   ) {
-    const numeroOrdem = proximaOrdem.current;
-    proximaOrdem.current += 1;
+    const token = obterToken();
 
-    const novaOrdem: OrdemColeta = {
-      id: `OC-${numeroOrdem}`,
-      falecido: dados.nomeFalecido,
-      endereco: dados.endereco,
-      horario: horarioAtual(),
-    };
+    const resultado = await criarSolicitacaoSvo(
+      {
+        localFalecimento: dados.localFalecimento,
+        enderecoRemocao: dados.endereco,
+        solicitanteNome: dados.nomeSolicitante,
+        nomeFalecido: dados.nomeFalecido || undefined,
+        solicitanteTelefone:
+          dados.telefoneSolicitante || undefined,
+      },
+      token,
+    );
 
-    setOrdensAguardando((ordens) => [
-      ...ordens,
-      novaOrdem,
-    ]);
-
-    setSolicitacoesConfirmadas((valor) => valor + 1);
+    setSolicitacoesConfirmadas(
+      (valor) => valor + 1,
+    );
 
     adicionarAtividade(
       "Nova solicitação confirmada",
-      `${novaOrdem.id} criada para ${dados.nomeFalecido}.`,
+      `${resultado.ordemColeta.codigo} criada com sucesso.`,
     );
+
+    await carregarOrdens();
 
     setTelaAtual("dashboard");
   }
 
-  function confirmarDespacho(
+  async function confirmarDespacho(
     ordem: OrdemColeta,
-    veiculo: string,
-    motorista: string,
+    motoristaId: number,
+    veiculoId: number,
   ) {
+    const token = obterToken();
+
+    await despacharOrdemSvo(
+      ordem.apiId,
+      motoristaId,
+      veiculoId,
+      token,
+    );
+
+    const motorista = motoristas.find(
+      (item) => item.id === motoristaId,
+    );
+
+    const veiculo = veiculos.find(
+      (item) => item.id === veiculoId,
+    );
+
     setOrdensAguardando((ordens) =>
-      ordens.filter((item) => item.id !== ordem.id),
+      ordens.filter(
+        (item) => item.apiId !== ordem.apiId,
+      ),
     );
 
     setOrdensProntas((ordens) => [
       ...ordens,
       {
         ...ordem,
-        veiculo,
-        motorista,
+        motorista:
+          motorista?.nome ?? "Motorista selecionado",
+        veiculo: veiculo
+          ? `${veiculo.modelo} - ${veiculo.placa}`
+          : "Veículo selecionado",
       },
     ]);
 
     adicionarAtividade(
-      "Ordem preparada para despacho",
-      `${ordem.id} atribuída ao motorista ${motorista}.`,
+      "Ordem despachada",
+      `${ordem.id} entrou em andamento.`,
     );
+
+    await carregarOrdens();
   }
 
   if (telaAtual === "nova-solicitacao") {
     return (
       <NovaSolicitacaoSvo
         onConfirmar={confirmarNovaSolicitacao}
-        onVoltar={() => setTelaAtual("dashboard")}
+        onVoltar={() =>
+          setTelaAtual("dashboard")
+        }
       />
     );
   }
 
   return (
     <DashboardSvo
-      solicitacoesConfirmadas={solicitacoesConfirmadas}
+      solicitacoesConfirmadas={
+        solicitacoesConfirmadas
+      }
       ordensAguardando={ordensAguardando}
       ordensProntas={ordensProntas}
       atividades={atividades}
+      motoristas={motoristas}
+      veiculos={veiculos}
       onNovaSolicitacao={() =>
         setTelaAtual("nova-solicitacao")
       }

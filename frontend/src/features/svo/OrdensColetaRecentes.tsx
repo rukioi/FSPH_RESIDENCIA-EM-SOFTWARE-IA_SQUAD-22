@@ -20,7 +20,7 @@ export function OrdensColetaRecentes({
     })),
     ...prontas.map((ordem) => ({
       ...ordem,
-      status: "Pronta para iniciar" as const,
+      status: "Em andamento" as const,
     })),
   ]
     .sort((a, b) => b.id.localeCompare(a.id))

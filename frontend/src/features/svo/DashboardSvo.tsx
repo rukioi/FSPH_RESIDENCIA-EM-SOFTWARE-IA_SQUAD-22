@@ -11,6 +11,10 @@ import {
   AtividadeRecente,
   type AtividadeSvo,
 } from "./AtividadeRecente";
+import type {
+  MotoristaApi,
+  VeiculoApi,
+} from "../../shared/types/svo";
 import "./DashboardSvo.css";
 
 type DashboardSvoProps = {
@@ -18,12 +22,14 @@ type DashboardSvoProps = {
   ordensAguardando: OrdemColeta[];
   ordensProntas: OrdemPronta[];
   atividades: AtividadeSvo[];
+  motoristas: MotoristaApi[];
+  veiculos: VeiculoApi[];
   onNovaSolicitacao?: () => void;
   onConfirmarDespacho: (
     ordem: OrdemColeta,
-    veiculo: string,
-    motorista: string,
-  ) => void;
+    motoristaId: number,
+    veiculoId: number,
+  ) => void | Promise<void>;
 };
 
 export function DashboardSvo({
@@ -31,6 +37,8 @@ export function DashboardSvo({
   ordensAguardando,
   ordensProntas,
   atividades,
+  motoristas,
+  veiculos,
   onNovaSolicitacao,
   onConfirmarDespacho,
 }: DashboardSvoProps) {
@@ -42,18 +50,18 @@ export function DashboardSvo({
   const ordensColeta =
     ordensAguardando.length + ordensProntas.length;
 
-  function confirmarDespacho(
-    veiculo: string,
-    motorista: string,
+  async function confirmarDespacho(
+    motoristaId: number,
+    veiculoId: number,
   ) {
     if (!ordemSelecionada) {
       return;
     }
 
-    onConfirmarDespacho(
+    await onConfirmarDespacho(
       ordemSelecionada,
-      veiculo,
-      motorista,
+      motoristaId,
+      veiculoId,
     );
 
     setOrdemSelecionada(null);
@@ -126,7 +134,7 @@ export function DashboardSvo({
 
         <article className="svo-dashboard__card">
           <div className="svo-dashboard__card-topo">
-            <span>Prontas para iniciar</span>
+            <span>Em andamento</span>
             <span
               className="svo-dashboard__icone svo-dashboard__icone--verde"
               aria-hidden="true"
@@ -136,7 +144,7 @@ export function DashboardSvo({
           </div>
 
           <strong>{prontasParaIniciar}</strong>
-          <small>Despachos preparados</small>
+          <small>Ordens em deslocamento</small>
         </article>
       </div>
 
@@ -159,6 +167,8 @@ export function DashboardSvo({
       {ordemSelecionada && (
         <PrepararDespachoModal
           ordemId={ordemSelecionada.id}
+          motoristas={motoristas}
+          veiculos={veiculos}
           onFechar={() => setOrdemSelecionada(null)}
           onConfirmar={confirmarDespacho}
         />
