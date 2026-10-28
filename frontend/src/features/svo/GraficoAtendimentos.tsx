@@ -42,7 +42,10 @@ export function GraficoAtendimentos() {
   return (
     <section className="svo-grafico">
       <header className="svo-grafico__cabecalho">
-        <h2>Visão geral dos chamados</h2>
+        <div>
+          <h2>Visão geral dos chamados</h2>
+          <small>Dados ilustrativos</small>
+        </div>
 
         <button type="button" className="svo-grafico__link">
           Ver solicitações →

@@ -3,6 +3,7 @@ import "./AguardandoDespacho.css";
 export type OrdemColeta = {
   apiId: number;
   id: string;
+  solicitacaoCodigo?: string;
   falecido: string;
   endereco: string;
   horario: string;
@@ -10,11 +11,13 @@ export type OrdemColeta = {
 
 type AguardandoDespachoProps = {
   ordens: OrdemColeta[];
+  erro?: string;
   onPrepararDespacho: (ordem: OrdemColeta) => void;
 };
 
 export function AguardandoDespacho({
   ordens,
+  erro,
   onPrepararDespacho,
 }: AguardandoDespachoProps) {
   return (
@@ -64,13 +67,22 @@ export function AguardandoDespacho({
               </tr>
             ))}
 
-            {ordens.length === 0 && (
+            {erro ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="svo-despacho__erro"
+                >
+                  {erro}
+                </td>
+              </tr>
+            ) : ordens.length === 0 ? (
               <tr>
                 <td colSpan={5}>
                   Nenhuma ordem aguardando despacho.
                 </td>
               </tr>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>

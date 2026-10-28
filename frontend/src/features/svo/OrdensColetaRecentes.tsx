@@ -23,7 +23,7 @@ export function OrdensColetaRecentes({
       status: "Em andamento" as const,
     })),
   ]
-    .sort((a, b) => b.id.localeCompare(a.id))
+    .sort((a, b) => b.apiId - a.apiId)
     .slice(0, 3);
 
   return (
@@ -37,7 +37,7 @@ export function OrdensColetaRecentes({
       </header>
 
       <div className="svo-recentes__lista">
-        {recentes.map((ordem, index) => (
+        {recentes.map((ordem) => (
           <article key={ordem.id} className="svo-recentes__item">
             <div>
               <div className="svo-recentes__linha">
@@ -55,7 +55,7 @@ export function OrdensColetaRecentes({
               </div>
 
               <p>
-                Solicitação #SVO-{1042 + index} · {ordem.endereco} ·
+                Solicitação {ordem.solicitacaoCodigo ?? "—"} · {ordem.endereco} ·
                 Gerada {ordem.horario}
               </p>
             </div>
@@ -63,6 +63,12 @@ export function OrdensColetaRecentes({
             <button
               type="button"
               className="svo-recentes__acao"
+              onClick={() =>
+                ordem.status === "Aguardando despacho"
+                  ? onPrepararDespacho(ordem)
+                  : undefined
+              }
+              disabled={ordem.status !== "Aguardando despacho"}
             >
               Ver ordem
             </button>

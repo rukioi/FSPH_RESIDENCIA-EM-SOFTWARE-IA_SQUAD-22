@@ -158,3 +158,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+.svo-grafico__cabecalho small {
+  display: block;
+  margin-top: 3px;
+  color: var(--texto-suave);
+  font-size: 12px;
+}

@@ -37,6 +37,8 @@ export function Svo() {
   const [solicitacoesConfirmadas, setSolicitacoesConfirmadas] =
     useState(0);
 
+  const [erroOrdens, setErroOrdens] = useState("");
+
   const [motoristas, setMotoristas] =
     useState<MotoristaApi[]>([]);
 
@@ -56,25 +58,36 @@ export function Svo() {
   }
 
   async function carregarOrdens() {
-    const token = obterToken();
-    const ordens = await listarOrdensAguardandoSvo(token);
+    try {
+      const token = obterToken();
+      const ordens = await listarOrdensAguardandoSvo(token);
 
-    setOrdensAguardando(
-      ordens.map((ordem) => ({
-        apiId: ordem.id,
-        id: `OC-${ordem.id}`,
-        falecido:
-          ordem.nome_falecido?.trim() ||
-          "Não informado",
-        endereco: ordem.endereco_remocao,
-        horario: "—",
-      })),
-    );
+      setOrdensAguardando(
+        ordens.map((ordem) => ({
+          apiId: ordem.id,
+          id: `OC-${ordem.id}`,
+          falecido:
+            ordem.nome_falecido?.trim() ||
+            "Não informado",
+          endereco: ordem.endereco_remocao,
+          horario: "—",
+        })),
+      );
+
+      setErroOrdens("");
+    } catch (error) {
+      setErroOrdens(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível carregar as ordens.",
+      );
+    }
   }
 
   useEffect(() => {
+    void carregarOrdens();
+
     Promise.all([
-      carregarOrdens(),
       listarMotoristasDisponiveis().then(setMotoristas),
       listarVeiculosDisponiveis().then(setVeiculos),
     ]).catch((erro) => {
@@ -134,9 +147,9 @@ export function Svo() {
       `${resultado.ordemColeta.codigo} criada com sucesso.`,
     );
 
-    await carregarOrdens();
-
     setTelaAtual("dashboard");
+
+    await carregarOrdens();
   }
 
   async function confirmarDespacho(
@@ -179,6 +192,14 @@ export function Svo() {
       },
     ]);
 
+    setMotoristas((lista) =>
+      lista.filter((item) => item.id !== motoristaId),
+    );
+
+    setVeiculos((lista) =>
+      lista.filter((item) => item.id !== veiculoId),
+    );
+
     adicionarAtividade(
       "Ordem despachada",
       `${ordem.id} entrou em andamento.`,
@@ -206,6 +227,7 @@ export function Svo() {
       ordensAguardando={ordensAguardando}
       ordensProntas={ordensProntas}
       atividades={atividades}
+      erroOrdens={erroOrdens}
       motoristas={motoristas}
       veiculos={veiculos}
       onNovaSolicitacao={() =>

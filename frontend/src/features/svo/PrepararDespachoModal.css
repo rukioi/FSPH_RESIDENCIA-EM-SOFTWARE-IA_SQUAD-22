@@ -122,3 +122,11 @@
   font-size: 14px;
   font-weight: 700;
 }
+
+.svo-modal {
+  max-height: calc(100vh - 40px);
+}
+
+.svo-modal__conteudo {
+  overflow-y: auto;
+}

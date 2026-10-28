@@ -1,6 +1,14 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 
+interface CorpoMotorista {
+  nome?: string;
+  cnh?: string;
+  categoria_cnh?: string;
+  validade_cnh?: string;
+  status?: string;
+}
+
 function enviarJson(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ data }));
@@ -11,7 +19,7 @@ function enviarErro(res: ServerResponse, status: number, code: string, message: 
   res.end(JSON.stringify({ error: { code, message } }));
 }
 
-async function lerBody(req: IncomingMessage): Promise<any> {
+async function lerBody(req: IncomingMessage): Promise<CorpoMotorista> {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -31,7 +39,7 @@ export async function criarMotorista(req: IncomingMessage, res: ServerResponse) 
   try {
     const body = await lerBody(req);
     const { nome, cnh, categoria_cnh, validade_cnh, status } = body;
-    
+
     if (!nome || !cnh || !categoria_cnh || !validade_cnh) {
       return enviarErro(res, 400, 'DADOS_INVALIDOS', 'Nome, CNH, categoria da CNH e validade são obrigatórios.');
     }
@@ -40,13 +48,13 @@ export async function criarMotorista(req: IncomingMessage, res: ServerResponse) 
     if (existente) return enviarErro(res, 409, 'CNH_DUPLICADA', 'Já existe um motorista cadastrado com esta CNH.');
 
     const statusOp = status || 'DISPONIVEL';
-    
+
     const [novo] = await sql`
-      INSERT INTO motorista (nome, cnh, categoria_cnh, validade_cnh, status) 
-      VALUES (${nome}, ${cnh}, ${categoria_cnh}, ${validade_cnh}, ${statusOp}) 
+      INSERT INTO motorista (nome, cnh, categoria_cnh, validade_cnh, status)
+      VALUES (${nome}, ${cnh}, ${categoria_cnh}, ${validade_cnh}, ${statusOp})
       RETURNING *
     `;
-    
+
     enviarJson(res, 201, novo);
   } catch (err) {
     console.error('Erro ao criar motorista:', err);
@@ -59,10 +67,10 @@ export async function atualizarMotorista(req: IncomingMessage, res: ServerRespon
     const body = await lerBody(req);
     const { nome, cnh, validade_cnh } = body;
     const [atualizado] = await sql`
-      UPDATE motorista 
-      SET nome = COALESCE(${nome}, nome), 
-          cnh = COALESCE(${cnh}, cnh), 
-          validade_cnh = COALESCE(${validade_cnh}, validade_cnh)
+      UPDATE motorista
+      SET nome = COALESCE(${nome ?? null}, nome),
+          cnh = COALESCE(${cnh ?? null}, cnh),
+          validade_cnh = COALESCE(${validade_cnh ?? null}, validade_cnh)
       WHERE id = ${id}
       RETURNING *
     `;

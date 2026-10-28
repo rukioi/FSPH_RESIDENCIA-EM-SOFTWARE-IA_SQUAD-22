@@ -22,6 +22,7 @@ type DashboardSvoProps = {
   ordensAguardando: OrdemColeta[];
   ordensProntas: OrdemPronta[];
   atividades: AtividadeSvo[];
+  erroOrdens: string;
   motoristas: MotoristaApi[];
   veiculos: VeiculoApi[];
   onNovaSolicitacao?: () => void;
@@ -37,6 +38,7 @@ export function DashboardSvo({
   ordensAguardando,
   ordensProntas,
   atividades,
+  erroOrdens,
   motoristas,
   veiculos,
   onNovaSolicitacao,
@@ -155,6 +157,7 @@ export function DashboardSvo({
 
       <AguardandoDespacho
         ordens={ordensAguardando}
+        erro={erroOrdens}
         onPrepararDespacho={setOrdemSelecionada}
       />
 

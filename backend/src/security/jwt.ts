@@ -15,7 +15,15 @@ export async function validarJwt(
   }
 
   const token = authorization.slice(7).trim();
-  const segredo = process.env.JWT_SECRET || 'fallback_secret_para_desenvolvimento';
+  const segredoConfigurado = process.env.JWT_SECRET;
+
+  if (process.env.NODE_ENV === 'production' && !segredoConfigurado) {
+    console.error('JWT_SECRET não está configurada em produção.');
+    return null;
+  }
+
+  const segredo =
+    segredoConfigurado || 'fallback_secret_para_desenvolvimento';
 
   if (!token) {
     return null;

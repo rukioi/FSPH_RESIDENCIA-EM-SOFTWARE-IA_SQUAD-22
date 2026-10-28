@@ -85,3 +85,9 @@
     color: var(--texto-suave);
   }
 }
+
+.svo-despacho__erro {
+  color: var(--vermelho);
+  font-weight: 700;
+  background: #fdeaea;
+}
