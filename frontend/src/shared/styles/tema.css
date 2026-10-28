@@ -1,0 +1,226 @@
+/* Tokens e base compartilhados (mesmos valores do GestorLayout.css). */
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap');
+
+:root {
+  --fundo: #f2f5fa;
+  --branco: #ffffff;
+  --borda: #dbe3ee;
+  --texto: #0f1f38;
+  --texto-suave: #5a6b85;
+
+  --azul-escuro: #0a2f5e;
+  --azul-medio: #0f4585;
+  --azul: #1f5eff;
+  --vermelho: #cc353a;
+  --amarelo: #ffb800;
+  --vermelho-not: #d93a3a;
+  --verde: #1f8a4c;
+
+  --largura-menu: 272px;
+  --altura-cabecalho: 68px;
+  --raio: 12px;
+  --sombra: 0 1px 2px rgba(15, 31, 56, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Lato', system-ui, sans-serif;
+  font-size: 15px;
+  color: var(--texto);
+  background: var(--fundo);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgba(31, 94, 255, 0.45);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ===== Peças reutilizáveis ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn--primario {
+  background: var(--azul-escuro);
+  color: #fff;
+}
+.btn--primario:hover:not(:disabled) {
+  background: var(--azul-medio);
+}
+.btn--secundario {
+  background: var(--branco);
+  border-color: var(--borda);
+  color: var(--texto);
+}
+.btn--secundario:hover:not(:disabled) {
+  background: var(--fundo);
+}
+.btn--perigo {
+  background: var(--vermelho);
+  color: #fff;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.campo label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.campo input,
+.campo select {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--branco);
+}
+.campo input:focus,
+.campo select:focus {
+  border-color: var(--azul);
+  outline: 3px solid rgba(31, 94, 255, 0.18);
+}
+.campo--erro input,
+.campo--erro select {
+  border-color: var(--vermelho);
+}
+.campo__erro {
+  font-size: 13px;
+  color: var(--vermelho);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge--azul { background: #e6eeff; color: #1a4fd6; }
+.badge--marinho { background: #e3eaf4; color: var(--azul-escuro); }
+.badge--amarelo { background: #fff4d6; color: #8a6100; }
+.badge--verde { background: #e3f4ea; color: var(--verde); }
+.badge--vermelho { background: #fbe6e7; color: #a8282d; }
+.badge--cinza { background: #edf0f5; color: var(--texto-suave); }
+
+.cartao {
+  background: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  box-shadow: var(--sombra);
+}
+
+.pagina__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.pagina__titulo {
+  font-size: 32px;
+  font-weight: 900;
+}
+.pagina__descricao {
+  margin-top: 4px;
+  font-size: 17px;
+  color: var(--texto-suave);
+}
+
+.paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--borda);
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+.paginacao__botoes {
+  display: flex;
+  gap: 6px;
+}
+.paginacao__botoes button {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--branco);
+  font-weight: 700;
+}
+.paginacao__botoes button[aria-current='page'] {
+  background: var(--azul-escuro);
+  border-color: var(--azul-escuro);
+  color: #fff;
+}
+.paginacao__botoes button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.vazio {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--texto-suave);
+}
+.vazio strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--texto);
+}

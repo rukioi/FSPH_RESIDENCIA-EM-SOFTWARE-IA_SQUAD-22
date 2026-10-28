@@ -1,0 +1,10 @@
+.editar-usuario__situacao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--fundo);
+  font-size: 14px;
+  color: var(--texto-suave);
+}

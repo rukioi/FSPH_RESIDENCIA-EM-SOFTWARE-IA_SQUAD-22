@@ -1,0 +1,28 @@
+.dashboard-admin__vazio {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-height: 360px;
+  align-content: center;
+  padding: 40px 20px;
+  border-style: dashed;
+  text-align: center;
+}
+.dashboard-admin__icone {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  background: var(--fundo);
+  color: var(--azul-medio);
+}
+.dashboard-admin__vazio h2 {
+  font-size: 19px;
+  font-weight: 900;
+}
+.dashboard-admin__vazio p {
+  max-width: 420px;
+  color: var(--texto-suave);
+}
