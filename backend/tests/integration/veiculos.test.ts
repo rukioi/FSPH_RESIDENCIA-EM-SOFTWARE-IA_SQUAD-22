@@ -1,8 +1,16 @@
+
 import { beforeEach, expect, test, vi } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { Readable } from 'node:stream';
+import { SignJWT } from 'jose';
+import { createApp } from '../../src/app.js';
 
 vi.mock('../../src/config/db.js', () => ({
+  sql: vi.fn(),
+}));
+
+vi.mock('../../src/database/connection.js', () => ({
   sql: vi.fn(),
 }));
 
@@ -130,6 +138,7 @@ test('BE-S6-02 cadastra veículo válido com status 201', async () => {
 
   expect(sql).toHaveBeenCalledTimes(2);
 });
+
 test('BE-S6-02 rejeita tipo de veículo inválido sem consultar o banco', async () => {
   const corpo = JSON.stringify({
     placa: 'ABC1D23',
@@ -162,6 +171,7 @@ test('BE-S6-02 rejeita tipo de veículo inválido sem consultar o banco', async 
 
   expect(sql).not.toHaveBeenCalled();
 });
+
 test('BE-S6-02 rejeita status de veículo inválido sem consultar o banco', async () => {
   const corpo = JSON.stringify({
     placa: 'ABC1D23',
@@ -194,6 +204,7 @@ test('BE-S6-02 rejeita status de veículo inválido sem consultar o banco', asyn
 
   expect(sql).not.toHaveBeenCalled();
 });
+
 test('BE-S6-02 rejeita status inválido ao atualizar veículo', async () => {
   const corpo = JSON.stringify({
     status: 'FOLGA',
@@ -221,4 +232,121 @@ test('BE-S6-02 rejeita status inválido ao atualizar veículo', async () => {
   );
 
   expect(sql).not.toHaveBeenCalled();
+});
+
+test('BE-S6-02 POST /api/veiculos exige autenticação', async () => {
+  const bancoMock = sql as unknown as ReturnType<typeof vi.fn>;
+  const server = createApp();
+
+  try {
+    await new Promise<void>((resolve) => {
+      server.listen(0, '127.0.0.1', resolve);
+    });
+
+    const endereco = server.address() as AddressInfo;
+
+    const resposta = await fetch(
+      `http://127.0.0.1:${endereco.port}/api/veiculos`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          placa: 'ABC1D23',
+          modelo: 'Gol',
+          marca: 'Volkswagen',
+          ano: 2020,
+        }),
+      },
+    );
+
+    expect(resposta.status).toBe(401);
+
+    expect(await resposta.json()).toEqual({
+      error: {
+        code: 'NAO_AUTENTICADO',
+        message: 'Autenticação necessária.',
+      },
+    });
+
+    expect(bancoMock).not.toHaveBeenCalled();
+  } finally {
+    if (server.listening) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((erro) => {
+          if (erro) reject(erro);
+          else resolve();
+        });
+      });
+    }
+  }
+});
+
+test('BE-S6-02 impede Atendente SVO de cadastrar veículos', async () => {
+  const segredoAnterior = process.env.JWT_SECRET;
+  const segredoTeste = 'segredo-ficticio-exclusivo-para-testes';
+
+  process.env.JWT_SECRET = segredoTeste;
+
+  const bancoMock = sql as unknown as ReturnType<typeof vi.fn>;
+  const server = createApp();
+
+  try {
+    const token = await new SignJWT({
+      perfil: 'ATENDENTE_SVO',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setSubject('atendente-teste')
+      .sign(new TextEncoder().encode(segredoTeste));
+
+    await new Promise<void>((resolve) => {
+      server.listen(0, '127.0.0.1', resolve);
+    });
+
+    const endereco = server.address() as AddressInfo;
+
+    const resposta = await fetch(
+      `http://127.0.0.1:${endereco.port}/api/veiculos`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          placa: 'ABC1D23',
+          modelo: 'Gol',
+          marca: 'Volkswagen',
+          ano: 2020,
+        }),
+      },
+    );
+
+    expect(resposta.status).toBe(403);
+
+    expect(await resposta.json()).toEqual({
+      error: {
+        code: 'ACESSO_NEGADO',
+        message: 'Acesso não permitido.',
+      },
+    });
+
+    expect(bancoMock).not.toHaveBeenCalled();
+  } finally {
+    if (server.listening) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((erro) => {
+          if (erro) reject(erro);
+          else resolve();
+        });
+      });
+    }
+
+    if (segredoAnterior === undefined) {
+      delete process.env.JWT_SECRET;
+    } else {
+      process.env.JWT_SECRET = segredoAnterior;
+    }
+  }
 });
