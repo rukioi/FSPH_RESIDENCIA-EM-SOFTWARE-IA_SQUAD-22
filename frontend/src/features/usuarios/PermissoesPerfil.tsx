@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import { Icone } from '../../shared/components/Icone'
 import type { NomeIcone } from '../../shared/components/Icone'
+import { PERFIS } from './dados'
+import type { Perfil } from './dados'
 import './PermissoesPerfil.css'
 
-const PERFIS_CONFIGURAVEIS = ['Gestor de Frota', 'Atendente SVO', 'Motorista', 'Solicitante'] as const
-type PerfilConfiguravel = (typeof PERFIS_CONFIGURAVEIS)[number]
+const PERFIS_CONFIGURAVEIS = PERFIS.filter(
+  (perfil): perfil is Exclude<Perfil, 'ADM'> => perfil !== 'ADM',
+)
+
+type PerfilConfiguravel = Exclude<Perfil, 'ADM'>
 
 type Modulo = { id: string; nome: string; descricao: string; icone: NomeIcone }
 const GRUPOS: { titulo: string; modulos: Modulo[] }[] = [
@@ -40,7 +45,7 @@ const TODOS = GRUPOS.flatMap((g) => g.modulos.map((m) => m.id))
 
 type Mapa = Record<PerfilConfiguravel, string[]>
 const INICIAL: Mapa = {
-  'Gestor de Frota': ['dashboard', 'solicitacoes', 'calendario', 'veiculos', 'motoristas', 'documentos', 'abastecimentos', 'relatorios', 'notificacoes'],
+  'Gestor da Frota': ['dashboard', 'solicitacoes', 'calendario', 'veiculos', 'motoristas', 'documentos', 'abastecimentos', 'relatorios', 'notificacoes'],
   'Atendente SVO': ['dashboard', 'svo', 'calendario', 'notificacoes'],
   Motorista: ['calendario', 'documentos', 'abastecimentos', 'notificacoes'],
   Solicitante: ['solicitacoes', 'calendario', 'notificacoes'],
@@ -51,7 +56,7 @@ const mesmo = (a: string[], b: string[]) => a.length === b.length && a.every((x)
 export function PermissoesPerfil() {
   const [salvas, setSalvas] = useState<Mapa>(INICIAL)
   const [rascunho, setRascunho] = useState<Mapa>(INICIAL)
-  const [perfil, setPerfil] = useState<PerfilConfiguravel>('Gestor de Frota')
+  const [perfil, setPerfil] = useState<PerfilConfiguravel>('Gestor da Frota')
   const [sucesso, setSucesso] = useState('')
 
   const marcados = rascunho[perfil]

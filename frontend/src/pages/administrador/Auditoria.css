@@ -59,7 +59,7 @@
   height: 44px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
   .auditoria__filtros {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

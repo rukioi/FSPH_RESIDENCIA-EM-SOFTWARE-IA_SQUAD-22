@@ -1,13 +1,18 @@
-// App do perfil Administrador.
+// App do perfil Administrador e Gestor de Frota.
 import type { ComponentType } from 'react'
 import '../shared/styles/tema.css'
+
 import { useCaminho } from './routes/router'
 import { ROTAS } from './routes/rotas'
+
 import { AdminLayout } from '../layouts/administrador/AdminLayout'
+import { GestorLayout } from '../layouts/gestor/GestorLayout'
+
 import { Login } from '../pages/login/Login'
 import { DashboardAdmin } from '../pages/administrador/DashboardAdm'
 import { Configuracoes } from '../pages/administrador/Configuracoes'
 import { Auditoria } from '../pages/administrador/Auditoria'
+import { Dashboard } from '../pages/gerente/DashboardGestor'
 
 const paginas: Record<string, ComponentType> = {
   [ROTAS.dashboard]: DashboardAdmin,
@@ -18,13 +23,21 @@ const paginas: Record<string, ComponentType> = {
 export function App() {
   const caminho = useCaminho()
 
-  // Tela de login em /login
-  if (caminho === ROTAS.login) return <Login />
+  // Tela de login
+  if (caminho === ROTAS.login) {
+    return <Login />
+  }
 
+  // Tela do Gestor de Frota
+  if (caminho === ROTAS.dashboardGestor) {
+    return (
+      <GestorLayout>
+        <Dashboard />
+      </GestorLayout>
+    )
+  }
 
-  // Para obrigar login, troque a linha abaixo por:
-  //   const Pagina = paginas[caminho]
-  // e devolva <Login /> quando Pagina não existir.
+  // Telas do Administrador e fallback
   const Pagina = paginas[caminho] ?? DashboardAdmin
 
   return (
@@ -33,19 +46,3 @@ export function App() {
     </AdminLayout>
   )
 }
-
-// App do perfil Gestor de Frota.
-/* 
-
-import { GestorLayout } from "../layouts/gestor/GestorLayout";
-import { Dashboard } from "../pages/gerente/DashboardGestor";
-
-export function App() {
-  return (
-    <GestorLayout>
-      <Dashboard />
-    </GestorLayout>
-  );
-}
-
-*/
