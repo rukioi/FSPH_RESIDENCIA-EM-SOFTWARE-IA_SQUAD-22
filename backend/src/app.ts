@@ -1,11 +1,13 @@
 import { createServer, type ServerResponse } from 'node:http';
 import { dashboardRoute } from './modules/dashboard/dashboard.routes.js';
 import { svoRoute } from './modules/svo/svo.routes.js';
-// 1. IMPORTAR OS NOVOS MÓDULOS
 import { veiculosRoute } from './modules/veiculos/veiculos.routes.js';
 import { motoristasRoute } from './modules/motoristas/motoristas.routes.js';
 import { abastecimentosRoute } from './modules/abastecimentos/abastecimentos.routes.js';
 import { documentosRoute } from './modules/documentos/documentos.routes.js';
+import { authRoute } from './modules/auth/auth.routes.js';
+import { usuariosRoute } from './modules/usuarios/usuarios.routes.js';
+import { auditoriaRoute } from './modules/auditoria/auditoria.routes.js';
 
 export function isolarFalhaDaRequisicao(
   response: ServerResponse,
@@ -35,6 +37,21 @@ export function isolarFalhaDaRequisicao(
 export function createApp() {
   return createServer((request, response) => {
     const caminho = new URL(request.url ?? '', 'http://localhost').pathname;
+
+    if (caminho.startsWith('/api/auth')) {
+      isolarFalhaDaRequisicao(response, authRoute(request, response));
+      return;
+    }
+
+    if (caminho.startsWith('/api/admin/usuarios')) {
+      isolarFalhaDaRequisicao(response, usuariosRoute(request, response));
+      return;
+    }
+
+    if (caminho.startsWith('/api/admin/auditoria')) {
+      isolarFalhaDaRequisicao(response, auditoriaRoute(request, response));
+      return;
+    }
 
     if (
       caminho === '/api/dashboard' ||
