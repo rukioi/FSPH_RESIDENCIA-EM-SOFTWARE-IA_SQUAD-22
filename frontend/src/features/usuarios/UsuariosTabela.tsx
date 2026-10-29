@@ -60,7 +60,7 @@ export function UsuariosTabela() {
     window.setTimeout(() => setAviso(''), 3500)
   }
 
-  
+
   async function alternar(u: Usuario) {
     if (u.ativo) {
       setDesativando(u)
