@@ -1,6 +1,16 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 
+interface CorpoAbastecimento {
+  veiculo_id?: number;
+  motorista_id?: number;
+  posto?: string;
+  litragem?: number;
+  valor_total?: number;
+  quilometragem?: number;
+  data_abastecimento?: string;
+}
+
 function enviarJson(res: ServerResponse, status: number, data: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ data }));
@@ -11,7 +21,7 @@ function enviarErro(res: ServerResponse, status: number, code: string, message: 
   res.end(JSON.stringify({ error: { code, message } }));
 }
 
-async function lerBody(req: IncomingMessage): Promise<any> {
+async function lerBody(req: IncomingMessage): Promise<CorpoAbastecimento> {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -64,7 +74,7 @@ export async function criarAbastecimento(req: IncomingMessage, res: ServerRespon
         veiculo_id, motorista_id, posto, litragem, valor_total, quilometragem, data_abastecimento
       ) 
       VALUES (
-        ${veiculo_id}, ${motorista_id}, ${posto || null}, ${litragem}, ${valor_total}, ${quilometragem}, ${data_abastecimento}
+        ${veiculo_id}, ${motorista_id ?? null}, ${posto || null}, ${litragem}, ${valor_total}, ${quilometragem ?? null}, ${data_abastecimento}
       ) 
       RETURNING *
     `;

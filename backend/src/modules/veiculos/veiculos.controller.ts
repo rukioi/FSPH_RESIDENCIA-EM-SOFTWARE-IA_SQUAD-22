@@ -1,6 +1,18 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 
+interface CorpoVeiculo {
+  placa?: string;
+  modelo?: string;
+  marca?: string;
+  ano?: number;
+  tipo?: string;
+  capacidade_obitos?: number;
+  quilometragem_atual?: number;
+  status?: string;
+  is_svo?: boolean;
+}
+
 function enviarJson(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ data }));
@@ -11,7 +23,7 @@ function enviarErro(res: ServerResponse, status: number, code: string, message: 
   res.end(JSON.stringify({ error: { code, message } }));
 }
 
-async function lerBody(req: IncomingMessage): Promise<any> {
+async function lerBody(req: IncomingMessage): Promise<CorpoVeiculo> {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -30,18 +42,18 @@ export async function listarVeiculos(req: IncomingMessage, res: ServerResponse) 
 export async function criarVeiculo(req: IncomingMessage, res: ServerResponse) {
   try {
     const body = await lerBody(req);
-    const { 
-      placa, 
-      modelo, 
-      marca, 
-      ano, 
-      tipo, 
-      capacidade_obitos, 
-      quilometragem_atual, 
-      status, 
-      is_svo 
+    const {
+      placa,
+      modelo,
+      marca,
+      ano,
+      tipo,
+      capacidade_obitos,
+      quilometragem_atual,
+      status,
+      is_svo
     } = body;
-    
+
     if (!placa || !modelo || !marca || !ano) {
       return enviarErro(res, 400, 'DADOS_INVALIDOS', 'Placa, modelo, marca e ano são obrigatórios.');
     }
@@ -54,17 +66,17 @@ export async function criarVeiculo(req: IncomingMessage, res: ServerResponse) {
     const kmAtual = quilometragem_atual || 0;
     const statusOp = status || 'DISPONIVEL';
     const isSvoVal = is_svo ?? false;
-    
+
     const [novo] = await sql`
       INSERT INTO veiculo (
         placa, modelo, marca, ano, tipo, capacidade_obitos, quilometragem_atual, status, is_svo
-      ) 
+      )
       VALUES (
         ${placa}, ${modelo}, ${marca}, ${ano}, ${tipoVeiculo}, ${capOb}, ${kmAtual}, ${statusOp}, ${isSvoVal}
-      ) 
+      )
       RETURNING *
     `;
-    
+
     enviarJson(res, 201, novo);
   } catch (err) {
     console.error('Erro ao criar veículo:', err);
@@ -77,11 +89,11 @@ export async function atualizarVeiculo(req: IncomingMessage, res: ServerResponse
     const body = await lerBody(req);
     const { placa, marca, modelo, status } = body;
     const [atualizado] = await sql`
-      UPDATE veiculo 
-      SET placa = COALESCE(${placa}, placa), 
-          marca = COALESCE(${marca}, marca), 
-          modelo = COALESCE(${modelo}, modelo), 
-          status = COALESCE(${status}, status)
+      UPDATE veiculo
+      SET placa = COALESCE(${placa ?? null}, placa),
+          marca = COALESCE(${marca ?? null}, marca),
+          modelo = COALESCE(${modelo ?? null}, modelo),
+          status = COALESCE(${status ?? null}, status)
       WHERE id = ${id}
       RETURNING *
     `;

@@ -26,7 +26,7 @@ export async function buscarPendenciasDocumentos(res: ServerResponse) {
       ORDER BY validade_cnh ASC
     `;
 
-    const pendencias = alertasCnh.map((m: any) => ({
+    const pendencias = alertasCnh.map((m) => ({
       id: m.id,
       tipo: 'CNH_MOTORISTA',
       descricao: `CNH de ${m.nome} (${m.cnh})`,

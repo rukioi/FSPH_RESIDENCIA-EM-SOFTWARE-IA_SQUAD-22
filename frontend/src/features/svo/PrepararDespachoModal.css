@@ -1,0 +1,132 @@
+.svo-modal__fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 38, 73, 0.55);
+}
+
+.svo-modal {
+  width: 100%;
+  max-width: 560px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--branco);
+  box-shadow: 0 24px 60px rgba(15, 31, 56, 0.25);
+}
+
+.svo-modal__cabecalho {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.svo-modal__cabecalho h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.svo-modal__cabecalho p {
+  margin-top: 4px;
+  color: var(--texto-suave);
+}
+
+.svo-modal__fechar {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 26px;
+}
+
+.svo-modal__conteudo {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.svo-modal__conteudo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.svo-modal label {
+  font-weight: 700;
+}
+
+.svo-modal select {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--branco);
+  color: var(--texto);
+  font: inherit;
+}
+
+.svo-modal__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 24px;
+  border-top: 1px solid var(--borda);
+}
+
+.svo-modal__cancelar,
+.svo-modal__confirmar {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.svo-modal__cancelar {
+  border: 1px solid var(--borda);
+  background: var(--branco);
+}
+
+.svo-modal__confirmar {
+  border: 0;
+  background: var(--azul);
+  color: #fff;
+}
+
+.svo-modal__confirmar:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 600px) {
+  .svo-modal__acoes {
+    flex-direction: column-reverse;
+  }
+
+  .svo-modal__cancelar,
+  .svo-modal__confirmar {
+    width: 100%;
+  }
+}
+
+.svo-modal__erro {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #fdeaea;
+  color: var(--vermelho);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.svo-modal {
+  max-height: calc(100vh - 40px);
+}
+
+.svo-modal__conteudo {
+  overflow-y: auto;
+}
