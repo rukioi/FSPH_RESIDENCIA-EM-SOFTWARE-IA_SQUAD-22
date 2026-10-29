@@ -192,11 +192,14 @@ export async function listarMotoristas(
     `;
 
     const dados = perfil === 'ATENDENTE_SVO'
-  ? motoristas.map((motorista) => {
-      const { cpf, telefone, ...dadosPublicos } = motorista;
-      return dadosPublicos;
-    })
-  : motoristas;
+      ? motoristas.map((motorista) =>
+          Object.fromEntries(
+            Object.entries(motorista).filter(
+              ([campo]) => campo !== 'cpf' && campo !== 'telefone',
+            ),
+          ),
+        )
+      : motoristas;
 
 enviarJson(res, 200, dados);
   } catch (err) {

@@ -150,20 +150,22 @@ export async function criarDocumento(
         tamanho += buffer.length;
 
         if (tamanho > limiteJson) {
-  excedeuLimite = true;
-  continue;
-}
+          if (!excedeuLimite) {
+            excedeuLimite = true;
+            enviarErro(
+              res,
+              413,
+              'CORPO_MUITO_GRANDE',
+              'O JSON deve ter no máximo 1 MB.',
+            );
+          }
+          continue;
+        }
 
         partes.push(buffer);
       }
 
       if (excedeuLimite) {
-        enviarErro(
-          res,
-          413,
-          'CORPO_MUITO_GRANDE',
-          'O JSON deve ter no máximo 1 MB.',
-        );
         return;
       }
 
