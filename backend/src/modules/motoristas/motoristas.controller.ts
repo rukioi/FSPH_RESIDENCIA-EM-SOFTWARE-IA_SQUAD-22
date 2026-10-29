@@ -318,7 +318,7 @@ export async function criarMotorista(
     }
 
     const [existente] = await sql`
-      SELECT id FROM motorista WHERE cnh = ${cnh}
+      SELECT id FROM motorista WHERE cnh = ${cnh.trim()}
     `;
 
     if (existente) {
@@ -357,7 +357,7 @@ export async function criarMotorista(
       )
       VALUES (
         ${nome},
-        ${cnh},
+        ${cnh.trim()},
         ${categoria_cnh},
         ${validade_cnh},
         ${statusOp},
@@ -502,7 +502,7 @@ export async function atualizarMotorista(
       const [existente] = await sql`
         SELECT id
         FROM motorista
-        WHERE cnh = ${cnh} AND id <> ${id}
+        WHERE cnh = ${cnh.trim()} AND id <> ${id}
       `;
 
       if (existente) {
@@ -536,7 +536,7 @@ export async function atualizarMotorista(
       UPDATE motorista
       SET
         nome = COALESCE(${nome ?? null}, nome),
-        cnh = COALESCE(${cnh ?? null}, cnh),
+        cnh = COALESCE(${cnh?.trim() ?? null}, cnh),
         categoria_cnh = COALESCE(${categoria_cnh ?? null}, categoria_cnh),
         validade_cnh = COALESCE(${validade_cnh ?? null}, validade_cnh),
         status = COALESCE(${status ?? null}, status),

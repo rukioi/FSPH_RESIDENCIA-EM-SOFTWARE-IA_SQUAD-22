@@ -171,6 +171,7 @@ export async function criarDocumento(
 
       body = JSON.parse(Buffer.concat(partes).toString('utf8'));
     } catch {
+      if (res.headersSent) { return; }
       enviarErro(
         res,
         400,
@@ -209,7 +210,9 @@ export async function criarDocumento(
     typeof tipo_documento !== 'string' ||
     !tipo_documento.trim() ||
     typeof data_vencimento !== 'string' ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(data_vencimento)
+    (!/^\d{4}-\d{2}-\d{2}$/.test(data_vencimento) ||
+      Number.isNaN(Date.parse(data_vencimento)) ||
+      new Date(data_vencimento).toISOString().slice(0, 10) !== data_vencimento)
   ) {
     enviarErro(
       res,
