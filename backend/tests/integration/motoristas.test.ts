@@ -475,4 +475,32 @@ test('BE-S6-02 trata CPF duplicado informado pelo banco', async () => {
     expect.stringContaining('CPF_DUPLICADO'),
   );
 });
+test('BE-S6-02 aceita CNH categoria A ao cadastrar motorista', async () => {
+  const bancoSimulado = sql as unknown as ReturnType<typeof vi.fn>;
 
+  bancoSimulado
+    .mockResolvedValueOnce([] as never)
+    .mockResolvedValueOnce([
+      {
+        id: 16,
+        ...dadosMotorista(),
+        categoria_cnh: 'A',
+      },
+    ] as never);
+
+  const req = criarRequisicao({
+    ...dadosMotorista(),
+    categoria_cnh: 'A',
+  });
+
+  const { res, writeHead } = criarResposta();
+
+  await criarMotorista(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    201,
+    expect.any(Object),
+  );
+
+  expect(sql).toHaveBeenCalledTimes(2);
+});

@@ -2,7 +2,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 
-const CATEGORIAS_PERMITIDAS = ['B', 'C', 'D', 'E'];
+const CATEGORIAS_PERMITIDAS = ['A', 'B', 'C', 'D', 'E'];
 
 const STATUS_PERMITIDOS = [
   'DISPONIVEL',
@@ -237,7 +237,7 @@ export async function criarMotorista(
         res,
         400,
         'CATEGORIA_CNH_INVALIDA',
-        'A categoria da CNH deve ser B, C, D ou E.',
+        'A categoria da CNH deve ser A, B, C, D ou E.',
       );
     }
 
