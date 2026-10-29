@@ -1,0 +1,69 @@
+.svo-prontas {
+  margin-top: 28px;
+  overflow: hidden;
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  background: var(--branco);
+}
+
+.svo-prontas__cabecalho {
+  padding: 22px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.svo-prontas__cabecalho h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.svo-prontas__cabecalho p {
+  margin-top: 4px;
+  color: var(--texto-suave);
+}
+
+.svo-prontas__lista {
+  display: grid;
+}
+
+.svo-prontas__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.svo-prontas__item:last-child {
+  border-bottom: 0;
+}
+
+.svo-prontas__item p {
+  margin-top: 4px;
+  color: var(--texto-suave);
+}
+
+.svo-prontas__item > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+  color: var(--texto-suave);
+}
+
+.svo-prontas__vazio {
+  padding: 22px;
+  color: var(--texto-suave);
+}
+
+@media (max-width: 700px) {
+  .svo-prontas__item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .svo-prontas__item > div:last-child {
+    text-align: left;
+  }
+}

@@ -16,6 +16,8 @@ import { Dashboard } from '../pages/gerente/DashboardGestor'
 import { Veiculos } from "../pages/veiculos/Veiculos";
 import { Motoristas } from "../pages/motorista/Motoristas";
 
+import { Svo } from '../features/svo/Svo';
+
 const paginas: Record<string, ComponentType> = {
   [ROTAS.dashboard]: DashboardAdmin,
   [ROTAS.configuracoes]: Configuracoes,
@@ -39,22 +41,31 @@ export function App() {
     )
   }
 
+// Telas de Veículos e Motoristas do Gestor de Frota
   if (caminho === ROTAS.veiculosGestor) {
-  return (
-    <GestorLayout>
-      <Veiculos />
-    </GestorLayout>
-  )
-}
+    return (
+      <GestorLayout>
+        <Veiculos />
+      </GestorLayout>
+    )
+  }
 
-if (caminho === ROTAS.motoristasGestor) {
-  return (
-    <GestorLayout>
-      <Motoristas />
-    </GestorLayout>
-  )
-}
+  if (caminho === ROTAS.motoristasGestor) {
+    return (
+      <GestorLayout>
+        <Motoristas />
+      </GestorLayout>
+    )
+  }
 
+  // Tela do SVO
+  if (caminho === '/svo') {
+    return (
+      <GestorLayout>
+        <Svo />
+      </GestorLayout>
+    )
+  }
 
   // Telas do Administrador e fallback
   const Pagina = paginas[caminho] ?? DashboardAdmin

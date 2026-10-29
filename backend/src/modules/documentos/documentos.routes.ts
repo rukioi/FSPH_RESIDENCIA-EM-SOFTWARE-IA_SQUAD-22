@@ -1,15 +1,87 @@
+import { validarJwt } from '../../security/jwt.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { buscarPendenciasDocumentos } from './documentos.controller.js';
 
-export async function documentosRoute(req: IncomingMessage, res: ServerResponse) {
-  const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`);
+import {
+  buscarPendenciasDocumentos,
+  criarDocumento,
+  listarDocumentos,
+} from './documentos.controller.js';
+
+/** Gerencia as rotas de documentos e suas pendências. */
+export async function documentosRoute(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  const usuario = await validarJwt(req.headers.authorization);
+
+  if (!usuario) {
+    res.writeHead(401, {
+      'Content-Type': 'application/json; charset=utf-8',
+    });
+
+    res.end(JSON.stringify({
+      error: {
+        code: 'NAO_AUTENTICADO',
+        message: 'Autenticação necessária.',
+      },
+    }));
+    return;
+  }
+
+  if (
+    usuario.perfil !== 'ADMINISTRADOR' &&
+    usuario.perfil !== 'GESTOR_FROTA'
+  ) {
+    res.writeHead(403, {
+      'Content-Type': 'application/json; charset=utf-8',
+    });
+
+    res.end(JSON.stringify({
+      error: {
+        code: 'ACESSO_NEGADO',
+        message: 'Acesso não permitido.',
+      },
+    }));
+    return;
+  }
+
+  const url = new URL(
+    req.url ?? '',
+    `http://${req.headers.host ?? 'localhost'}`,
+  );
+
   const pathname = url.pathname;
   const method = req.method;
 
-  if (method === 'GET' && (pathname === '/api/documentos/pendencias' || pathname === '/api/documentos')) {
-    return buscarPendenciasDocumentos(res);
+  // Cadastro de documentos de veículos.
+  if (method === 'POST' && pathname === '/api/documentos') {
+    await criarDocumento(req, res);
+    return;
   }
 
-  res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ error: { code: 'NAO_ENCONTRADO', message: 'Rota de documentos não encontrada.' } }));
+  // Listagem completa, incluindo documentos regulares.
+  if (method === 'GET' && pathname === '/api/documentos') {
+    await listarDocumentos(res);
+    return;
+  }
+
+  // Preserva a consulta original de pendências.
+  if (
+    method === 'GET' &&
+    pathname === '/api/documentos/pendencias'
+  ) {
+    await buscarPendenciasDocumentos(res);
+    return;
+  }
+
+  res.writeHead(404, {
+    'Content-Type': 'application/json; charset=utf-8',
+  });
+
+  res.end(JSON.stringify({
+    error: {
+      code: 'NAO_ENCONTRADO',
+      message: 'Rota de documentos não encontrada.',
+    },
+  }));
 }

@@ -10,9 +10,11 @@
     "start": "node dist/server.js"
   },
   "devDependencies": {
+    "@types/busboy": "^1.5.5",
     "tsx": "^4.23.15"
   },
   "dependencies": {
+    "busboy": "^1.6.0",
     "jose": "^6.2.12",
     "postgres": "^3.4.9"
   }

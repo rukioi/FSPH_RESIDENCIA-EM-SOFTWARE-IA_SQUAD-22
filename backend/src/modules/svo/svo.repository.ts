@@ -4,9 +4,18 @@ import { sql } from '../../database/connection.js';
 /** Lista ordens de coleta que ainda aguardam alocação de motorista e veículo. */
 export async function listarOrdensPendentes() {
   return await sql`
-    SELECT *
-    FROM ordem_coleta
-    WHERE status = 'PENDENTE_ALOCACAO'
+    SELECT
+      oc.id,
+      oc.status,
+      oc.solicitacao_obito_id,
+      so.codigo AS solicitacao_codigo,
+      so.nome_falecido,
+      so.endereco_remocao
+    FROM public.ordem_coleta oc
+    INNER JOIN public.solicitacao_obito so
+      ON so.id = oc.solicitacao_obito_id
+    WHERE oc.status = 'PENDENTE_ALOCACAO'
+    ORDER BY oc.id DESC
   `;
 }
 
