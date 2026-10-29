@@ -1,22 +1,47 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Icone } from '../../shared/components/Icone'
 import { Paginacao, usePaginacao } from '../../shared/components/Paginacao'
-import { PERFIS, corPerfil, usuariosIniciais } from './dados'
+import { PERFIS, corPerfil } from './dados'
 import type { Perfil, Usuario } from './dados'
 import { NovoUsuarioModal } from './NovoUsuarioModal'
 import { EditarUsuarioModal } from './EditarUsuarioModal'
 import './UsuariosTabela.css'
+import { cadastrarUsuario, editarUsuario, listarUsuarios, alternarStatusUsuario } from '../../shared/services/usuarios.service'
 
 const POR_PAGINA = 6
 
 export function UsuariosTabela() {
-  const [usuarios, setUsuarios] = useState<Usuario[]>(usuariosIniciais)
+  const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState('')
   const [busca, setBusca] = useState('')
   const [perfil, setPerfil] = useState<Perfil | ''>('')
   const [novoAberto, setNovoAberto] = useState(false)
   const [editando, setEditando] = useState<Usuario | null>(null)
   const [desativando, setDesativando] = useState<Usuario | null>(null)
   const [aviso, setAviso] = useState('')
+
+  useEffect(() => {
+  async function carregarUsuarios() {
+    try {
+      setCarregando(true)
+      setErro('')
+
+      const dados = await listarUsuarios()
+      setUsuarios(dados)
+    } catch (erro) {
+      setErro(
+        erro instanceof Error
+          ? erro.message
+          : 'Não foi possível carregar os usuários.',
+      )
+    } finally {
+      setCarregando(false)
+    }
+  }
+
+  void carregarUsuarios()
+}, [])
 
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase()
@@ -35,18 +60,55 @@ export function UsuariosTabela() {
     window.setTimeout(() => setAviso(''), 3500)
   }
 
-  function alternar(u: Usuario) {
-    if (u.ativo) return setDesativando(u)
-    setUsuarios((l) => l.map((x) => (x.id === u.id ? { ...x, ativo: true } : x)))
-    avisar(`Conta de ${u.nome} ativada.`)
+  
+  async function alternar(u: Usuario) {
+    if (u.ativo) {
+      setDesativando(u)
+      return
+    }
+
+    try {
+      setErro('')
+      const usuarioAtualizado = await alternarStatusUsuario(u.id)
+
+      setUsuarios((lista) =>
+        lista.map((x) => (x.id === u.id ? usuarioAtualizado : x)),
+      )
+
+      avisar(`Conta de ${u.nome} ativada.`)
+    } catch (erro) {
+      setErro(
+        erro instanceof Error
+          ? erro.message
+          : 'Não foi possível ativar o usuário.',
+      )
+    }
   }
 
-  function confirmarDesativar() {
+  async function confirmarDesativar() {
     if (!desativando) return
-    setUsuarios((l) => l.map((x) => (x.id === desativando.id ? { ...x, ativo: false } : x)))
-    avisar(`Conta de ${desativando.nome} desativada.`)
-    setDesativando(null)
+
+    try {
+      setErro('')
+      const usuarioAtualizado = await alternarStatusUsuario(desativando.id)
+
+      setUsuarios((lista) =>
+        lista.map((x) =>
+          x.id === desativando.id ? usuarioAtualizado : x,
+        ),
+      )
+
+      avisar(`Conta de ${desativando.nome} desativada.`)
+      setDesativando(null)
+    } catch (erro) {
+      setErro(
+        erro instanceof Error
+          ? erro.message
+          : 'Não foi possível desativar o usuário.',
+      )
+    }
   }
+
 
   return (
     <section className="usuarios cartao" aria-labelledby="usuarios-titulo">
@@ -96,6 +158,14 @@ export function UsuariosTabela() {
       <p className="usuarios__aviso" role="status" aria-live="polite">
         {aviso}
       </p>
+
+      {carregando && <p role="status">Carregando usuários...</p>}
+
+      {erro && (
+        <p role="alert">
+         {erro}
+        </p>
+      )}
 
       <div className="usuarios__rolagem">
         <table className="usuarios__tabela">
@@ -175,13 +245,27 @@ export function UsuariosTabela() {
         <NovoUsuarioModal
           emailsEmUso={emails}
           aoFechar={() => setNovoAberto(false)}
-          aoCriar={(dados) => {
-            setUsuarios((l) => [{ ...dados, id: Math.max(0, ...l.map((u) => u.id)) + 1, ativo: true }, ...l])
-            setBusca('')
-            setPerfil('')
-            pag.setPagina(1)
-            setNovoAberto(false)
-            avisar(`Usuário ${dados.nome} cadastrado.`)
+          aoCriar={async (dados) => {
+            try {
+              setErro('')
+
+              const novoUsuario = await cadastrarUsuario(dados)
+
+              setUsuarios((lista) => [novoUsuario, ...lista])
+              setBusca('')
+              setPerfil('')
+              pag.setPagina(1)
+              setNovoAberto(false)
+
+              avisar(`Usuário ${novoUsuario.nome} cadastrado.`)
+            } catch (erro) {
+              const mensagem =
+                erro instanceof Error
+                  ? erro.message
+                  : 'Não foi possível cadastrar o usuário.'
+
+              setErro(mensagem)
+            }
           }}
         />
       )}
@@ -191,10 +275,34 @@ export function UsuariosTabela() {
           usuario={editando}
           emailsEmUso={emails}
           aoFechar={() => setEditando(null)}
-          aoSalvar={(u) => {
-            setUsuarios((l) => l.map((x) => (x.id === u.id ? u : x)))
-            setEditando(null)
-            avisar(`Dados de ${u.nome} atualizados.`)
+          aoSalvar={async (u) => {
+            try {
+              setErro('')
+
+              const usuarioAtualizado = await editarUsuario(u.id, {
+                nome: u.nome,
+                email: u.email,
+                perfil: u.perfil,
+              })
+
+              setUsuarios((lista) =>
+                lista.map((usuario) =>
+                  usuario.id === usuarioAtualizado.id
+                    ? usuarioAtualizado
+                    : usuario,
+                ),
+              )
+
+              setEditando(null)
+              avisar(`Dados de ${usuarioAtualizado.nome} atualizados.`)
+            } catch (erro) {
+              const mensagem =
+                erro instanceof Error
+                  ? erro.message
+                  : 'Não foi possível editar o usuário.'
+
+              setErro(mensagem)
+            }
           }}
         />
       )}

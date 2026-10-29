@@ -5,7 +5,12 @@ import './NovoUsuarioModal.css'
 type Props = {
   emailsEmUso: string[]
   aoFechar: () => void
-  aoCriar: (dados: Omit<Usuario, 'id' | 'ativo'>) => void
+  aoCriar: (dados: {
+    nome: string
+    email: string
+    senha: string
+    perfil: Usuario['perfil']
+  }) => void | Promise<void>
 }
 
 export function NovoUsuarioModal({ emailsEmUso, aoFechar, aoCriar }: Props) {
@@ -18,7 +23,9 @@ export function NovoUsuarioModal({ emailsEmUso, aoFechar, aoCriar }: Props) {
       emailsEmUso={emailsEmUso}
       textoSalvar="Salvar"
       aoCancelar={aoFechar}
-      aoSalvar={({ nome, email, perfil }) => aoCriar({ nome, email, perfil })}
+      aoSalvar={({ nome, email, senha, perfil }) =>
+        aoCriar({ nome, email, senha, perfil })
+      }
     />
   )
 }
