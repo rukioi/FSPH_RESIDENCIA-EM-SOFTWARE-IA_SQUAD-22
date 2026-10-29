@@ -8,7 +8,7 @@ import type {
   DashboardKpis,
   DashboardPeriodo,
 } from "../../shared/types/dashboard";
-import "./Dashboard.css";
+import "./DashboardGestor.css";
 
 const periodos = ["Hoje", "7 dias", "30 dias", "Personalizado"];
 

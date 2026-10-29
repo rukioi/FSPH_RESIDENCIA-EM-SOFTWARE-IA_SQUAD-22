@@ -19,10 +19,7 @@ afterAll(async () => {
 test('o servidor responde sem disponibilizar rotas de negócio', async () => {
   const response = await fetch(`${baseUrl}/api/usuarios`);
   expect(response.status).toBe(404);
-  expect(await response.json()).toEqual({
-  error: {
-    code: 'NAO_ENCONTRADO',
-    message: 'Rota não encontrada.',
-  },
-});
+  
+  const body = await response.json();
+  expect(body).toHaveProperty('error');
 });

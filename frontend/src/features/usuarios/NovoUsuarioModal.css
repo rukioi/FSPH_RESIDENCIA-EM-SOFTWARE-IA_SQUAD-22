@@ -1,0 +1,70 @@
+.modal__fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 38, 73, 0.55);
+  animation: modal-surge 0.15s ease;
+}
+.modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  border-radius: 18px;
+  background: var(--branco);
+  box-shadow: 0 30px 70px rgba(8, 38, 73, 0.3);
+}
+.modal__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 0;
+}
+.modal__topo h2 {
+  font-size: 22px;
+  font-weight: 900;
+}
+.modal__topo p {
+  margin-top: 4px;
+  color: var(--texto-suave);
+}
+.modal__fechar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--texto-suave);
+}
+.modal__fechar:hover {
+  background: var(--fundo);
+}
+.modal__form {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+}
+.modal__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+@keyframes modal-surge {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal__acoes .btn {
+    flex: 1;
+  }
+}
