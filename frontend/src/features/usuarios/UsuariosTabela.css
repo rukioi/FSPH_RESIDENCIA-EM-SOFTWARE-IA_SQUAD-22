@@ -1,0 +1,211 @@
+.usuarios {
+  overflow: hidden;
+}
+.usuarios__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--borda);
+}
+.usuarios__topo h2 {
+  font-size: 19px;
+  font-weight: 900;
+}
+.usuarios__topo p {
+  margin-top: 4px;
+  color: var(--texto-suave);
+}
+
+.usuarios__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 24px 0;
+}
+.usuarios__busca {
+  position: relative;
+  flex: 1 1 280px;
+  display: flex;
+  align-items: center;
+  color: var(--texto-suave);
+}
+.usuarios__busca svg {
+  position: absolute;
+  left: 12px;
+  pointer-events: none;
+}
+.usuarios__busca input,
+.usuarios__filtro select {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--branco);
+  color: var(--texto);
+}
+.usuarios__busca input {
+  padding: 0 12px 0 38px;
+}
+.usuarios__filtro {
+  flex: 0 1 220px;
+}
+.usuarios__filtro select {
+  padding: 0 12px;
+}
+
+.usuarios__aviso {
+  min-height: 0;
+  margin: 0 24px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--verde);
+}
+.usuarios__aviso:not(:empty) {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #e3f4ea;
+}
+
+.usuarios__rolagem {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+.usuarios__tabela {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+.usuarios__tabela th {
+  padding: 12px 24px;
+  background: var(--fundo);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+.usuarios__tabela td {
+  padding: 14px 24px;
+  border-top: 1px solid var(--borda);
+  vertical-align: middle;
+}
+.usuarios__tabela tbody tr:hover {
+  background: #f8fafd;
+}
+.usuarios__linha--inativa .usuarios__nome,
+.usuarios__linha--inativa .usuarios__email {
+  color: var(--texto-suave);
+}
+.usuarios__linha--inativa .usuarios__avatar {
+  background: #c5cfdd;
+}
+.usuarios__nome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+}
+.usuarios__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--azul-medio);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+.usuarios__email {
+  color: var(--texto-suave);
+}
+.usuarios__ponto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.usuarios__col-acoes {
+  text-align: right !important;
+}
+.usuarios__acoes {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.usuarios__editar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--branco);
+  color: var(--texto-suave);
+}
+.usuarios__editar:hover {
+  color: var(--azul);
+  border-color: var(--azul);
+}
+
+/* Interruptor ativo/inativo */
+.interruptor {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #c5cfdd;
+  transition: background 0.15s;
+}
+.interruptor span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s;
+}
+.interruptor--ligado {
+  background: var(--verde);
+}
+.interruptor--ligado span {
+  transform: translateX(20px);
+}
+
+.usuarios__confirmar {
+  max-width: 420px;
+  padding: 24px;
+}
+.usuarios__confirmar h2 {
+  font-size: 20px;
+  font-weight: 900;
+}
+.usuarios__confirmar p {
+  margin: 8px 0 16px;
+  color: var(--texto-suave);
+}
+
+@media (max-width: 600px) {
+  .usuarios__topo,
+  .usuarios__filtros {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .usuarios__topo .btn {
+    width: 100%;
+  }
+  .usuarios__filtro {
+    flex: 1 1 100%;
+  }
+}

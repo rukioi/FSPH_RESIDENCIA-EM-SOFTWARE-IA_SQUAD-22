@@ -1,0 +1,124 @@
+.login-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+/* ===== Painel da marca ===== */
+.login-layout__marca {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 56px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(31, 94, 255, 0.35), transparent 45%),
+    linear-gradient(160deg, var(--azul-escuro), #061b36);
+  color: #b8c9e3;
+}
+.login-layout__topo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.login-layout__topo strong {
+  display: block;
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+}
+.login-layout__topo small {
+  font-size: 14px;
+}
+.login-layout__logo {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: var(--azul);
+  color: #fff;
+}
+
+.login-layout__chamada {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+}
+.login-layout__chamada h2 {
+  font-size: clamp(30px, 3.4vw, 44px);
+  font-weight: 900;
+  line-height: 1.12;
+  color: #fff;
+}
+.login-layout__chamada ul {
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 16px;
+}
+.login-layout__chamada li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.login-layout__chamada li span {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--amarelo);
+}
+
+/* Faixa decorativa tipo estrada nas cores da identidade */
+.login-layout__estrada {
+  height: 6px;
+  margin: 0 -56px -40px;
+  background: linear-gradient(
+    90deg,
+    var(--vermelho) 0 33.3%,
+    var(--amarelo) 33.3% 66.6%,
+    var(--azul) 66.6% 100%
+  );
+}
+
+/* ===== Área do formulário ===== */
+.login-layout__formulario {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 48px 24px;
+  background: var(--fundo);
+}
+.login-layout__faixa {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .login-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .login-layout__marca {
+    padding: 28px 24px 0;
+    gap: 24px;
+  }
+  .login-layout__chamada ul {
+    display: none;
+  }
+  .login-layout__chamada h2 {
+    font-size: 26px;
+  }
+  .login-layout__estrada {
+    margin: 0 -24px;
+  }
+  .login-layout__formulario {
+    place-items: start center;
+    padding: 32px 16px;
+  }
+}

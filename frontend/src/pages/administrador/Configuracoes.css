@@ -1,0 +1,7 @@
+.configuracoes {
+  display: grid;
+  gap: 28px;
+}
+.configuracoes .pagina__topo {
+  margin-bottom: 0;
+}

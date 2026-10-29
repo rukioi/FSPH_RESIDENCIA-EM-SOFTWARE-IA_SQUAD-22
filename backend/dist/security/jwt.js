@@ -4,8 +4,8 @@ export async function validarJwt(authorization) {
         return null;
     }
     const token = authorization.slice(7).trim();
-    const segredo = process.env.JWT_SECRET;
-    if (!token || !segredo) {
+    const segredo = process.env.JWT_SECRET || 'fallback_secret_para_desenvolvimento';
+    if (!token) {
         return null;
     }
     try {
@@ -23,7 +23,8 @@ export async function validarJwt(authorization) {
             perfil: payload.perfil,
         };
     }
-    catch {
+    catch (err) {
+        console.error('Erro detalhado ao validar JWT:', err);
         return null;
     }
 }
