@@ -283,3 +283,38 @@ test('BE-S6-02 permite Gestor de Frota acessar cadastro de documentos', async ()
 
   expect(consultaSimulada).not.toHaveBeenCalled();
 });
+test('BE-S6-02 lista todos os documentos, incluindo os regulares', async () => {
+  consultaSimulada
+    .mockResolvedValueOnce([
+      {
+        id: 1,
+        nome: 'Motorista Teste',
+        cnh: '12345678900',
+        validade_cnh: '2028-05-18',
+      },
+    ])
+    .mockResolvedValueOnce([
+      {
+        id: 2,
+        veiculo_id: 10,
+        tipo_documento: 'CRLV',
+        data_vencimento: '2028-11-10',
+        status_regular: true,
+      },
+    ]);
+
+  const { res, writeHead, end } = respostaSimulada();
+
+  const { listarDocumentos } = await import(
+    '../../src/modules/documentos/documentos.controller.js'
+  );
+
+  await listarDocumentos(res);
+
+  expect(writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+
+  const resposta = JSON.parse(String(end.mock.calls[0][0]));
+
+  expect(resposta.data).toHaveLength(2);
+  expect(consultaSimulada).toHaveBeenCalledTimes(2);
+});

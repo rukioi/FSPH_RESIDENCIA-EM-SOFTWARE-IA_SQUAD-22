@@ -176,3 +176,92 @@ export async function criarDocumento(
     );
   }
 }
+/** Lista todos os documentos de veículos e as CNHs dos motoristas. */
+export async function listarDocumentos(
+  res: ServerResponse,
+): Promise<void> {
+  try {
+    const documentosVeiculos = await sql`
+      SELECT
+        id,
+        veiculo_id,
+        tipo_documento,
+        data_vencimento,
+        status_regular
+      FROM documento_veiculo
+      ORDER BY id DESC
+    `;
+
+    const documentosMotoristas = await sql`
+      SELECT
+        id,
+        nome,
+        cnh,
+        validade_cnh
+      FROM motorista
+      WHERE cnh IS NOT NULL
+      ORDER BY id DESC
+    `;
+
+    const veiculos = documentosVeiculos.map((doc) => {
+      const diasRestantes = doc.data_vencimento
+        ? Math.ceil(
+            (new Date(String(doc.data_vencimento)).getTime() -
+              new Date().setHours(0, 0, 0, 0)) /
+              86400000,
+          )
+        : null;
+
+      return {
+        id: doc.id,
+        tipo: 'DOCUMENTO_VEICULO',
+        descricao: doc.tipo_documento,
+        relacionado_id: doc.veiculo_id,
+        data_validade: doc.data_vencimento,
+        status: diasRestantes === null
+          ? 'SEM_VALIDADE'
+          : diasRestantes < 0
+            ? 'VENCIDA'
+            : diasRestantes <= 30
+              ? 'PROXIMA_DO_VENCIMENTO'
+              : 'REGULAR',
+      };
+    });
+
+    const motoristas = documentosMotoristas.map((motorista) => {
+      const diasRestantes = motorista.validade_cnh
+        ? Math.ceil(
+            (new Date(String(motorista.validade_cnh)).getTime() -
+              new Date().setHours(0, 0, 0, 0)) /
+              86400000,
+          )
+        : null;
+
+      return {
+        id: motorista.id,
+        tipo: 'CNH_MOTORISTA',
+        descricao: `CNH de ${motorista.nome}`,
+        relacionado_id: motorista.id,
+        data_validade: motorista.validade_cnh,
+        status: diasRestantes === null
+          ? 'SEM_VALIDADE'
+          : diasRestantes < 0
+            ? 'VENCIDA'
+            : diasRestantes <= 30
+              ? 'PROXIMA_DO_VENCIMENTO'
+              : 'REGULAR',
+      };
+    });
+
+    enviarJson(res, 200, [...veiculos, ...motoristas]);
+  } catch (erro) {
+    console.error('Erro ao listar documentos:', erro);
+
+    enviarErro(
+      res,
+      500,
+      'ERRO_INTERNO',
+      'Não foi possível listar os documentos.',
+    );
+  }
+}

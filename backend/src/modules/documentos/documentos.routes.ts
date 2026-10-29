@@ -4,6 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
   buscarPendenciasDocumentos,
   criarDocumento,
+  listarDocumentos,
 } from './documentos.controller.js';
 
 /** Gerencia as rotas de documentos e suas pendências. */
@@ -11,12 +12,13 @@ export async function documentosRoute(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
-    const usuario = await validarJwt(req.headers.authorization);
+  const usuario = await validarJwt(req.headers.authorization);
 
   if (!usuario) {
     res.writeHead(401, {
       'Content-Type': 'application/json; charset=utf-8',
     });
+
     res.end(JSON.stringify({
       error: {
         code: 'NAO_AUTENTICADO',
@@ -33,6 +35,7 @@ export async function documentosRoute(
     res.writeHead(403, {
       'Content-Type': 'application/json; charset=utf-8',
     });
+
     res.end(JSON.stringify({
       error: {
         code: 'ACESSO_NEGADO',
@@ -41,6 +44,7 @@ export async function documentosRoute(
     }));
     return;
   }
+
   const url = new URL(
     req.url ?? '',
     `http://${req.headers.host ?? 'localhost'}`,
@@ -55,13 +59,16 @@ export async function documentosRoute(
     return;
   }
 
-  // Preserva as rotas GET implementadas pelo Gabriel.
+  // Listagem completa, incluindo documentos regulares.
+  if (method === 'GET' && pathname === '/api/documentos') {
+    await listarDocumentos(res);
+    return;
+  }
+
+  // Preserva a consulta original de pendências.
   if (
     method === 'GET' &&
-    (
-      pathname === '/api/documentos/pendencias' ||
-      pathname === '/api/documentos'
-    )
+    pathname === '/api/documentos/pendencias'
   ) {
     await buscarPendenciasDocumentos(res);
     return;
@@ -71,12 +78,10 @@ export async function documentosRoute(
     'Content-Type': 'application/json; charset=utf-8',
   });
 
-  res.end(
-    JSON.stringify({
-      error: {
-        code: 'NAO_ENCONTRADO',
-        message: 'Rota de documentos não encontrada.',
-      },
-    }),
-  );
+  res.end(JSON.stringify({
+    error: {
+      code: 'NAO_ENCONTRADO',
+      message: 'Rota de documentos não encontrada.',
+    },
+  }));
 }
