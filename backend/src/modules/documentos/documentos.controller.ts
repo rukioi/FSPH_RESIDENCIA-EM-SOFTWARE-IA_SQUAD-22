@@ -136,13 +136,35 @@ export async function criarDocumento(
       return;
     }
   } else {
-    try {
-      const partes: Buffer[] = [];
+    const partes: Buffer[] = [];
+    const limiteJson = 1024 * 1024; // 1 MB
+    let tamanho = 0;
+    let excedeuLimite = false;
 
+    try {
       for await (const parte of req) {
-        partes.push(
-          Buffer.isBuffer(parte) ? parte : Buffer.from(parte),
+        const buffer = Buffer.isBuffer(parte)
+          ? parte
+          : Buffer.from(parte);
+
+        tamanho += buffer.length;
+
+        if (tamanho > limiteJson) {
+  excedeuLimite = true;
+  continue;
+}
+
+        partes.push(buffer);
+      }
+
+      if (excedeuLimite) {
+        enviarErro(
+          res,
+          413,
+          'CORPO_MUITO_GRANDE',
+          'O JSON deve ter no máximo 1 MB.',
         );
+        return;
       }
 
       body = JSON.parse(Buffer.concat(partes).toString('utf8'));

@@ -1,4 +1,4 @@
-﻿
+
 import { beforeEach, expect, test, vi } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
@@ -503,4 +503,46 @@ test('BE-S6-02 aceita CNH categoria A ao cadastrar motorista', async () => {
   );
 
   expect(sql).toHaveBeenCalledTimes(2);
+});
+
+test('BE-S6-02 oculta CPF e telefone do Atendente SVO', async () => {
+  const bancoSimulado = sql as unknown as ReturnType<typeof vi.fn>;
+
+  bancoSimulado.mockResolvedValueOnce([
+    {
+      id: 1,
+      nome: 'Motorista Teste',
+      cnh: '12345678900',
+      status: 'DISPONIVEL',
+      cpf: '12345678909',
+      telefone: '79999999999',
+    },
+  ]);
+
+  const { res, writeHead, end } = criarResposta();
+
+  const { listarMotoristas } = await import(
+    '../../src/modules/motoristas/motoristas.controller.js'
+  );
+
+  await listarMotoristas(
+    {} as IncomingMessage,
+    res,
+    'ATENDENTE_SVO',
+  );
+
+  expect(writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+
+  const resposta = JSON.parse(String(end.mock.calls[0][0]));
+
+  expect(resposta.data[0]).toMatchObject({
+    id: 1,
+    nome: 'Motorista Teste',
+    status: 'DISPONIVEL',
+  });
+
+  expect(resposta.data[0]).not.toHaveProperty('cpf');
+  expect(resposta.data[0]).not.toHaveProperty('telefone');
+
+  expect(bancoSimulado).toHaveBeenCalledTimes(1);
 });

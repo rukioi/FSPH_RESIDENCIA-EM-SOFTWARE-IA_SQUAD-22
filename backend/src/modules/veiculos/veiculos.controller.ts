@@ -496,7 +496,7 @@ if (
 ),
 vinculo = COALESCE(${vinculo ?? null}, vinculo),
 fornecedor_locacao = CASE
-  WHEN ${vinculo ?? null} = 'PROPRIO' THEN NULL
+  WHEN COALESCE(${vinculo ?? null}, vinculo) = 'PROPRIO' THEN NULL
   ELSE COALESCE(${fornecedor_locacao ?? null}, fornecedor_locacao)
 END
       WHERE id = ${id}

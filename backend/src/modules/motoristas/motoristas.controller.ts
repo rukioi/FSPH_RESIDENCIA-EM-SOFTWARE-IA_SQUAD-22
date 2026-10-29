@@ -34,6 +34,7 @@ async function lerBody(req: IncomingMessage): Promise<unknown> {
   const partes: Buffer[] = [];
   let tamanho = 0;
   const limite = 64 * 1024;
+  let excedeuLimite = false;
 
   for await (const parte of req) {
     const buffer = Buffer.isBuffer(parte)
@@ -43,10 +44,15 @@ async function lerBody(req: IncomingMessage): Promise<unknown> {
     tamanho += buffer.length;
 
     if (tamanho > limite) {
-      throw new Error('CORPO_MUITO_GRANDE');
+      excedeuLimite = true;
+      continue;
     }
 
     partes.push(buffer);
+  }
+
+  if (excedeuLimite) {
+    throw new Error('CORPO_MUITO_GRANDE');
   }
 
   try {
@@ -55,7 +61,6 @@ async function lerBody(req: IncomingMessage): Promise<unknown> {
     throw new Error('JSON_INVALIDO');
   }
 }
-
 function objetoValido(valor: unknown): valor is Record<string, unknown> {
   return (
     valor !== null &&
@@ -179,13 +184,21 @@ function tratarErro(
 export async function listarMotoristas(
   _req: IncomingMessage,
   res: ServerResponse,
+  perfil: string,
 ) {
   try {
     const motoristas = await sql`
       SELECT * FROM motorista ORDER BY id DESC
     `;
 
-    enviarJson(res, 200, motoristas);
+    const dados = perfil === 'ATENDENTE_SVO'
+  ? motoristas.map((motorista) => {
+      const { cpf, telefone, ...dadosPublicos } = motorista;
+      return dadosPublicos;
+    })
+  : motoristas;
+
+enviarJson(res, 200, dados);
   } catch (err) {
     tratarErro(res, err, 'Falha ao listar motoristas.');
   }
@@ -414,7 +427,7 @@ export async function atualizarMotorista(
         res,
         400,
         'CATEGORIA_CNH_INVALIDA',
-        'A categoria da CNH deve ser B, C, D ou E.',
+        'A categoria da CNH deve ser A, B, C, D ou E.',
       );
     }
 

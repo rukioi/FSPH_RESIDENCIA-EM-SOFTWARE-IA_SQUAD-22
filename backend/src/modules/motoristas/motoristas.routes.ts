@@ -88,9 +88,9 @@ export async function motoristasRoute(
   }
 
   if (method === 'GET') {
-    await listarMotoristas(req, res);
-    return;
-  }
+  await listarMotoristas(req, res, usuario.perfil);
+  return;
+}
 
   if (method === 'POST') {
     await criarMotorista(req, res);
