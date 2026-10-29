@@ -23,18 +23,37 @@ export function Login() {
   const [erros, setErros] = useState<Erros>({})
   const [tentou, setTentou] = useState(false)
   const [enviando, setEnviando] = useState(false)
+  const [erroLogin, setErroLogin] = useState('')
 
   async function enviar(e: FormEvent) {
-    e.preventDefault()
-    setTentou(true)
-    const encontrados = validar(email, senha)
-    setErros(encontrados)
-    if (Object.keys(encontrados).length) return
-    setEnviando(true)
-    const resultado = await entrar({ email: email.trim(), senha })
-    setEnviando(false)
+  e.preventDefault()
+  setTentou(true)
+  setErroLogin('')
+
+  const encontrados = validar(email, senha)
+  setErros(encontrados)
+
+  if (Object.keys(encontrados).length) return
+
+  setEnviando(true)
+
+  try {
+    const resultado = await entrar({
+      email: email.trim(),
+      senha,
+    })
+
     navegar(resultado.destino)
+  } catch (erro) {
+    setErroLogin(
+      erro instanceof Error
+        ? erro.message
+        : 'Não foi possível realizar o login. Tente novamente.',
+    )
+  } finally {
+    setEnviando(false)
   }
+}
 
   function atualizar(campo: 'email' | 'senha', valor: string) {
     if (campo === 'email') setEmail(valor)
@@ -106,6 +125,12 @@ export function Login() {
             )}
           </div>
 
+          {erroLogin && (
+            <p className="login__erro" role="alert">
+              {erroLogin}
+            </p>
+         )}
+
           <button type="submit" className="btn btn--primario login__enviar" disabled={enviando}>
             {enviando ? (
               <>
@@ -116,10 +141,6 @@ export function Login() {
             )}
           </button>
         </form>
-
-        <p className="login__aviso">
-          Ambiente de demonstração: o acesso é simulado e não valida credenciais.
-        </p>
       </div>
     </LoginLayout>
   )
