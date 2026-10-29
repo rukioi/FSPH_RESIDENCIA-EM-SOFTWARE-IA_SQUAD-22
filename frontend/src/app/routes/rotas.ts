@@ -8,4 +8,7 @@ export const ROTAS = {
 
   // Gestor de Frota
   dashboardGestor: '/gestor/dashboard',
+  veiculosGestor: '/gestor/veiculos',
+  motoristasGestor: '/gestor/motoristas',
+
 } as const

@@ -13,6 +13,8 @@ import { DashboardAdmin } from '../pages/administrador/DashboardAdm'
 import { Configuracoes } from '../pages/administrador/Configuracoes'
 import { Auditoria } from '../pages/administrador/Auditoria'
 import { Dashboard } from '../pages/gerente/DashboardGestor'
+import { Veiculos } from "../pages/veiculos/Veiculos";
+import { Motoristas } from "../pages/motorista/Motoristas";
 
 import { Svo } from '../features/svo/Svo';
 
@@ -39,7 +41,24 @@ export function App() {
     )
   }
 
-  // Tela do SVO (Adicionada pela sua branch)
+// Telas de Veículos e Motoristas do Gestor de Frota
+  if (caminho === ROTAS.veiculosGestor) {
+    return (
+      <GestorLayout>
+        <Veiculos />
+      </GestorLayout>
+    )
+  }
+
+  if (caminho === ROTAS.motoristasGestor) {
+    return (
+      <GestorLayout>
+        <Motoristas />
+      </GestorLayout>
+    )
+  }
+
+  // Tela do SVO
   if (caminho === '/svo') {
     return (
       <GestorLayout>

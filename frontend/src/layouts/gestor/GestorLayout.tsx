@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
+import { navegar } from '../../app/routes/router'
+import { ROTAS } from '../../app/routes/rotas'
 import './GestorLayout.css'
 
 const icones = {
@@ -76,19 +78,35 @@ export function GestorLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="menu__nav">
-          <p className="menu__grupo">Operação</p>
-          {itensMenu.map((item) => (
-            <button
-              key={item.nome}
-              type="button"
-              className={item.nome === itemAtivo ? 'menu__item menu__item--ativo' : 'menu__item'}
-              onClick={() => setItemAtivo(item.nome)}
-            >
-              <Icone nome={item.icone} />
-              {item.nome}
-            </button>
-          ))}
-        </nav>
+  <p className="menu__grupo">Operação</p>
+
+  {itensMenu.map((item) => (
+    <button
+      key={item.nome}
+      type="button"
+      className={
+        item.nome === itemAtivo
+          ? 'menu__item menu__item--ativo'
+          : 'menu__item'
+      }
+      onClick={() => {
+        setItemAtivo(item.nome)
+
+        if (item.nome === 'Dashboard') {
+          navegar(ROTAS.dashboardGestor)
+        } else if (item.nome === 'Veículos') {
+          navegar(ROTAS.veiculosGestor)
+        } else if (item.nome === 'Motoristas') {
+          navegar(ROTAS.motoristasGestor)
+        }
+      }}
+    >
+      <Icone nome={item.icone} />
+      {item.nome}
+    </button>
+  ))}
+</nav>
+
 
         <div className="menu__usuario">
           <span className="avatar">{usuario.iniciais}</span>
