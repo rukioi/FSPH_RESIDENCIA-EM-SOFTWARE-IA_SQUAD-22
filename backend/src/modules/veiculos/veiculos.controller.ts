@@ -1,4 +1,4 @@
-﻿
+
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 
@@ -173,8 +173,10 @@ export async function criarVeiculo(
       capacidade_obitos,
       capacidade_passageiros,
       quilometragem_atual,
-      status,
+            status,
       is_svo,
+      vinculo,
+      fornecedor_locacao,
     } = body;
 
     if (
@@ -226,6 +228,62 @@ export async function criarVeiculo(
     const capPassageiros = capacidade_passageiros ?? 5;
     const kmAtual = quilometragem_atual ?? 0;
     const isSvoVal = is_svo ?? false;
+    const statusPermitidos = [
+  'DISPONIVEL',
+  'EM_VIAGEM',
+  'EM_MANUTENCAO',
+  'INDISPONIVEL',
+];
+
+if (
+  status !== undefined &&
+  (typeof status !== 'string' || !statusPermitidos.includes(status))
+) {
+  return enviarErro(
+    res,
+    400,
+    'STATUS_INVALIDO',
+    'Status inválido. Utilize DISPONIVEL, EM_VIAGEM, EM_MANUTENCAO ou INDISPONIVEL.',
+  );
+}
+    const vinculoVal = vinculo ?? 'PROPRIO';
+
+if (
+  vinculoVal !== 'PROPRIO' &&
+  vinculoVal !== 'LOCADO'
+) {
+  return enviarErro(
+    res,
+    400,
+    'VINCULO_INVALIDO',
+    'O vínculo deve ser PROPRIO ou LOCADO.',
+  );
+}
+
+if (
+  vinculoVal === 'LOCADO' &&
+  !textoValido(fornecedor_locacao)
+) {
+  return enviarErro(
+    res,
+    400,
+    'FORNECEDOR_OBRIGATORIO',
+    'Informe o fornecedor de locação para veículos locados.',
+  );
+}
+
+if (
+  fornecedor_locacao !== undefined &&
+  fornecedor_locacao !== null &&
+  !textoValido(fornecedor_locacao)
+) {
+  return enviarErro(
+    res,
+    400,
+    'FORNECEDOR_INVALIDO',
+    'Informe um fornecedor de locação válido.',
+  );
+}
 
     if (
       typeof capOb !== 'number' ||
@@ -246,24 +304,7 @@ export async function criarVeiculo(
         'Capacidade, quilometragem ou indicação SVO inválida.',
       );
     }
-    const statusPermitidos = [
-  'DISPONIVEL',
-  'EM_VIAGEM',
-  'EM_MANUTENCAO',
-  'INDISPONIVEL',
-];
 
-if (
-  status !== undefined &&
-  (typeof status !== 'string' || !statusPermitidos.includes(status))
-) {
-  return enviarErro(
-    res,
-    400,
-    'STATUS_INVALIDO',
-    'Status inválido. Utilize DISPONIVEL, EM_VIAGEM, EM_MANUTENCAO ou INDISPONIVEL.',
-  );
-}
     const [existente] = await sql`
       SELECT id FROM veiculo WHERE placa = ${placa}
     `;
@@ -287,8 +328,10 @@ if (
         capacidade_obitos,
         capacidade_passageiros,
         quilometragem_atual,
-        status,
-        is_svo
+                status,
+        is_svo,
+        vinculo,
+        fornecedor_locacao
       )
       VALUES (
         ${placa},
@@ -299,8 +342,10 @@ if (
         ${capOb},
         ${capPassageiros},
         ${kmAtual},
-        ${statusOp},
-        ${isSvoVal}
+                ${statusOp},
+        ${isSvoVal},
+        ${vinculoVal},
+        ${vinculoVal === 'LOCADO' && typeof fornecedor_locacao === 'string' ? fornecedor_locacao : null}
       )
       RETURNING *
     `;
@@ -330,12 +375,14 @@ export async function atualizarVeiculo(
     }
 
     const {
-      placa,
-      marca,
-      modelo,
-      status,
-      capacidade_passageiros,
-    } = body;
+  placa,
+  marca,
+  modelo,
+  status,
+  capacidade_passageiros,
+  vinculo,
+  fornecedor_locacao,
+} = body;
 
     if (
       (placa !== undefined && !textoValido(placa)) ||
@@ -381,6 +428,43 @@ export async function atualizarVeiculo(
       );
     }
 
+    if (
+  vinculo !== undefined &&
+  vinculo !== 'PROPRIO' &&
+  vinculo !== 'LOCADO'
+) {
+  return enviarErro(
+    res,
+    400,
+    'VINCULO_INVALIDO',
+    'O vínculo deve ser PROPRIO ou LOCADO.',
+  );
+}
+
+if (
+  fornecedor_locacao !== undefined &&
+  fornecedor_locacao !== null &&
+  !textoValido(fornecedor_locacao)
+) {
+  return enviarErro(
+    res,
+    400,
+    'FORNECEDOR_INVALIDO',
+    'Informe um fornecedor de locação válido.',
+  );
+}
+
+  if (
+  vinculo === 'LOCADO' &&
+  !textoValido(fornecedor_locacao)
+) {
+  return enviarErro(
+    res,
+    400,
+    'FORNECEDOR_OBRIGATORIO',
+    'Informe o fornecedor ao alterar o vínculo para LOCADO.',
+  );
+}
     if (placa !== undefined) {
       const [existente] = await sql`
         SELECT id
@@ -406,7 +490,15 @@ export async function atualizarVeiculo(
         marca = COALESCE(${marca ?? null}, marca),
         modelo = COALESCE(${modelo ?? null}, modelo),
         status = COALESCE(${status ?? null}, status),
-        capacidade_passageiros = COALESCE(${capacidade_passageiros ?? null}, capacidade_passageiros)
+        capacidade_passageiros = COALESCE(
+  ${capacidade_passageiros ?? null},
+  capacidade_passageiros
+),
+vinculo = COALESCE(${vinculo ?? null}, vinculo),
+fornecedor_locacao = CASE
+  WHEN ${vinculo ?? null} = 'PROPRIO' THEN NULL
+  ELSE COALESCE(${fornecedor_locacao ?? null}, fornecedor_locacao)
+END
       WHERE id = ${id}
       RETURNING *
     `;
@@ -453,4 +545,3 @@ export async function deletarVeiculo(
     tratarErro(res, err, 'Falha ao remover veículo.');
   }
 }
-

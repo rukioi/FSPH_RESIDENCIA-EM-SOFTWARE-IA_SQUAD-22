@@ -436,3 +436,85 @@ test('BE-S6-02 atualiza capacidade de passageiros do veículo', async () => {
   const parametrosUpdate = bancoMock.mock.calls[0].slice(1);
   expect(parametrosUpdate).toContain(8);
 });
+test('BE-S6-02 rejeita veículo locado sem fornecedor', async () => {
+  const req = criarRequisicao({
+    ...dadosVeiculo(),
+    vinculo: 'LOCADO',
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await criarVeiculo(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    400,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('FORNECEDOR_OBRIGATORIO'),
+  );
+
+  expect(sql).not.toHaveBeenCalled();
+});
+test('BE-S6-02 cadastra veículo locado com fornecedor', async () => {
+  bancoMock
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([
+      {
+        id: 30,
+        ...dadosVeiculo(),
+        vinculo: 'LOCADO',
+        fornecedor_locacao: 'Nordeste Rent',
+      },
+    ]);
+
+  const req = criarRequisicao({
+    ...dadosVeiculo(),
+    vinculo: 'LOCADO',
+    fornecedor_locacao: 'Nordeste Rent',
+  });
+
+  const { res, writeHead } = criarResposta();
+
+  await criarVeiculo(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    201,
+    expect.any(Object),
+  );
+
+  const parametrosInsert = bancoMock.mock.calls[1].slice(1);
+
+  expect(parametrosInsert).toContain('LOCADO');
+  expect(parametrosInsert).toContain('Nordeste Rent');
+});
+test('BE-S6-02 atualiza vínculo e fornecedor do veículo', async () => {
+  bancoMock.mockResolvedValueOnce([
+    {
+      id: 10,
+      ...dadosVeiculo(),
+      vinculo: 'LOCADO',
+      fornecedor_locacao: 'Nordeste Rent',
+    },
+  ]);
+
+  const req = criarRequisicao({
+    vinculo: 'LOCADO',
+    fornecedor_locacao: 'Nordeste Rent',
+  });
+
+  const { res, writeHead } = criarResposta();
+
+  await atualizarVeiculo(req, res, '10');
+
+  expect(writeHead).toHaveBeenCalledWith(
+    200,
+    expect.any(Object),
+  );
+
+  const parametrosUpdate = bancoMock.mock.calls[0].slice(1);
+
+  expect(parametrosUpdate).toContain('LOCADO');
+  expect(parametrosUpdate).toContain('Nordeste Rent');
+});
