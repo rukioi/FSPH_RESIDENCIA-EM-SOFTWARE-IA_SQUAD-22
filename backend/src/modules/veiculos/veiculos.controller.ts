@@ -1,4 +1,4 @@
-
+﻿
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 
@@ -171,6 +171,7 @@ export async function criarVeiculo(
       ano,
       tipo,
       capacidade_obitos,
+      capacidade_passageiros,
       quilometragem_atual,
       status,
       is_svo,
@@ -222,6 +223,7 @@ export async function criarVeiculo(
     }
 
     const capOb = capacidade_obitos ?? 0;
+    const capPassageiros = capacidade_passageiros ?? 5;
     const kmAtual = quilometragem_atual ?? 0;
     const isSvoVal = is_svo ?? false;
 
@@ -229,6 +231,9 @@ export async function criarVeiculo(
       typeof capOb !== 'number' ||
       !Number.isInteger(capOb) ||
       capOb < 0 ||
+      typeof capPassageiros !== 'number' ||
+      !Number.isInteger(capPassageiros) ||
+      capPassageiros <= 0 ||
       typeof kmAtual !== 'number' ||
       !Number.isFinite(kmAtual) ||
       kmAtual < 0 ||
@@ -280,6 +285,7 @@ if (
         ano,
         tipo,
         capacidade_obitos,
+        capacidade_passageiros,
         quilometragem_atual,
         status,
         is_svo
@@ -291,6 +297,7 @@ if (
         ${ano},
         ${tipoVeiculo},
         ${capOb},
+        ${capPassageiros},
         ${kmAtual},
         ${statusOp},
         ${isSvoVal}
@@ -327,6 +334,7 @@ export async function atualizarVeiculo(
       marca,
       modelo,
       status,
+      capacidade_passageiros,
     } = body;
 
     if (
@@ -357,6 +365,22 @@ export async function atualizarVeiculo(
       );
     }
 
+    if (
+      capacidade_passageiros !== undefined &&
+      (
+        typeof capacidade_passageiros !== 'number' ||
+        !Number.isInteger(capacidade_passageiros) ||
+        capacidade_passageiros <= 0
+      )
+    ) {
+      return enviarErro(
+        res,
+        400,
+        'CAPACIDADE_INVALIDA',
+        'A capacidade de passageiros deve ser um número inteiro maior que zero.',
+      );
+    }
+
     if (placa !== undefined) {
       const [existente] = await sql`
         SELECT id
@@ -381,7 +405,8 @@ export async function atualizarVeiculo(
         placa = COALESCE(${placa ?? null}, placa),
         marca = COALESCE(${marca ?? null}, marca),
         modelo = COALESCE(${modelo ?? null}, modelo),
-        status = COALESCE(${status ?? null}, status)
+        status = COALESCE(${status ?? null}, status),
+        capacidade_passageiros = COALESCE(${capacidade_passageiros ?? null}, capacidade_passageiros)
       WHERE id = ${id}
       RETURNING *
     `;
@@ -428,3 +453,4 @@ export async function deletarVeiculo(
     tratarErro(res, err, 'Falha ao remover veículo.');
   }
 }
+

@@ -1,3 +1,4 @@
+
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 
@@ -86,6 +87,39 @@ function dataValida(valor: unknown): valor is string {
   );
 }
 
+function cpfValido(valor: string): boolean {
+  const cpf = valor.replace(/\D/g, '');
+
+  if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) {
+    return false;
+  }
+
+  for (let tamanho = 9; tamanho <= 10; tamanho++) {
+    let soma = 0;
+
+    for (let i = 0; i < tamanho; i++) {
+      soma += Number(cpf[i]) * (tamanho + 1 - i);
+    }
+
+    const resto = (soma * 10) % 11;
+    const digito = resto === 10 ? 0 : resto;
+
+    if (digito !== Number(cpf[tamanho])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function telefoneValido(valor: unknown): valor is string {
+  if (typeof valor !== 'string') return false;
+
+  const digitos = valor.replace(/\D/g, '');
+
+  return /^\d{10,11}$/.test(digitos);
+}
+
 function tratarErro(
   res: ServerResponse,
   err: unknown,
@@ -115,6 +149,19 @@ function tratarErro(
     'code' in err &&
     err.code === '23505'
   ) {
+    const detalhe = 'constraint' in err
+      ? String(err.constraint)
+      : '';
+
+    if (detalhe === 'motorista_cpf_key') {
+      return enviarErro(
+        res,
+        409,
+        'CPF_DUPLICADO',
+        'Este CPF já está cadastrado.',
+      );
+    }
+
     return enviarErro(
       res,
       409,
@@ -161,7 +208,15 @@ export async function criarMotorista(
       );
     }
 
-    const { nome, cnh, categoria_cnh, validade_cnh, status } = body;
+    const {
+      nome,
+      cnh,
+      categoria_cnh,
+      validade_cnh,
+      status,
+      cpf,
+      telefone,
+    } = body;
 
     if (
       !textoValido(nome) ||
@@ -195,6 +250,43 @@ export async function criarMotorista(
       );
     }
 
+    if (
+      cpf !== undefined &&
+      cpf !== null &&
+      (
+        typeof cpf !== 'string' ||
+        !cpfValido(cpf)
+      )
+    ) {
+      return enviarErro(
+        res,
+        400,
+        'CPF_INVALIDO',
+        'Informe um CPF válido com 11 dígitos.',
+      );
+    }
+
+    if (
+      telefone !== undefined &&
+      telefone !== null &&
+      !telefoneValido(telefone)
+    ) {
+      return enviarErro(
+        res,
+        400,
+        'TELEFONE_INVALIDO',
+        'Informe um telefone válido com DDD.',
+      );
+    }
+
+    const cpfNormalizado = typeof cpf === 'string'
+      ? cpf.replace(/\D/g, '')
+      : null;
+
+    const telefoneNormalizado = typeof telefone === 'string'
+      ? telefone.replace(/\D/g, '')
+      : null;
+
     const statusOp = status ?? 'DISPONIVEL';
 
     if (
@@ -222,20 +314,39 @@ export async function criarMotorista(
       );
     }
 
+    if (cpfNormalizado !== null) {
+      const [cpfExistente] = await sql`
+        SELECT id FROM motorista WHERE cpf = ${cpfNormalizado}
+      `;
+
+      if (cpfExistente) {
+        return enviarErro(
+          res,
+          409,
+          'CPF_DUPLICADO',
+          'Este CPF já está cadastrado.',
+        );
+      }
+    }
+
     const [novo] = await sql`
       INSERT INTO motorista (
         nome,
         cnh,
         categoria_cnh,
         validade_cnh,
-        status
+        status,
+        cpf,
+        telefone
       )
       VALUES (
         ${nome},
         ${cnh},
         ${categoria_cnh},
         ${validade_cnh},
-        ${statusOp}
+        ${statusOp},
+        ${cpfNormalizado},
+        ${telefoneNormalizado}
       )
       RETURNING *
     `;
@@ -264,7 +375,15 @@ export async function atualizarMotorista(
       );
     }
 
-    const { nome, cnh, categoria_cnh, validade_cnh, status } = body;
+    const {
+      nome,
+      cnh,
+      categoria_cnh,
+      validade_cnh,
+      status,
+      cpf,
+      telefone,
+    } = body;
 
     if (nome !== undefined && !textoValido(nome)) {
       return enviarErro(
@@ -326,6 +445,43 @@ export async function atualizarMotorista(
       );
     }
 
+    if (
+      cpf !== undefined &&
+      cpf !== null &&
+      (
+        typeof cpf !== 'string' ||
+        !cpfValido(cpf)
+      )
+    ) {
+      return enviarErro(
+        res,
+        400,
+        'CPF_INVALIDO',
+        'Informe um CPF válido com 11 dígitos.',
+      );
+    }
+
+    if (
+      telefone !== undefined &&
+      telefone !== null &&
+      !telefoneValido(telefone)
+    ) {
+      return enviarErro(
+        res,
+        400,
+        'TELEFONE_INVALIDO',
+        'Informe um telefone válido com DDD.',
+      );
+    }
+
+    const cpfNormalizado = typeof cpf === 'string'
+      ? cpf.replace(/\D/g, '')
+      : null;
+
+    const telefoneNormalizado = typeof telefone === 'string'
+      ? telefone.replace(/\D/g, '')
+      : null;
+
     if (cnh !== undefined) {
       const [existente] = await sql`
         SELECT id
@@ -343,6 +499,23 @@ export async function atualizarMotorista(
       }
     }
 
+    if (cpfNormalizado !== null) {
+      const [cpfExistente] = await sql`
+        SELECT id
+        FROM motorista
+        WHERE cpf = ${cpfNormalizado} AND id <> ${id}
+      `;
+
+      if (cpfExistente) {
+        return enviarErro(
+          res,
+          409,
+          'CPF_DUPLICADO',
+          'Este CPF já pertence a outro motorista.',
+        );
+      }
+    }
+
     const [atualizado] = await sql`
       UPDATE motorista
       SET
@@ -350,7 +523,15 @@ export async function atualizarMotorista(
         cnh = COALESCE(${cnh ?? null}, cnh),
         categoria_cnh = COALESCE(${categoria_cnh ?? null}, categoria_cnh),
         validade_cnh = COALESCE(${validade_cnh ?? null}, validade_cnh),
-        status = COALESCE(${status ?? null}, status)
+        status = COALESCE(${status ?? null}, status),
+        cpf = CASE
+          WHEN ${cpf !== undefined} THEN ${cpfNormalizado}
+          ELSE cpf
+        END,
+        telefone = CASE
+          WHEN ${telefone !== undefined} THEN ${telefoneNormalizado}
+          ELSE telefone
+        END
       WHERE id = ${id}
       RETURNING *
     `;

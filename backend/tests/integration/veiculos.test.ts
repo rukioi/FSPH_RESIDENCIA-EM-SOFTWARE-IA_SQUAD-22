@@ -24,15 +24,22 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 
-test('BE-S6-02 rejeita veículo sem placa sem consultar o banco', async () => {
-  const corpo = JSON.stringify({
+const bancoMock = sql as unknown as ReturnType<typeof vi.fn>;
+
+function dadosVeiculo() {
+  return {
+    placa: 'ABC1D23',
     modelo: 'Gol',
     marca: 'Volkswagen',
     ano: 2020,
-  });
+  };
+}
 
-  const req = Readable.from([corpo]) as IncomingMessage;
+function criarRequisicao(dados: Record<string, unknown>): IncomingMessage {
+  return Readable.from([JSON.stringify(dados)]) as IncomingMessage;
+}
 
+function criarResposta() {
   const writeHead = vi.fn();
   const end = vi.fn();
 
@@ -40,6 +47,18 @@ test('BE-S6-02 rejeita veículo sem placa sem consultar o banco', async () => {
     writeHead,
     end,
   } as unknown as ServerResponse;
+
+  return { res, writeHead, end };
+}
+
+test('BE-S6-02 rejeita veículo sem placa sem consultar o banco', async () => {
+  const req = criarRequisicao({
+    modelo: 'Gol',
+    marca: 'Volkswagen',
+    ano: 2020,
+  });
+
+  const { res, writeHead, end } = criarResposta();
 
   await criarVeiculo(req, res);
 
@@ -56,26 +75,10 @@ test('BE-S6-02 rejeita veículo sem placa sem consultar o banco', async () => {
 });
 
 test('BE-S6-02 rejeita placa duplicada', async () => {
-  const bancoMock = sql as unknown as ReturnType<typeof vi.fn>;
-
   bancoMock.mockResolvedValueOnce([{ id: 10 }]);
 
-  const corpo = JSON.stringify({
-    placa: 'ABC1D23',
-    modelo: 'Gol',
-    marca: 'Volkswagen',
-    ano: 2020,
-  });
-
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const req = criarRequisicao(dadosVeiculo());
+  const { res, writeHead, end } = criarResposta();
 
   await criarVeiculo(req, res);
 
@@ -92,38 +95,19 @@ test('BE-S6-02 rejeita placa duplicada', async () => {
 });
 
 test('BE-S6-02 cadastra veículo válido com status 201', async () => {
-  const bancoMock = sql as unknown as ReturnType<typeof vi.fn>;
-
   bancoMock
     .mockResolvedValueOnce([])
     .mockResolvedValueOnce([
       {
         id: 20,
-        placa: 'ABC1D23',
-        modelo: 'Gol',
-        marca: 'Volkswagen',
-        ano: 2020,
+        ...dadosVeiculo(),
         tipo: 'PASSEIO',
         status: 'DISPONIVEL',
       },
     ]);
 
-  const corpo = JSON.stringify({
-    placa: 'ABC1D23',
-    modelo: 'Gol',
-    marca: 'Volkswagen',
-    ano: 2020,
-  });
-
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const req = criarRequisicao(dadosVeiculo());
+  const { res, writeHead, end } = criarResposta();
 
   await criarVeiculo(req, res);
 
@@ -140,23 +124,12 @@ test('BE-S6-02 cadastra veículo válido com status 201', async () => {
 });
 
 test('BE-S6-02 rejeita tipo de veículo inválido sem consultar o banco', async () => {
-  const corpo = JSON.stringify({
-    placa: 'ABC1D23',
-    modelo: 'Gol',
-    marca: 'Volkswagen',
-    ano: 2020,
+  const req = criarRequisicao({
+    ...dadosVeiculo(),
     tipo: 'CAMINHAO',
   });
 
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const { res, writeHead, end } = criarResposta();
 
   await criarVeiculo(req, res);
 
@@ -173,23 +146,12 @@ test('BE-S6-02 rejeita tipo de veículo inválido sem consultar o banco', async 
 });
 
 test('BE-S6-02 rejeita status de veículo inválido sem consultar o banco', async () => {
-  const corpo = JSON.stringify({
-    placa: 'ABC1D23',
-    modelo: 'Gol',
-    marca: 'Volkswagen',
-    ano: 2020,
+  const req = criarRequisicao({
+    ...dadosVeiculo(),
     status: 'FOLGA',
   });
 
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const { res, writeHead, end } = criarResposta();
 
   await criarVeiculo(req, res);
 
@@ -206,19 +168,11 @@ test('BE-S6-02 rejeita status de veículo inválido sem consultar o banco', asyn
 });
 
 test('BE-S6-02 rejeita status inválido ao atualizar veículo', async () => {
-  const corpo = JSON.stringify({
+  const req = criarRequisicao({
     status: 'FOLGA',
   });
 
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const { res, writeHead, end } = criarResposta();
 
   await atualizarVeiculo(req, res, '10');
 
@@ -235,7 +189,6 @@ test('BE-S6-02 rejeita status inválido ao atualizar veículo', async () => {
 });
 
 test('BE-S6-02 POST /api/veiculos exige autenticação', async () => {
-  const bancoMock = sql as unknown as ReturnType<typeof vi.fn>;
   const server = createApp();
 
   try {
@@ -252,12 +205,7 @@ test('BE-S6-02 POST /api/veiculos exige autenticação', async () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          placa: 'ABC1D23',
-          modelo: 'Gol',
-          marca: 'Volkswagen',
-          ano: 2020,
-        }),
+        body: JSON.stringify(dadosVeiculo()),
       },
     );
 
@@ -289,7 +237,6 @@ test('BE-S6-02 impede Atendente SVO de cadastrar veículos', async () => {
 
   process.env.JWT_SECRET = segredoTeste;
 
-  const bancoMock = sql as unknown as ReturnType<typeof vi.fn>;
   const server = createApp();
 
   try {
@@ -314,12 +261,7 @@ test('BE-S6-02 impede Atendente SVO de cadastrar veículos', async () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          placa: 'ABC1D23',
-          modelo: 'Gol',
-          marca: 'Volkswagen',
-          ano: 2020,
-        }),
+        body: JSON.stringify(dadosVeiculo()),
       },
     );
 
@@ -349,4 +291,148 @@ test('BE-S6-02 impede Atendente SVO de cadastrar veículos', async () => {
       process.env.JWT_SECRET = segredoAnterior;
     }
   }
+});
+
+// Novos testes: capacidade de passageiros
+
+test('BE-S6-02 rejeita capacidade de passageiros zero', async () => {
+  const req = criarRequisicao({
+    ...dadosVeiculo(),
+    capacidade_passageiros: 0,
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await criarVeiculo(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    400,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('DADOS_INVALIDOS'),
+  );
+
+  expect(sql).not.toHaveBeenCalled();
+});
+
+test('BE-S6-02 rejeita capacidade de passageiros decimal', async () => {
+  const req = criarRequisicao({
+    ...dadosVeiculo(),
+    capacidade_passageiros: 2.5,
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await criarVeiculo(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    400,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('DADOS_INVALIDOS'),
+  );
+
+  expect(sql).not.toHaveBeenCalled();
+});
+
+test('BE-S6-02 cadastra veículo com capacidade de passageiros informada', async () => {
+  bancoMock
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([
+      {
+        id: 21,
+        ...dadosVeiculo(),
+        capacidade_passageiros: 7,
+      },
+    ]);
+
+  const req = criarRequisicao({
+    ...dadosVeiculo(),
+    capacidade_passageiros: 7,
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await criarVeiculo(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    201,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('"capacidade_passageiros":7'),
+  );
+
+  expect(sql).toHaveBeenCalledTimes(2);
+
+  const parametrosInsert = bancoMock.mock.calls[1].slice(1);
+  expect(parametrosInsert).toContain(7);
+});
+
+test('BE-S6-02 usa capacidade padrão de 5 ao cadastrar veículo', async () => {
+  bancoMock
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([
+      {
+        id: 22,
+        ...dadosVeiculo(),
+        capacidade_passageiros: 5,
+      },
+    ]);
+
+  const req = criarRequisicao(dadosVeiculo());
+  const { res, writeHead, end } = criarResposta();
+
+  await criarVeiculo(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    201,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('"capacidade_passageiros":5'),
+  );
+
+  expect(sql).toHaveBeenCalledTimes(2);
+
+  const parametrosInsert = bancoMock.mock.calls[1].slice(1);
+  expect(parametrosInsert).toContain(5);
+});
+
+test('BE-S6-02 atualiza capacidade de passageiros do veículo', async () => {
+  bancoMock.mockResolvedValueOnce([
+    {
+      id: 10,
+      ...dadosVeiculo(),
+      capacidade_passageiros: 8,
+    },
+  ]);
+
+  const req = criarRequisicao({
+    capacidade_passageiros: 8,
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await atualizarVeiculo(req, res, '10');
+
+  expect(writeHead).toHaveBeenCalledWith(
+    200,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('"capacidade_passageiros":8'),
+  );
+
+  expect(sql).toHaveBeenCalledTimes(1);
+
+  const parametrosUpdate = bancoMock.mock.calls[0].slice(1);
+  expect(parametrosUpdate).toContain(8);
 });

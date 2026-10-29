@@ -1,3 +1,4 @@
+﻿
 import { beforeEach, expect, test, vi } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
@@ -23,16 +24,11 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 
-test('BE-S6-02 rejeita categoria de CNH inválida sem consultar o banco', async () => {
-  const corpo = JSON.stringify({
-    nome: 'Motorista Teste',
-    cnh: '12345678900',
-    categoria_cnh: 'Z',
-    validade_cnh: '2028-12-31',
-  });
+function criarRequisicao(body: Record<string, unknown>): IncomingMessage {
+  return Readable.from([JSON.stringify(body)]) as IncomingMessage;
+}
 
-  const req = Readable.from([corpo]) as IncomingMessage;
-
+function criarResposta() {
   const writeHead = vi.fn();
   const end = vi.fn();
 
@@ -40,6 +36,27 @@ test('BE-S6-02 rejeita categoria de CNH inválida sem consultar o banco', async 
     writeHead,
     end,
   } as unknown as ServerResponse;
+
+  return { res, writeHead, end };
+}
+
+function dadosMotorista() {
+  return {
+    nome: 'Motorista Teste',
+    cnh: '12345678900',
+    categoria_cnh: 'D',
+    validade_cnh: '2028-12-31',
+    status: 'DISPONIVEL',
+  };
+}
+
+test('BE-S6-02 rejeita categoria de CNH inválida sem consultar o banco', async () => {
+  const req = criarRequisicao({
+    ...dadosMotorista(),
+    categoria_cnh: 'Z',
+  });
+
+  const { res, writeHead, end } = criarResposta();
 
   await criarMotorista(req, res);
 
@@ -58,23 +75,12 @@ test('BE-S6-02 rejeita categoria de CNH inválida sem consultar o banco', async 
 });
 
 test('BE-S6-02 rejeita status inválido sem consultar o banco', async () => {
-  const corpo = JSON.stringify({
-    nome: 'Motorista Teste',
-    cnh: '12345678900',
-    categoria_cnh: 'D',
-    validade_cnh: '2028-12-31',
+  const req = criarRequisicao({
+    ...dadosMotorista(),
     status: 'INATIVO',
   });
 
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const { res, writeHead, end } = criarResposta();
 
   await criarMotorista(req, res);
 
@@ -92,26 +98,10 @@ test('BE-S6-02 rejeita status inválido sem consultar o banco', async () => {
 
 test('BE-S6-02 rejeita CNH duplicada', async () => {
   const bancoSimulado = sql as unknown as ReturnType<typeof vi.fn>;
+  bancoSimulado.mockResolvedValueOnce([{ id: 10 }] as never);
 
-  bancoSimulado.mockResolvedValueOnce([{ id: 10 }]);
-
-  const corpo = JSON.stringify({
-    nome: 'Motorista Teste',
-    cnh: '12345678900',
-    categoria_cnh: 'D',
-    validade_cnh: '2028-12-31',
-    status: 'DISPONIVEL',
-  });
-
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const req = criarRequisicao(dadosMotorista());
+  const { res, writeHead, end } = criarResposta();
 
   await criarMotorista(req, res);
 
@@ -131,35 +121,16 @@ test('BE-S6-02 cadastra motorista válido com status 201', async () => {
   const bancoSimulado = sql as unknown as ReturnType<typeof vi.fn>;
 
   bancoSimulado
-    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([] as never)
     .mockResolvedValueOnce([
       {
         id: 15,
-        nome: 'Motorista Teste',
-        cnh: '98765432100',
-        categoria_cnh: 'D',
-        validade_cnh: '2028-12-31',
-        status: 'DISPONIVEL',
+        ...dadosMotorista(),
       },
-    ]);
+    ] as never);
 
-  const corpo = JSON.stringify({
-    nome: 'Motorista Teste',
-    cnh: '98765432100',
-    categoria_cnh: 'D',
-    validade_cnh: '2028-12-31',
-    status: 'DISPONIVEL',
-  });
-
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const req = criarRequisicao(dadosMotorista());
+  const { res, writeHead, end } = criarResposta();
 
   await criarMotorista(req, res);
 
@@ -176,19 +147,11 @@ test('BE-S6-02 cadastra motorista válido com status 201', async () => {
 });
 
 test('BE-S6-02 rejeita categoria inválida ao atualizar motorista', async () => {
-  const corpo = JSON.stringify({
+  const req = criarRequisicao({
     categoria_cnh: 'Z',
   });
 
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const { res, writeHead, end } = criarResposta();
 
   await atualizarMotorista(req, res, '15');
 
@@ -203,20 +166,13 @@ test('BE-S6-02 rejeita categoria inválida ao atualizar motorista', async () => 
 
   expect(sql).not.toHaveBeenCalled();
 });
+
 test('BE-S6-02 rejeita status inválido ao atualizar motorista', async () => {
-  const corpo = JSON.stringify({
+  const req = criarRequisicao({
     status: 'INATIVO',
   });
 
-  const req = Readable.from([corpo]) as IncomingMessage;
-
-  const writeHead = vi.fn();
-  const end = vi.fn();
-
-  const res = {
-    writeHead,
-    end,
-  } as unknown as ServerResponse;
+  const { res, writeHead, end } = criarResposta();
 
   await atualizarMotorista(req, res, '15');
 
@@ -250,13 +206,7 @@ test('BE-S6-02 POST /api/motoristas exige autenticação', async () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          nome: 'Motorista Teste',
-          cnh: '12345678900',
-          categoria_cnh: 'D',
-          validade_cnh: '2028-12-31',
-          status: 'DISPONIVEL',
-        }),
+        body: JSON.stringify(dadosMotorista()),
       },
     );
 
@@ -312,13 +262,7 @@ test('BE-S6-02 impede Atendente SVO de cadastrar motoristas', async () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          nome: 'Motorista Teste',
-          cnh: '12345678900',
-          categoria_cnh: 'D',
-          validade_cnh: '2028-12-31',
-          status: 'DISPONIVEL',
-        }),
+        body: JSON.stringify(dadosMotorista()),
       },
     );
 
@@ -349,3 +293,186 @@ test('BE-S6-02 impede Atendente SVO de cadastrar motoristas', async () => {
     }
   }
 });
+
+test('BE-S6-02 rejeita CPF inválido sem consultar o banco', async () => {
+  const req = criarRequisicao({
+    ...dadosMotorista(),
+    cpf: '111.111.111-11',
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await criarMotorista(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    400,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('CPF_INVALIDO'),
+  );
+
+  expect(sql).not.toHaveBeenCalled();
+});
+
+test('BE-S6-02 rejeita telefone inválido sem consultar o banco', async () => {
+  const req = criarRequisicao({
+    ...dadosMotorista(),
+    telefone: '123',
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await criarMotorista(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    400,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('TELEFONE_INVALIDO'),
+  );
+
+  expect(sql).not.toHaveBeenCalled();
+});
+
+test('BE-S6-02 rejeita CPF duplicado ao cadastrar', async () => {
+  const bancoSimulado = sql as unknown as ReturnType<typeof vi.fn>;
+
+  bancoSimulado
+    .mockResolvedValueOnce([] as never)
+    .mockResolvedValueOnce([{ id: 20 }] as never);
+
+  const req = criarRequisicao({
+    ...dadosMotorista(),
+    cpf: '529.982.247-25',
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await criarMotorista(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    409,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('CPF_DUPLICADO'),
+  );
+
+  expect(sql).toHaveBeenCalledTimes(2);
+});
+
+test('BE-S6-02 cadastra motorista com CPF e telefone', async () => {
+  const bancoSimulado = sql as unknown as ReturnType<typeof vi.fn>;
+
+  bancoSimulado
+    .mockResolvedValueOnce([] as never)
+    .mockResolvedValueOnce([] as never)
+    .mockResolvedValueOnce([
+      {
+        id: 21,
+        ...dadosMotorista(),
+        cpf: '52998224725',
+        telefone: '79999998888',
+      },
+    ] as never);
+
+  const req = criarRequisicao({
+    ...dadosMotorista(),
+    cpf: '529.982.247-25',
+    telefone: '(79) 99999-8888',
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await criarMotorista(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    201,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('"cpf":"52998224725"'),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('"telefone":"79999998888"'),
+  );
+
+  expect(sql).toHaveBeenCalledTimes(3);
+});
+
+test('BE-S6-02 atualiza CPF e telefone do motorista', async () => {
+  const bancoSimulado = sql as unknown as ReturnType<typeof vi.fn>;
+
+  bancoSimulado
+    .mockResolvedValueOnce([] as never)
+    .mockResolvedValueOnce([
+      {
+        id: 15,
+        ...dadosMotorista(),
+        cpf: '52998224725',
+        telefone: '79999998888',
+      },
+    ] as never);
+
+  const req = criarRequisicao({
+    cpf: '529.982.247-25',
+    telefone: '(79) 99999-8888',
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await atualizarMotorista(req, res, '15');
+
+  expect(writeHead).toHaveBeenCalledWith(
+    200,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('"cpf":"52998224725"'),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('"telefone":"79999998888"'),
+  );
+
+  expect(sql).toHaveBeenCalledTimes(2);
+});
+
+test('BE-S6-02 trata CPF duplicado informado pelo banco', async () => {
+  const bancoSimulado = sql as unknown as ReturnType<typeof vi.fn>;
+
+  bancoSimulado
+    .mockResolvedValueOnce([] as never)
+    .mockResolvedValueOnce([] as never)
+    .mockRejectedValueOnce({
+      code: '23505',
+      constraint: 'motorista_cpf_key',
+    });
+
+  const req = criarRequisicao({
+    ...dadosMotorista(),
+    cpf: '529.982.247-25',
+  });
+
+  const { res, writeHead, end } = criarResposta();
+
+  await criarMotorista(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(
+    409,
+    expect.any(Object),
+  );
+
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('CPF_DUPLICADO'),
+  );
+});
+
