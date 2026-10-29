@@ -108,15 +108,6 @@
   }
 }
 
-.login__aviso {
-  margin-top: 20px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #fff4d6;
-  color: #8a6100;
-  font-size: 13px;
-}
-
 @media (max-width: 480px) {
   .login {
     padding: 28px 20px;
