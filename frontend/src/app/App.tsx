@@ -14,6 +14,8 @@ import { Configuracoes } from '../pages/administrador/Configuracoes'
 import { Auditoria } from '../pages/administrador/Auditoria'
 import { Dashboard } from '../pages/gerente/DashboardGestor'
 
+import { Svo } from '../features/svo/Svo';
+
 const paginas: Record<string, ComponentType> = {
   [ROTAS.dashboard]: DashboardAdmin,
   [ROTAS.configuracoes]: Configuracoes,
@@ -33,6 +35,15 @@ export function App() {
     return (
       <GestorLayout>
         <Dashboard />
+      </GestorLayout>
+    )
+  }
+
+  // Tela do SVO (Adicionada pela sua branch)
+  if (caminho === '/svo') {
+    return (
+      <GestorLayout>
+        <Svo />
       </GestorLayout>
     )
   }
