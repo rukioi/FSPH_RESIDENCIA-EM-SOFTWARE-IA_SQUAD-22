@@ -1,6 +1,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
+import { receberUpload } from './documentos.upload.js';
 
 function enviarJson(
   res: ServerResponse,
@@ -29,7 +30,7 @@ function enviarErro(
   }));
 }
 
-/** Consulta pendências de vencimento das CNHs dos motoristas. */
+/** Consulta pendências de vencimento das CNHs e documentos dos veículos. */
 export async function buscarPendenciasDocumentos(
   res: ServerResponse,
 ): Promise<void> {
@@ -58,7 +59,6 @@ export async function buscarPendenciasDocumentos(
         : 'PROXIMA_DO_VENCIMENTO',
     }));
 
-    
     const alertasVeiculos = await sql`
       SELECT
         id,
@@ -84,7 +84,6 @@ export async function buscarPendenciasDocumentos(
     }));
 
     enviarJson(res, 200, [...pendencias, ...pendenciasVeiculos]);
-
   } catch (err) {
     console.error('Erro ao calcular pendências:', err);
 
@@ -98,37 +97,87 @@ export async function buscarPendenciasDocumentos(
 }
 
 /**
- * Cadastro de documentos de veículos.
- * Implementação temporária até adicionarmos as validações e o INSERT.
+ * Cadastra documentos de veículos.
+ * Aceita JSON e multipart/form-data com PDF, JPG ou PNG.
  */
-
-/** Valida os dados recebidos para cadastrar um documento de veículo. */
 export async function criarDocumento(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
   let body: unknown;
 
-  try {
-    const partes: Buffer[] = [];
+  let arquivoDocumento: {
+    nome: string;
+    tipo: string;
+    conteudo: Buffer;
+  } | null = null;
 
-    for await (const parte of req) {
-      partes.push(Buffer.isBuffer(parte) ? parte : Buffer.from(parte));
+  const tipoConteudo = req.headers?.['content-type'] ?? '';
+  const ehMultipart = tipoConteudo.startsWith('multipart/form-data');
+
+  if (ehMultipart) {
+    try {
+      const upload = await receberUpload(req);
+
+      arquivoDocumento = upload.arquivo;
+
+      body = {
+        veiculo_id: Number(upload.campos.veiculo_id),
+        tipo_documento: upload.campos.tipo_documento,
+        data_vencimento: upload.campos.data_vencimento,
+      };
+    } catch {
+      enviarErro(
+        res,
+        400,
+        'UPLOAD_INVALIDO',
+        'Envie um arquivo PDF, JPG ou PNG de até 5 MB.',
+      );
+      return;
     }
+  } else {
+    try {
+      const partes: Buffer[] = [];
 
-    body = JSON.parse(Buffer.concat(partes).toString('utf8'));
-  } catch {
-    enviarErro(res, 400, 'JSON_INVALIDO', 'Envie um JSON válido.');
-    return;
+      for await (const parte of req) {
+        partes.push(
+          Buffer.isBuffer(parte) ? parte : Buffer.from(parte),
+        );
+      }
+
+      body = JSON.parse(Buffer.concat(partes).toString('utf8'));
+    } catch {
+      enviarErro(
+        res,
+        400,
+        'JSON_INVALIDO',
+        'Envie um JSON válido.',
+      );
+      return;
+    }
   }
 
-  if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-    enviarErro(res, 400, 'DADOS_INVALIDOS', 'Envie um objeto válido.');
+  if (
+    body === null ||
+    typeof body !== 'object' ||
+    Array.isArray(body)
+  ) {
+    enviarErro(
+      res,
+      400,
+      'DADOS_INVALIDOS',
+      'Envie um objeto válido.',
+    );
     return;
   }
 
   const dados = body as Record<string, unknown>;
-  const { veiculo_id, tipo_documento, data_vencimento } = dados;
+
+  const {
+    veiculo_id,
+    tipo_documento,
+    data_vencimento,
+  } = dados;
 
   if (
     !Number.isSafeInteger(veiculo_id) ||
@@ -147,21 +196,79 @@ export async function criarDocumento(
     return;
   }
 
-    try {
+  // Confere o conteúdo real, não apenas o tipo informado pelo navegador.
+  if (arquivoDocumento) {
+    const conteudo = arquivoDocumento.conteudo;
+    const tipo = arquivoDocumento.tipo;
+
+    const pdf =
+      conteudo.length >= 5 &&
+      conteudo.subarray(0, 5).toString('ascii') === '%PDF-';
+
+    const png =
+      conteudo.length >= 8 &&
+      conteudo.subarray(0, 8).equals(
+        Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+      );
+
+    const jpg =
+      conteudo.length >= 3 &&
+      conteudo[0] === 0xff &&
+      conteudo[1] === 0xd8 &&
+      conteudo[2] === 0xff;
+
+    const valido =
+      (tipo === 'application/pdf' && pdf) ||
+      (tipo === 'image/png' && png) ||
+      (tipo === 'image/jpeg' && jpg);
+
+    if (!valido) {
+      enviarErro(
+        res,
+        400,
+        'ARQUIVO_INVALIDO',
+        'O conteúdo do arquivo não corresponde a um PDF, JPG ou PNG válido.',
+      );
+      return;
+    }
+  }
+
+  const arquivoNome = arquivoDocumento?.nome ?? null;
+  const arquivoTipo = arquivoDocumento?.tipo ?? null;
+
+  // O PostgreSQL aceita BYTEA no formato hexadecimal \x...
+  const arquivoDados = arquivoDocumento
+    ? `\\x${arquivoDocumento.conteudo.toString('hex')}`
+    : null;
+
+  try {
     const [documento] = await sql`
       INSERT INTO documento_veiculo (
         veiculo_id,
         tipo_documento,
         data_vencimento,
-        status_regular
+        status_regular,
+        arquivo_nome,
+        arquivo_tipo,
+        arquivo_dados
       )
       VALUES (
         ${Number(veiculo_id)},
         ${tipo_documento as string},
         ${data_vencimento as string},
-        ${true}
+        ${true},
+        ${arquivoNome},
+        ${arquivoTipo},
+        ${arquivoDados}
       )
-      RETURNING *
+      RETURNING
+        id,
+        veiculo_id,
+        tipo_documento,
+        data_vencimento,
+        status_regular,
+        arquivo_nome,
+        arquivo_tipo
     `;
 
     enviarJson(res, 201, documento);
@@ -176,6 +283,7 @@ export async function criarDocumento(
     );
   }
 }
+
 /** Lista todos os documentos de veículos e as CNHs dos motoristas. */
 export async function listarDocumentos(
   res: ServerResponse,
@@ -206,9 +314,10 @@ export async function listarDocumentos(
     const veiculos = documentosVeiculos.map((doc) => {
       const diasRestantes = doc.data_vencimento
         ? Math.ceil(
-            (new Date(String(doc.data_vencimento)).getTime() -
-              new Date().setHours(0, 0, 0, 0)) /
-              86400000,
+            (
+              new Date(String(doc.data_vencimento)).getTime() -
+              new Date().setHours(0, 0, 0, 0)
+            ) / 86400000,
           )
         : null;
 
@@ -231,9 +340,10 @@ export async function listarDocumentos(
     const motoristas = documentosMotoristas.map((motorista) => {
       const diasRestantes = motorista.validade_cnh
         ? Math.ceil(
-            (new Date(String(motorista.validade_cnh)).getTime() -
-              new Date().setHours(0, 0, 0, 0)) /
-              86400000,
+            (
+              new Date(String(motorista.validade_cnh)).getTime() -
+              new Date().setHours(0, 0, 0, 0)
+            ) / 86400000,
           )
         : null;
 

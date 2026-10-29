@@ -5,6 +5,7 @@ import { Readable } from 'node:stream';
 import { SignJWT } from 'jose';
 import { afterEach, expect, test, vi } from 'vitest';
 
+
 vi.mock('../../src/config/db.js', () => ({
   sql: vi.fn(),
 }));
@@ -317,4 +318,53 @@ test('BE-S6-02 lista todos os documentos, incluindo os regulares', async () => {
 
   expect(resposta.data).toHaveLength(2);
   expect(consultaSimulada).toHaveBeenCalledTimes(2);
+});
+test('BE-S6-02 recebe PDF por multipart e prepara cadastro no banco', async () => {
+  const pdf = Buffer.from('%PDF-1.4\narquivo de teste');
+
+  const formulario = new FormData();
+  formulario.append('veiculo_id', '10');
+  formulario.append('tipo_documento', 'CRLV');
+  formulario.append('data_vencimento', '2028-12-31');
+  formulario.append(
+    'arquivo',
+    new Blob([pdf], { type: 'application/pdf' }),
+    'documento.pdf',
+  );
+
+  const requisicaoHttp = new Request('http://localhost/api/documentos', {
+    method: 'POST',
+    body: formulario,
+  });
+
+  const conteudo = Buffer.from(await requisicaoHttp.arrayBuffer());
+
+  const req = Readable.from([conteudo]) as IncomingMessage;
+  req.headers = {
+    'content-type': requisicaoHttp.headers.get('content-type') ?? '',
+  };
+
+  consultaSimulada.mockResolvedValueOnce([
+    {
+      id: 25,
+      veiculo_id: 10,
+      tipo_documento: 'CRLV',
+      arquivo_nome: 'documento.pdf',
+    },
+  ]);
+
+  const { res, writeHead, end } = respostaSimulada();
+
+  await criarDocumento(req, res);
+
+  expect(writeHead).toHaveBeenCalledWith(201, expect.any(Object));
+  expect(end).toHaveBeenCalledWith(
+    expect.stringContaining('documento.pdf'),
+  );
+  expect(consultaSimulada).toHaveBeenCalledTimes(1);
+  const parametros = consultaSimulada.mock.calls[0]?.slice(1) ?? [];
+
+expect(parametros).toContain('documento.pdf');
+expect(parametros).toContain('application/pdf');
+expect(parametros).toContain(`\\x${pdf.toString('hex')}`);
 });
