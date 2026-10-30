@@ -154,3 +154,12 @@ linha operacional ou teste da Data API compartilhada. As decisões D1–D4 conti
 pendentes. Os dois pools existentes permanecem para T2; nesta entrega receberam
 somente o isolamento necessário aos testes. A infraestrutura de produção não foi
 validada por estes testes locais.
+
+## Limite de acesso direto — #29
+
+O snapshot continua reproduzindo grants/RLS auditados; não foi criada migration
+ACL porque o papel runtime do backend e a exposição Data API remotos não puderam
+ser confirmados sem credenciais. A estratégia mínima é ensaiada exclusivamente
+no harness, com papel runtime simulado sem privilégios de dono, revogações e
+provas reais de acesso, tudo em transação com rollback. Nenhum gerado foi editado.
+Pré-condições e limites de rollout em [segurança](../seguranca.md#identidade-e-autorização-atuais--29).

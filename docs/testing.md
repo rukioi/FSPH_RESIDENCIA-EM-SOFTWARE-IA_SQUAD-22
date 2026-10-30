@@ -100,3 +100,99 @@ A única ampliação documental do rol inicial é `docs/reorganization/deferred.
 explicitamente exigido pela coordenação para registrar divergências sem resolvê-las.
 Nenhuma ferramenta global, configuração do usuário ou dependência foi alterada.
 Próximo ticket: #29; somente #33 abrirá o PR agregado.
+
+## Evidências da #29 — 30/10/2026
+
+Dependências conferidas por commits e implementação na branch agregadora:
+#27 `ea68b16`, #28 `acd0f6c`. origin/main é ancestral da branch e fetch foi repetido.
+O checkout agregador começou limpo; alterações preexistentes no checkout main
+foram preservadas. Não houve PR individual, merge, deploy ou fechamento de issue.
+
+### Arquivos e decisões
+
+- security/jwt.ts centraliza enum reconhecido/aliases e exige HS256, sub, exp e
+  segredo de 32 bytes UTF-8. session.ts consulta usuarios.repository.ts em toda
+  requisição; authorization.ts aplica as listas existentes. Routes de auth,
+  usuários, auditoria, dashboard, veículos, motoristas, documentos, abastecimentos
+  e SVO reutilizam esse caminho. Sem cache ou infraestrutura nova de sessões.
+- Os três controllers Express desconectados e authMiddleware não tinham imports
+  no código fonte/testes; removidos após busca. node:http permanece ativo.
+- usuarios.service.ts valida allowlist/códigos persistidos; routes preservam os
+  envelopes existentes. Status explícito, bloqueio de linha e evento atômico;
+  repetição não alterna nem duplica auditoria. Cadastro/edição seguem para #31.
+- usuarios.service.ts do frontend valida dados desconhecidos e produz somente
+  modelo de apresentação; o DTO HTTP duplicado anterior foi removido. Cadastro
+  e edição traduzem Solicitante para SOLICITANTE_INTERNO. Tabela/formulário/modal
+  aguardam resposta, mostram carregamento/erro e não antecipam estado confirmado.
+- Segurança, permissões, decisões e contratos foram atualizados. Além do rol de
+  docs do ticket, README corrige a orientação insegura de segredo com 16 bytes;
+  contratos dos outros módulos registram a nova semântica comum de identidade;
+  este guia conserva provas para o PR final. deferred.md é exigido pela #22.
+- Não houve dependência, migration ou mudança de esquema. Schema/DER/snapshot
+  continuam gerados e idênticos; dist recompilado foi excluído do commit e os
+  arquivos rastreados de build foram restaurados ao estado inicial.
+
+### Provas e comandos
+
+| Comando | Resultado |
+| --- | --- |
+| npm run db:test:prepare | passou no alvo isolado previamente identificado pelo harness |
+| npm run test:db | 16 testes passaram |
+| npm run db:docs:check | passou, sem drift em metadados/schema/DER |
+| npm run lint | passou |
+| npm run typecheck | passou, incluindo testes backend |
+| npm test | 134 testes passaram em 22 arquivos |
+| npm run build | passou, frontend e backend |
+| npm run test:e2e | 10 testes passaram, incluindo os fluxos autenticados de usuários |
+
+Regressões foram executadas antes da correção: cinco falhas reproduziram segredo
+insuficiente aceito, autorização pelo claim antigo, campos internos aceitos e toggle
+sem corpo. Testes antigos de domínio receberam identidades fictícias compatíveis
+com a consulta atual; as expectativas de autorização não foram afrouxadas.
+Session-fixture isola identidade nesses testes com SQL de recurso mockado; a prova
+real é separada em usuarios-sessao.test.ts. Nenhum teste foi desativado.
+
+PostgreSQL real: projeto fsph-t1-isolated-2026, banco fsph_t1_baseline, identidade
+Docker/marcador conferidos pelo harness #27. usuarios-sessao.test.ts prova cadastro
+com enum real, edição, estado ativo/perfil efetivo, 401/403, rejeição de campos
+internos, repetição e duas requisições concorrentes com um único evento por mudança.
+Todas as famílias protegidas foram exercitadas sem token e com usuário desativado.
+Fixtures próprias são apagadas somente nesse alvo confirmado.
+
+security/session.test.ts prova perfil desconhecido/ativo null/false e falha de
+consulta sem fallback/autorização nem exposição de sentinela privada.
+security/direct-data-access.test.ts executa ACLs somente em transação isolada com
+rollback: anon/authenticated são realmente impedidos de consultar usuário/dado
+médico, escrever e usar sequência; runtime fictício sem superuser/BYPASSRLS/dono
+consegue leitura/CRUD e não TRUNCATE. Default privileges são revogados no ensaio;
+rollback restaura ACLs e remove o papel artificial, sem migration persistida.
+
+E2E prova cadastro/edição dos perfis visuais, repetição do estado, falha sem
+atualização otimista, carregamento/botão desabilitado até a confirmação, mudança de
+perfil sem outro JWT e desativação no próximo request. A execução inicial do cenário
+combinado excedeu 30s: separado em dois testes e conexão movida ao setup, sem mudar
+limites dos testes. Uma repetição detectou frontend pronto antes do backend; o
+setup agora espera explicitamente o 401 de sessão antes do login. A execução final
+passou com os dez cenários. Não há retry de operação de negócio para ocultar falha.
+
+Capturas de tabela e modal em 390/768/1280 px foram conferidas visualmente e ficam
+em `test-results/usuarios-sessao-*/usuarios-<largura>.png` e
+`novo-usuario-<largura>.png`, fora do Git, disponíveis localmente para anexar no PR
+final da #33. Não há rolagem horizontal na página; a tabela mantém sua rolagem
+interna preexistente no celular. Nenhuma paleta, layout ou CSS foi redesenhado.
+
+### Compatibilidade e limites
+
+O contrato PATCH exige agora {ativo:boolean}; o cliente foi atualizado junto.
+Segredos de 16–31 bytes deixam de ser aceitos; a configuração externa deve cumprir
+32 bytes antes do rollout e troca de segredo requer novo login. Aliases históricos
+de perfil no JWT continuam aceitos, com autorização pelo perfil efetivo do banco.
+As listas de acesso não foram expandidas pela equivalência ADM/Gestor dos requisitos.
+
+Metadados auditados confirmam grants amplos/RLS desligada, mas não o papel runtime
+remoto, memberships ou exposição efetiva da Data API. A prova local usa papel
+simulado mínimo e não valida o ambiente remoto. Essa é a pendência de rollout
+permitida pelo passo 8 da #29; nenhuma ACL remota ou policy inventada foi executada.
+Pré-condições em seguranca.md. Não foram acessados segredos ou dados operacionais.
+
+Próximo ticket: #31. Só #33 abre/reutiliza o PR agregado para main.

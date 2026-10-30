@@ -5,7 +5,8 @@ import { enviarJson } from '../../shared/http/json.js';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 import bcrypt from 'bcrypt';
-import { autenticarRequisicao, criarJwt } from '../../security/jwt.js';
+import { criarJwt } from '../../security/jwt.js';
+import { autenticarRequisicao } from '../../security/session.js';
 
 /** Mantém login e sessão existentes sobre a infraestrutura HTTP compartilhada. */
 export async function authRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -36,7 +37,7 @@ export async function authRoute(req: IncomingMessage, res: ServerResponse): Prom
       }
 
       const usuarios = await sql`
-        SELECT * FROM public.usuario WHERE email = ${email} LIMIT 1
+        SELECT id, nome, email, perfil, ativo, senha_hash FROM public.usuario WHERE email = ${email} LIMIT 1
       `;
       const usuario = usuarios[0];
 

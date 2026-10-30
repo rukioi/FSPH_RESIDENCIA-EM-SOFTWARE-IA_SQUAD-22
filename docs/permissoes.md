@@ -28,3 +28,17 @@ As regras são aplicadas no backend; o guarda de rotas no frontend melhora a nav
 Registre aqui quem pode fazer o quê e em quais registros; implemente e teste no mesmo PR. Apenas o acesso ainda indefinido precisa de confirmação — não é necessário preencher toda a matriz antes de trabalhar.
 
 Organizações, vínculos e múltiplos papéis só entram no modelo se houver necessidade confirmada.
+
+## Preservação da matriz — #29
+
+Todas as rotas protegidas consultam usuário ativo e perfil efetivo atual do banco.
+Ausência/invalidade de sessão, usuário inexistente ou inativo: 401; perfil atual
+fora da lista explícita: 403. Sessão aceita os cinco perfis reais, incluindo
+SOLICITANTE_INTERNO; não dá página inicial administrativa a motorista/solicitante.
+
+O documento de requisitos trata ADM/Gestor como equivalentes operacionais.
+Reconciliar essa definição é tarefa funcional futura: nesta refatoração usuários
+e auditoria continuam somente ADM; SVO continua somente ATENDENTE_SVO; dashboard,
+documentos e abastecimentos ADM/GESTOR_FROTA; veículos/motoristas permitem também
+ATENDENTE_SVO apenas para consulta. Não há fallback administrativo ou multitenancy.
+O frontend mantém as restrições de navegação já existentes.

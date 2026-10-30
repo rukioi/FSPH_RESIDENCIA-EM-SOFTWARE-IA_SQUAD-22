@@ -1,3 +1,4 @@
+import './session-fixture.js';
 
 import { beforeEach, expect, test, vi } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -244,7 +245,7 @@ test('BE-S6-02 impede Atendente SVO de cadastrar veículos', async () => {
       perfil: 'ATENDENTE_SVO',
     })
       .setProtectedHeader({ alg: 'HS256' })
-      .setSubject('atendente-teste')
+      .setSubject('-27005')
     .setIssuedAt()
     .setExpirationTime('1h')
       .sign(new TextEncoder().encode(segredoTeste));

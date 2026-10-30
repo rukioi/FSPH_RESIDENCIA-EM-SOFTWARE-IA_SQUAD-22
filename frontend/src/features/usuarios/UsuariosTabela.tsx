@@ -6,10 +6,11 @@ import type { Perfil, Usuario } from './dados'
 import { NovoUsuarioModal } from './NovoUsuarioModal'
 import { EditarUsuarioModal } from './EditarUsuarioModal'
 import './UsuariosTabela.css'
-import { cadastrarUsuario, editarUsuario, listarUsuarios, alternarStatusUsuario } from '../../shared/services/usuarios.service'
+import { cadastrarUsuario, editarUsuario, listarUsuarios, alterarStatusUsuario } from '../../shared/services/usuarios.service'
 
 const POR_PAGINA = 6
 
+/** Lista contas da API e aplica cadastro, edição e estado ativo após confirmação. */
 export function UsuariosTabela() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -19,6 +20,7 @@ export function UsuariosTabela() {
   const [novoAberto, setNovoAberto] = useState(false)
   const [editando, setEditando] = useState<Usuario | null>(null)
   const [desativando, setDesativando] = useState<Usuario | null>(null)
+  const [salvando, setSalvando] = useState(false)
   const [aviso, setAviso] = useState('')
 
   useEffect(() => {
@@ -67,9 +69,11 @@ export function UsuariosTabela() {
       return
     }
 
+    if (salvando) return
+    setSalvando(true)
     try {
       setErro('')
-      const usuarioAtualizado = await alternarStatusUsuario(u.id)
+      const usuarioAtualizado = await alterarStatusUsuario(u.id, true)
 
       setUsuarios((lista) =>
         lista.map((x) => (x.id === u.id ? usuarioAtualizado : x)),
@@ -82,15 +86,17 @@ export function UsuariosTabela() {
           ? erro.message
           : 'Não foi possível ativar o usuário.',
       )
-    }
+    } finally { setSalvando(false) }
   }
 
   async function confirmarDesativar() {
     if (!desativando) return
 
+    if (salvando) return
+    setSalvando(true)
     try {
       setErro('')
-      const usuarioAtualizado = await alternarStatusUsuario(desativando.id)
+      const usuarioAtualizado = await alterarStatusUsuario(desativando.id, false)
 
       setUsuarios((lista) =>
         lista.map((x) =>
@@ -106,7 +112,7 @@ export function UsuariosTabela() {
           ? erro.message
           : 'Não foi possível desativar o usuário.',
       )
-    }
+    } finally { setSalvando(false) }
   }
 
 
@@ -159,6 +165,7 @@ export function UsuariosTabela() {
         {aviso}
       </p>
 
+      {salvando && <p role="status">Salvando situação da conta...</p>}
       {carregando && <p role="status">Carregando usuários...</p>}
 
       {erro && (
@@ -210,6 +217,7 @@ export function UsuariosTabela() {
                     <button
                       type="button"
                       role="switch"
+                      disabled={salvando}
                       aria-checked={u.ativo}
                       aria-label={`${u.ativo ? 'Desativar' : 'Ativar'} conta de ${u.nome}`}
                       className={u.ativo ? 'interruptor interruptor--ligado' : 'interruptor'}
@@ -265,6 +273,7 @@ export function UsuariosTabela() {
                   : 'Não foi possível cadastrar o usuário.'
 
               setErro(mensagem)
+              throw new Error(mensagem, { cause: erro })
             }
           }}
         />
@@ -302,6 +311,7 @@ export function UsuariosTabela() {
                   : 'Não foi possível editar o usuário.'
 
               setErro(mensagem)
+              throw new Error(mensagem, { cause: erro })
             }
           }}
         />
@@ -325,7 +335,7 @@ export function UsuariosTabela() {
               <button type="button" className="btn btn--secundario" autoFocus onClick={() => setDesativando(null)}>
                 Cancelar
               </button>
-              <button type="button" className="btn btn--perigo" onClick={confirmarDesativar}>
+              <button type="button" className="btn btn--perigo" disabled={salvando} onClick={confirmarDesativar}>
                 Desativar
               </button>
             </div>

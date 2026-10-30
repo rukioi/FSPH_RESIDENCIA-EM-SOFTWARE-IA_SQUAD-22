@@ -29,7 +29,7 @@ Estas decisões orientam a próxima entrega e podem evoluir. O código mostra o 
 
 Para mudar uma decisão, explique no PR o problema, a escolha e o impacto. Atualize esta página se a mudança afetar o squad. Uma nota curta basta; não é necessário criar um documento por decisão.
 
-Ainda precisam de definição: revogação de sessões antes da expiração, hospedagem, armazenamento de arquivos e regras de cada fluxo. Decida cada ponto na tarefa que precisar dele, sem bloquear o restante do projeto.
+Ainda precisam de definição: política avançada de revogação, hospedagem, armazenamento de arquivos e regras de cada fluxo. Decida cada ponto na tarefa que precisar dele, sem bloquear o restante do projeto.
 
 ## Bootstrap e HTTP compartilhados — #28
 
@@ -56,3 +56,24 @@ O harness permite sem TLS somente o alvo isolado já verificado.
 
 Não houve troca de framework, dependência nova ou mudança de regra operacional.
 As divergências preservadas ficam em [reorganization/deferred.md](./reorganization/deferred.md).
+
+## Segurança comum — #29
+
+Separar JWT criptográfico, resolução de sessão no banco e autorização explícita
+em jwt.ts/session.ts/authorization.ts. A consulta compartilhada de identidade
+fica em usuarios.repository.ts; nenhuma rota protegida autoriza por claim antigo.
+Não criar infraestrutura de sessões. Remover caminhos Express sem referências,
+preservando node:http e a matriz existente. SOLICITANTE_INTERNO é o código real;
+rótulos só existem na apresentação. JWT_SECRET exige 32 bytes UTF-8.
+
+Status recebe estado desejado obrigatório e retorna 200 mesmo quando repetido.
+Somente mudança efetiva grava o evento existente, na mesma transação com bloqueio.
+É a quebra intencional do contrato PATCH sem corpo; o frontend muda junto.
+Erros de validação novos usam o envelope comum; demais respostas legadas continuam
+para #32. Perfis/estados/regras futuras não são implementados.
+
+O papel backend remoto e a Data API não foram confirmados sem segredo. Portanto,
+não criar migration ACL baseada em suposição. A estratégia mínima é testada por
+papel runtime simulado no banco isolado e totalmente desfeita por rollback;
+pré-condições de rollout ficam em [segurança](./seguranca.md). Snapshot/DER mantêm
+a baseline auditada, sem edição manual. Próximo ticket: #31.

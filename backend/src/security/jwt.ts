@@ -1,19 +1,20 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import { SignJWT, jwtVerify } from 'jose';
 
-const perfisValidos = new Set([
+export const PERFIS_USUARIO = [
   'ADM',
   'GESTOR_FROTA',
-  'SOLICITANTE',
+  'SOLICITANTE_INTERNO',
   'MOTORISTA',
   'ATENDENTE_SVO',
-]);
+] as const;
+export type PerfilUsuario = (typeof PERFIS_USUARIO)[number];
+const perfisValidos = new Set<string>(PERFIS_USUARIO);
 
 const aliasesPerfil: Record<string, string> = {
   ADMINISTRADOR: 'ADM',
   GESTOR: 'GESTOR_FROTA',
   'GESTOR DA FROTA': 'GESTOR_FROTA',
-  SOLICITANTE_INTERNO: 'SOLICITANTE',
+  SOLICITANTE: 'SOLICITANTE_INTERNO',
 };
 
 export interface UsuarioAutenticado {
@@ -26,18 +27,25 @@ export interface UsuarioAutenticado {
 function chaveJwt(): Uint8Array {
   const segredo = process.env.JWT_SECRET;
 
-  if (!segredo || new TextEncoder().encode(segredo).byteLength < 16) {
-    throw new Error('JWT_SECRET deve conter pelo menos 16 bytes.');
+  if (!segredo || new TextEncoder().encode(segredo).byteLength < 32) {
+    throw new Error('JWT_SECRET deve conter pelo menos 32 bytes.');
   }
 
   return new TextEncoder().encode(segredo);
 }
 
-export function normalizarPerfil(perfil: string): string | null {
-  const normalizado = aliasesPerfil[perfil.trim().toUpperCase()] ?? perfil.trim().toUpperCase();
-  return perfisValidos.has(normalizado) ? normalizado : null;
+/** Reconhece exatamente os códigos persistidos auditados do enum perfil_usuario. */
+export function perfilPersistidoValido(perfil: unknown): perfil is PerfilUsuario {
+  return typeof perfil === 'string' && perfisValidos.has(perfil);
 }
 
+/** Normaliza aliases legados somente na fronteira JWT; SQL usa enum persistido. */
+export function normalizarPerfil(perfil: string): string | null {
+  const normalizado = aliasesPerfil[perfil.trim().toUpperCase()] ?? perfil.trim().toUpperCase();
+  return perfilPersistidoValido(normalizado) ? normalizado : null;
+}
+
+/** Emite token HS256 de oito horas com identidade e perfil reconhecido. */
 export async function criarJwt(usuario: UsuarioAutenticado): Promise<string> {
   const perfil = normalizarPerfil(usuario.perfil);
 
@@ -58,6 +66,7 @@ export async function criarJwt(usuario: UsuarioAutenticado): Promise<string> {
     .sign(chaveJwt());
 }
 
+/** Verifica assinatura HS256, subject, expiração obrigatória e perfil conhecido. */
 export async function validarJwt(
   authorization: string | undefined,
 ): Promise<UsuarioAutenticado | null> {
@@ -106,48 +115,4 @@ export async function validarJwt(
   } catch {
     return null;
   }
-}
-
-export function enviarErroAutenticacao(
-  response: ServerResponse,
-  status: 401 | 403,
-): void {
-  const autenticado = status === 401;
-  response.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-  response.end(JSON.stringify({
-    error: {
-      code: autenticado ? 'NAO_AUTENTICADO' : 'ACESSO_NEGADO',
-      message: autenticado
-        ? 'Autenticação necessária.'
-        : 'Acesso não permitido.',
-    },
-  }));
-}
-
-export async function autenticarRequisicao(
-  request: IncomingMessage,
-  response: ServerResponse,
-): Promise<UsuarioAutenticado | null> {
-  const usuario = await validarJwt(request.headers.authorization);
-
-  if (!usuario) {
-    enviarErroAutenticacao(response, 401);
-  }
-
-  return usuario;
-}
-
-export function autorizarPerfis(
-  usuario: UsuarioAutenticado,
-  perfisPermitidos: string[],
-  response: ServerResponse,
-): boolean {
-  if (!perfisPermitidos.includes(usuario.perfil)) {
-    enviarErroAutenticacao(response, 403);
-    return false;
-  }
-
-  return true;
 }

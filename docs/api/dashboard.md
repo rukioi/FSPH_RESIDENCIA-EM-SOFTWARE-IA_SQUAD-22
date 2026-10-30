@@ -56,7 +56,7 @@ Authorization: Bearer <token>
 
 ## Observação de integração
 
-A autenticação compartilhada valida JWT HS256 com `sub`, `exp` e `JWT_SECRET` de pelo menos 16 bytes (recomenda-se 32 bytes ou mais). O contrato de login e consulta de sessão está em [auth.md](./auth.md). O painel do gestor usa `/api/dashboard/gestor`.
+A autenticação compartilhada valida JWT HS256 com `sub`, `exp` e `JWT_SECRET` de pelo menos 32 bytes UTF-8. O contrato de login e consulta de sessão está em [auth.md](./auth.md). O painel do gestor usa `/api/dashboard/gestor`.
 
 ## Infraestrutura e rotas atuais — #28
 
@@ -106,3 +106,12 @@ mantém `ERRO_INTERNO`, com as mensagens atuais de cada consulta.
 ```
 
 Não adiciona indicadores, filtros de período ou novo cálculo.
+
+## Identidade comum — #29
+
+Todas as rotas acima consultam usuário ativo e perfil atual do banco a cada
+requisição, após validar JWT HS256/sub/exp e segredo mínimo de 32 bytes UTF-8.
+Conta inativa/inexistente ou token inválido: 401 NAO_AUTENTICADO. Perfil efetivo
+fora da lista existente: 403 ACESSO_NEGADO. Falha de consulta não usa claims como
+fallback e recebe 500 do tratamento comum. As listas de permissão e operações
+permanecem as documentadas acima. Ver [identidade compartilhada](./README.md#identidade-e-usuários--29).

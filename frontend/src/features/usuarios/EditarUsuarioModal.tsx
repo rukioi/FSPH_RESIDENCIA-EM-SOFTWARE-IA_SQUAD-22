@@ -6,9 +6,10 @@ type Props = {
   usuario: Usuario
   emailsEmUso: string[]
   aoFechar: () => void
-  aoSalvar: (u: Usuario) => void
+  aoSalvar: (u: Usuario) => void | Promise<void>
 }
 
+/** Reutiliza o formulário de usuários e aguarda o salvamento da edição. */
 export function EditarUsuarioModal({ usuario, emailsEmUso, aoFechar, aoSalvar }: Props) {
   return (
     <UsuarioFormModal

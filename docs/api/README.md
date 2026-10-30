@@ -78,3 +78,17 @@ Exemplo de 405 (o cabeçalho `Allow` depende da rota):
 
 Os contratos por módulo registram o recorte técnico alterado pela #28; não
 introduzem paginação, perfis, estados ou novas regras operacionais.
+
+## Identidade e usuários — #29
+
+Todas as famílias protegidas usam JWT comum (HS256, sub/exp/perfil reconhecidos,
+JWT_SECRET com no mínimo 32 bytes UTF-8), seguido de consulta sem cache de usuário
+ativo/perfil atual. Sessão ausente/inválida, conta inativa/inexistente: 401;
+perfil efetivo sem permissão: 403. Falha de consulta não usa fallback de claims.
+As listas de permissão permanecem as existentes. Ver [auth.md](./auth.md).
+
+`PATCH /api/admin/usuarios/:id/status` passa a exigir JSON `{ "ativo": true }`
+ou false, sem toggle. Repetir estado retorna 200 sem novo evento. Cadastro/edição
+usam enum real, inclusive SOLICITANTE_INTERNO, e rejeitam campos extras/internos.
+Esta quebra deliberada é aplicada em conjunto no frontend. Envelopes de sucesso
+legados, datas e paginação continuam para #32. Ver [usuarios.md](./usuarios.md).

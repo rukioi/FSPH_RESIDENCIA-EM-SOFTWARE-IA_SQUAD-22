@@ -22,3 +22,26 @@ a refatoração técnica. Nada abaixo foi implementado ou alterado pela #28.
   regras pendentes #23–#26 continuam fora desta refatoração.
 
 Sequência: #27 → #28 → #29 → #31 → #32 → #30 → #33. Somente #33 abre o PR final.
+
+## Atualização #29
+
+- Requisitos tratam ADM/Gestor como equivalentes operacionais; a matriz existente
+  foi preservada. Reconciliação funcional futura, sem novos acessos nesta tarefa.
+- Papel runtime remoto, memberships e schemas expostos da Data API não foram
+  confirmados. Sem migration ACL ou escrita remota; estratégia mínima ensaiada
+  no isolado com rollback. A baseline mantém grants amplos até rollout aprovado.
+- Revogação avançada/refresh/cache/token_version permanecem fora; estado ativo e
+  perfil efetivo passam a ser consultados por requisição. Operações já autorizadas
+  não são interrompidas por uma mudança posterior no banco.
+- Cadastro/edição mantêm auditoria legada fora da transação; centralização #31.
+  Status já é atômico/idempotente para evitar eventos duplicados por repetição.
+- Envelopes e DTOs atuais continuam para #32; nenhum DTO HTTP novo foi duplicado
+  no frontend. O modelo visual continua usando rótulos; API/SQL usam enum real.
+
+Próximo ticket: #31. Somente #33 abre/reutiliza o PR final.
+
+- O painel visual preexistente PermissoesPerfil não configura a autorização da API;
+  a fonte continua sendo a lista explícita do backend. Nenhuma permissão nova foi
+  persistida ou tornada configurável nesta tarefa. Essa reconciliação é futura.
+- Em 390 px a tabela de usuários conserva rolagem interna preexistente; a página
+  não tem rolagem horizontal. Não houve redesign/CSS fora do escopo da #29.

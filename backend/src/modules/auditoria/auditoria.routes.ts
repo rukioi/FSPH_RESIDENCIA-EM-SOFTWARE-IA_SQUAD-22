@@ -1,7 +1,8 @@
 import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
-import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
+import { autenticarRequisicao } from '../../security/session.js';
+import { autorizarPerfis } from '../../security/authorization.js';
 
 /** Consulta auditoria administrativa com autorização existente. */
 export async function auditoriaRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {

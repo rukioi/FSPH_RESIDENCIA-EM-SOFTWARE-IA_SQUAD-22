@@ -1,3 +1,4 @@
+import './session-fixture.js';
 import { afterAll, beforeAll, expect, test, vi } from 'vitest';
 import type { AddressInfo } from 'node:net';
 import { SignJWT } from 'jose';
@@ -52,7 +53,7 @@ test('métodos inválidos de todas as famílias retornam 405/Allow', async () =>
 
 test('usuários/abastecimentos rejeitam JSON inválido após autenticação e auditoria desconhecida encerra', async () => {
   const token = await new SignJWT({ perfil: 'ADM' }).setProtectedHeader({ alg: 'HS256' })
-    .setSubject('1').setExpirationTime('1h').sign(new TextEncoder().encode(process.env.JWT_SECRET!));
+    .setSubject('-27001').setExpirationTime('1h').sign(new TextEncoder().encode(process.env.JWT_SECRET!));
   for (const path of ['/api/admin/usuarios', '/api/abastecimentos']) {
     const response = await fetch(base + path, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: '{',

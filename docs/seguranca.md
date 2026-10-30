@@ -14,7 +14,7 @@ A base atual possui autenticação, PostgreSQL e upload. Os controles abaixo evo
 
 A autenticação local consulta `public.usuario` no PostgreSQL e compara a senha com bcrypt. Nunca use credenciais de conexão do banco para login da aplicação nem armazene senha em texto puro.
 
-O backend emite JWT HS256 com `sub`, `iat` e `exp` de oito horas. `JWT_SECRET` é obrigatória e deve ter pelo menos 16 bytes; prefira 32 bytes ou mais para maior margem de segurança. Todos os módulos protegidos usam o validador compartilhado; token ausente, inválido ou expirado retorna 401 (`NAO_AUTENTICADO`), e perfil sem permissão retorna 403 (`ACESSO_NEGADO`).
+O backend emite JWT HS256 com `sub`, `iat` e `exp` de oito horas. `JWT_SECRET` é obrigatória e deve ter pelo menos 32 bytes UTF-8. Todos os módulos protegidos usam o validador compartilhado; token ausente, inválido ou expirado retorna 401 (`NAO_AUTENTICADO`), e perfil sem permissão retorna 403 (`ACESSO_NEGADO`).
 
 O frontend guarda somente o token em `sessionStorage` enquanto a aba estiver aberta. Não armazena token nem dados de usuário em `localStorage`. A sessão é confirmada em `/api/auth/sessao`; sem sessão válida, páginas privadas redirecionam para `/login`. A checagem de rota no navegador não substitui as verificações de perfil no backend.
 
@@ -57,6 +57,64 @@ Referência: [segurança de APIs REST da OWASP](https://cheatsheetseries.owasp.o
   atrás de proxy, usuários podem compartilhar cota. Proteção global deve ser
   configurada na infraestrutura confiável; não foi implementado cache distribuído.
 
-JWT/perfis/revogação e auditoria de domínio permanecem para #29/#31. Esta entrega
+Auditoria de domínio permanece para #31. A #28
 não modifica ACL/RLS ou o Supabase remoto. O certificado/chave em tests/unit/fixtures
 é artificial, gerado somente para provar rejeição TLS, sem uso operacional.
+
+## Identidade e autorização atuais — #29
+
+JWT é validado somente em `security/jwt.ts`: HS256, assinatura, `sub` não vazio,
+`exp` numérico obrigatório e futuro, perfil reconhecido, segredo de no mínimo
+32 bytes UTF-8. Aliases históricos de perfil continuam aceitos na fronteira JWT;
+novos tokens usam os códigos persistidos (inclusive SOLICITANTE_INTERNO).
+Segredo com 16–31 bytes deixa de funcionar: configure o processo com segredo
+adequado antes de rollout; tokens assinados com segredo trocado exigem novo login.
+Nenhum segredo existente foi lido ou modificado nesta execução.
+
+`security/session.ts` consulta a operação `consultarIdentidade` do repositório de
+usuários em toda requisição protegida, sem cache. Retorna somente id, nome, email
+e perfil atual. Usuário inexistente, ativo diferente de true ou perfil não
+reconhecido: 401. O JWT identifica o usuário; a lista de perfis da rota aplica-se
+ao perfil atual do banco, por `security/authorization.ts`, retornando 403 quando
+necessário. Falha do banco não autoriza nem usa claim antigo: retorna 500 pelo
+tratamento comum. A verificação vale para a próxima requisição; não interrompe
+operações que já passaram pela autorização. Não há tabela de sessões, refresh,
+cache, token_version ou política de revogação avançada.
+
+Os controllers Express de auth/usuários/auditoria e authMiddleware não tinham
+imports nem rotas montadas no código fonte ou testes. Foram removidos; node:http
+continua sendo o único caminho. As listas explícitas de acesso foram preservadas.
+O frontend consulta sessão pela API e guarda somente token em sessionStorage.
+
+Usuários aceitam somente nome/email/perfil/senha no cadastro/edição e somente
+`{ativo:boolean}` no status. Campos internos são rejeitados. A alteração de status
+bloqueia o usuário com FOR UPDATE; mudança e evento existente compartilham
+transação. Repetir o estado retorna 200 sem novo UPDATE/evento. Cadastro/edição
+mantêm a gravação de auditoria existente; sua centralização transacional é #31.
+
+### Acesso direto ao PostgreSQL e limite de rollout
+
+O snapshot auditado #27 comprova RLS desligada, ausência de policies e grants
+amplos para anon/authenticated nas dez tabelas. Não comprova exposição Data API,
+papel usado pelo backend publicado, memberships/heranças nem configuração de
+schemas expostos. O código recebe DATABASE_URL do processo e não declara um
+papel runtime verificável sem credenciais. Não se inferiu que postgres ou
+service_role seja esse papel; nenhuma credencial foi acessada.
+
+A prova local `backend/tests/security/direct-data-access.test.ts` usa somente o
+harness #27 e uma transação com rollback: revoga acesso direto de PUBLIC/anon/
+authenticated em tabelas e sequências e seus default privileges de postgres e
+supabase_admin; concede CRUD/uso de sequências a papel runtime fictício explícito,
+NOLOGIN/NOINHERIT/NOSUPERUSER. Testa consultas/escritas realmente como anon,
+authenticated e runtime, incluindo negação de hash/dado médico e TRUNCATE e
+preservação da leitura de identidade/escrita runtime. O papel não é proprietário
+nem BYPASSRLS. A transação desfaz todas as mudanças, inclusive o papel artificial.
+Não foram inventadas policies ou auth.uid.
+
+Essa é uma estratégia técnica ensaiada, não uma ACL implantável remotamente.
+Antes de rollout, o responsável deve confirmar o papel backend, suas memberships,
+grants por coluna/defaults e exposição da Data API por metadados/configuração;
+aprovar ACL explícita que preserve esse papel e testar todos os módulos com ele.
+Sem essa confirmação, não há migration de ACL, alteração de snapshot/DER ou
+aplicação remota nesta tarefa. A baseline continua reproduzindo o estado auditado,
+com a exposição potencial já documentada. A prova não garante o ambiente remoto.

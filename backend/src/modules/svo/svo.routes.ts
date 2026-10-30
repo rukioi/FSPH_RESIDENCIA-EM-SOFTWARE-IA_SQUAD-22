@@ -1,7 +1,8 @@
 import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
+import { autenticarRequisicao } from '../../security/session.js';
+import { autorizarPerfis } from '../../security/authorization.js';
 import {
   listarOrdensPendentesController,
   criarSolicitacaoController,

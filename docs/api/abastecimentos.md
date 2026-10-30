@@ -111,3 +111,12 @@ Authorization: Bearer <token>
 Não muda permissões, estados, regras operacionais ou paginação. Não unifica os
 DTOs legados nesta fase. Limites, request ID e erros técnicos seguem
 [infraestrutura comum](./README.md#infraestrutura-http--28).
+
+## Identidade comum — #29
+
+Todas as rotas acima consultam usuário ativo e perfil atual do banco a cada
+requisição, após validar JWT HS256/sub/exp e segredo mínimo de 32 bytes UTF-8.
+Conta inativa/inexistente ou token inválido: 401 NAO_AUTENTICADO. Perfil efetivo
+fora da lista existente: 403 ACESSO_NEGADO. Falha de consulta não usa claims como
+fallback e recebe 500 do tratamento comum. As listas de permissão e operações
+permanecem as documentadas acima. Ver [identidade compartilhada](./README.md#identidade-e-usuários--29).
