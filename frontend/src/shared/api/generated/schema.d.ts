@@ -625,7 +625,7 @@ export interface Abastecimentos {
   }[];
 }
 /**
- * Legado valida somente truthiness de veículo/litragem/valor/data; tipos/coerções/constraints são do banco. Ausência de motorista/km passa pelo controller mas falha NOT NULL (500). Schema documenta a forma usual, não endurece entrada.
+ * Forma usual de transporte. #30 classifica JSON/tipo/campo incompatível com o schema atual como 400 e FK inexistente como 404. Motorista/km omitidos ou nulos recebem 400 pelo NOT NULL atual; RF40 permanece adiado, sem migration. Validação técnica de calendário e tipos ocorre no controller.
  *
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "CriarAbastecimento".

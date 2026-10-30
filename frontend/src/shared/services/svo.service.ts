@@ -1,142 +1,27 @@
-import type {
-  ApiDataResponse,
-  CriarSolicitacaoSvoRequest,
-  CriarSolicitacaoSvoResponse,
-  MotoristaApi,
-  OrdemColetaPendenteApi,
-  OrdemDespachadaApi,
-  VeiculoApi,
-} from '../types/svo'
-import { fetchAutenticada } from './auth.service'
+import { svoSchemas } from '../../../../backend/src/modules/svo/svo.schemas';
+import { executeApi } from '../api/client';
+import { parseResponse } from '../api/validation';
+import type { CriarSolicitacaoSvoRequest } from '../types/svo';
+import { buscarMotoristas } from './motoristas.service';
+import { buscarVeiculos } from './veiculos.service';
 
-async function mensagemErro(
-  response: Response,
-  mensagemPadrao: string,
-): Promise<string> {
-  try {
-    const dados = await response.json()
-
-    if (typeof dados?.erro === 'string') {
-      return dados.erro
-    }
-
-    if (typeof dados?.error?.message === 'string') {
-      return dados.error.message
-    }
-  } catch {
-    // Mantém a mensagem padrão quando a resposta não possui JSON válido.
-  }
-
-  return mensagemPadrao
+/** Valida a confirmação da solicitação sem reconstruir uma resposta local. */
+export async function criarSolicitacaoSvo(body:CriarSolicitacaoSvoRequest) {
+  return executeApi('svo_post__api_svo_solicitacoes',{body,parse:v=>parseResponse(svoSchemas.SolicitacaoSvo,v)});
 }
-
-export async function criarSolicitacaoSvo(
-  dados: CriarSolicitacaoSvoRequest,
-): Promise<CriarSolicitacaoSvoResponse> {
-  const response = await fetchAutenticada('/api/svo/solicitacoes', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(dados),
-  })
-
-  if (!response.ok) {
-    throw new Error(
-      await mensagemErro(
-        response,
-        'Não foi possível criar a solicitação.',
-      ),
-    )
-  }
-
-  return response.json()
+/** Lista as ordens no status público atual, com cancelamento propagado. */
+export async function listarOrdensAguardandoSvo(signal?:AbortSignal) {
+  return executeApi('svo_get__api_svo_ordens_coleta',{signal,query:new URLSearchParams({status:'AGUARDANDO_DESPACHO'}),parse:v=>parseResponse(svoSchemas.OrdensSvo,v)});
 }
-
-export async function listarOrdensAguardandoSvo(
-): Promise<OrdemColetaPendenteApi[]> {
-  const response = await fetchAutenticada(
-    '/api/svo/ordens-coleta?status=AGUARDANDO_DESPACHO',
-    {
-      method: 'GET',
-    },
-  )
-
-  if (!response.ok) {
-    throw new Error(
-      await mensagemErro(
-        response,
-        'Não foi possível carregar as ordens de coleta.',
-      ),
-    )
-  }
-
-  return response.json()
+/** Preserva o filtro visual existente; disponibilidade definitiva é validada no backend. */
+export async function listarMotoristasDisponiveis(signal?:AbortSignal) {
+  return (await buscarMotoristas(signal)).filter(item=>item.status === 'DISPONIVEL');
 }
-
-export async function listarMotoristasDisponiveis(): Promise<
-  MotoristaApi[]
-> {
-  const response = await fetchAutenticada('/api/motoristas')
-
-  if (!response.ok) {
-    throw new Error(
-      'Não foi possível carregar os motoristas.',
-    )
-  }
-
-  const resultado =
-    (await response.json()) as ApiDataResponse<MotoristaApi[]>
-
-  return resultado.data.filter(
-    (motorista) => motorista.status === 'DISPONIVEL',
-  )
+/** Reutiliza o serviço validado de veículos e o filtro visual atual. */
+export async function listarVeiculosDisponiveis(signal?:AbortSignal) {
+  return (await buscarVeiculos(signal)).filter(item=>item.status === 'DISPONIVEL');
 }
-
-export async function listarVeiculosDisponiveis(): Promise<
-  VeiculoApi[]
-> {
-  const response = await fetchAutenticada('/api/veiculos')
-
-  if (!response.ok) {
-    throw new Error(
-      'Não foi possível carregar os veículos.',
-    )
-  }
-
-  const resultado =
-    (await response.json()) as ApiDataResponse<VeiculoApi[]>
-
-  return resultado.data.filter(
-    (veiculo) => veiculo.status === 'DISPONIVEL',
-  )
-}
-
-export async function despacharOrdemSvo(
-  ordemId: number,
-  motoristaId: number,
-  veiculoId: number,
-): Promise<OrdemDespachadaApi> {
-  const response = await fetchAutenticada(
-    `/api/svo/ordens-coleta/${ordemId}/despachar`,
-    {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        motoristaId,
-        veiculoId,
-      }),
-    },
-  )
-
-  if (!response.ok) {
-    throw new Error(
-      await mensagemErro(
-        response,
-        'Não foi possível realizar o despacho.',
-      ),
-    )
-  }
-
-  return response.json()
+/** Mantém os IDs numéricos do contrato de despacho existente e aguarda confirmação. */
+export async function despacharOrdemSvo(ordemId:string,motoristaId:number,veiculoId:number) {
+  return executeApi('svo_patch__api_svo_ordens_coleta_id_despachar',{id:String(ordemId),body:{motoristaId,veiculoId},parse:v=>parseResponse(svoSchemas.OrdemDespachada,v)});
 }

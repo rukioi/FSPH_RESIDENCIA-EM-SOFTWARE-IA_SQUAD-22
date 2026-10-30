@@ -23,6 +23,10 @@ test('manifesto detecta remoção, duplicação e nova exceção não autorizada
 test('gate detecta remoção de rota/status e mudança incompatível de componente',()=>{
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const previous=openapi(); for(const mutation of [doc=>delete doc.paths['/api/veiculos'], doc=>delete doc.paths['/api/veiculos'].post.responses[201], doc=>doc.components.schemas.Veiculo.properties.id.type='number']) {const doc=structuredClone(previous);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}} checkCompatibility(previous,openapi()); console.log('ok');")).toContain('ok');
 });
+
+test('migração #30 permite somente 404 comum de abastecimento e sua descrição técnica',()=>{
+  expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
+});
 test('inventário fechado mantém 29 operações e limites de pathname compatíveis',()=>{
   expect(operations).toHaveLength(29);
   const paths = operations.filter(o=>o.path.includes('{id}'));

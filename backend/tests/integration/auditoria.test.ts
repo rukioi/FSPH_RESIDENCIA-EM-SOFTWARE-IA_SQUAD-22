@@ -16,6 +16,10 @@ beforeAll(async () => {
     (310001,31001,'Fixture T31 primeiro','2099-01-01'),
     (310002,31001,'Fixture T31 segundo','2099-01-01'),
     (310003,null,'Fixture T31 sem usuário',null)`;
+  // Exercita mais de uma página mesmo em uma instância recém-provisionada.
+  await sql`insert into public.log_atividade (id,usuario_id,descricao,data_hora)
+    select 311000+n,31002,'Fixture T31 paginação','1999-01-01'::timestamp
+    from generate_series(1,101) as n`;
   token = await criarJwt({ id: '31001', perfil: 'ADM' });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -52,7 +56,10 @@ test('paginação ordena empates por id, põe hora nula no fim e projeta DTO mí
   expect(second.data[0].id).toBe('310001');
   expect((await (await call('?page=999999&limit=100')).json()).data).toEqual([]);
   const all = await (await call('?limit=100')).json();
-  expect(all.data.at(-1)).toEqual({ id: '310003', usuarioId: null, descricao: 'Fixture T31 sem usuário',
+  const lastPage = Math.ceil(all.meta.total / 100);
+  expect(lastPage).toBeGreaterThan(1);
+  const last = await (await call(`?page=${lastPage}&limit=100`)).json();
+  expect(last.data.at(-1)).toEqual({ id: '310003', usuarioId: null, descricao: 'Fixture T31 sem usuário',
     dataHora: null, usuarioNome: null });
 });
 

@@ -16,6 +16,7 @@ type PrepararDespachoModalProps = {
   ) => void | Promise<void>;
 };
 
+/** Aguarda o despacho e mantém a seleção aberta quando a API informa conflito ou falha. */
 export function PrepararDespachoModal({
   ordemId,
   motoristas,
@@ -133,10 +134,11 @@ export function PrepararDespachoModal({
           </div>
 
           {erro && (
-            <p className="svo-modal__erro">{erro}</p>
+            <p className="svo-modal__erro" role="alert">{erro}</p>
           )}
         </div>
 
+        {enviando && <p role="status">Confirmando despacho...</p>}
         <footer className="svo-modal__acoes">
           <button
             type="button"

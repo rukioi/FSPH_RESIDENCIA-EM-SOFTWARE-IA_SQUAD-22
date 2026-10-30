@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useRemoteData } from '../../shared/api/useRemoteData';
+import { useMemo, useState } from 'react'
 import { Icone } from '../../shared/components/Icone'
 import { Paginacao, usePaginacao } from '../../shared/components/Paginacao'
 import { PERFIS, corPerfil } from './dados'
@@ -12,9 +13,7 @@ const POR_PAGINA = 6
 
 /** Lista contas da API e aplica cadastro, edição e estado ativo após confirmação. */
 export function UsuariosTabela() {
-  const [usuarios, setUsuarios] = useState<Usuario[]>([])
-  const [carregando, setCarregando] = useState(true)
-  const [erro, setErro] = useState('')
+  const {data:usuarios,setData:setUsuarios,loading:carregando,error:erro,setError:setErro,retry} = useRemoteData<Usuario[]>(listarUsuarios, []);
   const [busca, setBusca] = useState('')
   const [perfil, setPerfil] = useState<Perfil | ''>('')
   const [novoAberto, setNovoAberto] = useState(false)
@@ -23,27 +22,6 @@ export function UsuariosTabela() {
   const [salvando, setSalvando] = useState(false)
   const [aviso, setAviso] = useState('')
 
-  useEffect(() => {
-  async function carregarUsuarios() {
-    try {
-      setCarregando(true)
-      setErro('')
-
-      const dados = await listarUsuarios()
-      setUsuarios(dados)
-    } catch (erro) {
-      setErro(
-        erro instanceof Error
-          ? erro.message
-          : 'Não foi possível carregar os usuários.',
-      )
-    } finally {
-      setCarregando(false)
-    }
-  }
-
-  void carregarUsuarios()
-}, [])
 
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase()
@@ -170,7 +148,7 @@ export function UsuariosTabela() {
 
       {erro && (
         <p role="alert">
-         {erro}
+         {erro} <button type="button" onClick={retry}>Tentar novamente</button>
         </p>
       )}
 

@@ -5,7 +5,13 @@ import type { ApiOperations } from './generated/schema';
 
 /** Transporte comum: auth/401 via adaptador existente, cancelamento, 204, JSON e correlação do servidor. */
 export async function requestApi<T = unknown>(path: string, init: RequestInit = {}, parse?: (value:unknown)=>T): Promise<T> {
-  const response = await fetchAutenticada(path,init);
+  let response: Response;
+  try { response = await fetchAutenticada(path,init); }
+  catch (error) {
+    if (error instanceof ApiError || error instanceof Error && error.name === 'AbortError') throw error;
+    throw new ApiError(0,'FALHA_REDE','Não foi possível conectar ao servidor. Tente novamente.');
+  }
+  if (init.signal?.aborted) throw new DOMException('Solicitação cancelada.','AbortError');
   const requestId = response.headers.get('X-Request-Id') ?? undefined;
   if (response.status === 204) return undefined as T;
   let body: unknown;

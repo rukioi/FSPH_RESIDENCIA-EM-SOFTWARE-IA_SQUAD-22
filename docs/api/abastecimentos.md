@@ -1,7 +1,7 @@
-# API — Abastecimentos (#28)
+# API — Abastecimentos (#30)
 
-Recorte de compatibilidade e infraestrutura da refatoração; os registros de negócio
-mantêm os campos e envelopes atuais. Contrato unificado/gerado será tratado na #32.
+Os registros mantêm os campos e envelopes atuais. A #30 corrige a classificação
+técnica de entrada e referência inexistente; o contrato global deriva da #32.
 
 ## Rotas
 
@@ -12,7 +12,16 @@ Autenticação: Bearer JWT. Perfis: ADM/GESTOR_FROTA.
 | GET /api/abastecimentos | não | {data: array}, id DESC |
 | POST /api/abastecimentos | JSON | {data: registro}, 201 |
 
-Campos existentes: veiculo_id, motorista_id, posto, litragem, valor_total, quilometragem e data_abastecimento. A API verifica veículo, litros, valor e data; o banco ainda exige motorista e quilometragem. A consulta inclui veiculo_placa e motorista_nome. Essa divergência permanece adiada.
+Campos existentes: veiculo_id, motorista_id, posto, litragem, valor_total,
+quilometragem e data_abastecimento. Corpo precisa ser objeto JSON. IDs aceitam
+inteiro seguro ou string decimal; litragem/valor aceitam número finito ou string
+numérica; quilometragem exige inteiro; data exige calendário válido YYYY-MM-DD;
+posto aceita string ou null. Mantém a rejeição anterior de veículo/litros/valor/data
+vazios/zero. O banco atual exige motorista e quilometragem: omissão/null recebe
+400, em vez de falhar com 500. Isso não define a obrigatoriedade definitiva do
+produto: RF40 permite quilometragem quando disponível e não exige motorista.
+A divergência continua adiada, sem migration. A consulta inclui veiculo_placa e
+motorista_nome, sem nova regra, filtro ou indicador.
 
 ## Respostas
 
@@ -45,10 +54,17 @@ do banco isolado; não constitui nova regra de preenchimento):
 
 ### 400 — Entrada inválida
 
-Exemplo para JSON malformado. Erros de campo e envelopes de domínio existentes permanecem.
+JSON malformado:
 
 ```json
 {"error": {"code": "JSON_INVALIDO", "message": "Envie um JSON válido."}}
+```
+
+Tipo/campo incompatível com as colunas atuais (inclui NOT NULL, formato numérico,
+limite PostgreSQL e data inválida):
+
+```json
+{"error":{"code":"DADOS_INVALIDOS","message":"Confira os tipos e campos exigidos pelo cadastro atual de abastecimento."}}
 ```
 
 ### 401 — Sem sessão
@@ -63,9 +79,15 @@ Exemplo para JSON malformado. Erros de campo e envelopes de domínio existentes 
 {"error": {"code": "ACESSO_NEGADO", "message": "Acesso não permitido."}}
 ```
 
-### 404 — Caminho desconhecido
+### 404 — Referência inexistente ou caminho desconhecido
 
-Exemplo de caminho desconhecido; ausência de registro na edição mantém o erro de domínio atual.
+Veículo/motorista inexistente (FK 23503), sem informar constraint ou SQL:
+
+```json
+{"error":{"code":"REFERENCIA_INEXISTENTE","message":"Veículo ou motorista não encontrado."}}
+```
+
+Caminho desconhecido:
 
 ```json
 {"error": {"code": "NAO_ENCONTRADO", "message": "Rota não encontrada."}}
@@ -108,8 +130,8 @@ Authorization: Bearer <token>
 
 ## O que a entrega não faz
 
-Não muda permissões, estados, regras operacionais ou paginação. Não unifica os
-DTOs legados nesta fase. Limites, request ID e erros técnicos seguem
+Não muda permissões, estados, schema, regras operacionais ou paginação. Não resolve
+a divergência RF40 nem muda nomes de DTOs. Limites, request ID e erros técnicos seguem
 [infraestrutura comum](./README.md#infraestrutura-http--28).
 
 ## Identidade comum — #29

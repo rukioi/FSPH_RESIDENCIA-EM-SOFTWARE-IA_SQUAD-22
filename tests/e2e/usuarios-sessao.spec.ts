@@ -27,6 +27,18 @@ test.afterAll(async () => {
     await sql`delete from public.usuario where email like 't29-e2e-%@example.invalid'`;
   } finally { await sql.end(); }
 });
+
+test('lista de usuários inválida não vira vazio; permite nova tentativa',async({page})=>{
+  await page.goto('/login');await page.evaluate(t=>sessionStorage.setItem('token',t),token);
+  let body:unknown={data:[]};
+  await page.route('**/api/admin/usuarios',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)}));
+  await page.goto('/admin/configuracoes');
+  await expect(page.getByRole('alert')).toContainText('Tente novamente');
+  body=[];
+  await page.getByRole('button',{name:'Tentar novamente'}).click();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByText('Carregando usuários...')).toHaveCount(0);
+});
 for (const width of [390,768,1280]) {
   test(`cadastro, edição e status confirmados em ${width}px`,async ({page,request},info) => {
     await page.setViewportSize({width,height:900});

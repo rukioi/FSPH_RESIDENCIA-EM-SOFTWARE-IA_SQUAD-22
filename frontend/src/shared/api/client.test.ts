@@ -20,3 +20,17 @@ test('preserva cancelamento e não tenta interpretar 204', async () => {
   await expect(requestApi('/api/veiculos')).rejects.toBe(abort);
   expect(abort).not.toBeInstanceOf(ApiError);
 });
+
+test('normaliza falha de rede sem apresentar mensagem técnica', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+  await expect(requestApi('/api/motoristas')).rejects.toMatchObject({status:0,code:'FALHA_REDE',message:'Não foi possível conectar ao servidor. Tente novamente.'});
+});
+
+test('ignora resposta de transporte encerrada depois do cancelamento',async () => {
+  const controller=new AbortController();
+  vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>{
+    controller.abort();
+    return new Response(JSON.stringify({data:[]}));
+  }));
+  await expect(requestApi('/api/motoristas',{signal:controller.signal})).rejects.toMatchObject({name:'AbortError'});
+});

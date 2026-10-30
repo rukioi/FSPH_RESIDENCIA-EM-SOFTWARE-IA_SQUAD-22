@@ -107,6 +107,15 @@ mantém `ERRO_INTERNO`, com as mensagens atuais de cada consulta.
 
 Não adiciona indicadores, filtros de período ou novo cálculo.
 
+## Consumo visual — #30
+
+O painel do gestor deixa de chamar `/api/dashboard/kpis`, que não existe. Cartões
+mostram indisponibilidade e travessão, sem zero inicial apresentado como métrica.
+Os botões de período mantêm somente seleção visual, sem atribuir filtros a rotas
+que não os oferecem. Widgets e a lista de análise usam demonstração explícita.
+Não há implementação de dashboard gerencial, novas métricas ou mudança no cálculo
+legado de `/gestor`. A integração funcional continua adiada.
+
 ## Identidade comum — #29
 
 Todas as rotas acima consultam usuário ativo e perfil atual do banco a cada

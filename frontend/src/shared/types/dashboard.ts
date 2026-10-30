@@ -1,12 +1,7 @@
-export type DashboardPeriodo = 'hoje' | '7dias' | '30dias'
-
+// Modelo visual dos cartões; não representa um DTO de um endpoint inexistente.
 export interface DashboardKpis {
   chamadosPendentes: number
   viagensHoje: number
   veiculosDisponiveis: number
   motoristasDisponiveis: number
-}
-
-export interface DashboardKpisResponse {
-  data: DashboardKpis
 }

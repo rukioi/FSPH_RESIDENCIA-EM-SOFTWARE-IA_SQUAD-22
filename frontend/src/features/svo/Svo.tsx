@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DashboardSvo } from "./DashboardSvo";
 import {
   NovaSolicitacaoSvo,
@@ -21,6 +21,7 @@ import type {
 
 type TelaSvo = "dashboard" | "nova-solicitacao";
 
+/** Orquestra requisições canceláveis e mantém o resumo transitório da sessão existente. */
 export function Svo() {
   const [telaAtual, setTelaAtual] =
     useState<TelaSvo>("dashboard");
@@ -45,9 +46,21 @@ export function Svo() {
   const [veiculos, setVeiculos] =
     useState<VeiculoApi[]>([]);
 
+  const request = useRef<AbortController | null>(null);
+  const resources = useRef<AbortController | null>(null);
+  const mounted = useRef(false);
+  const [carregando, setCarregando] = useState(true);
+  const [erroRecursos, setErroRecursos] = useState('');
+  const [tentativa, setTentativa] = useState(0);
+
   async function carregarOrdens() {
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
+    setCarregando(true);
     try {
-      const ordens = await listarOrdensAguardandoSvo();
+      const ordens = await listarOrdensAguardandoSvo(controller.signal);
+      if (controller.signal.aborted || !mounted.current) return;
 
       setOrdensAguardando(
         ordens.map((ordem) => ({
@@ -63,27 +76,31 @@ export function Svo() {
 
       setErroOrdens("");
     } catch (error) {
+      if (controller.signal.aborted || !mounted.current) return;
       setErroOrdens(
         error instanceof Error
           ? error.message
           : "Não foi possível carregar as ordens.",
       );
+    } finally {
+      if (!controller.signal.aborted && mounted.current) setCarregando(false);
     }
   }
 
   useEffect(() => {
+    mounted.current = true;
+    const controller = new AbortController();
+    resources.current = controller;
     void carregarOrdens();
-
-    Promise.all([
-      listarMotoristasDisponiveis().then(setMotoristas),
-      listarVeiculosDisponiveis().then(setVeiculos),
-    ]).catch((erro) => {
-      console.error(
-        "Erro ao carregar dados do SVO:",
-        erro,
-      );
-    });
-  }, []);
+    setErroRecursos('');
+    void Promise.all([listarMotoristasDisponiveis(controller.signal), listarVeiculosDisponiveis(controller.signal)])
+      .then(([drivers, vehicles]) => {
+        if (!controller.signal.aborted) { setMotoristas(drivers); setVeiculos(vehicles); }
+      }).catch(() => {
+        if (!controller.signal.aborted) setErroRecursos('Não foi possível carregar os recursos para despacho. Tente novamente.');
+      });
+    return () => { mounted.current = false; controller.abort(); request.current?.abort(); };
+  }, [tentativa]);
 
   function adicionarAtividade(
     titulo: string,
@@ -122,6 +139,7 @@ export function Svo() {
       },
     );
 
+    if (!mounted.current) return;
     setSolicitacoesConfirmadas(
       (valor) => valor + 1,
     );
@@ -147,12 +165,14 @@ export function Svo() {
       veiculoId,
     );
 
+    if (!mounted.current) return;
+    resources.current?.abort();
     const motorista = motoristas.find(
-      (item) => item.id === motoristaId,
+      (item) => item.id === String(motoristaId),
     );
 
     const veiculo = veiculos.find(
-      (item) => item.id === veiculoId,
+      (item) => item.id === String(veiculoId),
     );
 
     setOrdensAguardando((ordens) =>
@@ -174,11 +194,11 @@ export function Svo() {
     ]);
 
     setMotoristas((lista) =>
-      lista.filter((item) => item.id !== motoristaId),
+      lista.filter((item) => item.id !== String(motoristaId)),
     );
 
     setVeiculos((lista) =>
-      lista.filter((item) => item.id !== veiculoId),
+      lista.filter((item) => item.id !== String(veiculoId)),
     );
 
     adicionarAtividade(
@@ -208,7 +228,9 @@ export function Svo() {
       ordensAguardando={ordensAguardando}
       ordensProntas={ordensProntas}
       atividades={atividades}
-      erroOrdens={erroOrdens}
+      erroOrdens={erroOrdens || erroRecursos}
+      carregando={carregando}
+      onTentarNovamente={() => setTentativa(t => t + 1)}
       motoristas={motoristas}
       veiculos={veiculos}
       onNovaSolicitacao={() =>

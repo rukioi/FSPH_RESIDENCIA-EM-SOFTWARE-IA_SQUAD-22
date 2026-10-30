@@ -13,6 +13,19 @@ Problem Details são evolução futura, com tarefa explícita e plano de compati
 
 ## Rotas e dados
 
+Na #30, POST /api/abastecimentos classifica erros técnicos de tipo/campo/NOT NULL
+como 400 DADOS_INVALIDOS e FK inexistente como 404 REFERENCIA_INEXISTENTE, mantendo
+o sucesso e o schema do banco. O registro global e os gerados incorporam o novo
+404; o gate conserva uma exceção explícita restrita a essa resposta comum e à
+descrição do componente CriarAbastecimento. Não permite remover status, mudar
+payload/tipo ou modificar outra operação. Ver [abastecimentos](./abastecimentos.md).
+
+Os consumidores atuais de frota, usuários e SVO usam o cliente comum, tipos gerados
+e schemas puros de resposta. A normalização de rede/JSON/erro e a correlação são
+compartilhadas; o estado remoto cancela consultas encerradas e uma consulta antiga
+não substitui uma escrita confirmada. Isso não transforma as operações legadas em
+validação HTTP global nem cria endpoint para os painéis demonstrativos.
+
 - Base `/api`, recursos no plural, em português sem acentos: `/api/veiculos`, `/api/solicitacoes/:id`.
 - `GET` consulta, `POST` cria, `PATCH` altera parcialmente e `DELETE` remove quando a regra permitir. `GET` não altera estado.
 - Uma ação de negócio pode ter uma rota explícita, como `POST /api/solicitacoes/:id/aprovar`. O exemplo não define sua permissão ou regra.

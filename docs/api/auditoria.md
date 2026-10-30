@@ -129,3 +129,11 @@ não reescreve essas mensagens. Não é uma promessa de anonimização retroativ
 Sem eventos novos de login/negação/despacho, filtros de domínio, busca avançada,
 dashboard, relatórios, trilha imutável completa, retenção automática, monitoramento
 ou garantia 24x7. Não altera FKs, schema, permissões ou requisitos operacionais.
+
+## Consumo visual — #30
+
+A tela existente permanece identificada como **demonstração**, com dados
+ilustrativos e filtros locais sobre essas fixtures. Não atribui a registros reais
+perfil, resultado, módulo ou tipo de evento que o DTO mínimo não fornece. A adoção
+da consulta paginada em uma visualização apropriada fica adiada; o endpoint atual,
+seus formatos, acesso ADM e histórico persistido foram preservados.

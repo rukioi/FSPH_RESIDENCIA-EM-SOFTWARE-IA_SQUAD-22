@@ -29,10 +29,20 @@ type Document = ReturnType<typeof openapi>;
 /** Gate conservador: qualquer alteração de contrato existente exige migração explícita; permite somente componentes e operações adicionais. */
 export function checkCompatibility(previous: Document, current: Document) {
   for (const [path,methods] of Object.entries(previous.paths)) for (const [method,definition] of Object.entries(methods)) {
-    if (JSON.stringify(definition) !== JSON.stringify(current.paths[path]?.[method])) throw new Error(`Contrato existente alterado: ${method.toUpperCase()} ${path}. Planeje compatibilidade explicitamente.`);
+    const candidate = structuredClone(current.paths[path]?.[method]) as {responses?: Record<string,unknown>} | undefined;
+    const old = definition as {responses?: Record<string,unknown>};
+    // Migração explícita #30: somente o novo erro 404 comum deste POST.
+    if (path === '/api/abastecimentos' && method === 'post' && !old.responses?.[404] && candidate?.responses?.[404]) {
+      const expected = { ...(old.responses?.[500] as object), description:'Falha atual HTTP 404' };
+      if (JSON.stringify(candidate.responses[404]) === JSON.stringify(expected)) delete candidate.responses[404];
+    }
+    if (JSON.stringify(definition) !== JSON.stringify(candidate)) throw new Error(`Contrato existente alterado: ${method.toUpperCase()} ${path}. Planeje compatibilidade explicitamente.`);
   }
   for (const [name,schema] of Object.entries(previous.components.schemas)) {
-    if (JSON.stringify(schema) !== JSON.stringify(current.components.schemas[name as keyof typeof current.components.schemas])) throw new Error('Componente existente alterado: '+name);
+    const candidate = structuredClone(current.components.schemas[name as keyof typeof current.components.schemas]);
+    // A forma legada permanece; apenas a descrição da correção autorizada muda.
+    if (name === 'CriarAbastecimento' && candidate) candidate.description = schema.description;
+    if (JSON.stringify(schema) !== JSON.stringify(candidate)) throw new Error('Componente existente alterado: '+name);
   }
 }
 /** Regenera em memória e compara conteúdo; não requer banco nem segredos. */

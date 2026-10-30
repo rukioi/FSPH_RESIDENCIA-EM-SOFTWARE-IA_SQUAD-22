@@ -1,5 +1,7 @@
+import { useRemoteData } from '../../shared/api/useRemoteData';
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { fetchAutenticada } from "../../shared/services/auth.service";
+import { buscarMotoristas, cadastrarMotorista as salvarMotorista } from "../../shared/services/motoristas.service";
+import type { MotoristaDto, CriarMotoristaDto } from "../../shared/services/motoristas.service";
 import "./motoristas.css";
 
 type HistoricoMotorista = {
@@ -18,30 +20,12 @@ type PendenciaDocumental = {
   validade?: string;
 };
 
-type Motorista = {
-  id?: number | string;
-  nome?: string;
-  codigo?: string;
-  matricula?: string;
-  cpf?: string;
-  status?: string;
-  chamadas_realizadas?: number | string;
-  categoria_cnh?: string;
-  cnh_categoria?: string;
-  cnh?: string;
-  numero_cnh?: string;
-  validade_cnh?: string;
-  telefone?: string;
-  email?: string;
-  pendencias?: number | string;
+// Modelo visual; os campos de transporte vêm do contrato gerado.
+type Motorista = MotoristaDto & {
+  codigo?: string; matricula?: string; chamadas_realizadas?: number | string;
+  cnh_categoria?: string; numero_cnh?: string; email?: string; pendencias?: number | string;
   pendencias_documentais?: PendenciaDocumental[] | string[];
-  historico_chamados?: HistoricoMotorista[];
-  historico_rotas?: HistoricoMotorista[];
-};
-
-type RespostaApi = {
-  data?: Motorista[] | Motorista;
-  error?: { message?: string };
+  historico_chamados?: HistoricoMotorista[]; historico_rotas?: HistoricoMotorista[];
 };
 
 type NovoMotorista = {
@@ -73,7 +57,7 @@ const statusLegiveis: Record<string, string> = {
   AFASTADO: "Afastado",
 };
 
-function normalizar(valor?: string) {
+function normalizar(valor?: string | null) {
   return (valor ?? "")
     .trim()
     .toUpperCase()
@@ -82,12 +66,12 @@ function normalizar(valor?: string) {
     .replace(/[ -]/g, "_");
 }
 
-function statusLegivel(status?: string) {
+function statusLegivel(status?: string | null) {
   const chave = normalizar(status);
   return statusLegiveis[chave] ?? status ?? "Não informado";
 }
 
-function classeStatus(status?: string) {
+function classeStatus(status?: string | null) {
   return normalizar(status).toLowerCase().replace(/_/g, "-") || "sem-status";
 }
 
@@ -175,10 +159,10 @@ function historicoMotorista(motorista: Motorista) {
   return [];
 }
 
+/** Separa a consulta validada da seleção, dos filtros e do cadastro confirmado. */
 export function Motoristas() {
-  const [motoristas, setMotoristas] = useState<Motorista[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState("");
+  const {data:motoristas,setData:setMotoristas,loading:carregando,error:erro,retry} = useRemoteData<Motorista[]>(buscarMotoristas, []);
+  const [aviso, setAviso] = useState('');
   const [busca, setBusca] = useState("");
   const [filtroDisponibilidade, setFiltroDisponibilidade] = useState("TODOS");
   const [filtroCnh, setFiltroCnh] = useState("TODOS");
@@ -194,64 +178,6 @@ export function Motoristas() {
   const [novoMotorista, setNovoMotorista] =
     useState<NovoMotorista>(cadastroInicial);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function carregarMotoristas() {
-      try {
-        setCarregando(true);
-        setErro("");
-
-        const resposta = await fetchAutenticada("/api/motoristas", {
-          method: "GET",
-          signal: controller.signal,
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        const resultado = (await resposta.json().catch(() => null)) as
-          | RespostaApi
-          | Motorista[]
-          | null;
-
-        if (!resposta.ok) {
-          const mensagem =
-            resultado && !Array.isArray(resultado)
-              ? resultado.error?.message
-              : undefined;
-
-          throw new Error(
-            mensagem ?? "Não foi possível carregar os motoristas.",
-          );
-        }
-
-        const lista = Array.isArray(resultado)
-          ? resultado
-          : resultado && Array.isArray(resultado.data)
-            ? resultado.data
-            : [];
-
-        setMotoristas(lista);
-      } catch (erroBusca) {
-        if (erroBusca instanceof Error && erroBusca.name === "AbortError") {
-          return;
-        }
-
-        setErro(
-          erroBusca instanceof Error
-            ? erroBusca.message
-            : "Não foi possível carregar os motoristas.",
-        );
-      } finally {
-        if (!controller.signal.aborted) setCarregando(false);
-      }
-    }
-
-    void carregarMotoristas();
-
-    return () => controller.abort();
-  }, []);
 
   useEffect(() => {
     if (menuMotoristaAberto === null) return;
@@ -317,52 +243,16 @@ export function Motoristas() {
     setSalvandoCadastro(true);
 
     try {
-      const resposta = await fetchAutenticada("/api/motoristas", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          nome: novoMotorista.nome.trim(),
-          cnh: novoMotorista.cnh.trim(),
-          categoria_cnh: novoMotorista.categoria_cnh,
-          validade_cnh: novoMotorista.validade_cnh,
-          status: novoMotorista.status,
-        }),
-      });
-
-      const resultado = (await resposta.json().catch(() => null)) as
-        | RespostaApi
-        | null;
-
-      if (!resposta.ok) {
-        throw new Error(
-          resultado?.error?.message ??
-            "Não foi possível cadastrar o motorista.",
-        );
-      }
-
-      const registroApi =
-        resultado?.data && !Array.isArray(resultado.data)
-          ? resultado.data
-          : undefined;
-
-      const motoristaCriado: Motorista = {
-        ...registroApi,
-        nome: registroApi?.nome ?? novoMotorista.nome.trim(),
-        cnh: registroApi?.cnh ?? novoMotorista.cnh.trim(),
-        categoria_cnh:
-          registroApi?.categoria_cnh ?? novoMotorista.categoria_cnh,
-        validade_cnh:
-          registroApi?.validade_cnh ?? novoMotorista.validade_cnh,
-        status: registroApi?.status ?? novoMotorista.status,
-        cpf: novoMotorista.cpf.trim() || registroApi?.cpf,
-        telefone: novoMotorista.telefone.trim() || registroApi?.telefone,
-        email: novoMotorista.email.trim() || registroApi?.email,
+      const entrada: CriarMotoristaDto = {
+        nome: novoMotorista.nome.trim(), cnh: novoMotorista.cnh.trim(),
+        categoria_cnh: novoMotorista.categoria_cnh as CriarMotoristaDto['categoria_cnh'],
+        validade_cnh: novoMotorista.validade_cnh,
+        status: novoMotorista.status as CriarMotoristaDto['status'],
+        cpf: novoMotorista.cpf.trim() || null, telefone: novoMotorista.telefone.trim() || null,
       };
-
+      const motoristaCriado = await salvarMotorista(entrada);
       setMotoristas((atuais) => [motoristaCriado, ...atuais]);
+      setAviso('Motorista cadastrado com sucesso.');
       setNovoMotorista(cadastroInicial);
       setModalCadastroAberto(false);
     } catch (erroEnvio) {
@@ -602,8 +492,7 @@ export function Motoristas() {
             </div>
           ) : (
             <p className="motorista-detalhe-vazio">
-              A API não retornou registros de chamados ou rotas para este
-              motorista.
+              Histórico de chamados e rotas indisponível nesta tela.
             </p>
           )}
         </section>
@@ -712,9 +601,10 @@ export function Motoristas() {
                 </label>
 
                 <label>
-                  E-mail
+                  E-mail (integração indisponível)
                   <input
                     type="email"
+                    disabled
                     value={novoMotorista.email}
                     onChange={(evento) =>
                       setNovoMotorista({
@@ -795,6 +685,7 @@ export function Motoristas() {
                 </label>
               </div>
 
+              {salvandoCadastro && <p role="status">Salvando motorista...</p>}
               {erroCadastro && (
                 <p className="motorista-modal__erro" role="alert">
                   {erroCadastro}
@@ -941,12 +832,13 @@ export function Motoristas() {
 
       {erro && (
         <p className="motoristas-aviso motoristas-aviso--erro" role="alert">
-          {erro}
+          {erro} <button type="button" onClick={retry}>Tentar novamente</button>
         </p>
       )}
+      {aviso && <p role="status">{aviso}</p>}
 
       {carregando && (
-        <p className="motoristas-aviso">Carregando motoristas...</p>
+        <p className="motoristas-aviso" role="status">Carregando motoristas...</p>
       )}
 
       {!carregando && !erro && motoristasFiltrados.length === 0 && (
@@ -966,7 +858,7 @@ export function Motoristas() {
             const chaveMenu = String(chave);
             const alertaCnh = textoAlertaCnh(motorista.validade_cnh);
             const identificador = motorista.codigo ?? motorista.matricula;
-            const chamadas = motorista.chamadas_realizadas ?? 0;
+            const chamadas = motorista.chamadas_realizadas;
             const quantidadePendencias = Number(
               motorista.pendencias ?? listaPendencias(motorista).length,
             );
@@ -990,7 +882,7 @@ export function Motoristas() {
 
                 <p className="motorista-card__subtitulo">
                   {identificador ? `${identificador} · ` : ""}
-                  Ativo · {chamadas} chamados realizados
+                  {chamadas === undefined ? 'Histórico de chamados indisponível' : `${chamadas} chamados realizados`}
                 </p>
 
                 <div className="motorista-cnh">

@@ -4,6 +4,10 @@ export class ApiError extends Error {
     super(message); this.name = 'ApiError';
   }
 }
+/** Mensagem única para falhas de transporte sem expor detalhes técnicos ao usuário. */
+export function errorMessage(error: unknown): string {
+  return error instanceof ApiError ? error.message : 'Não foi possível concluir a solicitação. Tente novamente.';
+}
 const objeto = (value: unknown): value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 /** Adapta os três envelopes atuais sem retornar conteúdo bruto ou stack do servidor. */
 export function apiError(status: number, body: unknown, requestId?: string): ApiError {
