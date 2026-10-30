@@ -16,12 +16,12 @@ Esses princípios seguem a orientação de [autorização da OWASP](https://chea
 
 | Área de visualização | Ações e registros acessíveis |
 | --- | --- |
-| Responsável SVO | A confirmar por funcionalidade. |
-| Gerente | A confirmar por funcionalidade. |
-| Motorista | A confirmar por funcionalidade. |
-| Solicitante | A confirmar por funcionalidade. |
+| Administrador (`ADM`) | Dashboard administrativo, gestão de usuários e auditoria; também pode acessar as operações de gestor permitidas no backend. |
+| Gestor (`GESTOR_FROTA`) | Dashboard, veículos, motoristas, documentos e abastecimentos. Não gerencia usuários nem acessa auditoria administrativa. |
+| Responsável SVO (`ATENDENTE_SVO`) | Consulta veículos e motoristas e acessa as rotas operacionais do SVO conforme os endpoints implementados. |
+| Motorista e solicitante | Sem rotas frontend autenticadas disponíveis nesta entrega. |
 
-Área de visualização não define automaticamente um papel nem uma hierarquia. A equivalência entre Administrador e Gestor citada nos requisitos deve ser considerada ao definir os papéis; não crie diferenças de acesso por conta própria.
+As regras são aplicadas no backend; o guarda de rotas no frontend melhora a navegação, mas não substitui autorização da API. Perfis sem tela inicial configurada não recebem acesso por fallback a páginas administrativas.
 
 ## Ao entregar uma funcionalidade
 

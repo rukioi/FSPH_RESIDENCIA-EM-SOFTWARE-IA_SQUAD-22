@@ -33,4 +33,4 @@ Para preparar o navegador uma vez: `npx playwright install chromium`. O E2E inic
 
 Liste os comandos executados, o resultado e o que não foi verificado. Para documentação, rode lint, typecheck, testes e build conforme o AGENTS; E2E é dispensável se telas, rotas e fluxos não mudaram.
 
-A base atual possui um teste de integração do servidor e quatro E2E de inicialização/proxy. Autenticação, banco e regras de negócio ainda não têm cobertura porque não estão implementados.
+A autenticação possui testes unitários do contrato JWT e testes de integração da rota de sessão, incluindo 401 sem token, 403 para perfil não autorizado e sucesso com token válido. O E2E cobre o redirecionamento de rotas privadas para o login; ele exige Chromium instalado e pode ser dispensado quando a alteração não envolver telas ou fluxos.

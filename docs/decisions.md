@@ -20,6 +20,7 @@ Estas decisões orientam a próxima entrega e podem evoluir. O código mostra o 
 | Backend | Uma aplicação modular; regras ficam no módulo responsável. |
 | Frontend | Páginas por área de visualização, funcionalidades por domínio e recursos comuns em `shared/`. |
 | Banco | PostgreSQL previsto; migrations e seeds em `backend/src/database/`. Conexão e biblioteca de acesso ainda pendentes. |
+| Autenticação | Usuários autenticados pelo PostgreSQL; JWT HS256 com expiração de oito horas; token temporário em `sessionStorage`, sem dados de usuário em `localStorage`. |
 | API | Convenções mínimas em [api/README.md](./api/README.md). |
 | Acesso | Mecanismo compartilhado; matriz evolui por funcionalidade em [permissoes.md](./permissoes.md). |
 | Qualidade | Testes das regras e integrações alteradas; E2E dos fluxos relevantes. Veja [testing.md](./testing.md). |
@@ -28,4 +29,4 @@ Estas decisões orientam a próxima entrega e podem evoluir. O código mostra o 
 
 Para mudar uma decisão, explique no PR o problema, a escolha e o impacto. Atualize esta página se a mudança afetar o squad. Uma nota curta basta; não é necessário criar um documento por decisão.
 
-Ainda precisam de definição: sessão/autenticação, acesso ao banco, hospedagem, armazenamento de arquivos e regras de cada fluxo. Decida cada ponto na tarefa que precisar dele, sem bloquear o restante do projeto.
+Ainda precisam de definição: revogação de sessões antes da expiração, hospedagem, armazenamento de arquivos e regras de cada fluxo. Decida cada ponto na tarefa que precisar dele, sem bloquear o restante do projeto.

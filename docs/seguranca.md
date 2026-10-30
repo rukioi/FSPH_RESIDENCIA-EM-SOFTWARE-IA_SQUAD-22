@@ -12,9 +12,15 @@ Implemente estes controles junto da funcionalidade que precisa deles. A base atu
 
 ## Autenticação
 
-A estratégia de sessão será definida na tarefa de autenticação e reutilizada por todos os módulos. Não crie implementações locais nem criptografia própria. Se houver senha local, use uma biblioteca mantida de hash de senhas; nunca texto puro ou hash rápido genérico.
+A autenticação local consulta `public.usuario` no PostgreSQL e compara a senha com bcrypt. Nunca use credenciais de conexão do banco para login da aplicação nem armazene senha em texto puro.
 
-Se a sessão usar cookies, configure `HttpOnly`, `Secure` em produção, `SameSite` adequado e proteção contra CSRF nas operações de alteração. Defina expiração, revogação e limite de tentativas de login na mesma entrega. CORS deve permitir apenas as origens necessárias; não substitui autorização.
+O backend emite JWT HS256 com `sub`, `iat` e `exp` de oito horas. `JWT_SECRET` é obrigatória e deve ter pelo menos 16 bytes; prefira 32 bytes ou mais para maior margem de segurança. Todos os módulos protegidos usam o validador compartilhado; token ausente, inválido ou expirado retorna 401 (`NAO_AUTENTICADO`), e perfil sem permissão retorna 403 (`ACESSO_NEGADO`).
+
+O frontend guarda somente o token em `sessionStorage` enquanto a aba estiver aberta. Não armazena token nem dados de usuário em `localStorage`. A sessão é confirmada em `/api/auth/sessao`; sem sessão válida, páginas privadas redirecionam para `/login`. A checagem de rota no navegador não substitui as verificações de perfil no backend.
+
+O login deve responder com mensagem genérica para credenciais inválidas (401). A mensagem `Não foi possível realizar o login.` indica falha interna durante consulta ao banco, comparação de hash ou emissão do JWT (500); verifique os logs do backend e a configuração de `DATABASE_URL`/`JWT_SECRET`, sem registrar senha, token ou URL de conexão.
+
+Se a estratégia migrar para cookies, configure `HttpOnly`, `Secure` em produção, `SameSite` adequado e proteção contra CSRF nas operações de alteração. CORS deve permitir apenas as origens necessárias; não substitui autorização.
 
 ## Arquivos e concorrência
 

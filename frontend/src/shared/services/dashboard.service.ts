@@ -2,16 +2,13 @@ import type {
   DashboardKpisResponse,
   DashboardPeriodo,
 } from '../types/dashboard'
+import { fetchAutenticada } from './auth.service'
 
 export async function buscarDashboardKpis(
   periodo: DashboardPeriodo,
-  token: string,
 ): Promise<DashboardKpisResponse> {
-  const response = await fetch(`/api/dashboard/kpis?periodo=${periodo}`, {
+  const response = await fetchAutenticada(`/api/dashboard/kpis?periodo=${periodo}`, {
     method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   })
 
   if (!response.ok) {

@@ -246,6 +246,8 @@ test('BE-S6-02 impede Atendente SVO de cadastrar motoristas', async () => {
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject('atendente-teste')
+    .setIssuedAt()
+    .setExpirationTime('1h')
       .sign(new TextEncoder().encode(segredoTeste));
 
     await new Promise<void>((resolve) => {

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { sql } from '../../config/db.js';
+import { criarJwt } from '../../security/jwt.js';
 
 export const login = async (req: Request, res: Response) => {
   const { email, senha } = req.body;
@@ -30,11 +30,12 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Credenciais inválidas.' });
     }
 
-    const token = jwt.sign(
-      { id: usuario.id, email: usuario.email, perfil: usuario.perfil },
-      process.env.JWT_SECRET || 'secret_key',
-      { expiresIn: '8h' }
-    );
+    const token = await criarJwt({
+      id: String(usuario.id),
+      email: usuario.email,
+      nome: usuario.nome,
+      perfil: usuario.perfil,
+    });
 
     return res.json({
       token,

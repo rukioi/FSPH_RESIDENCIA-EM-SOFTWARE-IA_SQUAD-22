@@ -1,4 +1,4 @@
-import { validarJwt } from '../../security/jwt.js';
+import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import {
@@ -12,38 +12,13 @@ export async function documentosRoute(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
-  const usuario = await validarJwt(req.headers.authorization);
+  const usuario = await autenticarRequisicao(req, res);
 
   if (!usuario) {
-    res.writeHead(401, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    res.end(JSON.stringify({
-      error: {
-        code: 'NAO_AUTENTICADO',
-        message: 'Autenticação necessária.',
-      },
-    }));
     return;
   }
 
-  if (
-    usuario.perfil !== 'ADMINISTRADOR' &&
-    usuario.perfil !== 'GESTOR_FROTA'
-  ) {
-    res.writeHead(403, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    res.end(JSON.stringify({
-      error: {
-        code: 'ACESSO_NEGADO',
-        message: 'Acesso não permitido.',
-      },
-    }));
-    return;
-  }
+  if (!autorizarPerfis(usuario, ['ADM', 'GESTOR_FROTA'], res)) return;
 
   const url = new URL(
     req.url ?? '',

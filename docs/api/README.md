@@ -1,6 +1,6 @@
 # Convenções mínimas da API
 
-Use este padrão nos novos endpoints. São decisões iniciais de integração; o servidor atual ainda responde 404 a todas as rotas.
+Use este padrão nos novos endpoints. Os contratos implementados devem descrever o comportamento real de cada rota.
 
 ## Rotas e dados
 
@@ -25,7 +25,7 @@ Use este padrão nos novos endpoints. São decisões iniciais de integração; o
 | 413 | Corpo da requisição maior que o limite aceito. |
 | 500 | Falha inesperada, sem detalhes internos na resposta. |
 
-Formato de erro nos endpoints implementados:
+Formato padrão de erro nos endpoints protegidos:
 
 ```json
 {
@@ -37,7 +37,7 @@ Formato de erro nos endpoints implementados:
 }
 ```
 
-`fields` é opcional. `code` é estável para o frontend; `message` é legível em português. Centralize o tratamento em `backend/src/errors/` e as chamadas do frontend em `frontend/src/shared/services/` quando forem implementados.
+`fields` é opcional. `code` é estável para o frontend; `message` é legível em português. A autenticação usa `NAO_AUTENTICADO` para 401 e `ACESSO_NEGADO` para 403. As chamadas autenticadas do frontend usam `frontend/src/shared/services/auth.service.ts`.
 
 ## Documentação por entrega
 

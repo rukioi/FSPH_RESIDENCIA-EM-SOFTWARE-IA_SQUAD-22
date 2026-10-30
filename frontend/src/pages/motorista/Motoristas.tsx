@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { fetchAutenticada } from "../../shared/services/auth.service";
 import "./motoristas.css";
 
 type HistoricoMotorista = {
@@ -201,13 +202,11 @@ export function Motoristas() {
         setCarregando(true);
         setErro("");
 
-        const token = localStorage.getItem("token");
-        const resposta = await fetch("/api/motoristas", {
+        const resposta = await fetchAutenticada("/api/motoristas", {
           method: "GET",
           signal: controller.signal,
           headers: {
             Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
 
@@ -318,14 +317,11 @@ export function Motoristas() {
     setSalvandoCadastro(true);
 
     try {
-      const token = localStorage.getItem("token");
-
-      const resposta = await fetch("/api/motoristas", {
+      const resposta = await fetchAutenticada("/api/motoristas", {
         method: "POST",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           nome: novoMotorista.nome.trim(),

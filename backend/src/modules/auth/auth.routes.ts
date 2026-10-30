@@ -1,10 +1,30 @@
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { autenticarRequisicao, criarJwt } from '../../security/jwt.js';
+
+function enviarJson(
+  response: ServerResponse,
+  status: number,
+  dados: unknown,
+): void {
+  response.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+  });
+  response.end(JSON.stringify(dados));
+}
 
 export async function authRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url ?? '', 'http://localhost');
+
+  if (req.method === 'GET' && url.pathname === '/api/auth/sessao') {
+    const usuario = await autenticarRequisicao(req, res);
+
+    if (!usuario) return;
+
+    enviarJson(res, 200, { data: usuario });
+    return;
+  }
 
   if (req.method === 'POST' && url.pathname === '/api/auth/login') {
     let body = '';
@@ -16,8 +36,12 @@ export async function authRoute(req: IncomingMessage, res: ServerResponse): Prom
       const { email, senha } = JSON.parse(body);
 
       if (!email || !senha) {
-        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ error: 'E-mail e senha são obrigatórios.' }));
+        enviarJson(res, 400, {
+          error: {
+            code: 'ENTRADA_INVALIDA',
+            message: 'E-mail e senha são obrigatórios.',
+          },
+        });
         return;
       }
 
@@ -27,26 +51,34 @@ export async function authRoute(req: IncomingMessage, res: ServerResponse): Prom
       const usuario = usuarios[0];
 
       if (!usuario || !usuario.ativo) {
-        res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ error: 'Credenciais inválidas ou utilizador inativo.' }));
+        enviarJson(res, 401, {
+          error: {
+            code: 'CREDENCIAIS_INVALIDAS',
+            message: 'E-mail ou senha inválidos.',
+          },
+        });
         return;
       }
 
       const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
       if (!senhaValida) {
-        res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ error: 'Credenciais inválidas.' }));
+        enviarJson(res, 401, {
+          error: {
+            code: 'CREDENCIAIS_INVALIDAS',
+            message: 'E-mail ou senha inválidos.',
+          },
+        });
         return;
       }
 
-      const token = jwt.sign(
-        { id: usuario.id, email: usuario.email, perfil: usuario.perfil },
-        process.env.JWT_SECRET || 'secret_key',
-        { expiresIn: '8h' }
-      );
+      const token = await criarJwt({
+        id: String(usuario.id),
+        email: usuario.email,
+        nome: usuario.nome,
+        perfil: usuario.perfil,
+      });
 
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({
+      enviarJson(res, 200, {
         token,
         usuario: {
           id: usuario.id,
@@ -54,11 +86,32 @@ export async function authRoute(req: IncomingMessage, res: ServerResponse): Prom
           email: usuario.email,
           perfil: usuario.perfil
         }
-      }));
+      });
     } catch (err) {
-      console.error(err);
-      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ error: 'Erro interno ao realizar login.' }));
+      const codigoBanco = typeof err === 'object' && err !== null && 'code' in err
+        && typeof err.code === 'string'
+        ? err.code
+        : null;
+      const causa = err instanceof Error && err.message.startsWith('JWT_SECRET')
+        ? 'JWT_SECRET_INVALIDA'
+        : codigoBanco
+          ? `FALHA_POSTGRES_${codigoBanco}`
+          : 'FALHA_INTERNA';
+      console.error('Falha ao autenticar usuário.', { causa });
+      enviarJson(res, 500, {
+        error: {
+          code: 'ERRO_INTERNO',
+          message: 'Não foi possível realizar o login.',
+        },
+      });
     }
+    return;
   }
+
+  enviarJson(res, 404, {
+    error: {
+      code: 'NAO_ENCONTRADO',
+      message: 'Rota de autenticação não encontrada.',
+    },
+  });
 }

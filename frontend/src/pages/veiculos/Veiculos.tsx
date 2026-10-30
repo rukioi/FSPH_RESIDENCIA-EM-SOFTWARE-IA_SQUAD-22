@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { fetchAutenticada } from "../../shared/services/auth.service";
 import "./Veiculos.css";
 
 type RegistroAbastecimento = {
@@ -478,13 +479,8 @@ export function Veiculos() {
         setCarregando(true);
         setErro("");
 
-        const token = localStorage.getItem("token");
-
-        const resposta = await fetch("/api/veiculos", {
+        const resposta = await fetchAutenticada("/api/veiculos", {
           signal: controller.signal,
-          headers: token
-            ? { Authorization: `Bearer ${token}` }
-            : undefined,
         });
 
         const resultado = (await resposta.json()) as RespostaApi;
@@ -592,13 +588,10 @@ export function Veiculos() {
     try {
       setSalvando(true);
 
-      const token = localStorage.getItem("token");
-
-      const resposta = await fetch("/api/veiculos", {
+      const resposta = await fetchAutenticada("/api/veiculos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           placa: formulario.placa.trim().toUpperCase(),

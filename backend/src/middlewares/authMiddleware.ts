@@ -1,43 +1,45 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { sql } from '../config/db.js';
+import { validarJwt } from '../security/jwt.js';
 
 export interface PayloadJWT {
-  id: number;
-  email: string;
-  perfil: 'ADM' | 'GESTOR_FROTA' | 'SOLICITANTE_INTERNO' | 'MOTORISTA' | 'ATENDENTE_SVO';
+  id: string;
+  email?: string;
+  nome?: string;
+  perfil: string;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: PayloadJWT;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: PayloadJWT;
   }
 }
 
-export const autenticarJWT = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
+export const autenticarJWT = async (req: Request, res: Response, next: NextFunction) => {
+  const usuario = await validarJwt(req.headers.authorization);
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token de acesso não fornecido ou inválido.' });
+  if (!usuario) {
+    return res.status(401).json({
+      error: {
+        code: 'NAO_AUTENTICADO',
+        message: 'Autenticação necessária.',
+      },
+    });
   }
 
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key') as PayloadJWT;
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Token expirado ou inválido.' });
-  }
+  req.user = usuario;
+  return next();
 };
 
 export const autorizarPerfis = (...perfisPermitidos: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !perfisPermitidos.includes(req.user.perfil)) {
-      return res.status(403).json({ error: 'Acesso negado. Perfil sem permissão para este recurso.' });
+      return res.status(403).json({
+        error: {
+          code: 'ACESSO_NEGADO',
+          message: 'Acesso não permitido.',
+        },
+      });
     }
     next();
   };

@@ -1,6 +1,6 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { validarJwt } from '../../security/jwt.js';
+import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
 import {
   listarOrdensPendentesController,
   criarSolicitacaoController,
@@ -11,27 +11,13 @@ export async function svoRoute(
   request: IncomingMessage,
   response: ServerResponse
 ): Promise<void> {
-  const usuario = await validarJwt(request.headers.authorization);
+  const usuario = await autenticarRequisicao(request, response);
 
   if (!usuario) {
-    response.writeHead(401, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
-      erro: 'Você precisa estar logado.',
-    }));
     return;
   }
 
-  if (usuario.perfil !== 'ATENDENTE_SVO') {
-    response.writeHead(403, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
-      erro: 'Você não tem permissão para realizar esta ação.',
-    }));
+  if (!autorizarPerfis(usuario, ['ATENDENTE_SVO'], response)) {
     return;
   }
   

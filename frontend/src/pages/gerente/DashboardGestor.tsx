@@ -39,15 +39,6 @@ export function Dashboard() {
       return;
     }
 
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setErro("Token de autenticação não encontrado.");
-      setCarregando(false);
-      return;
-    }
-
-    const authToken = token;
     const periodoValido: DashboardPeriodo = periodoSelecionado;
 
     async function carregarKpis() {
@@ -55,10 +46,7 @@ export function Dashboard() {
         setCarregando(true);
         setErro("");
 
-        const resposta = await buscarDashboardKpis(
-          periodoValido,
-          authToken,
-        );
+        const resposta = await buscarDashboardKpis(periodoValido);
 
         setKpis(resposta.data);
       } catch {
