@@ -2,7 +2,7 @@ import { useRemoteData } from '../../shared/api/useRemoteData';
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { buscarMotoristas, cadastrarMotorista as salvarMotorista } from "../../shared/services/motoristas.service";
 import type { MotoristaDto, CriarMotoristaDto } from "../../shared/services/motoristas.service";
-import "./motoristas.css";
+import "./Motoristas.css";
 
 type HistoricoMotorista = {
   ticket?: string;

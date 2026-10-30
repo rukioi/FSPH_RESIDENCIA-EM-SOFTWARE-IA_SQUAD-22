@@ -16,6 +16,11 @@ não é checklist funcional desta entrega. #23–#26 estão adiadas, sem bloquea
 | #30 | d38be98 | shared/services/api/types, páginas/E2E: consumo validado e estado remoto |
 | #33 | commit com assunto `ci: consolidate verified refactoring in the shared pull request (#33)` | instruções/docs/workflow e retirada de dist do índice |
 
+Ajuste técnico complementar #33: commit com assunto
+`fix(ci): match the tracked stylesheet case for Linux builds (#33)` corrige
+somente o import de Motoristas.css após falha reproduzida pelo build Linux.
+É o único arquivo runtime adicional indispensável, sem alteração visual/de negócio.
+
 Branch única excepcional: chore/reorganizacao-global-2026. Destino: main.
 Reutilizar exclusivamente o [PR #34](https://github.com/rukioi/FSPH_RESIDENCIA-EM-SOFTWARE-IA_SQUAD-22/pull/34),
 reescrevendo a descrição para o resultado final. Sem PR por ticket, merge, deploy

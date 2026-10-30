@@ -33,7 +33,7 @@ reset/repair. Sem URL arbitrária, dotenv real, segredos ou escrita remota.
 | npm run test:e2e | 24 cenários passaram em 1,3 minuto |
 | git diff --check | passou após retirada dos compilados do índice |
 | Workflow YAML | parsing e presença dos comandos obrigatórios conferidos |
-| CI remoto | resultado por revisão nos checks do PR; não inferir aprovação remota da prova local |
+| CI remoto | primeiro run reproduziu import CSS com caixa incorreta no Linux; correção mínima e resultado final nos checks do PR |
 
 Sete provas negativas alteraram temporariamente um arquivo por vez: OpenAPI,
 inventário, DTOs, bindings, metadados, schema e DER. Cada check recusou a deriva;
@@ -78,11 +78,25 @@ nenhum cenário precisou de retry de operação de negócio.
 ## Retorno e limites
 
 Runtime anterior à #33 é d38be98: esta tarefa altera somente instruções/docs/CI
-e rastreamento de compilados, sem mudar fontes de aplicação, contratos ou esquema.
+e rastreamento de compilados, com a exceção técnica de caixa no import CSS descrita abaixo;
+não muda comportamento de aplicação, contratos ou esquema.
 `git diff --exit-code d38be98 -- backend/src frontend/src scripts tests backend/tests`
 confirmou identidade das fontes antes da publicação. Compilados continuaram no
 disco após `git rm --cached`; `git ls-files backend/dist frontend/dist` ficou vazio
 e `git check-ignore` confirmou as regras já existentes, sem alterar .gitignore.
+
+### Correção indispensável após o CI Linux
+
+O [primeiro run](https://github.com/rukioi/FSPH_RESIDENCIA-EM-SOFTWARE-IA_SQUAD-22/actions/runs/41124500776)
+passou instalação, banco/gerados, lint/tipos e testes, mas o build Linux recusou
+`./motoristas.css`: o arquivo versionado é `Motoristas.css`. O Windows resolve
+ambas as caixas, escondendo a falha. A própria execução de build reproduziu o bug
+antes da correção. Arquivo adicional indispensável: Motoristas.tsx, somente a
+caixa do import; sem mudança de CSS/layout ou lógica. Conferência de imports
+relativos do frontend não encontrou outra divergência de caixa. A prova inicial
+de runtime idêntico refere-se ao commit 36999c9 anterior a essa correção.
+Após a correção, lint/typecheck/build e os 24 E2E locais foram repetidos e passaram
+(E2E em 1,0 minuto). O CI novo repete também todos os testes e checks de banco.
 O ensaio usa essas fontes anteriores idênticas no banco isolado, com login/bootstrap,
 HTTP/persistência e encerramento; não é ensaio de publicação/backup remoto.
 Procedimento separado de código/banco em [rollback](./rollback.md).
