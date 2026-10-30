@@ -36,6 +36,13 @@ function dadosVeiculo() {
   };
 }
 
+// Projeção real do postgres: BIGINT string e todos os campos retornados pelo banco.
+function linhaVeiculo(id: string) {
+  return { id, ...dadosVeiculo(), tipo: 'PASSEIO', status: 'DISPONIVEL', capacidade_obitos: 0,
+    capacidade_passageiros: 5, quilometragem_atual: 0, is_svo: false,
+    criado_em: new Date('2026-01-15T15:00:00Z'), vinculo: 'PROPRIO', fornecedor_locacao: null };
+}
+
 function criarRequisicao(dados: Record<string, unknown>): IncomingMessage {
   return Readable.from([JSON.stringify(dados)]) as IncomingMessage;
 }
@@ -100,7 +107,7 @@ test('BE-S6-02 cadastra veículo válido com status 201', async () => {
     .mockResolvedValueOnce([])
     .mockResolvedValueOnce([
       {
-        id: 20,
+        ...linhaVeiculo('20'),
         ...dadosVeiculo(),
         tipo: 'PASSEIO',
         status: 'DISPONIVEL',
@@ -118,7 +125,7 @@ test('BE-S6-02 cadastra veículo válido com status 201', async () => {
   );
 
   expect(end).toHaveBeenCalledWith(
-    expect.stringContaining('"id":20'),
+    expect.stringContaining('"id":"20"'),
   );
 
   expect(sql).toHaveBeenCalledTimes(2);
@@ -347,7 +354,7 @@ test('BE-S6-02 cadastra veículo com capacidade de passageiros informada', async
     .mockResolvedValueOnce([])
     .mockResolvedValueOnce([
       {
-        id: 21,
+        ...linhaVeiculo('21'),
         ...dadosVeiculo(),
         capacidade_passageiros: 7,
       },
@@ -382,7 +389,7 @@ test('BE-S6-02 usa capacidade padrão de 5 ao cadastrar veículo', async () => {
     .mockResolvedValueOnce([])
     .mockResolvedValueOnce([
       {
-        id: 22,
+        ...linhaVeiculo('22'),
         ...dadosVeiculo(),
         capacidade_passageiros: 5,
       },
@@ -411,7 +418,7 @@ test('BE-S6-02 usa capacidade padrão de 5 ao cadastrar veículo', async () => {
 test('BE-S6-02 atualiza capacidade de passageiros do veículo', async () => {
   bancoMock.mockResolvedValueOnce([
     {
-      id: 10,
+      ...linhaVeiculo('10'),
       ...dadosVeiculo(),
       capacidade_passageiros: 8,
     },
@@ -465,7 +472,7 @@ test('BE-S6-02 cadastra veículo locado com fornecedor', async () => {
     .mockResolvedValueOnce([])
     .mockResolvedValueOnce([
       {
-        id: 30,
+        ...linhaVeiculo('30'),
         ...dadosVeiculo(),
         vinculo: 'LOCADO',
         fornecedor_locacao: 'Nordeste Rent',
@@ -495,7 +502,7 @@ test('BE-S6-02 cadastra veículo locado com fornecedor', async () => {
 test('BE-S6-02 atualiza vínculo e fornecedor do veículo', async () => {
   bancoMock.mockResolvedValueOnce([
     {
-      id: 10,
+      ...linhaVeiculo('10'),
       ...dadosVeiculo(),
       vinculo: 'LOCADO',
       fornecedor_locacao: 'Nordeste Rent',

@@ -3,6 +3,19 @@ import { ErroCorpoRequisicao } from './body.js';
 import { enviarErro, enviarJson } from './json.js';
 import { registrarFalha } from '../logging/logger.js';
 
+/** Erro técnico/de domínio conhecido, seguro para adaptar aos envelopes HTTP existentes. */
+export class ErroHttp extends Error {
+  constructor(public readonly status: number, public readonly code: string, message: string,
+    public readonly fields?: Record<string,string>) { super(message); this.name = 'ErroHttp'; }
+}
+
+/** Adapta um erro conhecido sem serializar cause, stack ou objetos de banco. */
+export function responderErroHttp(res: ServerResponse, erro: unknown): boolean {
+  if (!(erro instanceof ErroHttp)) return false;
+  enviarJson(res,erro.status,{error:{code:erro.code,message:erro.message,...(erro.fields ? {fields:erro.fields} : {})}});
+  return true;
+}
+
 /** Responde falhas do corpo com adaptador opcional para o envelope legado do SVO. */
 export function responderErroCorpo(res: ServerResponse, erro: unknown, legado = false): boolean {
   if (!(erro instanceof ErroCorpoRequisicao)) return false;
@@ -20,6 +33,7 @@ export function responderErroCorpo(res: ServerResponse, erro: unknown, legado = 
 
 /** Isola erros inesperados sem expor driver, payload ou stack. */
 export function tratarErroTecnico(res: ServerResponse, erro: unknown): void {
+  if (responderErroHttp(res, erro)) return;
   if (responderErroCorpo(res, erro)) return;
   registrarFalha(erro);
   if (res.headersSent) { if (!res.writableEnded) res.destroy(); return; }

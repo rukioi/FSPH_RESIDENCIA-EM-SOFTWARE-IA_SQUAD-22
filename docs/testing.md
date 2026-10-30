@@ -196,3 +196,122 @@ permitida pelo passo 8 da #29; nenhuma ACL remota ou policy inventada foi execut
 Pré-condições em seguranca.md. Não foram acessados segredos ou dados operacionais.
 
 Próximo ticket: #31. Só #33 abre/reutiliza o PR agregado para main.
+
+## Evidências da #32 — 30/10/2026
+
+Dependências conferidas por commits/implementação na branch agregadora: #27
+ea68b16, #28 acd0f6c, #29 58dcbbf e #31 0feb939. origin/main é ancestral;
+fetch repetido antes da publicação. Sem PR individual, merge, deploy ou escrita
+no Supabase compartilhado. O estado fechado da issue #32 já existia na consulta
+inicial; esta execução não altera o estado de issues.
+
+### Cobertura e arquivos
+
+- `backend/src/shared/contract/`: registro, componentes comuns e OpenAPI puro;
+  nove contribuições `backend/src/modules/*/*.schemas.ts`. Dispatcher em app.ts
+  usa esse registro, mantendo os caminhos/métodos e as listas atuais de acesso.
+- `backend/src/modules/veiculos/`: controller HTTP pequeno, serviço com as regras
+  existentes e repository com projeções explícitas. `shared/http/errors.ts`
+  oferece erro interno conhecido e adaptador sem expor detalhes de banco.
+- `scripts/{generate-api,check-api,generate-client,check-client}.ts`: geração e
+  comparação; `scripts/tsconfig.json` inclui esses arquivos no typecheck da raiz.
+  OpenAPI/inventário, tipos e bindings são gerados, nunca editados manualmente.
+- `frontend/src/shared/api/`: cliente/erro normalizados e gerados;
+  `shared/services/veiculos.service.ts` valida com a fonte Zod do backend e usa
+  tipos/bindings gerados. Auth reaproveita os tipos de login/sessão e mantém o
+  adaptador Bearer/401; erro sem token agora também tem status/code comuns.
+  Veiculos.tsx conserva formulário/modelo visual, sem DTO HTTP próprio.
+- Docs API (global/veículos/inventário/manifesto), decisões e pendências registram
+  os formatos atuais, limites e evolução. Pacotes declaram somente Zod para
+  runtime e YAML/json-schema-to-typescript para geração local.
+
+São 29 operações documentadas, cinco no piloto executável de veículos e 24
+legadas explicitamente fechadas. Os validadores anteriores das outras operações
+continuam ativos. Tipos gerados disponíveis não significam migração runtime de
+todos os consumidores; o restante do frontend continua na #30.
+
+### Comandos finais
+
+| Comando | Resultado |
+| --- | --- |
+| npm run api:generate | passou, OpenAPI/inventário reproduzíveis |
+| npm run api:check | passou, cobertura fechada e comparação de conteúdo |
+| npm run client:generate | passou, DTOs e bindings da mesma especificação |
+| npm run client:check | passou, sem drift dos gerados |
+| npm run db:test:prepare | passou, identidade Docker/marcador confirmados pelo harness #27 |
+| npm run test:db | 16 testes reais passaram |
+| npm run db:docs:check | passou, metadados/schema/DER sem drift |
+| npm run lint | passou |
+| npm run typecheck | passou, frontend/backend/testes e scripts |
+| npm test | 172 testes passaram em 28 arquivos |
+| npm run build | frontend/backend passaram |
+| npm run test:e2e | 14 testes passaram |
+
+`backend/tests/contract/generation.test.ts` executa checks em subprocessos sem
+DATABASE_URL/JWT_SECRET e com allowlist explícita de ambiente; prova ausência de
+dependência em banco/segredos. Exercita remoção/duplicação/exceção nova no manifesto,
+remoção de rota/status e mudança de tipo incompatível, limites do pathname,
+parcialidade/defaults/condição de fornecedor e precedência dos códigos legados.
+O gate compara com HEAD: na primeira entrega não havia baseline OpenAPI; o commit
+da #32 estabelece esse baseline para as próximas tarefas. O gate é conservador e
+não substitui revisão semântica de compatibilidade.
+
+Os primeiros testes do cliente falharam enquanto o módulo ainda não existia;
+depois passaram os cenários de JSON inválido, envelopes legados, 204 e aborto.
+Seis mocks antigos de veículos não possuíam a projeção completa e usavam ID Number;
+foram corrigidos para as strings/campos que PostgreSQL realmente retorna, mantendo
+status de sucesso, validações e parâmetros SQL esperados. Não foram afrouxados
+testes ou desativados casos. Um teste novo comparava a ordem das propriedades JSON;
+passou a comparar o objeto decodificado, sem mudar campos/valores exigidos.
+O teste combinado de dois subprocessos de geração excedeu os 5s padrão; foi
+separado em dois casos independentes sem aumentar timeout ou usar retry.
+
+### Prova real e compatibilidade
+
+`backend/tests/integration/veiculos-contract.test.ts` usa somente o PostgreSQL
+fsph_t1_baseline do projeto fsph-t1-isolated-2026. O harness verifica proveniência,
+porta fixa, checkout e marcador antes da conexão. O snapshot versionado orientou
+as colunas/enums/nullability; não foi consultado dado operacional remoto.
+
+HTTP real cobre as 28 operações protegidas sem sessão (401), perfil efetivo
+negado (403), conta inativa (401), SVO somente consulta de veículos, 405/Allow,
+404 de rota inexistente, 400, cadastro/defaults, duplicidade 409, edição parcial,
+vínculo/fornecedor, ausência 404 e exclusão 200 data.success. INSERT direto no alvo
+isolado prova ID 9007199254740993 como string e campos nullable; resposta de edição
+é confrontada com a linha realmente persistida. FK real de documento impede
+exclusão e conserva 500 legado, sem SQL/constraint no retorno ou log. Limpeza remove
+somente fixtures T32 próprias no alvo confirmado.
+
+As consultas GET legadas de auth/usuários/auditoria/dashboard/SVO/motoristas/
+documentos/abastecimentos também foram exercitadas contra PostgreSQL e validadas
+com seus schemas; auditoria cobre array antigo e envelope paginado. Isso não
+equivale a validar todas as escritas/coerções legadas ou todas as regras de domínio.
+Organização/vínculo multitenant não existe no modelo; não foi criado para um teste.
+
+`frontend/src/shared/{api,services}` cobre parsing, erro string/{erro}/{error},
+correlação, aborto/204, signal, resposta incompleta/estado desconhecido, preservação
+de ID e null e cadastro confirmado. Tipos não são usados como validação runtime.
+
+`tests/e2e/veiculos.spec.ts` mantém cadastro real, filtros locais e detalhes em
+390/768/1280 px. Bloqueia a resposta de POST para provar botão desabilitado e
+ausência do card antes da confirmação; valida erro acionável para resposta fora
+do schema e saída da sessão após 401. Capturas `veiculos-<largura>.png`,
+`cadastro-<largura>.png`, `cadastro-acoes-<largura>.png` e `detalhes-<largura>.png`
+ficam em `test-results/veiculos-*/`, fora do Git, conferidas visualmente para o PR
+final #33. Não há rolagem horizontal da página; modal/tabelas conservam rolagem
+interna e filtros abreviados no celular. Não houve alteração de CSS/layout.
+
+O E2E completo também passou os fluxos anteriores de usuários/bootstrap. Mensagens
+de proxy ECONNREFUSED ocorreram durante a espera explícita pelo backend iniciar;
+nenhum cenário depende de retry de operação de negócio. A leitura de diagnósticos
+do editor não respondeu; as verificações por CLI acima foram concluídas.
+
+Limites: não houve migration, enum novo, ACL remota, conversão histórica, nova
+paginação de frota, novo perfil/estado/fluxo ou GET individual. Permanecem o array
+antigo de auditoria com email, conversões Number no SVO, coerções/NOT NULL de
+abastecimento, 500 de FK na exclusão e validadores manuais fora do piloto. O
+manifesto/deferred.md delimitam esses pontos; não são autorização para novos
+legados. Artefatos de build rastreados são restaurados ao estado inicial e não
+integram o commit; a pasta graft preexistente é preservada sem inclusão.
+
+Próximo ticket: #30; somente #33 abre/reutiliza o PR final.

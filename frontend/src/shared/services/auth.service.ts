@@ -1,26 +1,16 @@
 
 import { ROTAS } from '../../app/routes/rotas'
+import type { ApiSchemas } from '../api/generated/schema'
+import { ApiError } from '../api/errors'
 
-export type Credenciais = {
-  email: string
-  senha: string
-}
+export type Credenciais = ApiSchemas['Credenciais']
 
-export type UsuarioSessao = {
-  id: string
-  nome?: string
-  email?: string
-  perfil: string
-}
+// Modelo de apresentação: admite os rótulos históricos normalizados pelo adaptador.
+export type UsuarioSessao = Pick<ApiSchemas['Sessao']['data'], 'id'> &
+  Partial<Pick<ApiSchemas['Sessao']['data'], 'nome' | 'email'>> & { perfil: string }
 
-type RespostaLogin = {
-  token: string
-  usuario: UsuarioSessao
-}
-
-type RespostaSessao = {
-  data: UsuarioSessao
-}
+type RespostaLogin = ApiSchemas['Login']
+type RespostaSessao = ApiSchemas['Sessao']
 
 export type ResultadoLogin = {
   destino: string
@@ -61,6 +51,7 @@ function redirecionarParaLogin(): void {
   }
 }
 
+/** Adaptador legado de Bearer/401, reutilizado pelo cliente compartilhado sem duplicar estado da sessão. */
 export async function fetchAutenticada(
   input: RequestInfo | URL,
   init: RequestInit = {},
@@ -70,7 +61,7 @@ export async function fetchAutenticada(
   if (!token) {
     sair()
     redirecionarParaLogin()
-    throw new Error('Sessão expirada. Faça login novamente.')
+    throw new ApiError(401, 'NAO_AUTENTICADO', 'Sessão expirada. Faça login novamente.')
   }
 
   const headers = new Headers(init.headers)

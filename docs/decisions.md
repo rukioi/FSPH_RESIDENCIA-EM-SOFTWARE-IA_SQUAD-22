@@ -158,3 +158,55 @@ temporariamente completo e inclui email; o novo DTO não o inclui. Auditoria vis
 produto avançado e regras operacionais continuam fora do escopo. Não há PR
 individual, merge, deploy ou fechamento de issue antes da aceitação do PR final.
 Próximo ticket: #32; depois #30 e #33.
+
+## Contrato global e piloto de veículos — #32
+
+Dependências conferidas na branch agregadora: #27 ea68b16, #28 acd0f6c, #29
+58dcbbf e #31 0feb939, com implementação/testes de banco, infraestrutura, identidade
+atual e auditoria transacional presentes. origin/main é ancestral; fetch executado.
+O checkout main anterior continha alterações alheias e foi preservado. A conversa
+passou, com autorização, ao worktree agregador; a pasta graft não rastreada é
+externa à tarefa e não entra no commit. Não houve delegação ou PR individual.
+
+Zod 4 em módulos puros, registro global e OpenAPI 3.1 são a fonte do contrato de
+29 operações. O mesmo registro fornece pathname/métodos ao dispatcher. Schemas
+conservam diferenças reais: sucesso data/objeto/array, erros comuns/string/erro,
+snake_case/camelCase e paginação opcional da auditoria. O manifesto fecha as 24
+exceções sem runtime global; não autoriza novas rotas por prefixo. A API não ganha
+versão nova ou comportamento de requisitos futuros.
+
+Veículos separa HTTP, validação/regras existentes e SQL. DTOs projetam os 14 campos
+conhecidos, sem SELECT/RETURNING *. Schemas validam entrada/saída; objetos Date
+passam pela serialização JSON já usada, sem conversão de ID ou significado de
+horário. Null/defaults, campos ignorados, atualização parcial, vínculo/fornecedor,
+capacidades e estados preservados. Exclusão com FK conserva o 500 legado.
+
+OpenAPI e inventário são gerados deterministicamente. json-schema-to-typescript
+gera DTOs e bindings estáticos usados pelo cliente. openapi-typescript foi avaliado
+mas recusado pelo npm porque declara peer TypeScript 5, enquanto o repo usa 6;
+não houve force/legacy-peer-deps ou atualização de TypeScript. YAML é somente
+serialização. Os checks não importam pool, app ou dotenv. A prova os executa em
+subprocessos com allowlist de ambiente, sem banco/segredos.
+
+O gate de compatibilidade é deliberadamente conservador: compara definições
+existentes com HEAD e recusa qualquer alteração, inclusive algumas compatíveis.
+Na primeira entrega não há baseline OpenAPI no HEAD; a partir do commit desta
+tarefa ele passa a existir. Não é análise semântica completa nem aprovação
+automática para quebrar consumidores. Mudança incompatível exige tarefa explícita.
+
+O serviço de veículos usa bindings/tipos gerados e os mesmos schemas runtime; a
+página mantém só o formulário e campos de apresentação dos painéis sem API.
+Auth reutiliza tipos gerados, preservando um modelo visual para aliases históricos.
+O cliente delega Bearer/401 ao adaptador existente e centraliza parsing/204,
+serialização, cancelamento e erros com correlação do servidor. Schemas não expõem
+conteúdo de falha de validação/SQL ao usuário. O adaptador de auditoria sem
+paginação foi conservado porque removê-lo seria incompatível; migração dos demais
+consumidores e tipos manuais continua na #30, sem reconstruir DTOs no piloto.
+
+Arquivo adicional: `frontend/src/shared/api/generated/operations.ts` é o binding
+gerado indispensável para o cliente escolher método/rota sem duplicação manual.
+`scripts/tsconfig.json` inclui os geradores/checks na verificação estática da raiz,
+além de frontend, backend e testes; não introduz outro processo de build.
+`docs/reorganization/deferred.md` é exigido pela coordenação #22. Nenhuma migration,
+enum, schema, perfil ou regra operacional foi modificada. Próximo ticket: #30;
+somente #33 abre/reutiliza o PR final para main.

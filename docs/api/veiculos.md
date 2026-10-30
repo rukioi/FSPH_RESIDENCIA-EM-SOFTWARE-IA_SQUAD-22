@@ -1,7 +1,8 @@
-# API — Veículos (#28)
+# API — Veículos (#32)
 
-Recorte de compatibilidade e infraestrutura da refatoração; os registros de negócio
-mantêm os campos e envelopes atuais. Contrato unificado/gerado será tratado na #32.
+Piloto do contrato global executável. Os registros mantêm os campos, envelopes,
+permissões e regras existentes; os mesmos schemas validam entrada/saída e geram
+[OpenAPI](./openapi.yaml), tipos e bindings do cliente.
 
 ## Rotas
 
@@ -15,6 +16,27 @@ Autenticação: Bearer JWT. Perfis: GET: ADM/GESTOR_FROTA/ATENDENTE_SVO; escrita
 | DELETE /api/veiculos/:id | não | {data: {success: true}}, 200 |
 
 Cadastro exige placa, modelo, marca e ano; mantém os campos opcionais e enums validados pelo controller atual (tipo, capacidades, quilometragem_atual, status, is_svo, vinculo, fornecedor_locacao). PUT/PATCH continuam parciais; não há GET individual.
+
+Cadastro: textos com pelo menos um caractere não branco, sem trim/normalização
+no backend; ano inteiro de 1900 a 2100. Tipo: PASSEIO/VAN/AMBULANCIA/RABECÃO_SVO;
+status: DISPONIVEL/EM_VIAGEM/EM_MANUTENCAO/INDISPONIVEL. Capacidade de óbitos é
+inteira >=0; passageiros inteira >0; km é número finito >=0 no validador (o banco
+INTEGER pode rejeitar decimal/overflow, conservando 500). is_svo é booleano.
+Defaults para ausente/null: tipo PASSEIO, capacidade_obitos 0, passageiros 5,
+km 0, is_svo false, vínculo PROPRIO. Status ausente usa DISPONIVEL; null é inválido,
+como no validador anterior. Campos extras continuam ignorados.
+
+Vínculo é PROPRIO ou LOCADO; LOCADO exige fornecedor não vazio no mesmo corpo.
+Fornecedor explícito não nulo deve ser texto não branco. PROPRIO limpa fornecedor.
+PUT/PATCH editam somente placa, marca, modelo, status, capacidade_passageiros,
+vinculo e fornecedor_locacao. Enviar ano/tipo/km/capacidade_obitos/is_svo não os
+altera. null não limpa fornecedor de LOCADO; vínculo LOCADO explícito exige enviar
+fornecedor mesmo quando o registro já o tem. Não há nova regra de disponibilidade.
+
+Lista/criação/edição projetam explicitamente os 14 campos do registro no exemplo
+abaixo. ID BIGINT é string; campos com default mas nullable no banco (capacidades,
+km, status, is_svo, criado_em) aceitam null na saída. criado_em é ISO produzido pelo
+driver, sem migração de fuso. Lista usa id DESC, completa, sem page/limit/meta.
 
 ## Respostas
 
@@ -78,6 +100,8 @@ Exemplo de caminho desconhecido; ausência de registro na edição mantém o err
 {"error": {"code": "NAO_ENCONTRADO", "message": "Rota não encontrada."}}
 ```
 
+Para ID inexistente em edição/exclusão, o mesmo código traz `Veículo não encontrado.`.
+
 ### 405 — Método inválido
 
 Inclui `Allow` com os métodos da linha correspondente na tabela de rotas.
@@ -114,6 +138,10 @@ Exemplo do fallback comum. Controllers preservam mensagens genéricas próprias;
 {"error": {"code": "ERRO_INTERNO", "message": "Não foi possível concluir a requisição."}}
 ```
 
+Controllers mantêm `Falha ao listar/cadastrar/atualizar/remover veículo(s).` conforme
+a operação. Em particular, exclusão impedida por FK conserva 500 `ERRO_INTERNO`,
+sem revelar SQL ou constraint. A mudança desse status para 409 exige tarefa própria.
+
 ## Exemplo mínimo
 
 ```http
@@ -123,8 +151,8 @@ Authorization: Bearer <token>
 
 ## O que a entrega não faz
 
-Não muda permissões, estados, regras operacionais ou paginação. Não unifica os
-DTOs legados nesta fase. Limites, request ID e erros técnicos seguem
+Não muda permissões, estados, regras operacionais ou paginação. Não migra os
+demais consumidores legados nesta fase. Limites, request ID e erros técnicos seguem
 [infraestrutura comum](./README.md#infraestrutura-http--28).
 
 ## Identidade comum — #29

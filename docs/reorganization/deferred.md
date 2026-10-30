@@ -60,3 +60,34 @@ Próximo ticket: #31. Somente #33 abre/reutiliza o PR final.
   monitoramento, SLA 24x7 ou novas regras operacionais.
 
 Próximo ticket: #32. Somente #33 abre/reutiliza o PR final.
+
+## Atualização #32
+
+- Contrato global cobre as 29 operações atuais; veículos é piloto runtime (cinco
+  operações). As outras 24 conservam validadores/consumidores anteriores e estão
+  em lista fechada no manifesto. Migração de serviços/tipos/estado das demais
+  telas continua na #30. Não converter tudo para satisfazer uniformidade visual.
+- A lista de auditoria sem page/limit ainda retorna array completo com email.
+  Remover o adaptador contradiz a compatibilidade exigida na #32; exige adoção
+  coordenada de paginação e tarefa explícita posterior.
+- BIGINT string/NUMERIC string e serialização de datas do driver preservados.
+  Alguns caminhos SVO convertem ID para Number e podem perder precisão; correção
+  coordenada fica para tarefa própria. Sem conversão de históricos.
+- FK ao excluir veículo/motorista ainda pode retornar 500. Abastecimento valida
+  truthiness e aceita tentativas sem motorista/km que o NOT NULL rejeita com 500.
+  Não converter esses erros nem endurecer regras de entrada nesta refatoração.
+- PUT/PATCH de veículos editam somente os campos existentes; ano/tipo/km e alguns
+  campos de cadastro enviados na edição são ignorados. Null/defaults e semântica
+  de fornecedor conservados. Não introduzir filtros/paginação/GET individual.
+- Schemas legados descrevem a forma usual e limitações explícitas; não provam
+  todas as coerções admitidas pelo PostgreSQL, algoritmos CPF ou assinatura de
+  arquivos. Validadores atuais e testes HTTP continuam a fonte desses detalhes.
+- Geração sem banco/segredos e gate conservador não substituem teste de execução,
+  nem revisão de compatibilidade. Mudanças em definições existentes requerem
+  tarefa explícita; não há autorização para editar gerados ou apagar o baseline.
+- Em 390 px, selects do filtro conservam texto abreviado pelo layout existente.
+  O modal conserva rolagem interna; capturas do início e das ações registram isso.
+  Não houve alteração de CSS, paleta, layout ou implementação dos painéis vazios
+  de manutenção/multas/históricos. São partes da interface sem API correspondente.
+
+Próximo ticket: #30; depois #33, responsável pelo único PR final.

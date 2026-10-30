@@ -1,0 +1,4864 @@
+openapi: 3.1.0
+info:
+  title: FSPH — API existente
+  version: 0.1.0
+  description: "Contrato global #32. Legados delimitados no manifesto; não define funcionalidades futuras."
+paths:
+  /api/auth/login:
+    post:
+      operationId: auth_post__api_auth_login
+      tags:
+        - auth
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security: []
+      x-perfis: []
+      x-runtime-validation: false
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credenciais"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Login"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "429":
+          description: Falha atual HTTP 429
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+            Retry-After:
+              schema:
+                type: string
+              description: Segundos até nova tentativa.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/auth/sessao:
+    get:
+      operationId: auth_get__api_auth_sessao
+      tags:
+        - auth
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+        - GESTOR_FROTA
+        - ATENDENTE_SVO
+        - MOTORISTA
+        - SOLICITANTE_INTERNO
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sessao"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/admin/usuarios:
+    get:
+      operationId: usuarios_get__api_admin_usuarios
+      tags:
+        - usuarios
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usuarios"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    post:
+      operationId: usuarios_post__api_admin_usuarios
+      tags:
+        - usuarios
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+      x-runtime-validation: false
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CriarUsuario"
+      responses:
+        "201":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usuario"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroUsuario"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/admin/usuarios/{id}:
+    put:
+      operationId: usuarios_put__api_admin_usuarios_id_
+      tags:
+        - usuarios
+      description: PUT parcial. Barra final opcional.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditarUsuario"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usuario"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroUsuario"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroString"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/admin/usuarios/{id}/status:
+    patch:
+      operationId: usuarios_patch__api_admin_usuarios_id_status
+      tags:
+        - usuarios
+      description: Estado explícito idempotente; barra final opcional.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusUsuario"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioStatus"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroUsuario"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroString"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/admin/auditoria/logs:
+    get:
+      operationId: auditoria_get__api_admin_auditoria_logs
+      tags:
+        - auditoria
+      description: Sem page/limit retorna array legado com email. Com qualquer parâmetro de paginação retorna DTO mínimo; defaults page=1, limit=20, max=100. Duplicatas/offset inseguro:400.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+      x-runtime-validation: false
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auditoria"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/dashboard:
+    get:
+      operationId: dashboard_get__api_dashboard
+      tags:
+        - dashboard
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: &a1
+        - ADM
+        - GESTOR_FROTA
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/dashboard/graficos:
+    get:
+      operationId: dashboard_get__api_dashboard_graficos
+      tags:
+        - dashboard
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Graficos"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/dashboard/pendencias:
+    get:
+      operationId: dashboard_get__api_dashboard_pendencias
+      tags:
+        - dashboard
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendenciasDashboard"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/dashboard/gestor:
+    get:
+      operationId: dashboard_get__api_dashboard_gestor
+      tags:
+        - dashboard
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardGestor"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/ordens-coleta:
+    get:
+      operationId: svo_get__api_svo_ordens_coleta
+      tags:
+        - svo
+      description: status público AGUARDANDO_DESPACHO consulta PENDENTE_ALOCACAO no banco. Array direto; sem paginação.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: status
+          in: query
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            const: AGUARDANDO_DESPACHO
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrdensSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroSvo"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroOperacionalSvo"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/solicitacoes:
+    post:
+      operationId: svo_post__api_svo_solicitacoes
+      tags:
+        - svo
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CriarSolicitacaoSvo"
+      responses:
+        "201":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SolicitacaoSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroSvo"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroOperacionalSvo"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroSvo"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroSvo"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/ordens-coleta/{id}/despachar:
+    patch:
+      operationId: svo_patch__api_svo_ordens_coleta_id_despachar
+      tags:
+        - svo
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DespacharSvo"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrdemDespachada"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroSvo"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroOperacionalSvo"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroSvo"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroSvo"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroSvo"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroSvo"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/veiculos:
+    get:
+      operationId: veiculos_get__api_veiculos
+      tags:
+        - veiculos
+      description: Lista completa id DESC, sem paginação. Piloto validado em runtime.
+      security:
+        - bearerAuth: []
+      x-perfis: &a2
+        - ADM
+        - GESTOR_FROTA
+        - ATENDENTE_SVO
+      x-runtime-validation: true
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaVeiculos"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    post:
+      operationId: veiculos_post__api_veiculos
+      tags:
+        - veiculos
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CriarVeiculo"
+      responses:
+        "201":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaVeiculo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/veiculos/{id}:
+    put:
+      operationId: veiculos_put__api_veiculos_id_
+      tags:
+        - veiculos
+      description: Alteração parcial; campos não suportados ignorados. Sem mudança de estados/disponibilidade.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditarVeiculo"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaVeiculo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    patch:
+      operationId: veiculos_patch__api_veiculos_id_
+      tags:
+        - veiculos
+      description: Alteração parcial; campos não suportados ignorados. Sem mudança de estados/disponibilidade.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditarVeiculo"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaVeiculo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    delete:
+      operationId: veiculos_delete__api_veiculos_id_
+      tags:
+        - veiculos
+      description: 200 com data.success; FK 23503 ainda recebe 500 legado, não 409.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExclusaoVeiculo"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/motoristas:
+    get:
+      operationId: motoristas_get__api_motoristas
+      tags:
+        - motoristas
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a2
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Motoristas"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    post:
+      operationId: motoristas_post__api_motoristas
+      tags:
+        - motoristas
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CriarMotorista"
+      responses:
+        "201":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaMotorista"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/motoristas/{id}:
+    put:
+      operationId: motoristas_put__api_motoristas_id_
+      tags:
+        - motoristas
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditarMotorista"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaMotorista"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    patch:
+      operationId: motoristas_patch__api_motoristas_id_
+      tags:
+        - motoristas
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditarMotorista"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaMotorista"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    delete:
+      operationId: motoristas_delete__api_motoristas_id_
+      tags:
+        - motoristas
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exclusao"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/abastecimentos:
+    get:
+      operationId: abastecimentos_get__api_abastecimentos
+      tags:
+        - abastecimentos
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Abastecimentos"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    post:
+      operationId: abastecimentos_post__api_abastecimentos
+      tags:
+        - abastecimentos
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CriarAbastecimento"
+      responses:
+        "201":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaAbastecimento"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/documentos:
+    get:
+      operationId: documentos_get__api_documentos
+      tags:
+        - documentos
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Documentos"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    post:
+      operationId: documentos_post__api_documentos
+      tags:
+        - documentos
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CriarDocumento"
+          multipart/form-data:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/CriarDocumento"
+                - type: object
+                  properties:
+                    arquivo:
+                      type: string
+                      format: binary
+                  required:
+                    - arquivo
+      responses:
+        "201":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaDocumento"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/documentos/pendencias:
+    get:
+      operationId: documentos_get__api_documentos_pendencias
+      tags:
+        - documentos
+      description: Formato atual preservado; query params não declarados são ignorados.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendenciasDocumentos"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Erro:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            fields:
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties:
+                type: string
+          required:
+            - code
+            - message
+      required:
+        - error
+    ErroString:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    ErroSvo:
+      type: object
+      properties:
+        erro:
+          type: string
+      required:
+        - erro
+    ErroUsuario:
+      anyOf:
+        - type: object
+          properties:
+            error:
+              type: object
+              properties:
+                code:
+                  type: string
+                message:
+                  type: string
+                fields:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties:
+                    type: string
+              required:
+                - code
+                - message
+          required:
+            - error
+        - type: object
+          properties:
+            error:
+              type: string
+          required:
+            - error
+    ErroOperacionalSvo:
+      anyOf:
+        - type: object
+          properties:
+            error:
+              type: object
+              properties:
+                code:
+                  type: string
+                message:
+                  type: string
+                fields:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties:
+                    type: string
+              required:
+                - code
+                - message
+          required:
+            - error
+        - type: object
+          properties:
+            erro:
+              type: string
+          required:
+            - erro
+    Exclusao:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            success:
+              type: boolean
+              const: true
+          required:
+            - success
+      required:
+        - data
+    Veiculo:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        placa:
+          type: string
+        modelo:
+          type: string
+        marca:
+          type: string
+        ano:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        tipo:
+          type: string
+          enum:
+            - PASSEIO
+            - VAN
+            - AMBULANCIA
+            - RABECÃO_SVO
+        capacidade_obitos:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        quilometragem_atual:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        status:
+          anyOf:
+            - type: string
+              enum:
+                - DISPONIVEL
+                - EM_VIAGEM
+                - EM_MANUTENCAO
+                - INDISPONIVEL
+            - type: "null"
+        is_svo:
+          type:
+            - boolean
+            - "null"
+        criado_em:
+          anyOf:
+            - type: string
+              description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+            - type: "null"
+        capacidade_passageiros:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        vinculo:
+          type: string
+          enum:
+            - PROPRIO
+            - LOCADO
+        fornecedor_locacao:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - placa
+        - modelo
+        - marca
+        - ano
+        - tipo
+        - capacidade_obitos
+        - quilometragem_atual
+        - status
+        - is_svo
+        - criado_em
+        - capacidade_passageiros
+        - vinculo
+        - fornecedor_locacao
+    CriarVeiculo:
+      type: object
+      properties:
+        placa:
+          type: string
+          pattern: \S
+        modelo:
+          type: string
+          pattern: \S
+        marca:
+          type: string
+          pattern: \S
+        ano:
+          type: integer
+          minimum: 1900
+          maximum: 2100
+        tipo:
+          anyOf:
+            - type: string
+              enum:
+                - PASSEIO
+                - VAN
+                - AMBULANCIA
+                - RABECÃO_SVO
+            - type: "null"
+        status:
+          type: string
+          enum:
+            - DISPONIVEL
+            - EM_VIAGEM
+            - EM_MANUTENCAO
+            - INDISPONIVEL
+        vinculo:
+          anyOf:
+            - type: string
+              enum:
+                - PROPRIO
+                - LOCADO
+            - type: "null"
+        fornecedor_locacao:
+          anyOf:
+            - type: string
+              pattern: \S
+            - type: "null"
+        capacidade_obitos:
+          anyOf:
+            - type: number
+              minimum: 0
+              multipleOf: 1
+            - type: "null"
+        capacidade_passageiros:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+              multipleOf: 1
+            - type: "null"
+        quilometragem_atual:
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        is_svo:
+          type:
+            - boolean
+            - "null"
+      required:
+        - placa
+        - modelo
+        - marca
+        - ano
+      description: Campos extras ignorados. Valores null dos opcionais usam defaults, exceto status. LOCADO exige fornecedor não vazio. Quilometragem decimal passa pela validação atual, mas pode ser recusada pelo INTEGER no banco.
+      allOf:
+        - if:
+            properties:
+              vinculo:
+                const: LOCADO
+            required:
+              - vinculo
+          then:
+            properties:
+              fornecedor_locacao:
+                type: string
+                pattern: \S
+            required:
+              - fornecedor_locacao
+    EditarVeiculo:
+      type: object
+      properties:
+        placa:
+          type: string
+          pattern: \S
+        marca:
+          type: string
+          pattern: \S
+        modelo:
+          type: string
+          pattern: \S
+        status:
+          type: string
+          enum:
+            - DISPONIVEL
+            - EM_VIAGEM
+            - EM_MANUTENCAO
+            - INDISPONIVEL
+        capacidade_passageiros:
+          type: number
+          exclusiveMinimum: 0
+          multipleOf: 1
+        vinculo:
+          type: string
+          enum:
+            - PROPRIO
+            - LOCADO
+        fornecedor_locacao:
+          anyOf:
+            - type: string
+              pattern: \S
+            - type: "null"
+      description: PUT e PATCH são parciais; demais campos são ignorados. LOCADO explícito exige fornecedor no mesmo corpo. PROPRIO limpa fornecedor; null não limpa fornecedor de LOCADO.
+      allOf:
+        - if:
+            properties:
+              vinculo:
+                const: LOCADO
+            required:
+              - vinculo
+          then:
+            properties:
+              fornecedor_locacao:
+                type: string
+                pattern: \S
+            required:
+              - fornecedor_locacao
+    RespostaVeiculo:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            placa:
+              type: string
+            modelo:
+              type: string
+            marca:
+              type: string
+            ano:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            tipo:
+              type: string
+              enum:
+                - PASSEIO
+                - VAN
+                - AMBULANCIA
+                - RABECÃO_SVO
+            capacidade_obitos:
+              anyOf:
+                - type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                - type: "null"
+            quilometragem_atual:
+              anyOf:
+                - type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                - type: "null"
+            status:
+              anyOf:
+                - type: string
+                  enum:
+                    - DISPONIVEL
+                    - EM_VIAGEM
+                    - EM_MANUTENCAO
+                    - INDISPONIVEL
+                - type: "null"
+            is_svo:
+              type:
+                - boolean
+                - "null"
+            criado_em:
+              anyOf:
+                - type: string
+                  description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                - type: "null"
+            capacidade_passageiros:
+              anyOf:
+                - type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                - type: "null"
+            vinculo:
+              type: string
+              enum:
+                - PROPRIO
+                - LOCADO
+            fornecedor_locacao:
+              type:
+                - string
+                - "null"
+          required:
+            - id
+            - placa
+            - modelo
+            - marca
+            - ano
+            - tipo
+            - capacidade_obitos
+            - quilometragem_atual
+            - status
+            - is_svo
+            - criado_em
+            - capacidade_passageiros
+            - vinculo
+            - fornecedor_locacao
+      required:
+        - data
+    ListaVeiculos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              placa:
+                type: string
+              modelo:
+                type: string
+              marca:
+                type: string
+              ano:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              tipo:
+                type: string
+                enum:
+                  - PASSEIO
+                  - VAN
+                  - AMBULANCIA
+                  - RABECÃO_SVO
+              capacidade_obitos:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              quilometragem_atual:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              status:
+                anyOf:
+                  - type: string
+                    enum:
+                      - DISPONIVEL
+                      - EM_VIAGEM
+                      - EM_MANUTENCAO
+                      - INDISPONIVEL
+                  - type: "null"
+              is_svo:
+                type:
+                  - boolean
+                  - "null"
+              criado_em:
+                anyOf:
+                  - type: string
+                    description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                  - type: "null"
+              capacidade_passageiros:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              vinculo:
+                type: string
+                enum:
+                  - PROPRIO
+                  - LOCADO
+              fornecedor_locacao:
+                type:
+                  - string
+                  - "null"
+            required:
+              - id
+              - placa
+              - modelo
+              - marca
+              - ano
+              - tipo
+              - capacidade_obitos
+              - quilometragem_atual
+              - status
+              - is_svo
+              - criado_em
+              - capacidade_passageiros
+              - vinculo
+              - fornecedor_locacao
+      required:
+        - data
+    ExclusaoVeiculo:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            success:
+              type: boolean
+              const: true
+          required:
+            - success
+      required:
+        - data
+    Credenciais:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+        senha:
+          type: string
+          minLength: 1
+      required:
+        - email
+        - senha
+    Login:
+      type: object
+      properties:
+        token:
+          type: string
+        usuario:
+          type: object
+          properties:
+            id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            nome:
+              type: string
+            email:
+              type: string
+            perfil:
+              type: string
+              enum:
+                - ADM
+                - GESTOR_FROTA
+                - SOLICITANTE_INTERNO
+                - MOTORISTA
+                - ATENDENTE_SVO
+          required:
+            - id
+            - nome
+            - email
+            - perfil
+      required:
+        - token
+        - usuario
+    Sessao:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            nome:
+              type: string
+            email:
+              type: string
+            perfil:
+              type: string
+              enum:
+                - ADM
+                - GESTOR_FROTA
+                - SOLICITANTE_INTERNO
+                - MOTORISTA
+                - ATENDENTE_SVO
+          required:
+            - id
+            - nome
+            - email
+            - perfil
+      required:
+        - data
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        nome:
+          type: string
+        email:
+          type: string
+        perfil:
+          type: string
+          enum:
+            - ADM
+            - GESTOR_FROTA
+            - SOLICITANTE_INTERNO
+            - MOTORISTA
+            - ATENDENTE_SVO
+        ativo:
+          type:
+            - boolean
+            - "null"
+        criado_em:
+          anyOf:
+            - type: string
+              description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+            - type: "null"
+      required:
+        - id
+        - nome
+        - email
+        - perfil
+        - ativo
+        - criado_em
+    UsuarioStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        nome:
+          type: string
+        email:
+          type: string
+        perfil:
+          type: string
+          enum:
+            - ADM
+            - GESTOR_FROTA
+            - SOLICITANTE_INTERNO
+            - MOTORISTA
+            - ATENDENTE_SVO
+        ativo:
+          type:
+            - boolean
+            - "null"
+      required:
+        - id
+        - nome
+        - email
+        - perfil
+        - ativo
+    Usuarios:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            pattern: ^-?\d+$
+            description: BIGINT serializado pelo postgres como string; não converter para Number.
+          nome:
+            type: string
+          email:
+            type: string
+          perfil:
+            type: string
+            enum:
+              - ADM
+              - GESTOR_FROTA
+              - SOLICITANTE_INTERNO
+              - MOTORISTA
+              - ATENDENTE_SVO
+          ativo:
+            type:
+              - boolean
+              - "null"
+          criado_em:
+            anyOf:
+              - type: string
+                description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+              - type: "null"
+        required:
+          - id
+          - nome
+          - email
+          - perfil
+          - ativo
+          - criado_em
+    CriarUsuario:
+      type: object
+      properties:
+        nome:
+          type: string
+          minLength: 3
+          maxLength: 150
+        email:
+          type: string
+          maxLength: 150
+          pattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+        perfil:
+          type: string
+          enum:
+            - ADM
+            - GESTOR_FROTA
+            - SOLICITANTE_INTERNO
+            - MOTORISTA
+            - ATENDENTE_SVO
+        senha:
+          type: string
+          minLength: 8
+          description: Máximo 72 bytes UTF-8; não caracteres. Nome/email são trimados pelo serviço atual.
+      required:
+        - nome
+        - email
+        - perfil
+        - senha
+      additionalProperties: false
+    EditarUsuario:
+      type: object
+      properties:
+        nome:
+          type: string
+          minLength: 3
+          maxLength: 150
+        email:
+          type: string
+          maxLength: 150
+          pattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+        perfil:
+          type: string
+          enum:
+            - ADM
+            - GESTOR_FROTA
+            - SOLICITANTE_INTERNO
+            - MOTORISTA
+            - ATENDENTE_SVO
+        senha:
+          type: string
+          minLength: 8
+          description: Máximo 72 bytes UTF-8; não caracteres. Nome/email são trimados pelo serviço atual.
+      required:
+        - nome
+        - email
+        - perfil
+      additionalProperties: false
+    StatusUsuario:
+      type: object
+      properties:
+        ativo:
+          type: boolean
+      required:
+        - ativo
+      additionalProperties: false
+    Atividade:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        usuarioId:
+          anyOf:
+            - type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            - type: "null"
+        descricao:
+          type: string
+        dataHora:
+          anyOf:
+            - type: string
+              description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+            - type: "null"
+        usuarioNome:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - usuarioId
+        - descricao
+        - dataHora
+        - usuarioNome
+    Auditoria:
+      anyOf:
+        - type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              usuario_id:
+                anyOf:
+                  - type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  - type: "null"
+              descricao:
+                type: string
+              data_hora:
+                anyOf:
+                  - type: string
+                    description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                  - type: "null"
+              usuario_nome:
+                type:
+                  - string
+                  - "null"
+              usuario_email:
+                type:
+                  - string
+                  - "null"
+            required:
+              - id
+              - usuario_id
+              - descricao
+              - data_hora
+              - usuario_nome
+              - usuario_email
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  usuarioId:
+                    anyOf:
+                      - type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      - type: "null"
+                  descricao:
+                    type: string
+                  dataHora:
+                    anyOf:
+                      - type: string
+                        description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                      - type: "null"
+                  usuarioNome:
+                    type:
+                      - string
+                      - "null"
+                required:
+                  - id
+                  - usuarioId
+                  - descricao
+                  - dataHora
+                  - usuarioNome
+            meta:
+              type: object
+              properties:
+                page:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                limit:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                total:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+              required:
+                - page
+                - limit
+                - total
+          required:
+            - data
+            - meta
+    Motorista:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        usuario_id:
+          anyOf:
+            - type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            - type: "null"
+        nome:
+          type: string
+        cnh:
+          type: string
+        categoria_cnh:
+          type: string
+        validade_cnh:
+          type: string
+          description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+        status:
+          anyOf:
+            - type: string
+              enum:
+                - DISPONIVEL
+                - EM_VIAGEM
+                - FOLGA
+                - AFASTADO
+            - type: "null"
+        criado_em:
+          anyOf:
+            - type: string
+              description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+            - type: "null"
+        cpf:
+          type:
+            - string
+            - "null"
+        telefone:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - usuario_id
+        - nome
+        - cnh
+        - categoria_cnh
+        - validade_cnh
+        - status
+        - criado_em
+      description: CPF/telefone ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
+    Motoristas:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              usuario_id:
+                anyOf:
+                  - type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  - type: "null"
+              nome:
+                type: string
+              cnh:
+                type: string
+              categoria_cnh:
+                type: string
+              validade_cnh:
+                type: string
+                description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+              status:
+                anyOf:
+                  - type: string
+                    enum:
+                      - DISPONIVEL
+                      - EM_VIAGEM
+                      - FOLGA
+                      - AFASTADO
+                  - type: "null"
+              criado_em:
+                anyOf:
+                  - type: string
+                    description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                  - type: "null"
+              cpf:
+                type:
+                  - string
+                  - "null"
+              telefone:
+                type:
+                  - string
+                  - "null"
+            required:
+              - id
+              - usuario_id
+              - nome
+              - cnh
+              - categoria_cnh
+              - validade_cnh
+              - status
+              - criado_em
+            description: CPF/telefone ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
+      required:
+        - data
+    RespostaMotorista:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            usuario_id:
+              anyOf:
+                - type: string
+                  pattern: ^-?\d+$
+                  description: BIGINT serializado pelo postgres como string; não converter para Number.
+                - type: "null"
+            nome:
+              type: string
+            cnh:
+              type: string
+            categoria_cnh:
+              type: string
+            validade_cnh:
+              type: string
+              description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+            status:
+              anyOf:
+                - type: string
+                  enum:
+                    - DISPONIVEL
+                    - EM_VIAGEM
+                    - FOLGA
+                    - AFASTADO
+                - type: "null"
+            criado_em:
+              anyOf:
+                - type: string
+                  description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                - type: "null"
+            cpf:
+              type:
+                - string
+                - "null"
+            telefone:
+              type:
+                - string
+                - "null"
+          required:
+            - id
+            - usuario_id
+            - nome
+            - cnh
+            - categoria_cnh
+            - validade_cnh
+            - status
+            - criado_em
+          description: CPF/telefone ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
+      required:
+        - data
+    CriarMotorista:
+      type: object
+      properties:
+        nome:
+          type: string
+          minLength: 1
+        cnh:
+          type: string
+          minLength: 1
+        categoria_cnh:
+          type: string
+          enum:
+            - A
+            - B
+            - C
+            - D
+            - E
+        validade_cnh:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        status:
+          anyOf:
+            - type: string
+              enum:
+                - DISPONIVEL
+                - EM_VIAGEM
+                - FOLGA
+                - AFASTADO
+            - type: "null"
+        cpf:
+          type:
+            - string
+            - "null"
+        telefone:
+          type:
+            - string
+            - "null"
+      required:
+        - nome
+        - cnh
+        - categoria_cnh
+        - validade_cnh
+      description: "Legado não aplicado como validador HTTP: controller valida data de calendário, dígitos CPF/telefone, normaliza CPF/telefone e trim da CNH; não há validação uniforme de campos extras."
+    EditarMotorista:
+      type: object
+      properties:
+        nome:
+          type: string
+          minLength: 1
+        cnh:
+          type: string
+          minLength: 1
+        categoria_cnh:
+          type: string
+          enum:
+            - A
+            - B
+            - C
+            - D
+            - E
+        validade_cnh:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        status:
+          type: string
+          enum:
+            - DISPONIVEL
+            - EM_VIAGEM
+            - FOLGA
+            - AFASTADO
+        cpf:
+          type:
+            - string
+            - "null"
+        telefone:
+          type:
+            - string
+            - "null"
+    Abastecimento:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        veiculo_id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        motorista_id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        litragem:
+          type: string
+          description: NUMERIC serializado pelo driver como string, preservando precisão.
+        valor_total:
+          type: string
+          description: NUMERIC serializado pelo driver como string, preservando precisão.
+        quilometragem:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        data_abastecimento:
+          type: string
+          description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+        criado_em:
+          anyOf:
+            - type: string
+              description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+            - type: "null"
+        posto:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - veiculo_id
+        - motorista_id
+        - litragem
+        - valor_total
+        - quilometragem
+        - data_abastecimento
+        - criado_em
+        - posto
+    RespostaAbastecimento:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            veiculo_id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            motorista_id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            litragem:
+              type: string
+              description: NUMERIC serializado pelo driver como string, preservando precisão.
+            valor_total:
+              type: string
+              description: NUMERIC serializado pelo driver como string, preservando precisão.
+            quilometragem:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            data_abastecimento:
+              type: string
+              description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+            criado_em:
+              anyOf:
+                - type: string
+                  description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                - type: "null"
+            posto:
+              type:
+                - string
+                - "null"
+          required:
+            - id
+            - veiculo_id
+            - motorista_id
+            - litragem
+            - valor_total
+            - quilometragem
+            - data_abastecimento
+            - criado_em
+            - posto
+      required:
+        - data
+    Abastecimentos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              veiculo_id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              motorista_id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              litragem:
+                type: string
+                description: NUMERIC serializado pelo driver como string, preservando precisão.
+              valor_total:
+                type: string
+                description: NUMERIC serializado pelo driver como string, preservando precisão.
+              quilometragem:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              data_abastecimento:
+                type: string
+                description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+              criado_em:
+                anyOf:
+                  - type: string
+                    description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                  - type: "null"
+              posto:
+                type:
+                  - string
+                  - "null"
+              veiculo_placa:
+                type:
+                  - string
+                  - "null"
+              motorista_nome:
+                type:
+                  - string
+                  - "null"
+            required:
+              - id
+              - veiculo_id
+              - motorista_id
+              - litragem
+              - valor_total
+              - quilometragem
+              - data_abastecimento
+              - criado_em
+              - posto
+              - veiculo_placa
+              - motorista_nome
+      required:
+        - data
+    CriarAbastecimento:
+      type: object
+      properties:
+        veiculo_id:
+          type:
+            - number
+            - string
+        motorista_id:
+          type:
+            - number
+            - string
+            - "null"
+        posto:
+          type:
+            - string
+            - "null"
+        litragem:
+          type:
+            - number
+            - string
+        valor_total:
+          type:
+            - number
+            - string
+        quilometragem:
+          type:
+            - number
+            - "null"
+        data_abastecimento:
+          type: string
+      required:
+        - veiculo_id
+        - litragem
+        - valor_total
+        - data_abastecimento
+      description: Legado valida somente truthiness de veículo/litragem/valor/data; tipos/coerções/constraints são do banco. Ausência de motorista/km passa pelo controller mas falha NOT NULL (500). Schema documenta a forma usual, não endurece entrada.
+    Documentos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              tipo:
+                type: string
+                enum:
+                  - DOCUMENTO_VEICULO
+                  - CNH_MOTORISTA
+              descricao:
+                type: string
+              relacionado_id:
+                anyOf:
+                  - type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  - type: "null"
+              data_validade:
+                type: string
+                description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+              status:
+                type: string
+                enum:
+                  - SEM_VALIDADE
+                  - VENCIDA
+                  - PROXIMA_DO_VENCIMENTO
+                  - REGULAR
+            required:
+              - id
+              - tipo
+              - descricao
+              - relacionado_id
+              - data_validade
+              - status
+      required:
+        - data
+    PendenciasDocumentos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              tipo:
+                type: string
+                enum:
+                  - DOCUMENTO_VEICULO
+                  - CNH_MOTORISTA
+              descricao:
+                type: string
+              data_validade:
+                type: string
+                description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+              status:
+                type: string
+                enum:
+                  - SEM_VALIDADE
+                  - VENCIDA
+                  - PROXIMA_DO_VENCIMENTO
+                  - REGULAR
+              dias_restantes:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+            required:
+              - id
+              - tipo
+              - descricao
+              - data_validade
+              - status
+              - dias_restantes
+      required:
+        - data
+    CriarDocumento:
+      type: object
+      properties:
+        veiculo_id:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+        tipo_documento:
+          type: string
+          minLength: 1
+        data_vencimento:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+      required:
+        - veiculo_id
+        - tipo_documento
+        - data_vencimento
+      description: JSON até 1 MiB. Multipart converte veiculo_id para Number; campo arquivo PDF/JPEG/PNG até 5 MiB, assinatura verificada; até dez campos de 4 KiB. Data exige calendário válido.
+    RespostaDocumento:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            veiculo_id:
+              anyOf:
+                - type: string
+                  pattern: ^-?\d+$
+                  description: BIGINT serializado pelo postgres como string; não converter para Number.
+                - type: "null"
+            tipo_documento:
+              type: string
+            data_vencimento:
+              type: string
+              description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+            status_regular:
+              type:
+                - boolean
+                - "null"
+            arquivo_nome:
+              type:
+                - string
+                - "null"
+            arquivo_tipo:
+              type:
+                - string
+                - "null"
+          required:
+            - id
+            - veiculo_id
+            - tipo_documento
+            - data_vencimento
+            - status_regular
+            - arquivo_nome
+            - arquivo_tipo
+      required:
+        - data
+    Dashboard:
+      type: object
+      properties:
+        data:
+          type: object
+          properties: {}
+      required:
+        - data
+    Graficos:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            veiculosPorStatus:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - status
+                  - total
+            solicitacoesPorStatus:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - status
+                  - total
+          required:
+            - veiculosPorStatus
+            - solicitacoesPorStatus
+      required:
+        - data
+    DashboardGestor:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            veiculosPorStatus:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - status
+                  - total
+            motoristasDisponiveis:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            solicitacoesPorStatus:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - status
+                  - total
+            proximasViagens:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  codigo:
+                    type: string
+                  solicitante_id:
+                    anyOf:
+                      - type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      - type: "null"
+                  origem:
+                    type: string
+                  destino:
+                    type: string
+                  data_hora_saida:
+                    type: string
+                    description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                  qtd_passageiros:
+                    anyOf:
+                      - type: integer
+                        minimum: -9007199254740991
+                        maximum: 9007199254740991
+                      - type: "null"
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  motivo_rejeicao:
+                    type:
+                      - string
+                      - "null"
+                  criado_em:
+                    anyOf:
+                      - type: string
+                        description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                      - type: "null"
+                  veiculo_id:
+                    anyOf:
+                      - type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      - type: "null"
+                  motorista_id:
+                    anyOf:
+                      - type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      - type: "null"
+                required:
+                  - id
+                  - codigo
+                  - solicitante_id
+                  - origem
+                  - destino
+                  - data_hora_saida
+                  - qtd_passageiros
+                  - status
+                  - motivo_rejeicao
+                  - criado_em
+                  - veiculo_id
+                  - motorista_id
+          required:
+            - veiculosPorStatus
+            - motoristasDisponiveis
+            - solicitacoesPorStatus
+            - proximasViagens
+      required:
+        - data
+      description: motoristasDisponiveis é a contagem de TODOS os motoristas; cálculo legado preservado. Não há endpoint /kpis ou filtro por período.
+    PendenciasDashboard:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            motoristas:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  nome:
+                    type: string
+                  vencimento:
+                    type: string
+                    description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+                  situacao:
+                    type: string
+                required:
+                  - id
+                  - nome
+                  - vencimento
+                  - situacao
+            documentos:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  tipo_documento:
+                    type: string
+                  vencimento:
+                    type: string
+                    description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+                  placa:
+                    type: string
+                  modelo:
+                    type: string
+                  situacao:
+                    type: string
+                required:
+                  - id
+                  - tipo_documento
+                  - vencimento
+                  - placa
+                  - modelo
+                  - situacao
+          required:
+            - motoristas
+            - documentos
+      required:
+        - data
+    OrdensSvo:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            pattern: ^-?\d+$
+            description: BIGINT serializado pelo postgres como string; não converter para Number.
+          status:
+            type: string
+            const: PENDENTE_ALOCACAO
+          solicitacao_obito_id:
+            anyOf:
+              - type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              - type: "null"
+          solicitacao_codigo:
+            type: string
+          nome_falecido:
+            type:
+              - string
+              - "null"
+          endereco_remocao:
+            type: string
+        required:
+          - id
+          - status
+          - solicitacao_obito_id
+          - solicitacao_codigo
+          - nome_falecido
+          - endereco_remocao
+    CriarSolicitacaoSvo:
+      type: object
+      properties:
+        localFalecimento:
+          type: string
+          pattern: \S
+        enderecoRemocao:
+          type: string
+          pattern: \S
+        solicitanteNome:
+          type: string
+          pattern: \S
+        nomeFalecido:
+          type:
+            - string
+            - "null"
+        solicitanteParentesco:
+          type:
+            - string
+            - "null"
+        solicitanteTelefone:
+          type:
+            - string
+            - "null"
+        observacoesMedicas:
+          type:
+            - string
+            - "null"
+      required:
+        - localFalecimento
+        - enderecoRemocao
+        - solicitanteNome
+    SolicitacaoSvo:
+      type: object
+      properties:
+        solicitacao:
+          type: object
+          properties:
+            id:
+              type: number
+            codigo:
+              type: string
+          required:
+            - id
+            - codigo
+        ordemColeta:
+          type: object
+          properties:
+            id:
+              type: number
+            codigo:
+              type: string
+            status:
+              type: string
+              const: PENDENTE_ALOCACAO
+          required:
+            - id
+            - codigo
+            - status
+        atividades:
+          type: array
+          items:
+            type: string
+      required:
+        - solicitacao
+        - ordemColeta
+        - atividades
+    DespacharSvo:
+      type: object
+      properties:
+        motoristaId:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+        veiculoId:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+      required:
+        - motoristaId
+        - veiculoId
+    OrdemDespachada:
+      type: object
+      properties:
+        id:
+          type: number
+        motorista_id:
+          type: number
+        veiculo_id:
+          type: number
+        status:
+          type: string
+          const: EM_DESLOCAMENTO
+      required:
+        - id
+        - motorista_id
+        - veiculo_id
+        - status
+      description: Conversão legada explícita para Number; precisão de BIGINT acima de MAX_SAFE_INTEGER não é garantida.

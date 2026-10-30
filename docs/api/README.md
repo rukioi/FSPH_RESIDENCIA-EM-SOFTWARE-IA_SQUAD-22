@@ -1,6 +1,15 @@
 # Convenções mínimas da API
 
-Use este padrão nos novos endpoints. Os contratos implementados devem descrever o comportamento real de cada rota.
+O contrato global executável da API existente está em [openapi.yaml](./openapi.yaml),
+com cobertura por operação em [inventory.md](./inventory.md). A fonte é o registro
+code-first em `backend/src/shared/contract/registry.ts`, com contribuições puras dos
+módulos. A especificação descreve 29 operações atuais; as 24 operações fora do
+piloto de veículos têm exceções fechadas em [legacy-manifest.json](./legacy-manifest.json).
+
+As convenções abaixo são a direção para novas entregas. Não alteram implicitamente
+os contratos atuais: listas completas, snake_case, envelopes diretos e datas do
+driver permanecem onde o inventário os registra. CamelCase, paginação uniforme e
+Problem Details são evolução futura, com tarefa explícita e plano de compatibilidade.
 
 ## Rotas e dados
 
@@ -44,6 +53,51 @@ Formato padrão de erro nos endpoints protegidos:
 No mesmo PR do endpoint, registre nesta pasta: método e caminho, entrada, resposta, permissão e um exemplo mínimo. Agrupe por módulo; não é necessário documentar toda a API antecipadamente ou adicionar ferramentas agora.
 
 Mantenha mudanças compatíveis sempre que possível. Combine alterações que quebrem consumidores; introduza versionamento apenas quando necessário. Regras de acesso seguem [permissoes.md](../permissoes.md).
+
+## Geração e piloto — #32
+
+```bash
+npm run api:generate
+npm run api:check
+npm run client:generate
+npm run client:check
+```
+
+Zod é a fonte executável. A geração usa JSON Schema/OpenAPI 3.1; YAML e o compilador
+json-schema-to-typescript geram os DTOs e bindings de operações. Não importe app,
+pool, dotenv ou configuração nesses scripts. Não edite os gerados manualmente.
+Os checks regeneram em memória, comparam conteúdo e verificam a lista fechada de
+legados e a contribuição de cada família de rotas. O dispatcher usa o mesmo
+registro: uma rota não fica exposta apenas por existir em um controller.
+
+`api:check` compara também operações/componentes existentes no HEAD. O gate é
+conservador: até mudança compatível de uma definição existente exige revisão
+explícita em tarefa própria. Novas operações/componentes são admitidos somente com
+contrato e, se ainda legados, atualização explícita do manifesto. Não é um detector
+semântico completo de compatibilidade nem valida a implementação de todos os
+controllers; testes HTTP e revisão continuam obrigatórios.
+
+Veículos valida entrada e DTO de saída com os schemas usados na geração. A tela
+consome serviço/cliente compartilhados, sem DTO HTTP próprio. O cliente concentra
+bindings, JSON, 204, cancelamento, erros e X-Request-Id; reutiliza o adaptador
+existente de Bearer/401. `ApiError` expõe status, code, message, fields opcionais e
+requestId recebido do servidor. Não inventa código de domínio quando o legado
+retorna somente mensagem: usa HTTP_<status>. Tipos estáticos não validam JSON;
+fora do piloto os validadores/consumidores anteriores ainda são adaptadores legados,
+delimitados no manifesto. A migração desses consumidores continua na #30.
+
+BIGINT do driver permanece string (inclusive acima de MAX_SAFE_INTEGER), NUMERIC
+permanece string e DATE/timestamp conservam a serialização existente. SVO converte
+alguns IDs para Number no código legado, com risco de precisão já registrado;
+esta entrega não reconverte esses valores nem horários históricos. Colunas nullable
+de veículos continuam nullable. Datas sem fuso no banco não ganham um novo
+significado histórico porque o JSON contém `Z`.
+
+Não há /api/v1, GET individual de veículos, paginação de frota, novos perfis,
+filtros de domínio, rotas de manutenção, agenda ou indicadores. O cadastro de
+abastecimento ainda valida truthiness e pode responder 500 por NOT NULL; seu schema
+descreve a forma usual, não todas as coerções aceitas pelo PostgreSQL. As demais
+limitações por operação estão no inventário e manifesto.
 
 ## Infraestrutura HTTP — #28
 
@@ -99,6 +153,6 @@ legados, datas e paginação continuam para #32. Ver [usuarios.md](./usuarios.md
 máximo 100), DTO mínimo camelCase e `{ data, meta: { page, limit, total } }`.
 Página/total usam o mesmo snapshot; ordem: data_hora DESC NULLS LAST, id DESC.
 Sem page e limit, o adaptador conserva o array completo e os campos legados
-explicitamente projetados. A remoção desse adaptador e a geração do contrato ficam
-para #32. Detalhes em [auditoria.md](./auditoria.md). Não há novos eventos, perfis,
+explicitamente projetados. O contrato global da #32 registra os dois formatos;
+remoção exige migração coordenada própria. Detalhes em [auditoria.md](./auditoria.md). Não há novos eventos, perfis,
 filtros de domínio ou conversão de horários históricos.

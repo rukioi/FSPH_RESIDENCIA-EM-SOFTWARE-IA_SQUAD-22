@@ -13,31 +13,19 @@ import { enviarErro } from './shared/http/json.js';
 import { tratarErroTecnico } from './shared/http/errors.js';
 import { comRequestId } from './shared/http/request-id.js';
 import { criarLimiteLogin } from './shared/http/rate-limit.js';
+import { operations, routePattern } from './shared/contract/registry.js';
 
 /** Contém rejeições da rota e encerra respostas parcialmente enviadas. */
 export function isolarFalhaDaRequisicao(response: ServerResponse, operacao: Promise<void>): void {
   void operacao.catch((erro: unknown) => tratarErroTecnico(response, erro));
 }
 
-const rotas = [
-  { path: /^\/api\/auth\/login$/, methods: ['POST'], handler: authRoute },
-  { path: /^\/api\/auth\/sessao$/, methods: ['GET'], handler: authRoute },
-  { path: /^\/api\/admin\/usuarios$/, methods: ['GET', 'POST'], handler: usuariosRoute },
-  { path: /^\/api\/admin\/usuarios\/[0-9]+\/?$/, methods: ['PUT'], handler: usuariosRoute },
-  { path: /^\/api\/admin\/usuarios\/[0-9]+\/status\/?$/, methods: ['PATCH'], handler: usuariosRoute },
-  { path: /^\/api\/admin\/auditoria\/logs$/, methods: ['GET'], handler: auditoriaRoute },
-  { path: /^\/api\/dashboard(?:\/(?:pendencias|graficos|gestor))?$/, methods: ['GET'], handler: dashboardRoute },
-  { path: /^\/api\/svo\/ordens-coleta$/, methods: ['GET'], handler: svoRoute },
-  { path: /^\/api\/svo\/solicitacoes$/, methods: ['POST'], handler: svoRoute },
-  { path: /^\/api\/svo\/ordens-coleta\/[0-9]+\/despachar$/, methods: ['PATCH'], handler: svoRoute },
-  { path: /^\/api\/veiculos$/, methods: ['GET', 'POST'], handler: veiculosRoute },
-  { path: /^\/api\/veiculos\/[0-9]+$/, methods: ['PUT', 'PATCH', 'DELETE'], handler: veiculosRoute },
-  { path: /^\/api\/motoristas$/, methods: ['GET', 'POST'], handler: motoristasRoute },
-  { path: /^\/api\/motoristas\/[0-9]+$/, methods: ['PUT', 'PATCH', 'DELETE'], handler: motoristasRoute },
-  { path: /^\/api\/abastecimentos$/, methods: ['GET', 'POST'], handler: abastecimentosRoute },
-  { path: /^\/api\/documentos$/, methods: ['GET', 'POST'], handler: documentosRoute },
-  { path: /^\/api\/documentos\/pendencias$/, methods: ['GET'], handler: documentosRoute },
-];
+const handlers = { auth: authRoute, usuarios: usuariosRoute, auditoria: auditoriaRoute,
+  dashboard: dashboardRoute, svo: svoRoute, veiculos: veiculosRoute, motoristas: motoristasRoute,
+  abastecimentos: abastecimentosRoute, documentos: documentosRoute };
+const rotas = operations.map(operation => ({ path: routePattern(operation),
+  methods: operations.filter(item => item.path === operation.path).map(item => item.method.toUpperCase()),
+  handler: handlers[operation.modulo] }));
 
 /** Despacha somente caminhos/métodos conhecidos; regras de acesso continuam nos módulos. */
 export function createApp() {
