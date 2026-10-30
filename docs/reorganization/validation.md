@@ -97,6 +97,29 @@ relativos do frontend não encontrou outra divergência de caixa. A prova inicia
 de runtime idêntico refere-se ao commit 36999c9 anterior a essa correção.
 Após a correção, lint/typecheck/build e os 24 E2E locais foram repetidos e passaram
 (E2E em 1,0 minuto). O CI novo repete também todos os testes e checks de banco.
+
+### Diagnóstico do check Vercel após acesso pelo navegador
+
+O acesso ao dashboard foi confirmado em 30/10/2026. A tentativa
+dpl_4NtsSUYzzuCwggLat9PgB8J1cbP5 usa e150e95, portanto já contém a correção do CSS.
+Sua falha é distinta: preset **Node**, raiz vazia e `No entrypoint found`, procurando
+app/index/server/main na raiz ou em src. Não há entrypoint runtime na raiz do monorepo.
+Nenhum segredo foi consultado; somente configurações de build e mensagens técnicas.
+
+Arquivo adicional autorizado pelo pedido de corrigir o check: vercel.json na raiz,
+com framework vite, npm ci, build do workspace frontend e saída frontend/dist.
+Fallback da SPA exclui /api e seus subcaminhos. A falha real de deploy reproduziu
+o problema antes da configuração; a próxima tentativa valida o resultado.
+Não muda código de negócio, configuração remota de projeto, banco ou credenciais.
+Isso entrega preview estático: backend node:http e seu roteamento publicado
+continuam separados, sem inventar URL remota ou reescrever chamadas a dados reais.
+Na validação local desta configuração, lint e tipos passaram. A primeira suíte
+completa teve 197 aprovações e dois timeouts de 5s nos subprocessos de geração,
+sem erro de conteúdo; o arquivo generation.test.ts repetido isoladamente passou
+nos 11 casos, sem mudar timeout/expectativas. Build frontend/backend e os 24 E2E
+passaram (1,4 minuto), com capturas nos três tamanhos. O JSON e a expressão de
+fallback foram conferidos com páginas e caminhos /api, sem capturar a API.
+O CI remoto repete a suíte completa em checkout Linux novo.
 O ensaio usa essas fontes anteriores idênticas no banco isolado, com login/bootstrap,
 HTTP/persistência e encerramento; não é ensaio de publicação/backup remoto.
 Procedimento separado de código/banco em [rollback](./rollback.md).

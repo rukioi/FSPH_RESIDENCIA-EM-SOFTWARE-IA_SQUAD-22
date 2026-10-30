@@ -64,6 +64,21 @@ locais ficam em test-results/. Compilados backend/dist/ e frontend/dist/ são lo
 ignorados pelo Git. Preview do frontend não inclui proxy de API; publicação não
 é definida por esse comando.
 
+## Preview na Vercel
+
+[vercel.json](./vercel.json) fixa Vite na raiz do monorepo, instala pelo lockfile,
+compila somente o workspace frontend e publica frontend/dist. Isso substitui o
+preset Node que procurava um entrypoint na raiz e falhava. Rotas da SPA recebem
+index.html; /api e /api/* ficam fora desse fallback, sem devolver HTML como JSON.
+A configuração segue os overrides documentados pela
+[Vercel](https://vercel.com/docs/project-configuration/vercel-json).
+
+Essa configuração publica o frontend estático. Não publica o servidor node:http
+nem configura conexão de banco ou endereço externo de API. O proxy de /api no Vite
+vale somente no desenvolvimento; login/dados em ambiente publicado dependem de
+hospedagem/roteamento do backend aprovados separadamente. Build/preview aprovado
+não comprova integração operacional com o Supabase ou prontidão de produção.
+
 ## Estado e limites
 
 Login consulta public.usuario com bcrypt; JWT HS256/sub/exp, sessão atual sem cache
