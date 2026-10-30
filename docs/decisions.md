@@ -37,6 +37,71 @@ Para mudar uma decisão, explique no PR o problema, a escolha e o impacto. Atual
 
 Ainda precisam de definição: política avançada de revogação, hospedagem, armazenamento de arquivos e regras de cada fluxo. Decida cada ponto na tarefa que precisar dele, sem bloquear o restante do projeto.
 
+## Próxima etapa: padrões com verificação automática
+
+**O próximo avanço mais útil é transformar os padrões escritos em verificações
+automáticas.** A base atual já oferece mecanismos compartilhados, mas ainda há
+oportunidades concretas para tornar o trabalho de pessoas e IAs mais consistente.
+
+Esta seção é um plano priorizado de evolução, não uma declaração de implementação.
+Registrar estas prioridades não adiciona regras ao lint, não migra módulos e não
+autoriza refatoração em massa. Cada entrega futura deve ter tarefa, arquivos,
+critério de aceite e verificação próprios, preservando contratos e regras atuais.
+
+| Prioridade | Padronização | Benefício |
+| --- | --- | --- |
+| 1 | **Regras de arquitetura no lint** | Impedir HTTP nas páginas, acesso ao banco fora da camada permitida e imports entre camadas indevidas. |
+| 2 | **Separação dos módulos legados** | Aplicar controller → service → repository, seguindo o piloto de veículos. |
+| 3 | **Validação e erros** | Ampliar schemas executáveis e mapeamentos comuns, preservando os contratos existentes. |
+| 4 | **Formatação automática** | Uniformizar imports, aspas, espaçamento e finais de linha, reduzindo diferenças desnecessárias nos PRs. |
+| 5 | **Estados e acessibilidade do frontend** | Uniformizar carregamento, vazio, erro, nova tentativa e confirmação de ações. |
+| 6 | **Referências para novas tarefas** | Indicar exemplos concretos de endpoint, serviço, tela e teste que pessoas e IAs devem seguir. |
+
+### Como entregar e verificar
+
+1. **Arquitetura:** começar pelas fronteiras já estabelecidas, com exemplos de
+   imports/chamadas permitidos e proibidos. O check deve rejeitar uma violação
+   introduzida deliberadamente. Exceções legadas precisam ser explícitas por caminho
+   e motivo; não criar permissões amplas que aceitem novas violações silenciosamente.
+2. **Módulos legados:** migrar um módulo por tarefa. Controller cuida de HTTP,
+   service das operações/regras e repository do SQL. Preservar resposta, permissão,
+   transação e comportamento; provar equivalência com testes e banco isolado.
+3. **Validação/erros:** adotar os schemas e mecanismos comuns nas operações ainda
+   legadas. Atualizar contrato e gerados pelos comandos oficiais; testar entrada
+   inválida, autorização e erros conhecidos, sem expor SQL ou dados privados.
+4. **Formatação:** definir ferramenta e convenções em tarefa própria, com comando
+   de verificação no CI. Separar eventual formatação inicial das mudanças funcionais;
+   não reformatar o repositório inteiro dentro de outra tarefa.
+5. **Frontend:** reutilizar o estado remoto existente e cobrir loading/vazio/erro,
+   nova tentativa, resposta antiga e escrita confirmada. Verificar rótulos, foco,
+   teclado e capturas em 390/768/1280 px, sem redesenho incidental.
+6. **Referências:** cada tarefa deve indicar os exemplos aplicáveis e as exceções
+   relevantes. A IA precisa ler as instruções e executar os checks; documentação
+   não garante que qualquer ferramenta carregue ou cumpra os padrões automaticamente.
+
+### Referências existentes para orientar as tarefas
+
+- Backend: [controller](../backend/src/modules/veiculos/veiculos.controller.ts),
+  [service](../backend/src/modules/veiculos/veiculos.service.ts),
+  [repository](../backend/src/modules/veiculos/veiculos.repository.ts) e
+  [schemas](../backend/src/modules/veiculos/veiculos.schemas.ts) do piloto de veículos.
+- Rotas/segurança: [registro de operações](../backend/src/shared/contract/registry.ts),
+  [instruções do backend](../backend/AGENTS.md), [segurança](./seguranca.md) e
+  [matriz de acesso](./permissoes.md). Reutilizar identidade/autorização comuns;
+  não criar middleware de segurança independente por endpoint.
+- Frontend: [serviço de veículos](../frontend/src/shared/services/veiculos.service.ts),
+  [estado remoto](../frontend/src/shared/api/useRemoteData.ts),
+  [tela consumidora](../frontend/src/pages/veiculos/Veiculos.tsx) e
+  [instruções do frontend](../frontend/AGENTS.md).
+- Verificação: [integração HTTP/banco](../backend/tests/integration/veiculos-contract.test.ts),
+  [E2E de veículos](../tests/e2e/veiculos.spec.ts), [lint atual](../eslint.config.mjs)
+  e [guia de testes](./testing.md).
+
+Os exemplos orientam estrutura e reutilização; não são autorização para copiar
+regras de veículos para outro domínio. Começar pela prioridade 1 e migrar o legado
+gradualmente. Novas regras de negócio, permissões ou alterações incompatíveis
+continuam dependentes de tarefas e definições próprias.
+
 ## Bootstrap e HTTP compartilhados — #28
 
 As notas por ticket abaixo preservam decisões/evidências históricas. O estado
