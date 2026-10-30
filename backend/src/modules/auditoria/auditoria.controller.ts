@@ -1,3 +1,4 @@
+import { registrarFalha } from '../../shared/logging/logger.js';
 import { Request, Response } from 'express';
 import { sql } from '../../config/db.js';
 
@@ -25,7 +26,7 @@ export const listarLogsAuditoria = async (req: Request, res: Response) => {
 
     return res.json(logs);
   } catch (error) {
-    console.error(error);
+    registrarFalha(error);
     return res.status(500).json({ error: 'Erro ao consultar logs de auditoria.' });
   }
 };

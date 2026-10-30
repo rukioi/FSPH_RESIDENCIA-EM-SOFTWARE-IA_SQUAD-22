@@ -1,3 +1,7 @@
+import { lerCorpoJson as lerBody } from '../../shared/http/body.js';
+import { responderErroCorpo } from '../../shared/http/errors.js';
+import { registrarFalha } from '../../shared/logging/logger.js';
+import { enviarDados as enviarJson, enviarErro } from '../../shared/http/json.js';
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
@@ -15,57 +19,6 @@ const STATUS_PERMITIDOS = [
   'EM_MANUTENCAO',
   'INDISPONIVEL',
 ];
-
-function enviarJson(
-  res: ServerResponse,
-  status: number,
-  data: unknown,
-) {
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-
-  res.end(JSON.stringify({ data }));
-}
-
-function enviarErro(
-  res: ServerResponse,
-  status: number,
-  code: string,
-  message: string,
-) {
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-
-  res.end(JSON.stringify({ error: { code, message } }));
-}
-
-async function lerBody(req: IncomingMessage): Promise<unknown> {
-  const partes: Buffer[] = [];
-  let tamanho = 0;
-  const limite = 64 * 1024;
-
-  for await (const parte of req) {
-    const buffer = Buffer.isBuffer(parte)
-      ? parte
-      : Buffer.from(parte);
-
-    tamanho += buffer.length;
-
-    if (tamanho > limite) {
-      throw new Error('CORPO_MUITO_GRANDE');
-    }
-
-    partes.push(buffer);
-  }
-
-  try {
-    return JSON.parse(Buffer.concat(partes).toString('utf8'));
-  } catch {
-    throw new Error('JSON_INVALIDO');
-  }
-}
 
 function objetoValido(
   valor: unknown,
@@ -89,24 +42,7 @@ function tratarErro(
   err: unknown,
   mensagem: string,
 ) {
-  if (err instanceof Error && err.message === 'JSON_INVALIDO') {
-    return enviarErro(
-      res,
-      400,
-      'JSON_INVALIDO',
-      'Envie um JSON válido.',
-    );
-  }
-
-  if (err instanceof Error && err.message === 'CORPO_MUITO_GRANDE') {
-    return enviarErro(
-      res,
-      413,
-      'CORPO_MUITO_GRANDE',
-      'Corpo da requisição muito grande.',
-    );
-  }
-
+  if (responderErroCorpo(res, err)) return;
   if (
     typeof err === 'object' &&
     err !== null &&
@@ -121,7 +57,7 @@ function tratarErro(
     );
   }
 
-  console.error(mensagem, err);
+  registrarFalha(err);
 
   return enviarErro(
     res,

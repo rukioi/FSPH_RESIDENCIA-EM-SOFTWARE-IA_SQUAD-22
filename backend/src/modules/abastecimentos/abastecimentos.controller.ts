@@ -1,3 +1,7 @@
+import { lerCorpoJson as lerBody } from '../../shared/http/body.js';
+import { responderErroCorpo } from '../../shared/http/errors.js';
+import { registrarFalha } from '../../shared/logging/logger.js';
+import { enviarDados as enviarJson, enviarErro } from '../../shared/http/json.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 
@@ -11,31 +15,7 @@ interface CorpoAbastecimento {
   data_abastecimento?: string;
 }
 
-function enviarJson(res: ServerResponse, status: number, data: unknown): void {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ data }));
-}
-
-function enviarErro(res: ServerResponse, status: number, code: string, message: string): void {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ error: { code, message } }));
-}
-
-async function lerBody(req: IncomingMessage): Promise<CorpoAbastecimento> {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (err) {
-        reject(err);
-      }
-    });
-    req.on('error', err => reject(err));
-  });
-}
-
+/** Lista abastecimentos pelo pool compartilhado com o envelope existente. */
 export async function listarAbastecimentos(_req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     const lista = await sql`
@@ -47,14 +27,16 @@ export async function listarAbastecimentos(_req: IncomingMessage, res: ServerRes
     `;
     enviarJson(res, 200, lista);
   } catch (err) {
-    console.error('Erro ao listar abastecimentos:', err);
+    if (responderErroCorpo(res, err)) return;
+    registrarFalha(err);
     enviarErro(res, 500, 'ERRO_INTERNO', 'Não foi possível listar os abastecimentos.');
   }
 }
 
+/** Lê JSON limitado e preserva o cadastro de abastecimento existente. */
 export async function criarAbastecimento(req: IncomingMessage, res: ServerResponse) {
   try {
-    const body = await lerBody(req);
+    const body = await lerBody(req) as CorpoAbastecimento;
     const { 
       veiculo_id, 
       motorista_id, 
@@ -81,7 +63,8 @@ export async function criarAbastecimento(req: IncomingMessage, res: ServerRespon
     
     enviarJson(res, 201, novo);
   } catch (err) {
-    console.error('Erro ao registrar abastecimento:', err);
+    if (responderErroCorpo(res, err)) return;
+    registrarFalha(err);
     enviarErro(res, 500, 'ERRO_INTERNO', 'Falha ao registrar abastecimento.');
   }
 }

@@ -44,3 +44,37 @@ Formato padrão de erro nos endpoints protegidos:
 No mesmo PR do endpoint, registre nesta pasta: método e caminho, entrada, resposta, permissão e um exemplo mínimo. Agrupe por módulo; não é necessário documentar toda a API antecipadamente ou adicionar ferramentas agora.
 
 Mantenha mudanças compatíveis sempre que possível. Combine alterações que quebrem consumidores; introduza versionamento apenas quando necessário. Regras de acesso seguem [permissoes.md](../permissoes.md).
+
+## Infraestrutura HTTP — #28
+
+A convenção acima é o alvo. Os envelopes existentes, nomes snake_case, listas sem
+paginação e datas serializadas pelo driver continuam compatíveis nesta etapa;
+a geração/unificação do contrato pertence à #32.
+
+- Cada resposta recebe `X-Request-Id`, UUID gerado no servidor. IDs enviados pelo
+  cliente e cabeçalhos de encaminhamento não são confiados nem registrados.
+- Despacho usa pathname (query string não altera a rota). Caminho desconhecido:
+  404; método incompatível em caminho conhecido: 405 com `Allow` dos métodos reais,
+  antes da autenticação. Nenhuma operação protegida é executada nesse caso.
+- JSON: 64 KiB em bytes por padrão. `/api/documentos` conserva override de 1 MiB.
+  `Content-Type: application/json` aceita parâmetros como charset; ausência do
+  cabeçalho permanece tolerada por compatibilidade. Outro tipo explícito: 415.
+- Upload de documentos: um arquivo PDF/JPEG/PNG até 5 MiB; até dez campos de
+  4 KiB cada, onze partes no total e corpo total até 5 MiB + 64 KiB. Excesso: 413;
+  estrutura/conteúdo inválido: 400. A assinatura do arquivo continua validada.
+- JSON malformado: 400 `JSON_INVALIDO`; corpo excessivo: 413
+  `CORPO_MUITO_GRANDE`; mídia incompatível: 415 `TIPO_NAO_SUPORTADO`.
+  O SVO conserva `{ "erro": "mensagem" }` nas falhas de corpo.
+- 413/415 encerram a conexão após enviar a resposta. Aborto de transporte não
+  tenta escrever em socket encerrado. Erro inesperado retorna 500 genérico;
+  se cabeçalhos já saíram, a conexão é encerrada, sem resposta pendurada.
+- Login: 429 `LIMITE_LOGIN`, com `Retry-After` em segundos. Ver [auth.md](./auth.md).
+
+Exemplo de 405 (o cabeçalho `Allow` depende da rota):
+
+```json
+{"error":{"code":"METODO_NAO_PERMITIDO","message":"Método não permitido."}}
+```
+
+Os contratos por módulo registram o recorte técnico alterado pela #28; não
+introduzem paginação, perfis, estados ou novas regras operacionais.

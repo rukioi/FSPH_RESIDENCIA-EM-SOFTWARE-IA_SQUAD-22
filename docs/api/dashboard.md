@@ -57,3 +57,52 @@ Authorization: Bearer <token>
 ## Observação de integração
 
 A autenticação compartilhada valida JWT HS256 com `sub`, `exp` e `JWT_SECRET` de pelo menos 16 bytes (recomenda-se 32 bytes ou mais). O contrato de login e consulta de sessão está em [auth.md](./auth.md). O painel do gestor usa `/api/dashboard/gestor`.
+
+## Infraestrutura e rotas atuais — #28
+
+As quatro consultas são exclusivamente GET, sem corpo, com Bearer e perfis
+ADM/GESTOR_FROTA: `/api/dashboard`, `/api/dashboard/pendencias`,
+`/api/dashboard/graficos` e `/api/dashboard/gestor`.
+`/api/dashboard/kpis` não existe (404). Os cálculos existentes foram preservados.
+
+### 200 — Outras consultas existentes
+
+`/pendencias`:
+
+```json
+{"data":{"motoristas":[],"documentos":[]}}
+```
+
+`/graficos`:
+
+```json
+{"data":{"veiculosPorStatus":[],"solicitacoesPorStatus":[]}}
+```
+
+`/gestor`:
+
+```json
+{"data":{"veiculosPorStatus":[],"motoristasDisponiveis":0,"solicitacoesPorStatus":[],"proximasViagens":[]}}
+```
+
+`motoristasDisponiveis` conserva a contagem total atual; não foi redefinida a
+regra de disponibilidade. Arrays acima ilustram banco sem resultados.
+
+### 405 — Método diferente de GET
+
+Cabeçalho `Allow: GET`.
+
+```json
+{"error":{"code":"METODO_NAO_PERMITIDO","message":"Método não permitido."}}
+```
+
+### 500 — Falha de consulta
+
+Exemplo de `/pendencias`; `/graficos` mantém `FALHA_INTERNA`, e `/gestor`
+mantém `ERRO_INTERNO`, com as mensagens atuais de cada consulta.
+
+```json
+{"error":{"code":"ERRO_INTERNO","message":"Não foi possível consultar as pendências."}}
+```
+
+Não adiciona indicadores, filtros de período ou novo cálculo.

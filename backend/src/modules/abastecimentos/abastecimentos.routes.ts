@@ -1,3 +1,4 @@
+import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
 import { listarAbastecimentos, criarAbastecimento } from './abastecimentos.controller.js';
@@ -11,13 +12,12 @@ export async function abastecimentosRoute(req: IncomingMessage, res: ServerRespo
     pathname !== '/api/abastecimentos' ||
     (method !== 'GET' && method !== 'POST')
   ) {
-    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
+    jsonCompartilhado(res, 404, {
       error: {
         code: 'NAO_ENCONTRADO',
         message: 'Rota de abastecimentos não encontrada.',
       },
-    }));
+    });
     return;
   }
 
@@ -33,10 +33,7 @@ export async function abastecimentosRoute(req: IncomingMessage, res: ServerRespo
     return criarAbastecimento(req, res);
   }
 
-  res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(
-    JSON.stringify({
+  jsonCompartilhado(res, 404, {
       error: { code: 'NAO_ENCONTRADO', message: 'Rota de abastecimentos não encontrada.' },
-    })
-  );
+    });
 }

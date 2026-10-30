@@ -1,8 +1,11 @@
+import { lerCorpoJson } from '../../shared/http/body.js';
+import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 import bcrypt from 'bcrypt';
 import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
 
+/** Preserva operações administrativas e seus envelopes legados. */
 export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url ?? '', 'http://localhost');
   const admin = await autenticarRequisicao(req, res);
@@ -15,20 +18,16 @@ export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): 
 
   if (req.method === 'GET' && url.pathname === '/api/admin/usuarios') {
     const usuarios = await sql`SELECT id, nome, email, perfil, ativo, criado_em FROM public.usuario ORDER BY id ASC`;
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(usuarios));
+    jsonCompartilhado(res, 200, usuarios);
     return;
   }
 
   if (req.method === 'POST' && url.pathname === '/api/admin/usuarios') {
-    let body = '';
-    for await (const chunk of req) body += chunk;
-    const { nome, email, senha, perfil } = JSON.parse(body);
+    const { nome, email, senha, perfil } = await lerCorpoJson(req) as Record<string, string>;
 
     const existente = await sql`SELECT id FROM public.usuario WHERE email = ${email}`;
     if (existente.length > 0) {
-      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ error: 'Já existe um utilizador registado com este e-mail.' }));
+      jsonCompartilhado(res, 400, { error: 'Já existe um utilizador registado com este e-mail.' });
       return;
     }
 
@@ -44,22 +43,18 @@ export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): 
       VALUES (${admin.id}, ${`Criou o utilizador ${email}`}, NOW())
     `;
 
-    res.writeHead(201, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(novo[0]));
+    jsonCompartilhado(res, 201, novo[0]);
     return;
   }
 
   const putMatch = url.pathname.match(/^\/api\/admin\/usuarios\/([0-9]+)\/?$/);
   if (req.method === 'PUT' && putMatch) {
     const usuarioId = Number(putMatch[1]);
-    let body = '';
-    for await (const chunk of req) body += chunk;
-    const { nome, email, perfil, senha } = JSON.parse(body);
+    const { nome, email, perfil, senha } = await lerCorpoJson(req) as Record<string, string>;
 
     const usuarioAtual = await sql`SELECT id FROM public.usuario WHERE id = ${usuarioId}`;
     if (usuarioAtual.length === 0) {
-      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ error: 'Utilizador não encontrado.' }));
+      jsonCompartilhado(res, 404, { error: 'Utilizador não encontrado.' });
       return;
     }
 
@@ -86,8 +81,7 @@ export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): 
       VALUES (${admin.id}, ${`Atualizou os dados do utilizador ID ${usuarioId}`}, NOW())
     `;
 
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(atualizado[0]));
+    jsonCompartilhado(res, 200, atualizado[0]);
     return;
   }
 
@@ -98,8 +92,7 @@ export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): 
     const usuarioAtual = await sql`SELECT ativo FROM public.usuario WHERE id = ${usuarioId}`;
     
     if (usuarioAtual.length === 0) {
-      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ error: 'Utilizador não encontrado.' }));
+      jsonCompartilhado(res, 404, { error: 'Utilizador não encontrado.' });
       return;
     }
 
@@ -117,11 +110,9 @@ export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): 
       VALUES (${admin.id}, ${`Alterou o status do utilizador ID ${usuarioId} para ${novoStatus ? 'Ativo' : 'Inativo'}`}, NOW())
     `;
 
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(atualizado[0]));
+    jsonCompartilhado(res, 200, atualizado[0]);
     return;
   }
 
-  res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify({ error: 'Rota não encontrada em administradores.' }));
+  jsonCompartilhado(res, 404, { error: 'Rota não encontrada em administradores.' });
 }

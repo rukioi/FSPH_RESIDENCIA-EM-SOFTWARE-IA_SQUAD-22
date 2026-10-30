@@ -1,8 +1,10 @@
+import { registrarFalha } from '../../shared/logging/logger.js';
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { sql } from '../../config/db.js';
 import { criarJwt } from '../../security/jwt.js';
 
+/** Mantém o controller Express legado com log técnico seguro. */
 export const login = async (req: Request, res: Response) => {
   const { email, senha } = req.body;
 
@@ -47,7 +49,7 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error(error);
+    registrarFalha(error);
     return res.status(500).json({ error: 'Erro interno ao realizar login.' });
   }
 };

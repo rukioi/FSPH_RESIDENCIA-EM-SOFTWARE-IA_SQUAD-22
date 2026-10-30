@@ -1,6 +1,6 @@
 # Segurança básica
 
-Implemente estes controles junto da funcionalidade que precisa deles. A base atual ainda não possui autenticação, banco ou upload.
+A base atual possui autenticação, PostgreSQL e upload. Os controles abaixo evoluem junto de cada funcionalidade.
 
 ## Aplicação e dados
 
@@ -33,3 +33,30 @@ Se a estratégia migrar para cookies, configure `HttpOnly`, `Secure` em produç�
 Mantenha o lockfile e instale com `npm ci`. Não faça atualizações sem relação com a tarefa. Segredos ficam fora do Git e do frontend; assistentes seguem a proibição de acessar `.env*` do AGENTS.
 
 Referência: [segurança de APIs REST da OWASP](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html). Detalhes de retenção, backup e infraestrutura serão definidos nas tarefas correspondentes.
+
+## Infraestrutura técnica — #28
+
+- TLS do PostgreSQL verifica certificado e hostname. Não há fallback com
+  rejectUnauthorized:false. URL com sslmode inseguro é recusada. A exceção
+  `DB_TLS=disable` exige host loopback (`localhost`, `127.0.0.1` ou `::1`).
+  Não use essa exceção para túnel que encaminhe a banco remoto. Certificado de CA
+  privada deve ser confiado pelo runtime (por exemplo NODE_EXTRA_CA_CERTS no
+  processo), mantendo verificação; a CA/certificação do ambiente publicado não foi
+  inspecionada nesta execução. Falhas de confiança exigem corrigir a cadeia.
+- O logger usa allowlist: evento fechado, UUID de correlação gerado pelo servidor
+  e códigos técnicos conhecidos. Não serializa message/detail/cause, corpo, URL,
+  credenciais, objetos do driver ou dados pessoais. Avisos do pool não são
+  impressos. Os controllers legados também usam o logger técnico.
+- Toda resposta HTTP recebe X-Request-Id local. Nenhum identificador arbitrário
+  recebido do cliente é refletido no log.
+- Limites de JSON/multipart, 400/413/415 e política de método/405 estão no
+  [contrato comum](./api/README.md#infraestrutura-http--28).
+- Login tem cota por IP do transporte, por processo: 10 tentativas/60s, estrutura
+  máxima de 10000 origens, 429 e Retry-After. Configuração e limites superiores
+  estão em [auth.md](./api/auth.md). Não confia em Forwarded/X-Forwarded-For;
+  atrás de proxy, usuários podem compartilhar cota. Proteção global deve ser
+  configurada na infraestrutura confiável; não foi implementado cache distribuído.
+
+JWT/perfis/revogação e auditoria de domínio permanecem para #29/#31. Esta entrega
+não modifica ACL/RLS ou o Supabase remoto. O certificado/chave em tests/unit/fixtures
+é artificial, gerado somente para provar rejeição TLS, sem uso operacional.

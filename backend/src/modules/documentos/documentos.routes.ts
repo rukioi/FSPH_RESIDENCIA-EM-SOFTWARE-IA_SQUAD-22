@@ -1,3 +1,4 @@
+import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
@@ -49,14 +50,10 @@ export async function documentosRoute(
     return;
   }
 
-  res.writeHead(404, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-
-  res.end(JSON.stringify({
+  jsonCompartilhado(res, 404, {
     error: {
       code: 'NAO_ENCONTRADO',
       message: 'Rota de documentos não encontrada.',
     },
-  }));
+  });
 }

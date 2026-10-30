@@ -1,34 +1,11 @@
+import { ErroCorpoRequisicao, lerCorpoJson } from '../../shared/http/body.js';
+import { responderErroCorpo } from '../../shared/http/errors.js';
+import { registrarFalha } from '../../shared/logging/logger.js';
+import { enviarDados as enviarJson, enviarErro } from '../../shared/http/json.js';
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 import { receberUpload } from './documentos.upload.js';
-
-function enviarJson(
-  res: ServerResponse,
-  status: number,
-  data: unknown,
-): void {
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-
-  res.end(JSON.stringify({ data }));
-}
-
-function enviarErro(
-  res: ServerResponse,
-  status: number,
-  code: string,
-  message: string,
-): void {
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-
-  res.end(JSON.stringify({
-    error: { code, message },
-  }));
-}
 
 /** Consulta pendências de vencimento das CNHs e documentos dos veículos. */
 export async function buscarPendenciasDocumentos(
@@ -85,7 +62,7 @@ export async function buscarPendenciasDocumentos(
 
     enviarJson(res, 200, [...pendencias, ...pendenciasVeiculos]);
   } catch (err) {
-    console.error('Erro ao calcular pendências:', err);
+    registrarFalha(err);
 
     enviarErro(
       res,
@@ -126,7 +103,8 @@ export async function criarDocumento(
         tipo_documento: upload.campos.tipo_documento,
         data_vencimento: upload.campos.data_vencimento,
       };
-    } catch {
+    } catch (erro) {
+      if (responderErroCorpo(res, erro)) return;
       enviarErro(
         res,
         400,
@@ -136,49 +114,15 @@ export async function criarDocumento(
       return;
     }
   } else {
-    const partes: Buffer[] = [];
-    const limiteJson = 1024 * 1024; // 1 MB
-    let tamanho = 0;
-    let excedeuLimite = false;
-
     try {
-      for await (const parte of req) {
-        const buffer = Buffer.isBuffer(parte)
-          ? parte
-          : Buffer.from(parte);
-
-        tamanho += buffer.length;
-
-        if (tamanho > limiteJson) {
-          if (!excedeuLimite) {
-            excedeuLimite = true;
-            enviarErro(
-              res,
-              413,
-              'CORPO_MUITO_GRANDE',
-              'O JSON deve ter no máximo 1 MB.',
-            );
-          }
-          continue;
-        }
-
-        partes.push(buffer);
-      }
-
-      if (excedeuLimite) {
+      body = await lerCorpoJson(req, 1024 * 1024);
+    } catch (erro) {
+      if (erro instanceof ErroCorpoRequisicao && erro.codigo === 'CORPO_MUITO_GRANDE') {
+        enviarErro(res, 413, erro.codigo, 'O JSON deve ter no máximo 1 MB.');
         return;
       }
-
-      body = JSON.parse(Buffer.concat(partes).toString('utf8'));
-    } catch {
-      if (res.headersSent) { return; }
-      enviarErro(
-        res,
-        400,
-        'JSON_INVALIDO',
-        'Envie um JSON válido.',
-      );
-      return;
+      if (responderErroCorpo(res, erro)) return;
+      throw erro;
     }
   }
 
@@ -300,7 +244,7 @@ export async function criarDocumento(
 
     enviarJson(res, 201, documento);
   } catch (erro) {
-    console.error('Erro ao cadastrar documento:', erro);
+    registrarFalha(erro);
 
     enviarErro(
       res,
@@ -392,7 +336,7 @@ export async function listarDocumentos(
 
     enviarJson(res, 200, [...veiculos, ...motoristas]);
   } catch (erro) {
-    console.error('Erro ao listar documentos:', erro);
+    registrarFalha(erro);
 
     enviarErro(
       res,

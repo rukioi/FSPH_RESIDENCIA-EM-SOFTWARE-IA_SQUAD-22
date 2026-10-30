@@ -1,3 +1,4 @@
+import { registrarFalha } from '../../shared/logging/logger.js';
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { sql } from '../../config/db.js';
@@ -16,6 +17,7 @@ export const listarUsuarios = async (req: Request, res: Response) => {
   }
 };
 
+/** Preserva o cadastro legado e evita expor erros brutos no log. */
 export const criarUsuario = async (req: Request, res: Response) => {
   const { nome, email, senha, perfil } = req.body;
 
@@ -42,7 +44,7 @@ export const criarUsuario = async (req: Request, res: Response) => {
 
     return res.status(201).json(novoUsuario[0]);
   } catch (error) {
-    console.error(error);
+    registrarFalha(error);
     return res.status(500).json({ error: 'Erro ao cadastrar utilizador.' });
   }
 };

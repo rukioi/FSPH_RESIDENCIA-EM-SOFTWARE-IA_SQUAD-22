@@ -9,108 +9,58 @@ import { authRoute } from './modules/auth/auth.routes.js';
 import { usuariosRoute } from './modules/usuarios/usuarios.routes.js';
 import { auditoriaRoute } from './modules/auditoria/auditoria.routes.js';
 
-export function isolarFalhaDaRequisicao(
-  response: ServerResponse,
-  operacao: Promise<void>
-): void {
-  operacao.catch((erro: unknown) => {
-    console.error('Falha isolada na requisição:', erro);
+import { enviarErro } from './shared/http/json.js';
+import { tratarErroTecnico } from './shared/http/errors.js';
+import { comRequestId } from './shared/http/request-id.js';
+import { criarLimiteLogin } from './shared/http/rate-limit.js';
 
-    if (response.headersSent || response.writableEnded || response.destroyed) {
-      return;
-    }
-
-    response.writeHead(500, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-    response.end(
-      JSON.stringify({
-        error: {
-          code: 'ERRO_INTERNO',
-          message: 'Não foi possível concluir a requisição.',
-        },
-      })
-    );
-  });
+/** Contém rejeições da rota e encerra respostas parcialmente enviadas. */
+export function isolarFalhaDaRequisicao(response: ServerResponse, operacao: Promise<void>): void {
+  void operacao.catch((erro: unknown) => tratarErroTecnico(response, erro));
 }
 
+const rotas = [
+  { path: /^\/api\/auth\/login$/, methods: ['POST'], handler: authRoute },
+  { path: /^\/api\/auth\/sessao$/, methods: ['GET'], handler: authRoute },
+  { path: /^\/api\/admin\/usuarios$/, methods: ['GET', 'POST'], handler: usuariosRoute },
+  { path: /^\/api\/admin\/usuarios\/[0-9]+\/?$/, methods: ['PUT'], handler: usuariosRoute },
+  { path: /^\/api\/admin\/usuarios\/[0-9]+\/status\/?$/, methods: ['PATCH'], handler: usuariosRoute },
+  { path: /^\/api\/admin\/auditoria\/logs$/, methods: ['GET'], handler: auditoriaRoute },
+  { path: /^\/api\/dashboard(?:\/(?:pendencias|graficos|gestor))?$/, methods: ['GET'], handler: dashboardRoute },
+  { path: /^\/api\/svo\/ordens-coleta$/, methods: ['GET'], handler: svoRoute },
+  { path: /^\/api\/svo\/solicitacoes$/, methods: ['POST'], handler: svoRoute },
+  { path: /^\/api\/svo\/ordens-coleta\/[0-9]+\/despachar$/, methods: ['PATCH'], handler: svoRoute },
+  { path: /^\/api\/veiculos$/, methods: ['GET', 'POST'], handler: veiculosRoute },
+  { path: /^\/api\/veiculos\/[0-9]+$/, methods: ['PUT', 'PATCH', 'DELETE'], handler: veiculosRoute },
+  { path: /^\/api\/motoristas$/, methods: ['GET', 'POST'], handler: motoristasRoute },
+  { path: /^\/api\/motoristas\/[0-9]+$/, methods: ['PUT', 'PATCH', 'DELETE'], handler: motoristasRoute },
+  { path: /^\/api\/abastecimentos$/, methods: ['GET', 'POST'], handler: abastecimentosRoute },
+  { path: /^\/api\/documentos$/, methods: ['GET', 'POST'], handler: documentosRoute },
+  { path: /^\/api\/documentos\/pendencias$/, methods: ['GET'], handler: documentosRoute },
+];
+
+/** Despacha somente caminhos/métodos conhecidos; regras de acesso continuam nos módulos. */
 export function createApp() {
+  const permitirLogin = criarLimiteLogin();
   return createServer((request, response) => {
-    const caminho = new URL(request.url ?? '', 'http://localhost').pathname;
-
-    if (caminho.startsWith('/api/auth')) {
-      isolarFalhaDaRequisicao(response, authRoute(request, response));
-      return;
-    }
-
-    if (caminho.startsWith('/api/admin/usuarios')) {
-      isolarFalhaDaRequisicao(response, usuariosRoute(request, response));
-      return;
-    }
-
-    if (caminho.startsWith('/api/admin/auditoria')) {
-      isolarFalhaDaRequisicao(response, auditoriaRoute(request, response));
-      return;
-    }
-
-    if (
-      caminho === '/api/dashboard' ||
-      caminho === '/api/dashboard/pendencias' ||
-      caminho === '/api/dashboard/graficos' ||
-      caminho === '/api/dashboard/gestor'
-    ) {
-      isolarFalhaDaRequisicao(response, dashboardRoute(request, response));
-      return;
-    }
-
-    if (request.method === 'GET' && caminho === '/api/svo/ordens-coleta') {
-      isolarFalhaDaRequisicao(response, svoRoute(request, response));
-      return;
-    }
-
-    if (request.method === 'POST' && caminho === '/api/svo/solicitacoes') {
-      isolarFalhaDaRequisicao(response, svoRoute(request, response));
-      return;
-    }
-
-    if (
-      request.method === 'PATCH' &&
-      /^\/api\/svo\/ordens-coleta\/[0-9]+\/despachar$/.test(caminho)
-    ) {
-      isolarFalhaDaRequisicao(response, svoRoute(request, response));
-      return;
-    }
-    
-    if (caminho.startsWith('/api/veiculos')) {
-      isolarFalhaDaRequisicao(response, veiculosRoute(request, response));
-      return;
-    }
-
-    if (caminho.startsWith('/api/motoristas')) {
-      isolarFalhaDaRequisicao(response, motoristasRoute(request, response));
-      return;
-    }
-
-    if (caminho.startsWith('/api/abastecimentos')) {
-      isolarFalhaDaRequisicao(response, abastecimentosRoute(request, response));
-      return;
-    }
-
-    if (caminho.startsWith('/api/documentos')) {
-      isolarFalhaDaRequisicao(response, documentosRoute(request, response));
-      return;
-    }
-
-    response.writeHead(404, {
-      'Content-Type': 'application/json; charset=utf-8',
+    comRequestId(response, () => {
+      isolarFalhaDaRequisicao(response, (async () => {
+        const caminho = new URL(request.url ?? '', 'http://localhost').pathname;
+        const rota = rotas.find(item => item.path.test(caminho));
+        if (!rota) {
+          request.resume();
+          enviarErro(response, 404, 'NAO_ENCONTRADO', 'Rota não encontrada.');
+          return;
+        }
+        if (!rota.methods.includes(request.method ?? '')) {
+          request.resume();
+          response.setHeader('Allow', rota.methods.join(', '));
+          enviarErro(response, 405, 'METODO_NAO_PERMITIDO', 'Método não permitido.');
+          return;
+        }
+        if (caminho === '/api/auth/login' && !permitirLogin(request, response)) return;
+        await rota.handler(request, response);
+      })());
     });
-    response.end(
-      JSON.stringify({
-        error: {
-          code: 'NAO_ENCONTRADO',
-          message: 'Rota não encontrada.',
-        },
-      })
-    );
   });
 }

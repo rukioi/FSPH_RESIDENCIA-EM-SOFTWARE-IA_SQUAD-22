@@ -1,3 +1,4 @@
+import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
@@ -7,6 +8,7 @@ import {
   despacharOrdemController,
 } from './svo.controller.js';
 
+/** Preserva autenticação e despacho operacional do SVO. */
 export async function svoRoute(
   request: IncomingMessage,
   response: ServerResponse
@@ -22,13 +24,9 @@ export async function svoRoute(
   }
   
 if (!/^[1-9]\d*$/.test(usuario.id)) {
-  response.writeHead(401, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-
-  response.end(JSON.stringify({
+  jsonCompartilhado(response, 401, {
     erro: 'Identificação do usuário inválida.',
-  }));
+  });
   return;
 }
 
@@ -36,23 +34,15 @@ try {
   const usuarioId = BigInt(usuario.id);
 
   if (usuarioId > 9223372036854775807n) {
-    response.writeHead(401, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
+    jsonCompartilhado(response, 401, {
       erro: 'Identificação do usuário inválida.',
-    }));
+    });
     return;
   }
 } catch {
-  response.writeHead(401, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-
-  response.end(JSON.stringify({
+  jsonCompartilhado(response, 401, {
     erro: 'Identificação do usuário inválida.',
-  }));
+  });
   return;
 }
 
@@ -67,13 +57,9 @@ try {
     const status = url.searchParams.get('status');
 
     if (status !== 'AGUARDANDO_DESPACHO') {
-      response.writeHead(400, {
-        'Content-Type': 'application/json; charset=utf-8',
-      });
-
-      response.end(JSON.stringify({
+      jsonCompartilhado(response, 400, {
         erro: 'Status inválido. Use AGUARDANDO_DESPACHO.',
-      }));
+      });
       return;
     }
 
@@ -98,13 +84,9 @@ if (request.method === 'PATCH' && rotaDespacho) {
   const ordemId = Number(rotaDespacho[1]);
 
   if (!Number.isSafeInteger(ordemId) || ordemId <= 0) {
-    response.writeHead(400, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
+    jsonCompartilhado(response, 400, {
       erro: 'ID da ordem inválido.',
-    }));
+    });
     return;
   }
 
@@ -112,12 +94,8 @@ if (request.method === 'PATCH' && rotaDespacho) {
   return;
 }
 
-response.writeHead(404, {
-  'Content-Type': 'application/json; charset=utf-8',
-});
-
-response.end(JSON.stringify({
+jsonCompartilhado(response, 404, {
   erro: 'Rota não encontrada.',
-}));
+});
 }
 

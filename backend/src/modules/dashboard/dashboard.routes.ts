@@ -7,6 +7,7 @@ import {
   dashboardGestorController,
 } from './dashboard.controller.js';
 
+/** Autoriza as consultas do dashboard; o dispatcher restringe os métodos. */
 export async function dashboardRoute(
   request: IncomingMessage,
   response: ServerResponse

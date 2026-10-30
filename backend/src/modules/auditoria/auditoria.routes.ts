@@ -1,7 +1,9 @@
+import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
 
+/** Consulta auditoria administrativa com autorização existente. */
 export async function auditoriaRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url ?? '', 'http://localhost');
   const usuario = await autenticarRequisicao(req, res);
@@ -16,8 +18,7 @@ export async function auditoriaRoute(req: IncomingMessage, res: ServerResponse):
       LEFT JOIN public.usuario u ON l.usuario_id = u.id
       ORDER BY l.data_hora DESC
     `;
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(logs));
+    jsonCompartilhado(res, 200, logs);
     return;
   }
 }
