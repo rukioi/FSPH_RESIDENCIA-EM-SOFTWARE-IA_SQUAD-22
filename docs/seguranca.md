@@ -90,7 +90,7 @@ Usuários aceitam somente nome/email/perfil/senha no cadastro/edição e somente
 `{ativo:boolean}` no status. Campos internos são rejeitados. A alteração de status
 bloqueia o usuário com FOR UPDATE; mudança e evento existente compartilham
 transação. Repetir o estado retorna 200 sem novo UPDATE/evento. Cadastro/edição
-mantêm a gravação de auditoria existente; sua centralização transacional é #31.
+também confirmam usuário e atividade na mesma transação desde a #31.
 
 ### Acesso direto ao PostgreSQL e limite de rollout
 
@@ -130,7 +130,7 @@ não há captura que ignore uma falha para confirmar metade da operação.
 
 O logger técnico da #28 continua separado do histórico de negócio. O endpoint
 continua somente ADM com sessão atual. DTO paginado exclui email; adaptador sem
-paginação conserva campos legados até #32. Histórico anterior pode conter email
+paginação conserva campos legados documentados pela #32. Histórico anterior pode conter email
 nas descrições; não houve limpeza/backfill nem anonimização retroativa.
 As duas FKs foram preservadas; retenção/imutabilidade, política de exclusão,
 novos eventos e auditoria avançada exigem tarefa própria.

@@ -96,8 +96,9 @@ bindings, JSON, 204, cancelamento, erros e X-Request-Id; reutiliza o adaptador
 existente de Bearer/401. `ApiError` expõe status, code, message, fields opcionais e
 requestId recebido do servidor. Não inventa código de domínio quando o legado
 retorna somente mensagem: usa HTTP_<status>. Tipos estáticos não validam JSON;
-fora do piloto os validadores/consumidores anteriores ainda são adaptadores legados,
-delimitados no manifesto. A migração desses consumidores continua na #30.
+fora do piloto os validadores HTTP anteriores continuam ativos, delimitados no
+manifesto. A #30 migrou consumidores de frota, usuários e SVO para o cliente comum
+e schemas de resposta, sem impor validação HTTP global aos controllers.
 
 BIGINT do driver permanece string (inclusive acima de MAX_SAFE_INTEGER), NUMERIC
 permanece string e DATE/timestamp conservam a serialização existente. SVO converte
@@ -108,15 +109,16 @@ significado histórico porque o JSON contém `Z`.
 
 Não há /api/v1, GET individual de veículos, paginação de frota, novos perfis,
 filtros de domínio, rotas de manutenção, agenda ou indicadores. O cadastro de
-abastecimento ainda valida truthiness e pode responder 500 por NOT NULL; seu schema
-descreve a forma usual, não todas as coerções aceitas pelo PostgreSQL. As demais
+abastecimento classifica incompatibilidades técnicas/NOT NULL como 400 e FK como
+404 desde a #30, sem alterar o banco ou resolver RF40. Seu schema descreve a forma
+usual, não todas as coerções aceitas pelo PostgreSQL. As demais
 limitações por operação estão no inventário e manifesto.
 
 ## Infraestrutura HTTP — #28
 
 A convenção acima é o alvo. Os envelopes existentes, nomes snake_case, listas sem
 paginação e datas serializadas pelo driver continuam compatíveis nesta etapa;
-a geração/unificação do contrato pertence à #32.
+a #32 gerou o contrato preservando essas diferenças.
 
 - Cada resposta recebe `X-Request-Id`, UUID gerado no servidor. IDs enviados pelo
   cliente e cabeçalhos de encaminhamento não são confiados nem registrados.
@@ -158,7 +160,7 @@ As listas de permissão permanecem as existentes. Ver [auth.md](./auth.md).
 ou false, sem toggle. Repetir estado retorna 200 sem novo evento. Cadastro/edição
 usam enum real, inclusive SOLICITANTE_INTERNO, e rejeitam campos extras/internos.
 Esta quebra deliberada é aplicada em conjunto no frontend. Envelopes de sucesso
-legados, datas e paginação continuam para #32. Ver [usuarios.md](./usuarios.md).
+legados, datas e paginação estão registrados pela #32. Ver [usuarios.md](./usuarios.md).
 
 ## Consulta de atividades — #31
 

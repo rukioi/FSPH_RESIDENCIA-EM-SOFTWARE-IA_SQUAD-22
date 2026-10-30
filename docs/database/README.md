@@ -101,14 +101,15 @@ remotos neste fluxo.
 ## Isolamento dos testes e limites do escopo
 
 Vitest verifica o banco antes de carregar os testes e injeta URL fixa, nonce e
-JWT_SECRET artificial. Os dois módulos atuais de conexão recusam bootstrap de
+JWT_SECRET artificial. Os dois pontos de importação do mesmo pool recusam bootstrap de
 teste sem identidade explícita. O servidor e o pool legado deixam de carregar
 dotenv em NODE_ENV=test. Playwright usa um bootstrap próprio com ambiente explícito
 e não reutiliza servidor existente. Não há fallback para segredos do desenvolvedor.
 
 Os arquivos connection.ts, config/db.ts e server.ts, além da lista inicial de #27,
 receberam somente as guardas necessárias para cumprir esse isolamento. A unificação
-de bootstrap/pool e o TLS fora dos testes pertencem a T2 (#28).
+de bootstrap/pool e o TLS fora dos testes foram entregues na #28: config/db.ts
+reexporta connection.ts, sem segundo pool.
 
 | Decisão pendente | Limite preservado em T1 |
 | --- | --- |
@@ -119,9 +120,14 @@ de bootstrap/pool e o TLS fora dos testes pertencem a T2 (#28).
 
 A baseline não será aplicada em banco existente sem reconciliação revisada.
 Reverter código no Git não reverte banco ou permissões. Não há down destrutivo.
-O próximo ticket da sequência é T2 (#28); somente T7 abre/atualiza o PR final.
+A sequência #27–#33 está consolidada no [plano](../reorganization/plan.md).
+Somente #33 atualiza o PR final #34.
 
 ## Evidências desta entrega — 30/10/2026
+
+Esta seção registra a execução histórica da #27. Resultados atuais e limites de
+rollout estão em [validação](../reorganization/validation.md); referências a dois
+pools/etapas futuras abaixo descrevem o estado anterior à #28.
 
 - Docker Engine 29.6.2, Supabase CLI 2.122.0 e PostgreSQL local 17.11;
   projeto `fsph-t1-isolated-2026`, banco `fsph_t1_baseline`.

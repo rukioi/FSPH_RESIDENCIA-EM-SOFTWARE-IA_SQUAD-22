@@ -1,7 +1,7 @@
 # API — Documentos (#28)
 
 Recorte de compatibilidade e infraestrutura da refatoração; os registros de negócio
-mantêm os campos e envelopes atuais. Contrato unificado/gerado será tratado na #32.
+mantêm os campos e envelopes atuais, registrados no contrato global gerado na #32.
 
 ## Rotas
 

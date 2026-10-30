@@ -101,7 +101,9 @@ Authorization: Bearer <token>
 ## O que a entrega não faz
 
 Não muda despacho, disponibilidade, perfis, estados ou limites temporais. Mantém
-transações do repository e os envelopes legados; a unificação de DTOs pertence à #32.
+transações do repository e os envelopes legados, documentados pela #32. A #30
+usa tipos gerados/validação de resposta e delimita o resumo local da sessão;
+não implementa histórico persistente novo.
 
 ## Identidade comum — #29
 

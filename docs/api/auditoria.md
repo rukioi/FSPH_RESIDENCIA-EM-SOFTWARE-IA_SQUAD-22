@@ -56,8 +56,8 @@ Conserva array completo (sem limite), nomes de campos e serialização antigos:
 
 Os campos são explícitos; não há mais SELECT l.*. Array vazio: `[]`.
 O email permanece somente no adaptador legado protegido para evitar remoção
-silenciosa de campo. Novos consumidores devem usar paginação. #32 tratará a
-unificação/geração do contrato; a UI estática atual não foi integrada aqui.
+silenciosa de campo. Novos consumidores devem usar paginação. A #32 documenta
+os dois formatos no contrato gerado; a UI permanece demonstrativa na #30.
 
 ## 400 — Paginação inválida
 

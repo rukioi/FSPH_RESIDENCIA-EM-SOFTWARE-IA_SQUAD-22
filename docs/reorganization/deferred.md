@@ -1,5 +1,32 @@
 # Divergências preservadas — #28
 
+## Estado consolidado — #33
+
+As seções por ticket abaixo preservam o histórico. #28–#32/#30 já foram entregues;
+descrições então futuras são superadas pelas atualizações seguintes.
+
+Permanecem adiados, sem implementação nesta refatoração:
+
+- Reserva/agenda e eventual exclusividade is_svo entre frota/SVO; transições completas
+  de viagem/coleta, triagem/IML e fluxo completo do motorista.
+- RF40 versus motorista_id/quilometragem NOT NULL; equivalência operacional
+  ADM/Gestor versus listas atuais; exclusão/constraints e horários históricos.
+- Dashboard/relatórios completos, histórico persistente do resumo SVO, notificações,
+  auditoria avançada/retenção/imutabilidade e requisitos de operação 24/7.
+- Revogação avançada, papel runtime/ACL/Data API remotos e decisão de rollout;
+  baseline auditada não é endurecimento de produção.
+- Limites legados: IDs numéricos em escritas SVO, array completo de auditoria com
+  email, FK de exclusão com 500, datas civis renderizadas com fuso e recortes visuais
+  existentes documentados na #30. Não há alegação de acessibilidade completa.
+- CODEOWNERS/proteção de branch: responsáveis ainda não confirmados. Nenhum nome
+  ou configuração remota foi inventado; não bloqueia a entrega técnica independente.
+- Prova de despacho em duas transações concorrentes reais ainda não existe:
+  E2E comprova 409 e sucesso persistido, testes de repository usam mocks.
+
+Não gerar tarefas em massa nem transformar #23–#26 em gates funcionais. O PR único
+é #34; #22/#33 ficam aguardando aceitação. #30 foi fechada por solicitação explícita
+do responsável, após conferência, sem representar merge/deploy.
+
 Registro exigido pela coordenação #22; este arquivo adicional ao rol de caminhos
 é necessário para cumprir a instrução explícita de não resolver domínio durante
 a refatoração técnica. Nada abaixo foi implementado ou alterado pela #28.

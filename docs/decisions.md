@@ -1,5 +1,11 @@
 # Decisões iniciais
 
+Estado consolidado #33: mecanismos entregues em #27–#32/#30 descritos no
+[README](../README.md), [plano](./reorganization/plan.md) e
+[validação](./reorganization/validation.md). CI executa checks de conteúdo/banco
+e fluxos isolados; compilados deixam de ser rastreados. A exceção de branch/PR
+únicos vale só para #22. Não houve mudança de regra de negócio na consolidação.
+
 Estas decisões orientam a próxima entrega e podem evoluir. O código mostra o que está implementado; documentação não significa funcionalidade pronta.
 
 ## Como trabalhar com Lean
@@ -32,6 +38,11 @@ Para mudar uma decisão, explique no PR o problema, a escolha e o impacto. Atual
 Ainda precisam de definição: política avançada de revogação, hospedagem, armazenamento de arquivos e regras de cada fluxo. Decida cada ponto na tarefa que precisar dele, sem bloquear o restante do projeto.
 
 ## Bootstrap e HTTP compartilhados — #28
+
+As notas por ticket abaixo preservam decisões/evidências históricas. O estado
+consolidado está no [plano](./reorganization/plan.md) e na
+[validação](./reorganization/validation.md); próximos tickets registram a sequência
+executada, não pendências atuais.
 
 `server.ts` carrega a configuração da raiz antes do import dinâmico de `app.ts`.
 A localização relativa serve a src e dist. Testes não carregam dotenv; recebem

@@ -1,7 +1,8 @@
 # API — Motoristas (#28)
 
 Recorte de compatibilidade e infraestrutura da refatoração; os registros de negócio
-mantêm os campos e envelopes atuais. Contrato unificado/gerado será tratado na #32.
+mantêm os campos e envelopes atuais. Contrato global gerado na #32; consumo
+validado e estado remoto compartilhado na #30, sem alterar formatos.
 
 ## Rotas
 

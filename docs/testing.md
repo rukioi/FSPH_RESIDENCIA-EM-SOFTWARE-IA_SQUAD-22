@@ -4,9 +4,17 @@ Teste o comportamento que pode quebrar a entrega. Prefira poucos testes úteis a
 
 ## Comandos na raiz
 
+Primeiro execute `npm ci`, `npm run db:test:start` e `npm run db:test:prepare`.
+Docker/engine Linux e portas do harness devem estar disponíveis. O runner nunca
+usa banco compartilhado ou configuração de segredos do desenvolvedor.
+
 ```bash
+npm run db:docs:check
+npm run api:check
+npm run client:check
 npm run lint
 npm run typecheck
+npm run test:db
 npm test
 npm run build
 npm run test:e2e  # quando alterar telas, rotas ou fluxos
@@ -26,7 +34,7 @@ Para preparar o navegador uma vez: `npx playwright install chromium`. O E2E inic
 - API protegida: cubra 401 sem sessão, 403 sem permissão ou com vínculo inativo quando houver esse conceito, 400 para entrada inválida e sucesso.
 - Cubra acesso a registros fora do alcance do usuário. Teste outra organização somente se esse modelo for adotado; não crie multitenancy para satisfazer um checklist.
 - Na alteração de tela, confira 390, 768 e 1280 px, foco e uso por teclado. Anexe capturas ao PR; o E2E atual salva em `test-results/`.
-- Use dados fictícios e banco de testes isolado quando a persistência for implementada. Nunca execute testes contra produção.
+- Use dados fictícios e o banco isolado do harness para a persistência existente. Nunca execute testes contra produção.
 - Não use `.skip` nem enfraqueça expectativas para passar. Explique no PR qualquer teste antigo corrigido.
 
 ## Evidência no PR
@@ -36,6 +44,10 @@ Liste os comandos executados, o resultado e o que não foi verificado. Para docu
 A autenticação possui testes unitários do contrato JWT e testes de integração da rota de sessão, incluindo 401 sem token, 403 para perfil não autorizado e sucesso com token válido. O E2E cobre o redirecionamento de rotas privadas para o login; ele exige Chromium instalado e pode ser dispensado quando a alteração não envolver telas ou fluxos.
 
 ## Infraestrutura e evidências da #28
+
+As seções por ticket abaixo são registros históricos. O estado final e as contagens
+atuais estão em [validation.md](./reorganization/validation.md). Menções a etapas
+então futuras não substituem o procedimento atual da raiz.
 
 Os testes de infraestrutura ficam em:
 

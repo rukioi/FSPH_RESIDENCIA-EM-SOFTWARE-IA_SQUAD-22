@@ -1,6 +1,7 @@
 # Permissões
 
-Esta é a referência única para decisões de acesso. A matriz de negócio ainda será preenchida com o responsável pelo produto, uma funcionalidade por vez.
+Esta é a referência de acesso implementado. A matriz descreve a API atual;
+novas permissões e reconciliações de negócio exigem tarefa própria.
 
 ## Padrão inicial
 
@@ -12,7 +13,7 @@ Esta é a referência única para decisões de acesso. A matriz de negócio aind
 
 Esses princípios seguem a orientação de [autorização da OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html).
 
-## Matriz a preencher
+## Matriz atual
 
 | Área de visualização | Ações e registros acessíveis |
 | --- | --- |

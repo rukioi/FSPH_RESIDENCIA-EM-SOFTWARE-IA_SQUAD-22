@@ -56,7 +56,7 @@ Authorization: Bearer <token>
 
 ## Observação de integração
 
-A autenticação compartilhada valida JWT HS256 com `sub`, `exp` e `JWT_SECRET` de pelo menos 32 bytes UTF-8. O contrato de login e consulta de sessão está em [auth.md](./auth.md). O painel do gestor usa `/api/dashboard/gestor`.
+A autenticação compartilhada valida JWT HS256 com `sub`, `exp` e `JWT_SECRET` de pelo menos 32 bytes UTF-8. O contrato de login e consulta de sessão está em [auth.md](./auth.md). A API oferece `/api/dashboard/gestor`; o painel visual identifica suas demonstrações/indisponibilidades, sem alegar dashboard gerencial integrado.
 
 ## Infraestrutura e rotas atuais — #28
 

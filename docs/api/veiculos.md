@@ -151,8 +151,9 @@ Authorization: Bearer <token>
 
 ## O que a entrega não faz
 
-Não muda permissões, estados, regras operacionais ou paginação. Não migra os
-demais consumidores legados nesta fase. Limites, request ID e erros técnicos seguem
+Não muda permissões, estados, regras operacionais ou paginação. A #30 migrou os
+consumidores de frota, usuários e SVO; validação HTTP global dos controllers
+legados continua fora do piloto. Limites, request ID e erros técnicos seguem
 [infraestrutura comum](./README.md#infraestrutura-http--28).
 
 ## Identidade comum — #29

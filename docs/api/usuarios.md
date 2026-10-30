@@ -138,5 +138,6 @@ Content-Type: application/json
 O PATCH sem corpo de toggle deixa de ser aceito (400); API e frontend mudam juntos.
 Não há novo fluxo de usuários, recuperação de senha, novos perfis ou expansão da
 matriz ADM/Gestor. Não unifica paginação, datas ou todos os envelopes legados
-(#32). Cadastro/edição conservam a gravação de auditoria atual fora da transação;
-sua centralização é #31. Infraestrutura comum em [README.md](./README.md).
+registrados no contrato global da #32. Desde a #31, cadastro/edição/status e a
+atividade existente são confirmados na mesma transação.
+Infraestrutura comum em [README.md](./README.md).
