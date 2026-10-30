@@ -1,11 +1,21 @@
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
-  test: {
-    include: ['backend/**/*.test.ts', 'frontend/**/*.test.ts', 'frontend/**/*.test.tsx'],
-    environment: 'node',
-    env: {
-      DATABASE_URL: 'postgresql://teste:teste@127.0.0.1:5432/frota_teste',
+import { testUrl, verifiedSql, verifyContainer } from './backend/src/database/scripts/verify-test-db.js';
+
+export default defineConfig(async () => {
+  const sql = await verifiedSql();
+  await sql.end();
+  return {
+    test: {
+      include: ['backend/**/*.test.ts', 'frontend/**/*.test.ts', 'frontend/**/*.test.tsx'],
+      environment: 'node',
+      fileParallelism: false,
+      env: {
+        NODE_ENV: 'test',
+        DATABASE_URL: testUrl,
+        FSPH_TEST_NONCE: verifyContainer().nonce,
+        JWT_SECRET: 'fixture-t1-jwt-2026-32-bytes-minimum',
+      },
     },
-  },
+  };
 });

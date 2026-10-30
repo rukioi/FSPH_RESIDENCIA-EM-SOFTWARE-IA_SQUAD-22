@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import { sql } from '../../config/db.js';
 
+/** Lista registros de auditoria com os filtros recebidos pelo controller legado. */
 export const listarLogsAuditoria = async (req: Request, res: Response) => {
   const { usuario_id, data_inicio, data_fim } = req.query;
 
   try {
-    let logs = await sql`
+    const logs = await sql`
       SELECT 
         l.id, 
         l.usuario_id, 

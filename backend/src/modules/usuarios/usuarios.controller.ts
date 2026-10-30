@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { sql } from '../../config/db.js';
 
+/** Lista usuários sem expor hashes no retorno do controller legado. */
 export const listarUsuarios = async (req: Request, res: Response) => {
   try {
     const usuarios = await sql`
@@ -10,7 +11,7 @@ export const listarUsuarios = async (req: Request, res: Response) => {
       ORDER BY id ASC
     `;
     return res.json(usuarios);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ error: 'Erro ao listar utilizadores.' });
   }
 };
@@ -46,6 +47,7 @@ export const criarUsuario = async (req: Request, res: Response) => {
   }
 };
 
+/** Atualiza o estado ativo solicitado e informa quando o usuário não existe. */
 export const alterarStatusUsuario = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { ativo } = req.body;
@@ -67,7 +69,7 @@ export const alterarStatusUsuario = async (req: Request, res: Response) => {
     }
 
     return res.json(atualizado[0]);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ error: 'Erro ao atualizar status do utilizador.' });
   }
 };

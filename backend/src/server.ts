@@ -7,7 +7,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const caminhoEnv = path.resolve(__dirname, '../../.env');
-if (existsSync(caminhoEnv)) {
+if (process.env.NODE_ENV === 'test') {
+  // O bootstrap de teste exige ambiente explícito e nunca carrega .env.
+} else if (existsSync(caminhoEnv)) {
   dotenv.config({ path: caminhoEnv });
 } else {
   dotenv.config();

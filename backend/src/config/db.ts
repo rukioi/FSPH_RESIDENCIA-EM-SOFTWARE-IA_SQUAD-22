@@ -6,7 +6,12 @@ import { fileURLToPath } from 'node:url';
 const diretorioAtual = dirname(fileURLToPath(import.meta.url));
 const caminhoEnv = resolve(diretorioAtual, '../../.env');
 
-dotenv.config({ path: caminhoEnv });
+if (process.env.NODE_ENV === 'test') {
+  const { verifyTestEnvironment } = await import('../database/scripts/verify-test-db.js');
+  await verifyTestEnvironment();
+} else {
+  dotenv.config({ path: caminhoEnv });
+}
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -15,7 +20,7 @@ if (!connectionString) {
 }
 
 export const sql = postgres(connectionString, {
-  ssl: { rejectUnauthorized: false },
+  ssl: process.env.NODE_ENV === 'test' ? false : { rejectUnauthorized: false },
   max: 10,
   idle_timeout: 20,
   connect_timeout: 15,
