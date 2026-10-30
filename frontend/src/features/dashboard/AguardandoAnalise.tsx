@@ -49,6 +49,7 @@ const iconesAcao: Record<TipoAcao, string> = {
   editar: "M12 20h9 M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4L16.5 3.5Z",
 };
 
+/** Expõe as interações locais existentes como demonstração sem prometer gravação na API. */
 export function AguardandoAnalise() {
   const [selecao, setSelecao] = useState<{
     acao: TipoAcao;
@@ -60,7 +61,7 @@ export function AguardandoAnalise() {
       <header className="analise__cabecalho">
         <div>
           <h2 id="analise-titulo">Aguardando análise</h2>
-          <p>{chamadosMockados.length} chamados pendentes</p>
+          <p>Demonstração — {chamadosMockados.length} chamados ilustrativos, sem integração.</p>
         </div>
 
         <button

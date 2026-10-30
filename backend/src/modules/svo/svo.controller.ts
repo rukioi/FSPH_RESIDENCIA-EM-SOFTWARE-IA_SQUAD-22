@@ -1,3 +1,7 @@
+import { ErroCorpoRequisicao, lerCorpoJson } from '../../shared/http/body.js';
+import { responderErroCorpo } from '../../shared/http/errors.js';
+import { registrarFalha } from '../../shared/logging/logger.js';
+import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
@@ -6,160 +10,9 @@ import {
   despacharOrdem,
 } from './svo.repository.js';
 
-const LIMITE_CORPO_BYTES = 64 * 1024;
+export { ErroCorpoRequisicao, lerCorpoJson } from '../../shared/http/body.js';
 
-type CodigoErroCorpo =
-  | 'CORPO_MUITO_GRANDE'
-  | 'CONEXAO_INTERROMPIDA'
-  | 'JSON_INVALIDO'
-  | 'ERRO_LEITURA';
-
-/** Falha conhecida ao ler o corpo HTTP, antes da regra de negócio. */
-export class ErroCorpoRequisicao extends Error {
-  readonly codigo: CodigoErroCorpo;
-
-  constructor(codigo: CodigoErroCorpo) {
-    super(codigo);
-    this.name = 'ErroCorpoRequisicao';
-    this.codigo = codigo;
-  }
-}
-
-/**
- * Lê o corpo até 64 KiB, junta os bytes e só então interpreta o JSON.
- * O limite é aplicado antes de guardar cada parte. Erro de stream,
- * conexão interrompida e JSON inválido viram erro classificado.
- */
-export async function lerCorpoJson(request: IncomingMessage): Promise<unknown> {
-  const partes: Buffer[] = [];
-  let total = 0;
-
-  request.on('error', () => {});
-
-  try {
-    for await (const parte of request) {
-      if (request.aborted) {
-        throw new ErroCorpoRequisicao('CONEXAO_INTERROMPIDA');
-      }
-
-      const buffer = paraBuffer(parte);
-
-      if (buffer.length > LIMITE_CORPO_BYTES - total) {
-        throw new ErroCorpoRequisicao('CORPO_MUITO_GRANDE');
-      }
-
-      total += buffer.length;
-      partes.push(buffer);
-    }
-  } catch (erro) {
-    if (erro instanceof ErroCorpoRequisicao) {
-      throw erro;
-    }
-
-    if (request.aborted || ehInterrupcao(erro)) {
-      throw new ErroCorpoRequisicao('CONEXAO_INTERROMPIDA');
-    }
-
-    throw new ErroCorpoRequisicao('ERRO_LEITURA');
-  }
-
-  try {
-    return JSON.parse(Buffer.concat(partes).toString('utf8'));
-  } catch {
-    throw new ErroCorpoRequisicao('JSON_INVALIDO');
-  }
-}
-
-/** Converte um pedaço do stream em buffer sem aceitar tipo inesperado. */
-function paraBuffer(parte: unknown): Buffer {
-  if (Buffer.isBuffer(parte)) {
-    return parte;
-  }
-
-  if (parte instanceof Uint8Array) {
-    return Buffer.from(parte);
-  }
-
-  if (typeof parte === 'string') {
-    return Buffer.from(parte);
-  }
-
-  throw new ErroCorpoRequisicao('ERRO_LEITURA');
-}
-
-/** Identifica queda de conexão a partir do código do erro de stream. */
-function ehInterrupcao(erro: unknown): boolean {
-  if (typeof erro !== 'object' || erro === null || !('code' in erro)) {
-    return false;
-  }
-
-  const codigo = erro.code;
-  return codigo === 'ECONNRESET'
-    || codigo === 'EPIPE'
-    || codigo === 'ERR_STREAM_PREMATURE_CLOSE';
-}
-
-/** Envia JSON se a resposta ainda estiver aberta. */
-function responderJson(
-  response: ServerResponse,
-  status: number,
-  corpo: unknown,
-  aoEnviar?: () => void,
-): void {
-  if (response.headersSent || response.writableEnded || response.destroyed) {
-    return;
-  }
-
-  response.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-  response.end(JSON.stringify(corpo), aoEnviar);
-}
-
-/**
- * Converte falha de leitura em resposta HTTP.
- * Conexão já encerrada não gera nova resposta.
- */
-function responderErroDeCorpo(
-  request: IncomingMessage,
-  response: ServerResponse,
-  erro: ErroCorpoRequisicao,
-): void {
-  if (erro.codigo === 'CONEXAO_INTERROMPIDA') {
-    return;
-  }
-
-  if (erro.codigo === 'CORPO_MUITO_GRANDE') {
-    responderJson(response, 413, {
-      erro: 'O corpo da requisição excede o limite de 64 KB.',
-    }, () => encerrarLeitura(request));
-    return;
-  }
-
-  if (erro.codigo === 'JSON_INVALIDO') {
-    responderJson(response, 400, {
-      erro: 'O corpo da requisição precisa ser um JSON válido.',
-    });
-    return;
-  }
-
-  responderJson(response, 400, {
-    erro: 'Não foi possível ler o corpo da requisição.',
-  });
-}
-
-/** Interrompe o restante do upload sem deixar o erro do socket escapar. */
-function encerrarLeitura(request: IncomingMessage): void {
-  request.on('error', () => {});
-
-  if (!request.destroyed) {
-    request.destroy();
-  }
-}
-
-/**
- * Lê e classifica o corpo. Responde e devolve undefined quando a leitura falha.
- */
+/** Lê o corpo e mantém o envelope legado das falhas do SVO. */
 async function lerDadosDaRequisicao(
   request: IncomingMessage,
   response: ServerResponse,
@@ -168,7 +21,7 @@ async function lerDadosDaRequisicao(
     return await lerCorpoJson(request);
   } catch (erro) {
     if (erro instanceof ErroCorpoRequisicao) {
-      responderErroDeCorpo(request, response, erro);
+      responderErroCorpo(response, erro, true);
       return undefined;
     }
 
@@ -176,16 +29,13 @@ async function lerDadosDaRequisicao(
   }
 }
 
+/** Responde a verificação legada do controller sem acessar o banco. */
 export function testarSvoController(
   response: ServerResponse
 ): void {
-  response.writeHead(200, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-
-  response.end(JSON.stringify({
+  jsonCompartilhado(response, 200, {
     mensagem: 'Controller do SVO funcionando!',
-  }));
+  });
 }
 
 /** Lista as ordens pendentes de despacho para o atendente autenticado. */
@@ -195,24 +45,16 @@ export async function listarOrdensPendentesController(
   try {
     const ordens = await listarOrdensPendentes();
 
-    response.writeHead(200, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify(ordens));
+    jsonCompartilhado(response, 200, ordens);
   } catch (erro) {
-    console.error('Erro ao listar ordens de coleta:', erro);
+    registrarFalha(erro);
 
-    response.writeHead(500, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
+    jsonCompartilhado(response, 500, {
       error: {
         code: 'ERRO_INTERNO',
         message: 'Não foi possível consultar as ordens de coleta.',
       },
-    }));
+    });
   }
 }
 
@@ -236,13 +78,9 @@ export async function criarSolicitacaoController(
     dados === null ||
     Array.isArray(dados)
   ) {
-    response.writeHead(400, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
+    jsonCompartilhado(response, 400, {
       erro: 'Os dados da solicitação são inválidos.',
-    }));
+    });
     return;
   }
 
@@ -256,13 +94,9 @@ export async function criarSolicitacaoController(
     const valor = (dados as Record<string, unknown>)[campo];
 
     if (typeof valor !== 'string' || valor.trim() === '') {
-      response.writeHead(400, {
-        'Content-Type': 'application/json; charset=utf-8',
-      });
-
-      response.end(JSON.stringify({
+      jsonCompartilhado(response, 400, {
         erro: `O campo ${campo} é obrigatório.`,
-      }));
+      });
       return;
     }
   }
@@ -282,13 +116,9 @@ export async function criarSolicitacaoController(
       valor !== null &&
       typeof valor !== 'string'
     ) {
-      response.writeHead(400, {
-        'Content-Type': 'application/json; charset=utf-8',
-      });
-
-      response.end(JSON.stringify({
+      jsonCompartilhado(response, 400, {
         erro: `O campo ${campo} precisa ser um texto.`,
-      }));
+      });
       return;
     }
   }
@@ -305,24 +135,16 @@ export async function criarSolicitacaoController(
       observacoesMedicas: (dados as Record<string, string>).observacoesMedicas,
     });
 
-    response.writeHead(201, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify(resultado));
+    jsonCompartilhado(response, 201, resultado);
   } catch (erro) {
-    console.error('Erro ao criar solicitação de óbito:', erro);
+    registrarFalha(erro);
 
-    response.writeHead(500, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
+    jsonCompartilhado(response, 500, {
       error: {
         code: 'ERRO_INTERNO',
         message: 'Não foi possível criar a solicitação de óbito.',
       },
-    }));
+    });
   }
 }
 
@@ -346,13 +168,9 @@ export async function despacharOrdemController(
     dados === null ||
     Array.isArray(dados)
   ) {
-    response.writeHead(400, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
+    jsonCompartilhado(response, 400, {
       erro: 'Os dados do despacho são inválidos.',
-    }));
+    });
     return;
   }
 
@@ -365,13 +183,9 @@ export async function despacharOrdemController(
     !Number.isSafeInteger(veiculoId) ||
     Number(veiculoId) <= 0
   ) {
-    response.writeHead(400, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
+    jsonCompartilhado(response, 400, {
       erro: 'motoristaId e veiculoId devem ser números inteiros positivos.',
-    }));
+    });
     return;
   }
 
@@ -383,66 +197,42 @@ export async function despacharOrdemController(
     });
 
     if (resultado.tipo === 'ordem_indisponivel') {
-      response.writeHead(404, {
-        'Content-Type': 'application/json; charset=utf-8',
-      });
-
-      response.end(JSON.stringify({
+      jsonCompartilhado(response, 404, {
         erro: 'Ordem não encontrada ou não está pendente de alocação.',
-      }));
+      });
       return;
     }
 
     if (resultado.tipo === 'referencia_inexistente') {
-      response.writeHead(404, {
-        'Content-Type': 'application/json; charset=utf-8',
-      });
-
-      response.end(JSON.stringify({
+      jsonCompartilhado(response, 404, {
         erro: 'Motorista ou veículo não encontrado.',
-      }));
+      });
       return;
     }
 
     if (resultado.tipo === 'recurso_inelegivel') {
-      response.writeHead(409, {
-        'Content-Type': 'application/json; charset=utf-8',
-      });
-
-      response.end(JSON.stringify({
+      jsonCompartilhado(response, 409, {
         erro: 'Motorista ou veículo não está disponível para despacho.',
-      }));
+      });
       return;
     }
 
     if (resultado.tipo === 'conflito_alocacao') {
-      response.writeHead(409, {
-        'Content-Type': 'application/json; charset=utf-8',
-      });
-
-      response.end(JSON.stringify({
+      jsonCompartilhado(response, 409, {
         erro: 'Motorista ou veículo já está em deslocamento.',
-      }));
+      });
       return;
     }
 
-    response.writeHead(200, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify(resultado.ordem));
+    jsonCompartilhado(response, 200, resultado.ordem);
   } catch (erro) {
-    console.error('Erro ao despachar ordem de coleta:', erro);
+    registrarFalha(erro);
 
-    response.writeHead(500, {
-      'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    response.end(JSON.stringify({
+    jsonCompartilhado(response, 500, {
       error: {
         code: 'ERRO_INTERNO',
         message: 'Não foi possível despachar a ordem de coleta.',
       },
-    }));
+    });
   }
 }

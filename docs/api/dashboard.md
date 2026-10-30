@@ -56,4 +56,71 @@ Authorization: Bearer <token>
 
 ## Observação de integração
 
-A autenticação compartilhada valida JWT HS256 com `sub`, `exp` e `JWT_SECRET` de pelo menos 16 bytes (recomenda-se 32 bytes ou mais). O contrato de login e consulta de sessão está em [auth.md](./auth.md). O painel do gestor usa `/api/dashboard/gestor`.
+A autenticação compartilhada valida JWT HS256 com `sub`, `exp` e `JWT_SECRET` de pelo menos 32 bytes UTF-8. O contrato de login e consulta de sessão está em [auth.md](./auth.md). A API oferece `/api/dashboard/gestor`; o painel visual identifica suas demonstrações/indisponibilidades, sem alegar dashboard gerencial integrado.
+
+## Infraestrutura e rotas atuais — #28
+
+As quatro consultas são exclusivamente GET, sem corpo, com Bearer e perfis
+ADM/GESTOR_FROTA: `/api/dashboard`, `/api/dashboard/pendencias`,
+`/api/dashboard/graficos` e `/api/dashboard/gestor`.
+`/api/dashboard/kpis` não existe (404). Os cálculos existentes foram preservados.
+
+### 200 — Outras consultas existentes
+
+`/pendencias`:
+
+```json
+{"data":{"motoristas":[],"documentos":[]}}
+```
+
+`/graficos`:
+
+```json
+{"data":{"veiculosPorStatus":[],"solicitacoesPorStatus":[]}}
+```
+
+`/gestor`:
+
+```json
+{"data":{"veiculosPorStatus":[],"motoristasDisponiveis":0,"solicitacoesPorStatus":[],"proximasViagens":[]}}
+```
+
+`motoristasDisponiveis` conserva a contagem total atual; não foi redefinida a
+regra de disponibilidade. Arrays acima ilustram banco sem resultados.
+
+### 405 — Método diferente de GET
+
+Cabeçalho `Allow: GET`.
+
+```json
+{"error":{"code":"METODO_NAO_PERMITIDO","message":"Método não permitido."}}
+```
+
+### 500 — Falha de consulta
+
+Exemplo de `/pendencias`; `/graficos` mantém `FALHA_INTERNA`, e `/gestor`
+mantém `ERRO_INTERNO`, com as mensagens atuais de cada consulta.
+
+```json
+{"error":{"code":"ERRO_INTERNO","message":"Não foi possível consultar as pendências."}}
+```
+
+Não adiciona indicadores, filtros de período ou novo cálculo.
+
+## Consumo visual — #30
+
+O painel do gestor deixa de chamar `/api/dashboard/kpis`, que não existe. Cartões
+mostram indisponibilidade e travessão, sem zero inicial apresentado como métrica.
+Os botões de período mantêm somente seleção visual, sem atribuir filtros a rotas
+que não os oferecem. Widgets e a lista de análise usam demonstração explícita.
+Não há implementação de dashboard gerencial, novas métricas ou mudança no cálculo
+legado de `/gestor`. A integração funcional continua adiada.
+
+## Identidade comum — #29
+
+Todas as rotas acima consultam usuário ativo e perfil atual do banco a cada
+requisição, após validar JWT HS256/sub/exp e segredo mínimo de 32 bytes UTF-8.
+Conta inativa/inexistente ou token inválido: 401 NAO_AUTENTICADO. Perfil efetivo
+fora da lista existente: 403 ACESSO_NEGADO. Falha de consulta não usa claims como
+fallback e recebe 500 do tratamento comum. As listas de permissão e operações
+permanecem as documentadas acima. Ver [identidade compartilhada](./README.md#identidade-e-usuários--29).

@@ -1,7 +1,7 @@
 import "./AguardandoDespacho.css";
 
 export type OrdemColeta = {
-  apiId: number;
+  apiId: string;
   id: string;
   solicitacaoCodigo?: string;
   falecido: string;
@@ -15,6 +15,7 @@ type AguardandoDespachoProps = {
   onPrepararDespacho: (ordem: OrdemColeta) => void;
 };
 
+/** Preserva identificadores de transporte e anuncia falhas na consulta de ordens. */
 export function AguardandoDespacho({
   ordens,
   erro,
@@ -71,6 +72,7 @@ export function AguardandoDespacho({
               <tr>
                 <td
                   colSpan={5}
+                  role="alert"
                   className="svo-despacho__erro"
                 >
                   {erro}

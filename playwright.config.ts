@@ -4,9 +4,9 @@ export default defineConfig({
   testDir: './tests/e2e',
   use: { baseURL: 'http://127.0.0.1:5173', browserName: 'chromium' },
   webServer: {
-    command: 'npm run dev',
+    command: 'tsx tests/e2e/fixtures/test-environment.ts',
     url: 'http://127.0.0.1:5173',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 60_000,
   },
 });

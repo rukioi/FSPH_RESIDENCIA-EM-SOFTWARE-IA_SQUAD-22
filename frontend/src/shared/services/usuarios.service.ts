@@ -1,172 +1,39 @@
-import { fetchAutenticada } from './auth.service'
-import type { Perfil, Usuario } from '../../features/usuarios/dados'
+import type { Perfil, Usuario } from '../../features/usuarios/dados';
+import type { ApiSchemas } from '../api/generated/schema';
+import { usuariosSchemas } from '../../../../backend/src/modules/usuarios/usuarios.schemas';
+import { executeApi } from '../api/client';
+import { parseResponse } from '../api/validation';
 
-const API_URL = '/api/admin/usuarios'
-
-type UsuarioApi = {
-  id: number | string
-  nome: string
-  email: string
-  perfil: string
-  ativo: boolean
+const perfis: Record<ApiSchemas['Usuario']['perfil'], Perfil> = {
+  ADM:'ADM', GESTOR_FROTA:'Gestor da Frota', SOLICITANTE_INTERNO:'Solicitante',
+  MOTORISTA:'Motorista', ATENDENTE_SVO:'Atendente SVO',
+};
+function converterUsuario(usuario: ApiSchemas['UsuarioStatus']): Usuario {
+  if (!Number.isSafeInteger(Number(usuario.id))) throw new Error('Identificador de usuário não suportado nesta tela.');
+  return {id:Number(usuario.id),nome:usuario.nome,email:usuario.email,ativo:usuario.ativo === true,perfil:perfis[usuario.perfil]};
 }
-
-function converterUsuario(usuario: UsuarioApi): Usuario {
-  const perfis: Record<string, Perfil> = {
-    ADM: 'ADM',
-    GESTOR_FROTA: 'Gestor da Frota',
-    SOLICITANTE: 'Solicitante',
-    MOTORISTA: 'Motorista',
-    ATENDENTE_SVO: 'Atendente SVO',
-  }
-
-  const perfilNormalizado = perfis[usuario.perfil.toUpperCase()]
-
-  if (!perfilNormalizado) {
-    throw new Error(`Perfil não reconhecido: ${usuario.perfil}`)
-  }
-
-  return {
-    ...usuario,
-    id: Number(usuario.id),
-    perfil: perfilNormalizado,
-  }
+function perfilApi(perfil: Perfil): ApiSchemas['Usuario']['perfil'] {
+  return (Object.keys(perfis) as ApiSchemas['Usuario']['perfil'][]).find(code => perfis[code] === perfil)!;
 }
+export type NovoUsuario = Omit<ApiSchemas['CriarUsuario'],'perfil'> & {perfil:Perfil};
+export type DadosEdicaoUsuario = Omit<ApiSchemas['EditarUsuario'],'perfil'> & {perfil:Perfil};
 
-function converterPerfilParaApi(perfil: Perfil): string {
-  const perfis: Record<Perfil, string> = {
-    ADM: 'ADM',
-    'Gestor da Frota': 'GESTOR_FROTA',
-    Solicitante: 'SOLICITANTE',
-    Motorista: 'MOTORISTA',
-    'Atendente SVO': 'ATENDENTE_SVO',
-  }
-
-  return perfis[perfil]
+/** Valida o array legado inteiro e só depois converte os rótulos de apresentação. */
+export async function listarUsuarios(signal?: AbortSignal): Promise<Usuario[]> {
+  return (await executeApi('usuarios_get__api_admin_usuarios',{signal,parse:v=>parseResponse(usuariosSchemas.Usuarios,v)})).map(converterUsuario);
 }
-
-async function requisicao<T>(caminho: string): Promise<T> {
-  const resposta = await fetchAutenticada(caminho)
-
-  const dados = await resposta.json()
-
-  if (!resposta.ok) {
-    const mensagem =
-      dados?.error?.message ??
-      dados?.error ??
-      'Não foi possível consultar os usuários.'
-
-    throw new Error(
-      typeof mensagem === 'string'
-        ? mensagem
-        : 'Não foi possível consultar os usuários.',
-    )
-  }
-
-  return dados as T
+/** Cadastro confirmado; perfil visual é convertido somente na fronteira HTTP. */
+export async function cadastrarUsuario(usuario: NovoUsuario): Promise<Usuario> {
+  return converterUsuario(await executeApi('usuarios_post__api_admin_usuarios',{
+    body:{...usuario,perfil:perfilApi(usuario.perfil)},parse:v=>parseResponse(usuariosSchemas.Usuario,v)}));
 }
-
-export async function listarUsuarios(): Promise<Usuario[]> {
-  const dados = await requisicao<UsuarioApi[]>(API_URL)
-  return dados.map(converterUsuario)
+/** Edição usa o mesmo adaptador de perfil e de erros do cadastro. */
+export async function editarUsuario(id:number, usuario:DadosEdicaoUsuario): Promise<Usuario> {
+  return converterUsuario(await executeApi('usuarios_put__api_admin_usuarios_id_',{
+    id:String(id),body:{...usuario,perfil:perfilApi(usuario.perfil)},parse:v=>parseResponse(usuariosSchemas.Usuario,v)}));
 }
-
-export type NovoUsuario = {
-  nome: string
-  email: string
-  senha: string
-  perfil: Perfil
-}
-
-export async function cadastrarUsuario(
-  usuario: NovoUsuario,
-): Promise<Usuario> {
-  const resposta = await fetchAutenticada(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-        ...usuario,
-        perfil: converterPerfilParaApi(usuario.perfil),
-    }),
-  })
-
-  const dados = await resposta.json()
-
-  if (!resposta.ok) {
-    const mensagem =
-      dados?.error?.message ??
-      dados?.error ??
-      'Não foi possível cadastrar o usuário.'
-
-    throw new Error(
-      typeof mensagem === 'string'
-        ? mensagem
-        : 'Não foi possível cadastrar o usuário.',
-    )
-  }
-
-  return converterUsuario(dados as UsuarioApi)
-}
-
-export type DadosEdicaoUsuario = {
-  nome: string
-  email: string
-  perfil: Perfil
-  senha?: string
-}
-
-export async function editarUsuario(
-  id: number,
-  usuario: DadosEdicaoUsuario,
-): Promise<Usuario> {
-  const resposta = await fetchAutenticada(`${API_URL}/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(usuario),
-  })
-
-  const dados = await resposta.json()
-
-  if (!resposta.ok) {
-    const mensagem =
-      dados?.error?.message ??
-      dados?.error ??
-      'Não foi possível editar o usuário.'
-
-    throw new Error(
-      typeof mensagem === 'string'
-        ? mensagem
-        : 'Não foi possível editar o usuário.',
-    )
-  }
-
-  return converterUsuario(dados as UsuarioApi)
-}
-
-
-export async function alternarStatusUsuario(id: number): Promise<Usuario> {
-  const resposta = await fetchAutenticada(`${API_URL}/${id}/status`, {
-    method: 'PATCH',
-  })
-
-  const dados = await resposta.json()
-
-  if (!resposta.ok) {
-    const mensagem =
-      dados?.error?.message ??
-      dados?.error ??
-      'Não foi possível alterar o status do usuário.'
-
-    throw new Error(
-      typeof mensagem === 'string'
-        ? mensagem
-        : 'Não foi possível alterar o status do usuário.',
-    )
-  }
-
-  return converterUsuario(dados)
+/** Estado desejado idempotente; a tela recebe somente a confirmação da API. */
+export async function alterarStatusUsuario(id:number, ativo:boolean): Promise<Usuario> {
+  return converterUsuario(await executeApi('usuarios_patch__api_admin_usuarios_id_status',{
+    id:String(id),body:{ativo},parse:v=>parseResponse(usuariosSchemas.UsuarioStatus,v)}));
 }

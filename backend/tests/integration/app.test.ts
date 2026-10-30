@@ -32,7 +32,7 @@ async function criarTokenSessao(perfil: string): Promise<string> {
     perfil,
   })
     .setProtectedHeader({ alg: 'HS256' })
-    .setSubject('42')
+    .setSubject(({ ADM: '-27001', ADMINISTRADOR: '-27001', GESTOR_FROTA: '-27002', SOLICITANTE: '-27003', MOTORISTA: '-27004', ATENDENTE_SVO: '-27005' } as Record<string, string>)[perfil] ?? '-29999')
     .setIssuedAt()
     .setExpirationTime('1h')
     .sign(new TextEncoder().encode(segredoTeste));
@@ -61,7 +61,7 @@ test('sessão sem token retorna erro 401 padronizado', async () => {
   });
 });
 
-test('sessão válida retorna a identidade assinada', async () => {
+test('sessão válida retorna a identidade atual do banco', async () => {
   const token = await criarTokenSessao('GESTOR_FROTA');
   const response = await fetch(`${baseUrl}/api/auth/sessao`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -70,9 +70,9 @@ test('sessão válida retorna a identidade assinada', async () => {
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({
     data: {
-      id: '42',
-      email: 'usuario@example.test',
-      nome: 'Usuário de teste',
+      id: '-27002',
+      email: 't1-gestor_frota@example.invalid',
+      nome: 'Fixture T1 GESTOR_FROTA',
       perfil: 'GESTOR_FROTA',
     },
   });

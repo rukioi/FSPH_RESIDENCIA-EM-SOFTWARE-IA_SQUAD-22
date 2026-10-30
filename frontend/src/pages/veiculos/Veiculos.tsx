@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useRemoteData } from '../../shared/api/useRemoteData';
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { fetchAutenticada } from "../../shared/services/auth.service";
+import { buscarVeiculos, cadastrarVeiculo as salvarVeiculo } from "../../shared/services/veiculos.service";
+import type { VeiculoDto } from "../../shared/services/veiculos.service";
 import "./Veiculos.css";
 
 type RegistroAbastecimento = {
@@ -47,20 +49,9 @@ type RegistroOperacional = {
   status?: string;
 };
 
-type Veiculo = {
-  id?: number | string;
-  placa?: string;
-  marca?: string;
-  modelo?: string;
-  ano?: number | string;
-  tipo?: string;
-  capacidade_obitos?: number | string;
-  quilometragem_atual?: number | string;
-  status?: string;
-  is_svo?: boolean;
-
+// Campos de apresentação dos painéis ainda sem API; não constituem DTO de transporte.
+type Veiculo = VeiculoDto & {
   propriedade?: string;
-  fornecedor_locacao?: string;
   seguro_vencimento?: string;
   documentacao_regular?: boolean;
 
@@ -73,13 +64,6 @@ type Veiculo = {
   historico_quilometragem?: RegistroQuilometragem[];
   multas?: RegistroMulta[];
   historico_operacional?: RegistroOperacional[];
-};
-
-type RespostaApi = {
-  data?: Veiculo | Veiculo[];
-  error?: {
-    message?: string;
-  };
 };
 
 type FormularioVeiculo = {
@@ -113,7 +97,7 @@ const nomesStatus: Record<string, string> = {
   INDISPONIVEL: "Indisponível",
 };
 
-function normalizarStatus(status?: string) {
+function normalizarStatus(status?: string | null) {
   return (status ?? "")
     .trim()
     .toUpperCase()
@@ -122,16 +106,16 @@ function normalizarStatus(status?: string) {
     .replace(/[ -]/g, "_");
 }
 
-function formatarStatus(status?: string) {
+function formatarStatus(status?: string | null) {
   const chave = normalizarStatus(status);
   return nomesStatus[chave] ?? status ?? "Não informado";
 }
 
-function classeStatus(status?: string) {
+function classeStatus(status?: string | null) {
   return normalizarStatus(status).toLowerCase().replace(/_/g, "-");
 }
 
-function formatarQuilometragem(valor?: number | string) {
+function formatarQuilometragem(valor?: number | string | null) {
   if (valor === undefined || valor === null || valor === "") {
     return "Não informada";
   }
@@ -193,7 +177,7 @@ function DetalheTabela({
 
         {!linhas.length && (
           <p className="veiculo-detalhe__vazio">
-            Nenhum registro retornado pela API.
+            Integração deste histórico indisponível nesta tela.
           </p>
         )}
       </div>
@@ -447,7 +431,7 @@ function DetalhesVeiculo({
 
           {!operacoes.length && (
             <p className="veiculo-detalhe__vazio">
-              Nenhum registro operacional retornado pela API.
+              Histórico operacional indisponível nesta tela.
             </p>
           )}
         </div>
@@ -456,10 +440,11 @@ function DetalhesVeiculo({
   );
 }
 
+/** Mantém filtros/formulário locais e atualiza a frota somente após resposta validada. */
 export function Veiculos() {
-  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState("");
+  const {data:veiculos,setData:setVeiculos,loading:carregando,error:erro,retry} = useRemoteData<Veiculo[]>(buscarVeiculos, []);
+  const [erroFormulario, setErro] = useState('');
+  const [aviso, setAviso] = useState('');
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("TODOS");
   const [filtroTipo, setFiltroTipo] = useState("TODOS");
@@ -471,49 +456,6 @@ export function Veiculos() {
   const [formulario, setFormulario] =
     useState<FormularioVeiculo>(formularioInicial);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function carregarVeiculos() {
-      try {
-        setCarregando(true);
-        setErro("");
-
-        const resposta = await fetchAutenticada("/api/veiculos", {
-          signal: controller.signal,
-        });
-
-        const resultado = (await resposta.json()) as RespostaApi;
-
-        if (!resposta.ok) {
-          throw new Error(
-            resultado.error?.message ??
-              "Não foi possível carregar os veículos.",
-          );
-        }
-
-        setVeiculos(Array.isArray(resultado.data) ? resultado.data : []);
-      } catch (erroBusca) {
-        if (erroBusca instanceof Error && erroBusca.name === "AbortError") {
-          return;
-        }
-
-        setErro(
-          erroBusca instanceof Error
-            ? erroBusca.message
-            : "Não foi possível carregar os veículos.",
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setCarregando(false);
-        }
-      }
-    }
-
-    void carregarVeiculos();
-
-    return () => controller.abort();
-  }, []);
 
   const tiposVeiculo = useMemo(
     () =>
@@ -521,7 +463,7 @@ export function Veiculos() {
         new Set(
           veiculos
             .map((veiculo) => veiculo.tipo)
-            .filter((tipo): tipo is string => Boolean(tipo)),
+            .filter(Boolean),
         ),
       ).sort(),
     [veiculos],
@@ -588,12 +530,7 @@ export function Veiculos() {
     try {
       setSalvando(true);
 
-      const resposta = await fetchAutenticada("/api/veiculos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const novoVeiculo = await salvarVeiculo({
           placa: formulario.placa.trim().toUpperCase(),
           marca: formulario.marca.trim(),
           modelo: formulario.modelo.trim(),
@@ -603,22 +540,9 @@ export function Veiculos() {
           quilometragem_atual: Number(formulario.quilometragem_atual || 0),
           status: formulario.status,
           is_svo: formulario.is_svo,
-        }),
       });
-
-      const resultado = (await resposta.json()) as RespostaApi;
-
-      if (!resposta.ok) {
-        throw new Error(
-          resultado.error?.message ?? "Não foi possível cadastrar o veículo.",
-        );
-      }
-
-      const novoVeiculo = resultado.data;
-
-      if (novoVeiculo && !Array.isArray(novoVeiculo)) {
-        setVeiculos((atuais) => [novoVeiculo, ...atuais]);
-      }
+      setVeiculos((atuais) => [novoVeiculo, ...atuais]);
+      setAviso('Veículo cadastrado com sucesso.');
 
       setFormulario(formularioInicial);
       setModalAberto(false);
@@ -775,12 +699,13 @@ export function Veiculos() {
 
       {erro && !modalAberto && (
         <p className="veiculos-aviso veiculos-aviso--erro" role="alert">
-          {erro}
+          {erro} <button type="button" onClick={retry}>Tentar novamente</button>
         </p>
       )}
+      {aviso && <p role="status">{aviso}</p>}
 
       {carregando && (
-        <p className="veiculos-aviso">Carregando veículos...</p>
+        <p className="veiculos-aviso" role="status">Carregando veículos...</p>
       )}
 
       {!carregando && !erro && veiculosFiltrados.length === 0 && (
@@ -1041,9 +966,10 @@ export function Veiculos() {
                 Veículo da categoria SVO
               </label>
 
-              {erro && (
+              {salvando && <p role="status">Salvando veículo...</p>}
+              {erroFormulario && (
                 <p className="veiculos-aviso veiculos-aviso--erro" role="alert">
-                  {erro}
+                  {erroFormulario}
                 </p>
               )}
 

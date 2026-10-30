@@ -1,19 +1,14 @@
+import { lerCorpoJson } from '../../shared/http/body.js';
+import { responderErroCorpo } from '../../shared/http/errors.js';
+import { registrarFalha } from '../../shared/logging/logger.js';
+import { enviarJson } from '../../shared/http/json.js';
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 import bcrypt from 'bcrypt';
-import { autenticarRequisicao, criarJwt } from '../../security/jwt.js';
+import { criarJwt } from '../../security/jwt.js';
+import { autenticarRequisicao } from '../../security/session.js';
 
-function enviarJson(
-  response: ServerResponse,
-  status: number,
-  dados: unknown,
-): void {
-  response.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-  response.end(JSON.stringify(dados));
-}
-
+/** Mantém login e sessão existentes sobre a infraestrutura HTTP compartilhada. */
 export async function authRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url ?? '', 'http://localhost');
 
@@ -27,15 +22,11 @@ export async function authRoute(req: IncomingMessage, res: ServerResponse): Prom
   }
 
   if (req.method === 'POST' && url.pathname === '/api/auth/login') {
-    let body = '';
-    for await (const chunk of req) {
-      body += chunk;
-    }
-
     try {
-      const { email, senha } = JSON.parse(body);
+      const body = await lerCorpoJson(req);
+      const { email, senha } = (body && typeof body === 'object' && !Array.isArray(body) ? body : {}) as Record<string, unknown>;
 
-      if (!email || !senha) {
+      if (typeof email !== 'string' || typeof senha !== 'string' || !email || !senha) {
         enviarJson(res, 400, {
           error: {
             code: 'ENTRADA_INVALIDA',
@@ -46,7 +37,7 @@ export async function authRoute(req: IncomingMessage, res: ServerResponse): Prom
       }
 
       const usuarios = await sql`
-        SELECT * FROM public.usuario WHERE email = ${email} LIMIT 1
+        SELECT id, nome, email, perfil, ativo, senha_hash FROM public.usuario WHERE email = ${email} LIMIT 1
       `;
       const usuario = usuarios[0];
 
@@ -88,16 +79,8 @@ export async function authRoute(req: IncomingMessage, res: ServerResponse): Prom
         }
       });
     } catch (err) {
-      const codigoBanco = typeof err === 'object' && err !== null && 'code' in err
-        && typeof err.code === 'string'
-        ? err.code
-        : null;
-      const causa = err instanceof Error && err.message.startsWith('JWT_SECRET')
-        ? 'JWT_SECRET_INVALIDA'
-        : codigoBanco
-          ? `FALHA_POSTGRES_${codigoBanco}`
-          : 'FALHA_INTERNA';
-      console.error('Falha ao autenticar usuário.', { causa });
+      if (responderErroCorpo(res, err)) return;
+      registrarFalha(err);
       enviarJson(res, 500, {
         error: {
           code: 'ERRO_INTERNO',

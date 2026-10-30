@@ -23,6 +23,8 @@ type DashboardSvoProps = {
   ordensProntas: OrdemPronta[];
   atividades: AtividadeSvo[];
   erroOrdens: string;
+  carregando: boolean;
+  onTentarNovamente: () => void;
   motoristas: MotoristaApi[];
   veiculos: VeiculoApi[];
   onNovaSolicitacao?: () => void;
@@ -33,12 +35,15 @@ type DashboardSvoProps = {
   ) => void | Promise<void>;
 };
 
+/** Apresenta ordens consultadas e delimita contadores/atividades ao recorte desta sessão. */
 export function DashboardSvo({
   solicitacoesConfirmadas,
   ordensAguardando,
   ordensProntas,
   atividades,
   erroOrdens,
+  carregando,
+  onTentarNovamente,
   motoristas,
   veiculos,
   onNovaSolicitacao,
@@ -75,7 +80,7 @@ export function DashboardSvo({
         <div>
           <h1>Dashboard SVO</h1>
           <p>
-            Visão geral dos atendimentos e ordens de coleta
+            Resumo desta sessão — contadores e atividades locais não representam o histórico completo.
           </p>
         </div>
 
@@ -101,7 +106,7 @@ export function DashboardSvo({
           </div>
 
           <strong>{solicitacoesConfirmadas}</strong>
-          <small>Atendimentos registrados</small>
+          <small>Confirmados nesta sessão</small>
         </article>
 
         <article className="svo-dashboard__card">
@@ -131,7 +136,7 @@ export function DashboardSvo({
           </div>
 
           <strong>{ordensColeta}</strong>
-          <small>Total de ordens em andamento</small>
+          <small>Ordens carregadas e despachadas nesta sessão</small>
         </article>
 
         <article className="svo-dashboard__card">
@@ -146,7 +151,7 @@ export function DashboardSvo({
           </div>
 
           <strong>{prontasParaIniciar}</strong>
-          <small>Ordens em deslocamento</small>
+          <small>Despachadas nesta sessão</small>
         </article>
       </div>
 
@@ -155,6 +160,8 @@ export function DashboardSvo({
         <AtividadeRecente atividades={atividades} />
       </div>
 
+      {carregando && <p role="status">Carregando ordens...</p>}
+      {erroOrdens && <button type="button" onClick={onTentarNovamente}>Tentar novamente</button>}
       <AguardandoDespacho
         ordens={ordensAguardando}
         erro={erroOrdens}

@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
+import { autenticarRequisicao } from '../../security/session.js';
+import { autorizarPerfis } from '../../security/authorization.js';
 import {
   dashboardController,
   dashboardGraficosController,
@@ -7,6 +8,7 @@ import {
   dashboardGestorController,
 } from './dashboard.controller.js';
 
+/** Autoriza as consultas do dashboard; o dispatcher restringe os métodos. */
 export async function dashboardRoute(
   request: IncomingMessage,
   response: ServerResponse

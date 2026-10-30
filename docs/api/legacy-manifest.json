@@ -1,0 +1,30 @@
+{
+  "issue": 32,
+  "policy": "Lista fechada de operações atuais sem validação runtime pelo contrato global. Adicionar rota exige schema e revisão explícita; nenhuma exceção vale por prefixo.",
+  "operations": [
+    {"method":"POST","path":"/api/auth/login","reason":"Objeto token/usuario direto; validação manual de entrada."},
+    {"method":"GET","path":"/api/auth/sessao","reason":"Validação de identidade manual preservada."},
+    {"method":"GET","path":"/api/admin/usuarios","reason":"Array direto sem paginação."},
+    {"method":"POST","path":"/api/admin/usuarios","reason":"Objeto direto; erro string de duplicidade; validador do serviço existente."},
+    {"method":"PUT","path":"/api/admin/usuarios/{id}","reason":"PUT parcial, objeto direto, erro string de ausência; barra final opcional."},
+    {"method":"PATCH","path":"/api/admin/usuarios/{id}/status","reason":"Objeto direto; erro string de ausência; estado explícito da #29."},
+    {"method":"GET","path":"/api/admin/auditoria/logs","reason":"Sem page/limit: array legado com email; paginado: DTO mínimo camelCase. Ambos preservados."},
+    {"method":"GET","path":"/api/dashboard","reason":"data vazio; widgets não constituem API de indicadores."},
+    {"method":"GET","path":"/api/dashboard/graficos","reason":"Contagens atuais sem filtro por período; códigos de erro variados."},
+    {"method":"GET","path":"/api/dashboard/pendencias","reason":"Projeções legadas de vencimento, sem paginação."},
+    {"method":"GET","path":"/api/dashboard/gestor","reason":"SELECT * legado de solicitações; conta todos motoristas como disponíveis; não corrigir regra aqui."},
+    {"method":"GET","path":"/api/svo/ordens-coleta","reason":"Array snake_case; status público AGUARDANDO_DESPACHO difere do banco PENDENTE_ALOCACAO; erro/erro objeto."},
+    {"method":"POST","path":"/api/svo/solicitacoes","reason":"Objeto direto camelCase; BIGINT convertido para Number; erros {erro} ou {error}."},
+    {"method":"PATCH","path":"/api/svo/ordens-coleta/{id}/despachar","reason":"Objeto snake_case direto e IDs Number; erros {erro} ou {error}."},
+    {"method":"GET","path":"/api/motoristas","reason":"Lista completa snake_case; CPF/telefone retirados somente para SVO."},
+    {"method":"POST","path":"/api/motoristas","reason":"Validações manuais CPF/data/telefone e normalização existentes, sem migração runtime."},
+    {"method":"PUT","path":"/api/motoristas/{id}","reason":"PUT parcial snake_case; erro FK permanece 500."},
+    {"method":"PATCH","path":"/api/motoristas/{id}","reason":"PATCH igual a PUT; sem nova regra de disponibilidade."},
+    {"method":"DELETE","path":"/api/motoristas/{id}","reason":"200 data.success, não 204; erro FK permanece 500."},
+    {"method":"GET","path":"/api/abastecimentos","reason":"Lista completa snake_case; NUMERIC como string; joins placa/nome."},
+    {"method":"POST","path":"/api/abastecimentos","reason":"Valida somente truthiness; tipos de entrada não uniformes. Motorista/km ausentes falham NOT NULL com 500. Schema descreve formato usual, não todas coerções PostgreSQL."},
+    {"method":"GET","path":"/api/documentos","reason":"Lista combinada de documentos/CNH; datas serializadas pelo driver."},
+    {"method":"GET","path":"/api/documentos/pendencias","reason":"Lista sem paginação e campos snake_case."},
+    {"method":"POST","path":"/api/documentos","reason":"JSON ou multipart com arquivo; assinatura e limites no validador atual; metadados de arquivo só no cadastro."}
+  ]
+}

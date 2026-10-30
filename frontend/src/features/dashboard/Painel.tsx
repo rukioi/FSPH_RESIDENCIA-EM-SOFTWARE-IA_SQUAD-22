@@ -9,17 +9,22 @@ interface PainelProps {
   demonstracao?: boolean;
 }
 
+/** Identifica demonstração junto do título sem confundir fixtures com dados persistidos. */
 export function Painel({
   titulo,
   classe,
   children,
   linkTexto,
   linkHref,
+  demonstracao,
 }: PainelProps) {
   return (
     <section className={`painel-operacional ${classe}`}>
       <header className="painel-operacional__cabecalho">
-        <h2>{titulo}</h2>
+        <div>
+          <h2>{titulo}</h2>
+          {demonstracao && <small>Demonstração</small>}
+        </div>
 
         {linkTexto && linkHref && (
           <a className="painel-operacional__link" href={linkHref}>

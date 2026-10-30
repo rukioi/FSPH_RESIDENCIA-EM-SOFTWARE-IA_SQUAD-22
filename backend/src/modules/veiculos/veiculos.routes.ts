@@ -1,9 +1,8 @@
+import { enviarErro } from '../../shared/http/json.js';
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import {
-  autenticarRequisicao,
-  autorizarPerfis,
-} from '../../security/jwt.js';
+import { autenticarRequisicao } from '../../security/session.js';
+import { autorizarPerfis } from '../../security/authorization.js';
 
 import {
   listarVeiculos,
@@ -12,20 +11,7 @@ import {
   deletarVeiculo,
 } from './veiculos.controller.js';
 
-function enviarErro(
-  res: ServerResponse,
-  status: number,
-  code: string,
-  message: string,
-): void {
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-  });
 
-  res.end(JSON.stringify({
-    error: { code, message },
-  }));
-}
 
 /** Aplica autenticação e permissões às rotas de veículos. */
 export async function veiculosRoute(

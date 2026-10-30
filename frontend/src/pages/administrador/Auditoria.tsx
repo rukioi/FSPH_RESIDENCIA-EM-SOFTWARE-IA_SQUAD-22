@@ -16,6 +16,7 @@ const unicos = (l: string[]) => [...new Set(l)].sort((a, b) => a.localeCompare(b
 const USUARIOS = unicos(eventosAuditoria.map((e) => e.usuario))
 const PERFIS = unicos(eventosAuditoria.map((e) => e.perfil))
 
+/** Filtra somente fixtures identificadas como demonstração, sem inferir campos do histórico real. */
 export function Auditoria() {
   const [f, setF] = useState(VAZIO)
   const mudar = (campo: keyof typeof VAZIO, valor: string) => setF((x) => ({ ...x, [campo]: valor }))
@@ -47,7 +48,7 @@ export function Auditoria() {
       <div className="pagina__topo">
         <div>
           <h1 className="pagina__titulo">Auditoria</h1>
-          <p className="pagina__descricao">Consulte os registros de acessos e ações realizadas no sistema.</p>
+          <p className="pagina__descricao">Demonstração — registros ilustrativos. A consulta persistida ainda não está integrada a esta tela.</p>
         </div>
       </div>
 

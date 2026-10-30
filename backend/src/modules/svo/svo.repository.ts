@@ -1,5 +1,6 @@
 
 import { sql } from '../../database/connection.js';
+import { registrarAtividades } from '../auditoria/auditoria.service.js';
 
 /** Lista ordens de coleta que ainda aguardam alocação de motorista e veículo. */
 export async function listarOrdensPendentes() {
@@ -108,27 +109,10 @@ export async function criarSolicitacao(
     const statusOrdem = String(ordensCriadas[0].status);
     const codigoOrdem = `#OC-${ordemId}`;
 
-    const descricaoSolicitacao =
-      `Solicitação ${codigo} confirmada na ligação`;
-
-    const descricaoOrdem =
-      `Ordem de coleta ${codigoOrdem} gerada para ${codigo}`;
-
-    await transacao`
-      INSERT INTO public.log_atividade (
-        usuario_id,
-        descricao
-      )
-      VALUES
-        (
-          ${dados.atendenteId},
-          ${descricaoSolicitacao}
-        ),
-        (
-          ${dados.atendenteId},
-          ${descricaoOrdem}
-        )
-    `;
+    const atividades = await registrarAtividades(transacao, dados.atendenteId, [
+      { operacao: 'solicitacao_confirmada', recursoId: String(solicitacaoId) },
+      { operacao: 'ordem_gerada', recursoId: String(ordemId), solicitacaoId: String(solicitacaoId) },
+    ]);
 
     return {
       solicitacao: {
@@ -140,10 +124,7 @@ export async function criarSolicitacao(
         codigo: codigoOrdem,
         status: statusOrdem,
       },
-      atividades: [
-        descricaoSolicitacao,
-        descricaoOrdem,
-      ],
+      atividades,
     };
   });
 }

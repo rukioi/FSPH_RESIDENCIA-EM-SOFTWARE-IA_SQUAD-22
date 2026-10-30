@@ -30,13 +30,16 @@ type Props = {
   textoSalvar: string
   extra?: ReactNode
   aoCancelar: () => void
-  aoSalvar: (v: ValoresUsuario & { perfil: Perfil }) => void
+  aoSalvar: (v: ValoresUsuario & { perfil: Perfil }) => void | Promise<void>
 }
 
+/** Valida o formulário e aguarda a confirmação da API, preservando dados em erro. */
 export function UsuarioFormModal(props: Props) {
   const { titulo, descricao, iniciais, pedirSenha, emailsEmUso, textoSalvar, aoCancelar, aoSalvar } = props
   const [valores, setValores] = useState(iniciais)
   const [erros, setErros] = useState<Erros>({})
+  const [salvando, setSalvando] = useState(false)
+  const [falha, setFalha] = useState('')
   const [tentou, setTentou] = useState(false)
   const primeiro = useRef<HTMLInputElement>(null)
   const cancelarRef = useRef(aoCancelar)
@@ -56,13 +59,20 @@ export function UsuarioFormModal(props: Props) {
     if (tentou) setErros(validar(novos, pedirSenha, emailsEmUso))
   }
 
-  function enviar(e: FormEvent) {
+  async function enviar(e: FormEvent) {
     e.preventDefault()
+    if (salvando) return
     setTentou(true)
     const encontrados = validar(valores, pedirSenha, emailsEmUso)
     setErros(encontrados)
     if (Object.keys(encontrados).length || !valores.perfil) return
-    aoSalvar({ ...valores, nome: valores.nome.trim(), email: valores.email.trim(), perfil: valores.perfil })
+    setSalvando(true)
+    setFalha('')
+    try {
+      await aoSalvar({ ...valores, nome: valores.nome.trim(), email: valores.email.trim(), perfil: valores.perfil })
+    } catch (erro) {
+      setFalha(erro instanceof Error ? erro.message : 'Não foi possível salvar. Tente novamente.')
+    } finally { setSalvando(false) }
   }
 
   const classe = (c: keyof ValoresUsuario) => (erros[c] ? 'campo campo--erro' : 'campo')
@@ -81,7 +91,7 @@ export function UsuarioFormModal(props: Props) {
             <h2 id="modal-usuario-titulo">{titulo}</h2>
             <p>{descricao}</p>
           </div>
-          <button type="button" className="modal__fechar" aria-label="Fechar" onClick={aoCancelar}>
+          <button type="button" className="modal__fechar" aria-label="Fechar" disabled={salvando} onClick={aoCancelar}>
             <Icone nome="fechar" />
           </button>
         </header>
@@ -149,12 +159,14 @@ export function UsuarioFormModal(props: Props) {
           </div>
 
           {props.extra}
+          {salvando && <p role="status">Salvando usuário...</p>}
+          {falha && <p role="alert">{falha}</p>}
 
           <footer className="modal__acoes">
-            <button type="button" className="btn btn--secundario" onClick={aoCancelar}>
+            <button type="button" className="btn btn--secundario" disabled={salvando} onClick={aoCancelar}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn--primario">
+            <button type="submit" disabled={salvando} className="btn btn--primario">
               {textoSalvar}
             </button>
           </footer>

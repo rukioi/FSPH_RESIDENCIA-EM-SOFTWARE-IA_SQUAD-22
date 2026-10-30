@@ -13,10 +13,19 @@
   "scripts": {
     "dev": "concurrently --kill-others --names backend,frontend \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
     "lint": "eslint .",
-    "typecheck": "npm run typecheck --workspaces",
+    "typecheck": "npm run typecheck --workspaces && tsc --noEmit -p backend/tests/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json",
     "test": "vitest run",
     "build": "npm run build --workspaces",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:test:start": "tsx backend/src/database/scripts/start-test-db.ts",
+    "db:test:prepare": "tsx backend/src/database/scripts/apply-test-migrations.ts",
+    "db:docs:generate": "tsx backend/src/database/scripts/generate-db-docs.ts",
+    "db:docs:check": "tsx backend/src/database/scripts/generate-db-docs.ts --check",
+    "test:db": "vitest run backend/tests/database",
+    "api:generate": "tsx scripts/generate-api.ts",
+    "api:check": "tsx scripts/check-api.ts",
+    "client:generate": "tsx scripts/generate-client.ts",
+    "client:check": "tsx scripts/check-client.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -29,9 +38,12 @@
     "concurrently": "^10.0.6",
     "eslint": "^10.12.0",
     "globals": "^17.13.0",
+    "json-schema-to-typescript": "^16.0.0",
+    "supabase": "2.122.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.2",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.4",
+    "yaml": "^2.9.1"
   },
   "type": "module",
   "dependencies": {

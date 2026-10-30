@@ -8,6 +8,7 @@ type OrdensColetaRecentesProps = {
   onPrepararDespacho: (ordem: OrdemColeta) => void;
 };
 
+/** Ordena o recorte carregado por BIGINT sem reduzir a precisão dos identificadores. */
 export function OrdensColetaRecentes({
   aguardando,
   prontas,
@@ -23,7 +24,7 @@ export function OrdensColetaRecentes({
       status: "Em andamento" as const,
     })),
   ]
-    .sort((a, b) => b.apiId - a.apiId)
+    .sort((a, b) => BigInt(a.apiId) === BigInt(b.apiId) ? 0 : BigInt(a.apiId) > BigInt(b.apiId) ? -1 : 1)
     .slice(0, 3);
 
   return (

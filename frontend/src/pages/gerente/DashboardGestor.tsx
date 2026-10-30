@@ -1,63 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AguardandoAnalise } from "../../features/dashboard/AguardandoAnalise";
 import { Widgets } from "../../features/dashboard/Widgets";
 import { KpiCards } from "../../features/dashboard/KpiCards";
-import { buscarDashboardKpis } from "../../shared/services/dashboard.service";
+import { indicadoresIndisponiveis } from "../../shared/services/dashboard.service";
 
-import type {
-  DashboardKpis,
-  DashboardPeriodo,
-} from "../../shared/types/dashboard";
 import "./DashboardGestor.css";
 
 const periodos = ["Hoje", "7 dias", "30 dias", "Personalizado"];
 
-const periodoApi: Partial<Record<string, DashboardPeriodo>> = {
-  Hoje: "hoje",
-  "7 dias": "7dias",
-  "30 dias": "30dias",
-};
 
+/** Conserva a composição visual e identifica indicadores sem endpoint e dados demonstrativos. */
 export function Dashboard() {
   const [periodo, setPeriodo] = useState("Hoje");
 
-  const [kpis, setKpis] = useState<DashboardKpis>({
-    chamadosPendentes: 0,
-    viagensHoje: 0,
-    veiculosDisponiveis: 0,
-    motoristasDisponiveis: 0,
-  });
-
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState("");
-
-  useEffect(() => {
-    const periodoSelecionado = periodoApi[periodo];
-
-    if (!periodoSelecionado) {
-      setCarregando(false);
-      return;
-    }
-
-    const periodoValido: DashboardPeriodo = periodoSelecionado;
-
-    async function carregarKpis() {
-      try {
-        setCarregando(true);
-        setErro("");
-
-        const resposta = await buscarDashboardKpis(periodoValido);
-
-        setKpis(resposta.data);
-      } catch {
-        setErro("Não foi possível carregar os indicadores.");
-      } finally {
-        setCarregando(false);
-      }
-    }
-
-    void carregarKpis();
-  }, [periodo]);
 
   return (
     <>
@@ -86,19 +41,8 @@ export function Dashboard() {
         </div>
       </div>
 
-      {carregando && (
-        <p className="dashboard-mensagem">
-          Carregando indicadores...
-        </p>
-      )}
-
-      {erro && (
-        <p className="dashboard-mensagem dashboard-mensagem--erro">
-          {erro}
-        </p>
-      )}
-
-      <KpiCards kpis={kpis} />
+      <p className="dashboard-mensagem" role="status">{indicadoresIndisponiveis}</p>
+      <KpiCards />
 
       <Widgets />
       

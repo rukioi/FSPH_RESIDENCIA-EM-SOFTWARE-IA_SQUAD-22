@@ -36,7 +36,7 @@ afterAll(async () => {
 async function criarToken(perfil: string) {
   return new SignJWT({ perfil })
     .setProtectedHeader({ alg: 'HS256' })
-    .setSubject('usuario-teste')
+    .setSubject(({ ADM: '-27001', ADMINISTRADOR: '-27001', GESTOR_FROTA: '-27002', SOLICITANTE: '-27003', MOTORISTA: '-27004', ATENDENTE_SVO: '-27005' } as Record<string, string>)[perfil] ?? '-29999')
     .setIssuedAt()
     .setExpirationTime('1h')
     .sign(new TextEncoder().encode(segredo));

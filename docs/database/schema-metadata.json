@@ -1,0 +1,1965 @@
+{
+  "enums": [
+    {
+      "acl": null,
+      "name": "perfil_usuario",
+      "owner": "postgres",
+      "values": [
+        "ADM",
+        "GESTOR_FROTA",
+        "SOLICITANTE_INTERNO",
+        "MOTORISTA",
+        "ATENDENTE_SVO"
+      ]
+    },
+    {
+      "acl": null,
+      "name": "status_motorista",
+      "owner": "postgres",
+      "values": [
+        "DISPONIVEL",
+        "EM_VIAGEM",
+        "FOLGA",
+        "AFASTADO"
+      ]
+    },
+    {
+      "acl": null,
+      "name": "status_ordem_coleta",
+      "owner": "postgres",
+      "values": [
+        "PENDENTE_ALOCACAO",
+        "EM_DESLOCAMENTO",
+        "EM_TRANSPORTE",
+        "CONCLUIDA",
+        "CANCELADA"
+      ]
+    },
+    {
+      "acl": null,
+      "name": "status_solicitacao",
+      "owner": "postgres",
+      "values": [
+        "PENDENTE",
+        "AGENDADA",
+        "PRONTA_PARA_INICIAR",
+        "EM_ANDAMENTO",
+        "CONCLUIDA",
+        "REPROVADA"
+      ]
+    },
+    {
+      "acl": null,
+      "name": "status_veiculo",
+      "owner": "postgres",
+      "values": [
+        "DISPONIVEL",
+        "EM_VIAGEM",
+        "EM_MANUTENCAO",
+        "INDISPONIVEL"
+      ]
+    },
+    {
+      "acl": null,
+      "name": "status_viagem",
+      "owner": "postgres",
+      "values": [
+        "AGENDADA",
+        "EM_TRANSPORTE",
+        "CONCLUIDA",
+        "CANCELADA"
+      ]
+    },
+    {
+      "acl": null,
+      "name": "tipo_veiculo",
+      "owner": "postgres",
+      "values": [
+        "PASSEIO",
+        "VAN",
+        "AMBULANCIA",
+        "RABECÃO_SVO"
+      ]
+    }
+  ],
+  "schema": {
+    "acl": "{=U/pg_database_owner,anon=U/pg_database_owner,authenticated=U/pg_database_owner,pg_database_owner=UC/pg_database_owner,postgres=U/pg_database_owner,service_role=U/pg_database_owner}",
+    "name": "public",
+    "owner": "pg_database_owner"
+  },
+  "tables": [
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "abastecimento",
+      "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "documento_veiculo",
+      "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "log_atividade",
+      "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "motorista",
+      "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "ordem_coleta",
+      "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "solicitacao_obito",
+      "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "solicitacao_viagem",
+      "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "usuario",
+      "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "veiculo",
+      "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": false,
+      "name": "viagem",
+      "owner": "postgres",
+      "forceRls": false
+    }
+  ],
+  "columns": [
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "abastecimento",
+      "default": "nextval('abastecimento_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "veiculo_id",
+      "type": "bigint",
+      "table": "abastecimento",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "motorista_id",
+      "type": "bigint",
+      "table": "abastecimento",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "litragem",
+      "type": "numeric(10,2)",
+      "table": "abastecimento",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "valor_total",
+      "type": "numeric(10,2)",
+      "table": "abastecimento",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "quilometragem",
+      "type": "integer",
+      "table": "abastecimento",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "data_abastecimento",
+      "type": "date",
+      "table": "abastecimento",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp without time zone",
+      "table": "abastecimento",
+      "default": "now()",
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "posto",
+      "type": "character varying(255)",
+      "table": "abastecimento",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "documento_veiculo",
+      "default": "nextval('documento_veiculo_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "veiculo_id",
+      "type": "bigint",
+      "table": "documento_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "tipo_documento",
+      "type": "character varying(50)",
+      "table": "documento_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "data_vencimento",
+      "type": "date",
+      "table": "documento_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "status_regular",
+      "type": "boolean",
+      "table": "documento_veiculo",
+      "default": "true",
+      "identity": "",
+      "nullable": true,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "arquivo_dados",
+      "type": "bytea",
+      "table": "documento_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "arquivo_nome",
+      "type": "character varying(255)",
+      "table": "documento_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "arquivo_tipo",
+      "type": "character varying(100)",
+      "table": "documento_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "log_atividade",
+      "default": "nextval('log_atividade_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "usuario_id",
+      "type": "bigint",
+      "table": "log_atividade",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "descricao",
+      "type": "text",
+      "table": "log_atividade",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "data_hora",
+      "type": "timestamp without time zone",
+      "table": "log_atividade",
+      "default": "CURRENT_TIMESTAMP",
+      "identity": "",
+      "nullable": true,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "motorista",
+      "default": "nextval('motorista_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "usuario_id",
+      "type": "bigint",
+      "table": "motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "nome",
+      "type": "character varying(150)",
+      "table": "motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "cnh",
+      "type": "character varying(20)",
+      "table": "motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "categoria_cnh",
+      "type": "character varying(5)",
+      "table": "motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "validade_cnh",
+      "type": "date",
+      "table": "motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "status_motorista",
+      "table": "motorista",
+      "default": "'DISPONIVEL'::status_motorista",
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp without time zone",
+      "table": "motorista",
+      "default": "CURRENT_TIMESTAMP",
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "cpf",
+      "type": "character varying(14)",
+      "table": "motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "telefone",
+      "type": "character varying(20)",
+      "table": "motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "ordem_coleta",
+      "default": "nextval('ordem_coleta_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "solicitacao_obito_id",
+      "type": "bigint",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "veiculo_id",
+      "type": "bigint",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "motorista_id",
+      "type": "bigint",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "km_inicial",
+      "type": "integer",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "km_final",
+      "type": "integer",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "foto_odometro_inicio",
+      "type": "character varying(255)",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "foto_odometro_fim",
+      "type": "character varying(255)",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "data_inicio",
+      "type": "timestamp without time zone",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "data_fim",
+      "type": "timestamp without time zone",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "validada_por_svo",
+      "type": "boolean",
+      "table": "ordem_coleta",
+      "default": "false",
+      "identity": "",
+      "nullable": true,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "status_ordem_coleta",
+      "table": "ordem_coleta",
+      "default": "'PENDENTE_ALOCACAO'::status_ordem_coleta",
+      "identity": "",
+      "nullable": true,
+      "position": 12,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "solicitacao_obito",
+      "default": "nextval('solicitacao_obito_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "codigo",
+      "type": "character varying(20)",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "atendente_id",
+      "type": "bigint",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "nome_falecido",
+      "type": "character varying(150)",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "local_falecimento",
+      "type": "character varying(255)",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "endereco_remocao",
+      "type": "character varying(255)",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "solicitante_nome",
+      "type": "character varying(150)",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "solicitante_parentesco",
+      "type": "character varying(50)",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "solicitante_telefone",
+      "type": "character varying(20)",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "observacoes_medicas",
+      "type": "text",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp without time zone",
+      "table": "solicitacao_obito",
+      "default": "CURRENT_TIMESTAMP",
+      "identity": "",
+      "nullable": true,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "solicitacao_viagem",
+      "default": "nextval('solicitacao_viagem_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "codigo",
+      "type": "character varying(20)",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "solicitante_id",
+      "type": "bigint",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "origem",
+      "type": "character varying(255)",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "destino",
+      "type": "character varying(255)",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "data_hora_saida",
+      "type": "timestamp without time zone",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "qtd_passageiros",
+      "type": "integer",
+      "table": "solicitacao_viagem",
+      "default": "1",
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "status_solicitacao",
+      "table": "solicitacao_viagem",
+      "default": "'PENDENTE'::status_solicitacao",
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "motivo_rejeicao",
+      "type": "text",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp without time zone",
+      "table": "solicitacao_viagem",
+      "default": "CURRENT_TIMESTAMP",
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "veiculo_id",
+      "type": "bigint",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "motorista_id",
+      "type": "bigint",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 12,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "usuario",
+      "default": "nextval('usuario_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "nome",
+      "type": "character varying(150)",
+      "table": "usuario",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "email",
+      "type": "character varying(150)",
+      "table": "usuario",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "senha_hash",
+      "type": "character varying(255)",
+      "table": "usuario",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "perfil",
+      "type": "perfil_usuario",
+      "table": "usuario",
+      "default": "'SOLICITANTE_INTERNO'::perfil_usuario",
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "ativo",
+      "type": "boolean",
+      "table": "usuario",
+      "default": "true",
+      "identity": "",
+      "nullable": true,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp without time zone",
+      "table": "usuario",
+      "default": "CURRENT_TIMESTAMP",
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "veiculo",
+      "default": "nextval('veiculo_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "placa",
+      "type": "character varying(10)",
+      "table": "veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "modelo",
+      "type": "character varying(100)",
+      "table": "veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "marca",
+      "type": "character varying(100)",
+      "table": "veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "ano",
+      "type": "integer",
+      "table": "veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "tipo",
+      "type": "tipo_veiculo",
+      "table": "veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "capacidade_obitos",
+      "type": "integer",
+      "table": "veiculo",
+      "default": "0",
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "quilometragem_atual",
+      "type": "integer",
+      "table": "veiculo",
+      "default": "0",
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "status_veiculo",
+      "table": "veiculo",
+      "default": "'DISPONIVEL'::status_veiculo",
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "is_svo",
+      "type": "boolean",
+      "table": "veiculo",
+      "default": "false",
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp without time zone",
+      "table": "veiculo",
+      "default": "CURRENT_TIMESTAMP",
+      "identity": "",
+      "nullable": true,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "capacidade_passageiros",
+      "type": "integer",
+      "table": "veiculo",
+      "default": "5",
+      "identity": "",
+      "nullable": true,
+      "position": 12,
+      "generated": ""
+    },
+    {
+      "name": "vinculo",
+      "type": "character varying(10)",
+      "table": "veiculo",
+      "default": "'PROPRIO'::character varying",
+      "identity": "",
+      "nullable": false,
+      "position": 13,
+      "generated": ""
+    },
+    {
+      "name": "fornecedor_locacao",
+      "type": "character varying(255)",
+      "table": "veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 14,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "viagem",
+      "default": "nextval('viagem_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "solicitacao_id",
+      "type": "bigint",
+      "table": "viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "veiculo_id",
+      "type": "bigint",
+      "table": "viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "motorista_id",
+      "type": "bigint",
+      "table": "viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "km_inicial",
+      "type": "integer",
+      "table": "viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "km_final",
+      "type": "integer",
+      "table": "viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "foto_odometro_inicio",
+      "type": "character varying(255)",
+      "table": "viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "foto_odometro_fim",
+      "type": "character varying(255)",
+      "table": "viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "data_inicio",
+      "type": "timestamp without time zone",
+      "table": "viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "data_fim",
+      "type": "timestamp without time zone",
+      "table": "viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "validada_por_gestor",
+      "type": "boolean",
+      "table": "viagem",
+      "default": "false",
+      "identity": "",
+      "nullable": true,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "status_viagem",
+      "table": "viagem",
+      "default": "'AGENDADA'::status_viagem",
+      "identity": "",
+      "nullable": true,
+      "position": 12,
+      "generated": ""
+    }
+  ],
+  "indexes": [
+    {
+      "name": "abastecimento_pkey",
+      "table": "abastecimento",
+      "definition": "CREATE UNIQUE INDEX abastecimento_pkey ON public.abastecimento USING btree (id)"
+    },
+    {
+      "name": "documento_veiculo_pkey",
+      "table": "documento_veiculo",
+      "definition": "CREATE UNIQUE INDEX documento_veiculo_pkey ON public.documento_veiculo USING btree (id)"
+    },
+    {
+      "name": "log_atividade_pkey",
+      "table": "log_atividade",
+      "definition": "CREATE UNIQUE INDEX log_atividade_pkey ON public.log_atividade USING btree (id)"
+    },
+    {
+      "name": "motorista_cnh_key",
+      "table": "motorista",
+      "definition": "CREATE UNIQUE INDEX motorista_cnh_key ON public.motorista USING btree (cnh)"
+    },
+    {
+      "name": "motorista_cpf_key",
+      "table": "motorista",
+      "definition": "CREATE UNIQUE INDEX motorista_cpf_key ON public.motorista USING btree (cpf)"
+    },
+    {
+      "name": "motorista_pkey",
+      "table": "motorista",
+      "definition": "CREATE UNIQUE INDEX motorista_pkey ON public.motorista USING btree (id)"
+    },
+    {
+      "name": "motorista_usuario_id_key",
+      "table": "motorista",
+      "definition": "CREATE UNIQUE INDEX motorista_usuario_id_key ON public.motorista USING btree (usuario_id)"
+    },
+    {
+      "name": "ordem_coleta_pkey",
+      "table": "ordem_coleta",
+      "definition": "CREATE UNIQUE INDEX ordem_coleta_pkey ON public.ordem_coleta USING btree (id)"
+    },
+    {
+      "name": "ordem_coleta_solicitacao_obito_id_key",
+      "table": "ordem_coleta",
+      "definition": "CREATE UNIQUE INDEX ordem_coleta_solicitacao_obito_id_key ON public.ordem_coleta USING btree (solicitacao_obito_id)"
+    },
+    {
+      "name": "solicitacao_obito_codigo_key",
+      "table": "solicitacao_obito",
+      "definition": "CREATE UNIQUE INDEX solicitacao_obito_codigo_key ON public.solicitacao_obito USING btree (codigo)"
+    },
+    {
+      "name": "solicitacao_obito_pkey",
+      "table": "solicitacao_obito",
+      "definition": "CREATE UNIQUE INDEX solicitacao_obito_pkey ON public.solicitacao_obito USING btree (id)"
+    },
+    {
+      "name": "solicitacao_viagem_codigo_key",
+      "table": "solicitacao_viagem",
+      "definition": "CREATE UNIQUE INDEX solicitacao_viagem_codigo_key ON public.solicitacao_viagem USING btree (codigo)"
+    },
+    {
+      "name": "solicitacao_viagem_pkey",
+      "table": "solicitacao_viagem",
+      "definition": "CREATE UNIQUE INDEX solicitacao_viagem_pkey ON public.solicitacao_viagem USING btree (id)"
+    },
+    {
+      "name": "usuario_email_key",
+      "table": "usuario",
+      "definition": "CREATE UNIQUE INDEX usuario_email_key ON public.usuario USING btree (email)"
+    },
+    {
+      "name": "usuario_pkey",
+      "table": "usuario",
+      "definition": "CREATE UNIQUE INDEX usuario_pkey ON public.usuario USING btree (id)"
+    },
+    {
+      "name": "veiculo_pkey",
+      "table": "veiculo",
+      "definition": "CREATE UNIQUE INDEX veiculo_pkey ON public.veiculo USING btree (id)"
+    },
+    {
+      "name": "veiculo_placa_key",
+      "table": "veiculo",
+      "definition": "CREATE UNIQUE INDEX veiculo_placa_key ON public.veiculo USING btree (placa)"
+    },
+    {
+      "name": "viagem_pkey",
+      "table": "viagem",
+      "definition": "CREATE UNIQUE INDEX viagem_pkey ON public.viagem USING btree (id)"
+    },
+    {
+      "name": "viagem_solicitacao_id_key",
+      "table": "viagem",
+      "definition": "CREATE UNIQUE INDEX viagem_solicitacao_id_key ON public.viagem USING btree (solicitacao_id)"
+    }
+  ],
+  "policies": [],
+  "triggers": [],
+  "sequences": [
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "abastecimento_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "abastecimento",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "documento_veiculo_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "documento_veiculo",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "log_atividade_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "log_atividade",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "motorista_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "motorista",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "ordem_coleta_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "ordem_coleta",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "solicitacao_obito_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "solicitacao_obito",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "solicitacao_viagem_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "solicitacao_viagem",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "usuario_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "usuario",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "veiculo_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "veiculo",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "viagem_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "postgres",
+      "start": "1",
+      "table": "viagem",
+      "column": "id",
+      "increment": "1"
+    }
+  ],
+  "defaultAcl": [
+    {
+      "acl": "{anon=X/postgres,authenticated=X/postgres,postgres=X/postgres,service_role=X/postgres}",
+      "type": "f",
+      "owner": "postgres"
+    },
+    {
+      "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "type": "r",
+      "owner": "postgres"
+    },
+    {
+      "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
+      "type": "S",
+      "owner": "postgres"
+    },
+    {
+      "acl": "{anon=X/supabase_admin,authenticated=X/supabase_admin,postgres=X/supabase_admin,service_role=X/supabase_admin}",
+      "type": "f",
+      "owner": "supabase_admin"
+    },
+    {
+      "acl": "{anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,postgres=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}",
+      "type": "r",
+      "owner": "supabase_admin"
+    },
+    {
+      "acl": "{anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,postgres=rwU/supabase_admin,service_role=rwU/supabase_admin}",
+      "type": "S",
+      "owner": "supabase_admin"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "abastecimento_motorista_id_fkey",
+      "type": "f",
+      "table": "abastecimento",
+      "columns": [
+        "motorista_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id) REFERENCES motorista(id)",
+      "references": "motorista",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "abastecimento_pkey",
+      "type": "p",
+      "table": "abastecimento",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "abastecimento_veiculo_id_fkey",
+      "type": "f",
+      "table": "abastecimento",
+      "columns": [
+        "veiculo_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (veiculo_id) REFERENCES veiculo(id)",
+      "references": "veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "documento_veiculo_pkey",
+      "type": "p",
+      "table": "documento_veiculo",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "documento_veiculo_veiculo_id_fkey",
+      "type": "f",
+      "table": "documento_veiculo",
+      "columns": [
+        "veiculo_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (veiculo_id) REFERENCES veiculo(id)",
+      "references": "veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "fk_log_atividade_usuario",
+      "type": "f",
+      "table": "log_atividade",
+      "columns": [
+        "usuario_id"
+      ],
+      "onDelete": "n",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "log_atividade_pkey",
+      "type": "p",
+      "table": "log_atividade",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "log_atividade_usuario_id_fkey",
+      "type": "f",
+      "table": "log_atividade",
+      "columns": [
+        "usuario_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (usuario_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "motorista_cnh_key",
+      "type": "u",
+      "table": "motorista",
+      "columns": [
+        "cnh"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (cnh)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_cpf_key",
+      "type": "u",
+      "table": "motorista",
+      "columns": [
+        "cpf"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (cpf)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_pkey",
+      "type": "p",
+      "table": "motorista",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_usuario_id_fkey",
+      "type": "f",
+      "table": "motorista",
+      "columns": [
+        "usuario_id"
+      ],
+      "onDelete": "c",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "motorista_usuario_id_key",
+      "type": "u",
+      "table": "motorista",
+      "columns": [
+        "usuario_id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (usuario_id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "ordem_coleta_motorista_id_fkey",
+      "type": "f",
+      "table": "ordem_coleta",
+      "columns": [
+        "motorista_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id) REFERENCES motorista(id)",
+      "references": "motorista",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "ordem_coleta_pkey",
+      "type": "p",
+      "table": "ordem_coleta",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "ordem_coleta_solicitacao_obito_id_fkey",
+      "type": "f",
+      "table": "ordem_coleta",
+      "columns": [
+        "solicitacao_obito_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (solicitacao_obito_id) REFERENCES solicitacao_obito(id)",
+      "references": "solicitacao_obito",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "ordem_coleta_solicitacao_obito_id_key",
+      "type": "u",
+      "table": "ordem_coleta",
+      "columns": [
+        "solicitacao_obito_id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (solicitacao_obito_id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "ordem_coleta_veiculo_id_fkey",
+      "type": "f",
+      "table": "ordem_coleta",
+      "columns": [
+        "veiculo_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (veiculo_id) REFERENCES veiculo(id)",
+      "references": "veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "solicitacao_obito_atendente_id_fkey",
+      "type": "f",
+      "table": "solicitacao_obito",
+      "columns": [
+        "atendente_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (atendente_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "solicitacao_obito_codigo_key",
+      "type": "u",
+      "table": "solicitacao_obito",
+      "columns": [
+        "codigo"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (codigo)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "solicitacao_obito_pkey",
+      "type": "p",
+      "table": "solicitacao_obito",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "fk_solicitacao_viagem_motorista",
+      "type": "f",
+      "table": "solicitacao_viagem",
+      "columns": [
+        "motorista_id"
+      ],
+      "onDelete": "n",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id) REFERENCES motorista(id) ON DELETE SET NULL",
+      "references": "motorista",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "fk_solicitacao_viagem_veiculo",
+      "type": "f",
+      "table": "solicitacao_viagem",
+      "columns": [
+        "veiculo_id"
+      ],
+      "onDelete": "n",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (veiculo_id) REFERENCES veiculo(id) ON DELETE SET NULL",
+      "references": "veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "solicitacao_viagem_codigo_key",
+      "type": "u",
+      "table": "solicitacao_viagem",
+      "columns": [
+        "codigo"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (codigo)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "solicitacao_viagem_pkey",
+      "type": "p",
+      "table": "solicitacao_viagem",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "solicitacao_viagem_solicitante_id_fkey",
+      "type": "f",
+      "table": "solicitacao_viagem",
+      "columns": [
+        "solicitante_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (solicitante_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "usuario_email_key",
+      "type": "u",
+      "table": "usuario",
+      "columns": [
+        "email"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (email)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "usuario_pkey",
+      "type": "p",
+      "table": "usuario",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "veiculo_pkey",
+      "type": "p",
+      "table": "veiculo",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "veiculo_placa_key",
+      "type": "u",
+      "table": "veiculo",
+      "columns": [
+        "placa"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (placa)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "veiculo_vinculo_check",
+      "type": "c",
+      "table": "veiculo",
+      "columns": [
+        "vinculo"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (vinculo::text = ANY (ARRAY['PROPRIO'::character varying, 'LOCADO'::character varying]::text[]))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "viagem_motorista_id_fkey",
+      "type": "f",
+      "table": "viagem",
+      "columns": [
+        "motorista_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id) REFERENCES motorista(id)",
+      "references": "motorista",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "viagem_pkey",
+      "type": "p",
+      "table": "viagem",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "viagem_solicitacao_id_fkey",
+      "type": "f",
+      "table": "viagem",
+      "columns": [
+        "solicitacao_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (solicitacao_id) REFERENCES solicitacao_viagem(id)",
+      "references": "solicitacao_viagem",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "viagem_solicitacao_id_key",
+      "type": "u",
+      "table": "viagem",
+      "columns": [
+        "solicitacao_id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (solicitacao_id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "viagem_veiculo_id_fkey",
+      "type": "f",
+      "table": "viagem",
+      "columns": [
+        "veiculo_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (veiculo_id) REFERENCES veiculo(id)",
+      "references": "veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    }
+  ]
+}

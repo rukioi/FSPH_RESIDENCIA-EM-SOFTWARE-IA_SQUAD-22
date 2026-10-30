@@ -16,6 +16,7 @@ type NovaSolicitacaoSvoProps = {
   onVoltar?: () => void;
 };
 
+/** Anuncia envio/erro e mantém o formulário até a confirmação da operação existente. */
 export function NovaSolicitacaoSvo({
   onConfirmar,
   onVoltar,
@@ -143,8 +144,9 @@ export function NovaSolicitacaoSvo({
           />
         </div>
 
+        {enviando && <p role="status">Confirmando solicitação...</p>}
         {erro && (
-          <p className="svo-formulario__erro">
+          <p className="svo-formulario__erro" role="alert">
             {erro}
           </p>
         )}
