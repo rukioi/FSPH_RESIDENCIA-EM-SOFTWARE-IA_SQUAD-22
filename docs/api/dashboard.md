@@ -6,7 +6,7 @@
 - Método: GET
 - Rota: `/api/dashboard`
 - Autenticação: JWT via `Authorization: Bearer <token>`
-- Perfis autorizados: `ADMINISTRADOR` e `GESTOR_FROTA`
+- Perfis autorizados: `ADM` e `GESTOR_FROTA`
 - Corpo da requisição: não possui.
 
 ## Respostas
@@ -56,6 +56,4 @@ Authorization: Bearer <token>
 
 ## Observação de integração
 
-A validação JWT utiliza `jose`, algoritmo HS256 e a variável de ambiente `JWT_SECRET`.
-
-Essa configuração deverá ser compatibilizada com a estratégia de autenticação compartilhada do projeto quando ela for definida. Não há emissão de tokens nesta entrega.
+A autenticação compartilhada valida JWT HS256 com `sub`, `exp` e `JWT_SECRET` de pelo menos 16 bytes (recomenda-se 32 bytes ou mais). O contrato de login e consulta de sessão está em [auth.md](./auth.md). O painel do gestor usa `/api/dashboard/gestor`.

@@ -1,4 +1,4 @@
-import { obterToken } from './auth.service'
+import { fetchAutenticada } from './auth.service'
 import type { Perfil, Usuario } from '../../features/usuarios/dados'
 
 const API_URL = '/api/admin/usuarios'
@@ -46,17 +46,7 @@ function converterPerfilParaApi(perfil: Perfil): string {
 }
 
 async function requisicao<T>(caminho: string): Promise<T> {
-  const token = obterToken()
-
-  if (!token) {
-    throw new Error('Sessão expirada. Faça login novamente.')
-  }
-
-  const resposta = await fetch(caminho, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+  const resposta = await fetchAutenticada(caminho)
 
   const dados = await resposta.json()
 
@@ -91,17 +81,10 @@ export type NovoUsuario = {
 export async function cadastrarUsuario(
   usuario: NovoUsuario,
 ): Promise<Usuario> {
-  const token = obterToken()
-
-  if (!token) {
-    throw new Error('Sessão expirada. Faça login novamente.')
-  }
-
-  const resposta = await fetch(API_URL, {
+  const resposta = await fetchAutenticada(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
         ...usuario,
@@ -138,17 +121,10 @@ export async function editarUsuario(
   id: number,
   usuario: DadosEdicaoUsuario,
 ): Promise<Usuario> {
-  const token = obterToken()
-
-  if (!token) {
-    throw new Error('Sessão expirada. Faça login novamente.')
-  }
-
-  const resposta = await fetch(`${API_URL}/${id}`, {
+  const resposta = await fetchAutenticada(`${API_URL}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(usuario),
   })
@@ -173,17 +149,8 @@ export async function editarUsuario(
 
 
 export async function alternarStatusUsuario(id: number): Promise<Usuario> {
-  const token = obterToken()
-
-  if (!token) {
-    throw new Error('Sessão expirada. Faça login novamente.')
-  }
-
-  const resposta = await fetch(`${API_URL}/${id}/status`, {
+  const resposta = await fetchAutenticada(`${API_URL}/${id}/status`, {
     method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   })
 
   const dados = await resposta.json()

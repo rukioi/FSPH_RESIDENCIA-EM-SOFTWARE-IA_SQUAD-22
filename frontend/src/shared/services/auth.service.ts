@@ -1,46 +1,89 @@
 
+import { ROTAS } from '../../app/routes/rotas'
+
 export type Credenciais = {
   email: string
   senha: string
 }
 
-export type UsuarioAutenticado = {
+export type UsuarioSessao = {
   id: string
-  nome: string
-  email: string
+  nome?: string
+  email?: string
   perfil: string
 }
 
 type RespostaLogin = {
   token: string
-  usuario: UsuarioAutenticado
+  usuario: UsuarioSessao
+}
+
+type RespostaSessao = {
+  data: UsuarioSessao
 }
 
 export type ResultadoLogin = {
   destino: string
-  usuario: UsuarioAutenticado
+  usuario: UsuarioSessao
 }
 
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 const TOKEN_CHAVE = 'token'
-const USUARIO_CHAVE = 'usuario'
 
-function obterDestino(perfil: string): string {
-  switch (perfil.toUpperCase()) {
-    case 'ADM':
-      return '/admin/dashboard'
+function normalizarPerfil(perfil: string): string {
+  const normalizado = perfil.trim().toUpperCase()
 
-    case 'GESTOR':
-    case 'GESTOR_FROTA':
-    case 'GESTOR DA FROTA':
-      return '/gestor/dashboard'
-
-    default:
-      throw new Error(
-        `O perfil "${perfil}" ainda não possui uma tela inicial configurada.`,
-      )
+  if (normalizado === 'ADMINISTRADOR') return 'ADM'
+  if (normalizado === 'GESTOR' || normalizado === 'GESTOR DA FROTA') {
+    return 'GESTOR_FROTA'
   }
+
+  return normalizado
+}
+
+export function destinoDoPerfil(perfil: string): string {
+  switch (normalizarPerfil(perfil)) {
+    case 'ADM':
+      return ROTAS.dashboard
+    case 'GESTOR_FROTA':
+      return ROTAS.dashboardGestor
+    case 'ATENDENTE_SVO':
+      return '/svo'
+    default:
+      throw new Error('Este perfil não possui uma página inicial disponível.')
+  }
+}
+
+function redirecionarParaLogin(): void {
+  if (typeof window !== 'undefined' && window.location.pathname !== ROTAS.login) {
+    window.location.replace(ROTAS.login)
+  }
+}
+
+export async function fetchAutenticada(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  const token = obterToken()
+
+  if (!token) {
+    sair()
+    redirecionarParaLogin()
+    throw new Error('Sessão expirada. Faça login novamente.')
+  }
+
+  const headers = new Headers(init.headers)
+  headers.set('Authorization', `Bearer ${token}`)
+
+  const resposta = await fetch(input, { ...init, headers })
+
+  if (resposta.status === 401) {
+    sair()
+    redirecionarParaLogin()
+  }
+
+  return resposta
 }
 
 export async function entrar(
@@ -54,16 +97,15 @@ export async function entrar(
     body: JSON.stringify(credenciais),
   })
 
-  const dados = (await resposta.json()) as
-    | RespostaLogin
-    | { error?: string }
+  const dados = await resposta.json() as RespostaLogin | {
+    error?: string | { message?: string }
+  }
 
   if (!resposta.ok) {
-    const mensagem =
-      'error' in dados && dados.error
-        ? dados.error
-        : 'Não foi possível realizar o login.'
-
+    const erro = 'error' in dados ? dados.error : undefined
+    const mensagem = typeof erro === 'string'
+      ? erro
+      : erro?.message ?? 'Não foi possível realizar o login.'
     throw new Error(mensagem)
   }
 
@@ -71,11 +113,8 @@ export async function entrar(
     throw new Error('A resposta da API de login está incompleta.')
   }
 
-  const destino = obterDestino(dados.usuario.perfil)
-
-  // Guarda os dados apenas durante a sessão da aba do navegador.
+  const destino = destinoDoPerfil(dados.usuario.perfil)
   sessionStorage.setItem(TOKEN_CHAVE, dados.token)
-  sessionStorage.setItem(USUARIO_CHAVE, JSON.stringify(dados.usuario))
 
   return {
     destino,
@@ -83,24 +122,35 @@ export async function entrar(
   }
 }
 
+export async function buscarSessao(): Promise<UsuarioSessao | null> {
+  if (!obterToken()) return null
+
+  const resposta = await fetchAutenticada('/api/auth/sessao')
+
+  if (!resposta.ok) return null
+
+  const resultado = await resposta.json() as RespostaSessao
+  const usuario = resultado.data
+
+  if (
+    !usuario ||
+    typeof usuario.id !== 'string' ||
+    typeof usuario.perfil !== 'string'
+  ) {
+    sair()
+    return null
+  }
+
+  return {
+    ...usuario,
+    perfil: normalizarPerfil(usuario.perfil),
+  }
+}
+
 export function obterToken(): string | null {
   return sessionStorage.getItem(TOKEN_CHAVE)
 }
 
-export function obterUsuario(): UsuarioAutenticado | null {
-  const dados = sessionStorage.getItem(USUARIO_CHAVE)
-
-  if (!dados) return null
-
-  try {
-    return JSON.parse(dados) as UsuarioAutenticado
-  } catch {
-    sessionStorage.removeItem(USUARIO_CHAVE)
-    return null
-  }
-}
-
 export function sair(): void {
   sessionStorage.removeItem(TOKEN_CHAVE)
-  sessionStorage.removeItem(USUARIO_CHAVE)
 }

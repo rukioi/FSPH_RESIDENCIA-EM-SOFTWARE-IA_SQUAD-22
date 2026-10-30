@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { navegar } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
+import { sair } from '../../shared/services/auth.service'
+import type { UsuarioSessao } from '../../shared/services/auth.service'
 import './GestorLayout.css'
 
 const icones = {
@@ -20,6 +22,7 @@ const icones = {
   notificacoes: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9 M10.3 21a2 2 0 0 0 3.4 0',
   menu: 'M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 3v18',
   seta: 'm6 9 6 6 6-6',
+  sair: 'M10 17l5-5-5-5 M15 12H3 M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6',
 }
 
 type NomeIcone = keyof typeof icones
@@ -54,11 +57,20 @@ const itensMenu: { nome: string; icone: NomeIcone }[] = [
   { nome: 'Notificações', icone: 'notificacoes' },
 ]
 
-const usuario = { nome: 'Carlos Almeida', cargo: 'Gestor de Frota', iniciais: 'CA' }
 const totalNotificacoes = 3
 
+function iniciais(nome: string): string {
+  return nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('').toUpperCase()
+}
+
 /* ---------- Layout ---------- */
-export function GestorLayout({ children }: { children: ReactNode }) {
+export function GestorLayout({ children, usuario: sessao }: { children: ReactNode; usuario: UsuarioSessao }) {
+  const nome = sessao.nome ?? sessao.email ?? 'Usuário'
+  const usuario = {
+    nome,
+    cargo: sessao.perfil === 'ADM' ? 'Administrador' : 'Gestor de Frota',
+    iniciais: iniciais(nome),
+  }
   // Menu aberto por padrão no computador e fechado no celular
   const [menuAberto, setMenuAberto] = useState(window.innerWidth > 900)
   const [itemAtivo, setItemAtivo] = useState('Dashboard')
@@ -152,6 +164,18 @@ export function GestorLayout({ children }: { children: ReactNode }) {
                 <small>{usuario.cargo}</small>
               </span>
               <Icone nome="seta" tamanho={16} />
+            </button>
+            <button
+              type="button"
+              className="botao-icone"
+              aria-label="Sair"
+              title="Sair"
+              onClick={() => {
+                sair()
+                navegar(ROTAS.login, true)
+              }}
+            >
+              <Icone nome="sair" />
             </button>
           </div>
         </header>

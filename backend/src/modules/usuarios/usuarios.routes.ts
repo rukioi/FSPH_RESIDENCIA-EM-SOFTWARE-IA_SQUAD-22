@@ -1,30 +1,17 @@
 import { type IncomingMessage, type ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-
-function verificarAdmin(req: IncomingMessage): any {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-  try {
-    const token = authHeader.split(' ')[1];
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
-    if (decoded.perfil !== 'ADM') return null;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
+import { autenticarRequisicao, autorizarPerfis } from '../../security/jwt.js';
 
 export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url ?? '', 'http://localhost');
-  const admin = verificarAdmin(req);
+  const admin = await autenticarRequisicao(req, res);
 
   if (!admin) {
-    res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ error: 'Acesso negado. Requer perfil ADM.' }));
     return;
   }
+
+  if (!autorizarPerfis(admin, ['ADM'], res)) return;
 
   if (req.method === 'GET' && url.pathname === '/api/admin/usuarios') {
     const usuarios = await sql`SELECT id, nome, email, perfil, ativo, criado_em FROM public.usuario ORDER BY id ASC`;

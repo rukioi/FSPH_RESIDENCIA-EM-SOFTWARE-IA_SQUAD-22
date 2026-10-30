@@ -1,6 +1,9 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { validarJwt } from '../../security/jwt.js';
+import {
+  autenticarRequisicao,
+  autorizarPerfis,
+} from '../../security/jwt.js';
 
 import {
   listarMotoristas,
@@ -57,33 +60,17 @@ export async function motoristasRoute(
     return;
   }
 
-  const usuario = await validarJwt(req.headers.authorization);
+  const usuario = await autenticarRequisicao(req, res);
 
   if (!usuario) {
-    enviarErro(
-      res,
-      401,
-      'NAO_AUTENTICADO',
-      'Autenticação necessária.',
-    );
     return;
   }
 
-  const podeGerenciar =
-    usuario.perfil === 'ADMINISTRADOR' ||
-    usuario.perfil === 'GESTOR_FROTA';
+  const perfisPermitidos = method === 'GET'
+    ? ['ADM', 'GESTOR_FROTA', 'ATENDENTE_SVO']
+    : ['ADM', 'GESTOR_FROTA'];
 
-  const podeConsultar =
-    podeGerenciar ||
-    usuario.perfil === 'ATENDENTE_SVO';
-
-  if (method === 'GET' && !podeConsultar) {
-    enviarErro(res, 403, 'ACESSO_NEGADO', 'Acesso não permitido.');
-    return;
-  }
-
-  if (method !== 'GET' && !podeGerenciar) {
-    enviarErro(res, 403, 'ACESSO_NEGADO', 'Acesso não permitido.');
+  if (!autorizarPerfis(usuario, perfisPermitidos, res)) {
     return;
   }
 

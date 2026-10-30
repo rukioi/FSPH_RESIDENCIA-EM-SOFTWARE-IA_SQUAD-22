@@ -45,22 +45,9 @@ export function Svo() {
   const [veiculos, setVeiculos] =
     useState<VeiculoApi[]>([]);
 
-  function obterToken() {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error(
-        "Token de autenticação não encontrado.",
-      );
-    }
-
-    return token;
-  }
-
   async function carregarOrdens() {
     try {
-      const token = obterToken();
-      const ordens = await listarOrdensAguardandoSvo(token);
+      const ordens = await listarOrdensAguardandoSvo();
 
       setOrdensAguardando(
         ordens.map((ordem) => ({
@@ -124,8 +111,6 @@ export function Svo() {
   async function confirmarNovaSolicitacao(
     dados: NovaSolicitacaoDados,
   ) {
-    const token = obterToken();
-
     const resultado = await criarSolicitacaoSvo(
       {
         localFalecimento: dados.localFalecimento,
@@ -135,7 +120,6 @@ export function Svo() {
         solicitanteTelefone:
           dados.telefoneSolicitante || undefined,
       },
-      token,
     );
 
     setSolicitacoesConfirmadas(
@@ -157,13 +141,10 @@ export function Svo() {
     motoristaId: number,
     veiculoId: number,
   ) {
-    const token = obterToken();
-
     await despacharOrdemSvo(
       ordem.apiId,
       motoristaId,
       veiculoId,
-      token,
     );
 
     const motorista = motoristas.find(

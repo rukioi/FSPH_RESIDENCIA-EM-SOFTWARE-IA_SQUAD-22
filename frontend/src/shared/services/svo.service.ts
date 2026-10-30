@@ -7,6 +7,7 @@ import type {
   OrdemDespachadaApi,
   VeiculoApi,
 } from '../types/svo'
+import { fetchAutenticada } from './auth.service'
 
 async function mensagemErro(
   response: Response,
@@ -31,12 +32,10 @@ async function mensagemErro(
 
 export async function criarSolicitacaoSvo(
   dados: CriarSolicitacaoSvoRequest,
-  token: string,
 ): Promise<CriarSolicitacaoSvoResponse> {
-  const response = await fetch('/api/svo/solicitacoes', {
+  const response = await fetchAutenticada('/api/svo/solicitacoes', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(dados),
@@ -55,15 +54,11 @@ export async function criarSolicitacaoSvo(
 }
 
 export async function listarOrdensAguardandoSvo(
-  token: string,
 ): Promise<OrdemColetaPendenteApi[]> {
-  const response = await fetch(
+  const response = await fetchAutenticada(
     '/api/svo/ordens-coleta?status=AGUARDANDO_DESPACHO',
     {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     },
   )
 
@@ -82,7 +77,7 @@ export async function listarOrdensAguardandoSvo(
 export async function listarMotoristasDisponiveis(): Promise<
   MotoristaApi[]
 > {
-  const response = await fetch('/api/motoristas')
+  const response = await fetchAutenticada('/api/motoristas')
 
   if (!response.ok) {
     throw new Error(
@@ -101,7 +96,7 @@ export async function listarMotoristasDisponiveis(): Promise<
 export async function listarVeiculosDisponiveis(): Promise<
   VeiculoApi[]
 > {
-  const response = await fetch('/api/veiculos')
+  const response = await fetchAutenticada('/api/veiculos')
 
   if (!response.ok) {
     throw new Error(
@@ -121,16 +116,12 @@ export async function despacharOrdemSvo(
   ordemId: number,
   motoristaId: number,
   veiculoId: number,
-  token: string,
 ): Promise<OrdemDespachadaApi> {
-  const response = await fetch(
+  const response = await fetchAutenticada(
     `/api/svo/ordens-coleta/${ordemId}/despachar`,
     {
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         motoristaId,
         veiculoId,

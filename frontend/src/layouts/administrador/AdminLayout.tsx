@@ -4,6 +4,8 @@ import { Icone } from '../../shared/components/Icone'
 import type { NomeIcone } from '../../shared/components/Icone'
 import { Link, navegar, useCaminho } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
+import { sair as encerrarSessao } from '../../shared/services/auth.service'
+import type { UsuarioSessao } from '../../shared/services/auth.service'
 import './AdminLayout.css'
 
 type ItemMenu = { nome: string; icone: NomeIcone; rota?: string }
@@ -28,9 +30,12 @@ const itemConfiguracoes: ItemMenu = {
   rota: ROTAS.configuracoes,
 }
 
-const usuario = { nome: 'Marina Costa', cargo: 'Administrador', iniciais: 'MC' }
 const totalNotificacoes = 3
 const LIMITE_ARRASTE = 70
+
+function iniciais(nome: string): string {
+  return nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('').toUpperCase()
+}
 
 function ItemDoMenu({ item, ativo, aoNavegar }: { item: ItemMenu; ativo: boolean; aoNavegar: () => void }) {
   if (!item.rota) {
@@ -55,8 +60,14 @@ function ItemDoMenu({ item, ativo, aoNavegar }: { item: ItemMenu; ativo: boolean
   )
 }
 
-export function AdminLayout({ children }: { children: ReactNode }) {
+export function AdminLayout({ children, usuario: sessao }: { children: ReactNode; usuario: UsuarioSessao }) {
   const caminho = useCaminho()
+  const nome = sessao.nome ?? sessao.email ?? 'Usuário'
+  const usuario = {
+    nome,
+    cargo: sessao.perfil === 'ADM' ? 'Administrador' : 'Gestor da Frota',
+    iniciais: iniciais(nome),
+  }
   const [menuAberto, setMenuAberto] = useState(() => window.innerWidth > 900)
   const [deslocamento, setDeslocamento] = useState(0)
   const inicioArraste = useRef<number | null>(null)
@@ -94,6 +105,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   function sair() {
+    encerrarSessao()
     navegar(ROTAS.login)
   }
 

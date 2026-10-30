@@ -1,11 +1,13 @@
 // App do perfil Administrador e Gestor de Frota.
+import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
 import '../shared/styles/tema.css'
 
-import { useCaminho } from './routes/router'
+import { navegar, useCaminho } from './routes/router'
 import { ROTAS } from './routes/rotas'
 
 import { AdminLayout } from '../layouts/administrador/AdminLayout'
+import { perfilPodeAcessar } from '../shared/services/access.service'
 import { GestorLayout } from '../layouts/gestor/GestorLayout'
 
 import { Login } from '../pages/login/Login'
@@ -17,6 +19,13 @@ import { Veiculos } from "../pages/veiculos/Veiculos";
 import { Motoristas } from "../pages/motorista/Motoristas";
 
 import { Svo } from '../features/svo/Svo';
+import {
+  buscarSessao,
+  destinoDoPerfil,
+  obterToken,
+  sair,
+} from '../shared/services/auth.service'
+import type { UsuarioSessao } from '../shared/services/auth.service'
 
 const paginas: Record<string, ComponentType> = {
   [ROTAS.dashboard]: DashboardAdmin,
@@ -26,16 +35,73 @@ const paginas: Record<string, ComponentType> = {
 
 export function App() {
   const caminho = useCaminho()
+  const [sessao, setSessao] = useState<UsuarioSessao | null>(null)
+  const [verificando, setVerificando] = useState(true)
+
+  useEffect(() => {
+    let ativa = true
+
+    if (!obterToken()) {
+      sair()
+      setSessao(null)
+      setVerificando(false)
+      if (caminho !== ROTAS.login) navegar(ROTAS.login, true)
+      return () => {
+        ativa = false
+      }
+    }
+
+    setVerificando(true)
+    void buscarSessao().then((usuario) => {
+      if (!ativa) return
+
+      setSessao(usuario)
+      setVerificando(false)
+
+      if (!usuario) {
+        sair()
+        if (caminho !== ROTAS.login) navegar(ROTAS.login, true)
+        return
+      }
+
+      if (caminho === ROTAS.login || !perfilPodeAcessar(caminho, usuario.perfil)) {
+        try {
+          navegar(destinoDoPerfil(usuario.perfil), true)
+        } catch {
+          sair()
+          navegar(ROTAS.login, true)
+        }
+      }
+    }).catch(() => {
+      if (!ativa) return
+      sair()
+      setSessao(null)
+      setVerificando(false)
+      navegar(ROTAS.login, true)
+    })
+
+    return () => {
+      ativa = false
+    }
+  }, [caminho])
 
   // Tela de login
   if (caminho === ROTAS.login) {
     return <Login />
   }
 
+  if (!obterToken()) {
+    return <Login />
+  }
+
+  if (verificando || !sessao || !perfilPodeAcessar(caminho, sessao.perfil)) {
+    return <p role="status">Verificando autenticação...</p>
+  }
+
   // Tela do Gestor de Frota
   if (caminho === ROTAS.dashboardGestor) {
     return (
-      <GestorLayout>
+      <GestorLayout usuario={sessao}>
         <Dashboard />
       </GestorLayout>
     )
@@ -44,7 +110,7 @@ export function App() {
 // Telas de Veículos e Motoristas do Gestor de Frota
   if (caminho === ROTAS.veiculosGestor) {
     return (
-      <GestorLayout>
+      <GestorLayout usuario={sessao}>
         <Veiculos />
       </GestorLayout>
     )
@@ -52,7 +118,7 @@ export function App() {
 
   if (caminho === ROTAS.motoristasGestor) {
     return (
-      <GestorLayout>
+      <GestorLayout usuario={sessao}>
         <Motoristas />
       </GestorLayout>
     )
@@ -61,7 +127,7 @@ export function App() {
   // Tela do SVO
   if (caminho === '/svo') {
     return (
-      <GestorLayout>
+      <GestorLayout usuario={sessao}>
         <Svo />
       </GestorLayout>
     )
@@ -71,7 +137,7 @@ export function App() {
   const Pagina = paginas[caminho] ?? DashboardAdmin
 
   return (
-    <AdminLayout>
+    <AdminLayout usuario={sessao}>
       <Pagina />
     </AdminLayout>
   )

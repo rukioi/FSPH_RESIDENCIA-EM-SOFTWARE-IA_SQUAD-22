@@ -6,7 +6,7 @@ for (const width of [390, 768, 1280]) {
     await page.goto('/');
 
     await expect(
-      page.getByRole('heading', { name: 'Dashboard' }),
+      page.getByRole('heading', { name: 'Acesse sua conta' }),
     ).toBeVisible();
 
     expect(
@@ -26,6 +26,22 @@ for (const width of [390, 768, 1280]) {
     });
   });
 }
+
+test('rotas privadas sem sessão redirecionam para o login', async ({ page }) => {
+  for (const rota of [
+    '/admin/dashboard',
+    '/admin/configuracoes',
+    '/gestor/dashboard',
+    '/gestor/veiculos',
+    '/svo',
+  ]) {
+    await page.goto(rota);
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(
+      page.getByRole('heading', { name: 'Acesse sua conta' }),
+    ).toBeVisible();
+  }
+});
 
 test('o proxy de desenvolvimento alcança o backend', async ({ request }) => {
   const response = await request.get('/api/usuarios');

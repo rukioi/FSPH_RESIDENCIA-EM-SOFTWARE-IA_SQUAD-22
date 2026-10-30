@@ -77,9 +77,11 @@ O build gera `frontend/dist/` e `backend/dist/`. Para conferir os arquivos compi
 
 ## Estado atual
 
-A base inicia com uma tela provisória e um servidor sem endpoints de negócio, que responde **404**. No desenvolvimento, chamadas em `/api` são encaminhadas ao backend.
+A aplicação possui login baseado nos usuários de `public.usuario` no PostgreSQL. As senhas são comparadas com hashes bcrypt; configure `DATABASE_URL` e `JWT_SECRET` (mínimo de 16 bytes; recomenda-se 32 ou mais) no ambiente do backend.
 
-Banco de dados, Docker, funcionalidades, autenticação e permissões ainda não estão implementados. Não é necessário configurar banco ou arquivo de ambiente para iniciar esta base.
+O token de sessão fica apenas em `sessionStorage` durante a aba aberta. O backend valida autenticação e perfil em cada rota protegida; uma rota privada aberta sem sessão redireciona para `/login`. Não use credenciais de conexão do PostgreSQL como credenciais de login da aplicação.
+
+As funcionalidades e permissões ainda evoluem por módulo; consulte a documentação de [segurança](./docs/seguranca.md), [permissões](./docs/permissoes.md) e [API](./docs/api/README.md).
 
 Os documentos abaixo trazem os padrões iniciais. Contratos de negócio e permissões serão detalhados por funcionalidade.
 

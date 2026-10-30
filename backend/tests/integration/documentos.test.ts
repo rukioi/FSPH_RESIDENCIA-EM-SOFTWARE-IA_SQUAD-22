@@ -53,6 +53,8 @@ async function criarTokenTeste(perfil: string): Promise<string> {
   return new SignJWT({ perfil })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject('usuario-teste')
+    .setIssuedAt()
+    .setExpirationTime('1h')
     .sign(new TextEncoder().encode(segredoTeste));
 }
 
