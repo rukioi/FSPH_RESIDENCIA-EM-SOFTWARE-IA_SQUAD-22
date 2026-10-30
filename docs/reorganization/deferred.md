@@ -45,3 +45,18 @@ Próximo ticket: #31. Somente #33 abre/reutiliza o PR final.
   persistida ou tornada configurável nesta tarefa. Essa reconciliação é futura.
 - Em 390 px a tabela de usuários conserva rolagem interna preexistente; a página
   não tem rolagem horizontal. Não houve redesign/CSS fora do escopo da #29.
+
+## Atualização #31
+
+- Cadastro/edição agora confirmam junto da atividade; status conserva idempotência.
+  Os dois eventos SVO existentes usam o mesmo serviço e a mesma transação anterior.
+- A consulta paginada projeta DTO mínimo; chamadas sem page/limit conservam array
+  completo/campos legados, inclusive email. Unificação e remoção coordenada do
+  adaptador ficam para #32. UI demonstrativa permanece para #30.
+- Descrições antigas não são reescritas: podem conter email do cadastro legado.
+  Novos registros usam ID/modelos fechados. Anonimização, retenção, imutabilidade,
+  FKs de exclusão e fuso histórico permanecem tarefas próprias.
+- Não há novos eventos de despacho/login/negação, relatórios, dashboard,
+  monitoramento, SLA 24x7 ou novas regras operacionais.
+
+Próximo ticket: #32. Somente #33 abre/reutiliza o PR final.

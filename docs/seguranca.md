@@ -57,7 +57,7 @@ Referência: [segurança de APIs REST da OWASP](https://cheatsheetseries.owasp.o
   atrás de proxy, usuários podem compartilhar cota. Proteção global deve ser
   configurada na infraestrutura confiável; não foi implementado cache distribuído.
 
-Auditoria de domínio permanece para #31. A #28
+Auditoria de domínio foi centralizada na #31 (seção abaixo). A #28
 não modifica ACL/RLS ou o Supabase remoto. O certificado/chave em tests/unit/fixtures
 é artificial, gerado somente para provar rejeição TLS, sem uso operacional.
 
@@ -118,3 +118,19 @@ aprovar ACL explícita que preserve esse papel e testar todos os módulos com el
 Sem essa confirmação, não há migration de ACL, alteração de snapshot/DER ou
 aplicação remota nesta tarefa. A baseline continua reproduzindo o estado auditado,
 com a exposição potencial já documentada. A prova não garante o ambiente remoto.
+
+## Atividades existentes — #31
+
+`auditoria.service.ts` aceita somente os cinco eventos já existentes, identificadores
+BIGINT validados e o estado booleano conhecido. As descrições são modelos fechados
+em pt-BR; não recebem texto livre, email, senha/token, CPF, telefone, dados médicos
+ou payload completo. Cadastro/edição/status de usuário e criação SVO passam sua
+transação à gravação compartilhada. Falha de atividade reverte a escrita do módulo;
+não há captura que ignore uma falha para confirmar metade da operação.
+
+O logger técnico da #28 continua separado do histórico de negócio. O endpoint
+continua somente ADM com sessão atual. DTO paginado exclui email; adaptador sem
+paginação conserva campos legados até #32. Histórico anterior pode conter email
+nas descrições; não houve limpeza/backfill nem anonimização retroativa.
+As duas FKs foram preservadas; retenção/imutabilidade, política de exclusão,
+novos eventos e auditoria avançada exigem tarefa própria.

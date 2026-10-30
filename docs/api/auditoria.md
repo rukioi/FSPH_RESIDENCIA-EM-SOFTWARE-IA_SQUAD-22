@@ -1,80 +1,131 @@
-# API — Auditoria (#28)
+﻿# API — Auditoria (#31)
 
-Recorte de compatibilidade e infraestrutura da refatoração; os registros de negócio
-mantêm os campos e envelopes atuais. Contrato unificado/gerado será tratado na #32.
+## GET /api/admin/auditoria/logs
 
-## Rotas
+Autenticação: Bearer JWT, sessão ativa e perfil efetivo ADM, pelos mecanismos
+compartilhados da #29. Sem corpo. Não há permissão nova ou consulta pública.
 
-Autenticação: Bearer JWT. Perfis: ADM.
+Paginação técnica opcional: `page` inteiro positivo (padrão 1), `limit` inteiro
+positivo até 100 (padrão 20). Informar qualquer um ativa o envelope paginado.
+Duplicatas, vazio, decimais, sinais e valores/offset fora do inteiro seguro
+JavaScript retornam 400. Parâmetros desconhecidos continuam ignorados; não são filtros.
+Página além do fim retorna data vazio com o total real.
 
-| Método e caminho | Corpo | Sucesso existente |
-| --- | --- | --- |
-| GET /api/admin/auditoria/logs | não | array direto, data_hora DESC |
+Ordenação: `data_hora DESC NULLS LAST, id DESC`. Página e total são lidos na mesma
+transação read-only/repeatable-read. Requisições de páginas diferentes são snapshots
+independentes; inserções entre requisições podem deslocar offsets. Não há cursor.
 
-Retorna l.* e usuario_nome/usuario_email via LEFT JOIN. Não há filtros ou paginação no caminho HTTP ativo.
-
-## Respostas
-
-### 200 — Consulta (exemplo vazio)
-
-```json
-[]
-```
-
-### 401 — Sem sessão
+## 200 — Consulta paginada
 
 ```json
-{"error": {"code": "NAO_AUTENTICADO", "message": "Autenticação necessária."}}
+{
+  "data": [{
+    "id": "123",
+    "usuarioId": "12",
+    "descricao": "Criou o usuário ID 13",
+    "dataHora": "2026-10-30T12:00:00.000Z",
+    "usuarioNome": "Usuário fictício"
+  }],
+  "meta": { "page": 1, "limit": 20, "total": 1 }
+}
 ```
 
-### 403 — Perfil sem permissão
+IDs são strings decimais (BIGINT), sem conversão para number. usuarioId,
+usuarioNome e dataHora admitem null; nome vem de LEFT JOIN com o usuário atual,
+não é um retrato histórico. Não retorna email, perfil, hash ou payload nesse DTO.
+`dataHora` conserva a serialização ISO do driver já usada pelo endpoint anterior.
+O banco armazena timestamp sem fuso: o `Z` serializado não comprova o fuso de
+origem. Nenhuma linha histórica é convertida ou regravada nesta tarefa.
+
+Exemplo vazio: `{"data":[],"meta":{"page":1,"limit":20,"total":0}}`.
+
+### Adaptador de compatibilidade sem page/limit
+
+Conserva array completo (sem limite), nomes de campos e serialização antigos:
 
 ```json
-{"error": {"code": "ACESSO_NEGADO", "message": "Acesso não permitido."}}
+[{
+  "id": "123",
+  "usuario_id": "12",
+  "descricao": "Criou o usuário ID 13",
+  "data_hora": "2026-10-30T12:00:00.000Z",
+  "usuario_nome": "Usuário fictício",
+  "usuario_email": "fixture@example.invalid"
+}]
 ```
 
-### 404 — Caminho desconhecido
+Os campos são explícitos; não há mais SELECT l.*. Array vazio: `[]`.
+O email permanece somente no adaptador legado protegido para evitar remoção
+silenciosa de campo. Novos consumidores devem usar paginação. #32 tratará a
+unificação/geração do contrato; a UI estática atual não foi integrada aqui.
 
-Exemplo de caminho desconhecido; ausência de registro na edição mantém o erro de domínio atual.
+## 400 — Paginação inválida
 
 ```json
-{"error": {"code": "NAO_ENCONTRADO", "message": "Rota não encontrada."}}
+{"error":{"code":"ENTRADA_INVALIDA","message":"Informe page e limit como inteiros positivos; limit deve ser no máximo 100."}}
 ```
 
-### 405 — Método inválido
-
-Inclui `Allow` com os métodos da linha correspondente na tabela de rotas.
+## 401 — Sem sessão válida ou conta inativa/inexistente
 
 ```json
-{"error": {"code": "METODO_NAO_PERMITIDO", "message": "Método não permitido."}}
+{"error":{"code":"NAO_AUTENTICADO","message":"Autenticação necessária."}}
 ```
 
-### 500 — Falha inesperada
-
-Exemplo do fallback comum. Controllers preservam mensagens genéricas próprias; nenhum erro bruto é retornado.
+## 403 — Perfil atual sem permissão
 
 ```json
-{"error": {"code": "ERRO_INTERNO", "message": "Não foi possível concluir a requisição."}}
+{"error":{"code":"ACESSO_NEGADO","message":"Acesso não permitido."}}
 ```
 
-## Exemplo mínimo
+## 404 — Caminho desconhecido
+
+```json
+{"error":{"code":"NAO_ENCONTRADO","message":"Rota não encontrada."}}
+```
+
+## 405 — Método inválido
+
+Cabeçalho `Allow: GET`. 404/405 são encerrados pelo despacho comum antes da sessão;
+o handler também encerra essas condições quando chamado diretamente.
+
+```json
+{"error":{"code":"METODO_NAO_PERMITIDO","message":"Método não permitido."}}
+```
+
+## 500 — Falha inesperada
+
+```json
+{"error":{"code":"ERRO_INTERNO","message":"Não foi possível concluir a requisição."}}
+```
+
+Erros não retornam SQL, detail do driver, stack ou dados pessoais. Logger técnico
+continua separado, com allowlist e request ID, conforme a #28.
+
+## Exemplo mínimo da requisição
 
 ```http
-GET /api/admin/auditoria/logs HTTP/1.1
+GET /api/admin/auditoria/logs?page=1&limit=20 HTTP/1.1
 Authorization: Bearer <token>
 ```
 
+## Eventos existentes centralizados
+
+| Operação | Descrição nova | Transação |
+| --- | --- | --- |
+| Cadastro de usuário | Criou o usuário ID n | Usuário + atividade |
+| Edição de usuário | Atualizou os dados do usuário ID n | Usuário + atividade |
+| Status efetivamente alterado | Alterou o status do usuário ID n para Ativo/Inativo | Usuário + atividade; repetição sem evento |
+| Confirmação SVO | Solicitação #SVO-n confirmada na ligação | Solicitação + ordem + duas atividades |
+| Ordem gerada no cadastro SVO | Ordem de coleta #OC-n gerada para #SVO-m | Mesma transação SVO |
+
+Preserva usuario_id/descricao/data_hora e as duas FKs atuais. Descrições novas de
+usuário passam a pt-BR e usam ID em vez de email; as SVO permanecem compatíveis.
+Nenhum backfill, atualização ou exclusão de histórico. Texto histórico pode conter
+dados que o código antigo gravava; a consulta administrativa continua protegida e
+não reescreve essas mensagens. Não é uma promessa de anonimização retroativa.
+
 ## O que a entrega não faz
 
-Não muda permissões, estados, regras operacionais ou paginação. Não unifica os
-DTOs legados nesta fase. Limites, request ID e erros técnicos seguem
-[infraestrutura comum](./README.md#infraestrutura-http--28).
-
-## Identidade comum — #29
-
-Todas as rotas acima consultam usuário ativo e perfil atual do banco a cada
-requisição, após validar JWT HS256/sub/exp e segredo mínimo de 32 bytes UTF-8.
-Conta inativa/inexistente ou token inválido: 401 NAO_AUTENTICADO. Perfil efetivo
-fora da lista existente: 403 ACESSO_NEGADO. Falha de consulta não usa claims como
-fallback e recebe 500 do tratamento comum. As listas de permissão e operações
-permanecem as documentadas acima. Ver [identidade compartilhada](./README.md#identidade-e-usuários--29).
+Sem eventos novos de login/negação/despacho, filtros de domínio, busca avançada,
+dashboard, relatórios, trilha imutável completa, retenção automática, monitoramento
+ou garantia 24x7. Não altera FKs, schema, permissões ou requisitos operacionais.

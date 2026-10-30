@@ -83,6 +83,16 @@ for (const width of [390,768,1280]) {
     await expect(row.getByRole('switch')).toHaveAttribute('aria-checked','true');
     await page.unroute(`**/api/admin/usuarios/${usuario.id}/status`);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    const consulta=await request.get('/api/admin/auditoria/logs?page=1&limit=100',
+      {headers:{Authorization:`Bearer ${token}`}});
+    expect(consulta.status()).toBe(200);
+    const atividades=await consulta.json();
+    expect(atividades.meta).toMatchObject({page:1,limit:100});
+    const descricoes=[`Criou o usuário ID ${usuario.id}`,`Atualizou os dados do usuário ID ${usuario.id}`,
+      `Alterou o status do usuário ID ${usuario.id} para Inativo`,`Alterou o status do usuário ID ${usuario.id} para Ativo`];
+    const eventos=atividades.data.filter((item:{descricao:string})=>descricoes.includes(item.descricao));
+    expect(eventos.map((item:{descricao:string})=>item.descricao)).toEqual([...descricoes].reverse());
+    expect(eventos.every((item:Record<string,unknown>)=>!('usuario_email' in item)&&!('email' in item))).toBe(true);
   });
 }
 test('perfil atual redireciona na próxima consulta sem emitir outro JWT',async ({page})=>{

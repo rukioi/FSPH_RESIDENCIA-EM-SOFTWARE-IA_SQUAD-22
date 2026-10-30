@@ -16,7 +16,7 @@ nullabilidade, unicidade e ações de exclusão. Não infira regra de negócio d
 | viagem | Solicitação única opcional; km, horários sem fuso e status; FKs NO ACTION. |
 | solicitacao_obito | Código único e dados de atendimento; não exportados como fixtures reais. |
 | ordem_coleta | Solicitação de óbito única opcional, recursos, km e horários sem fuso. |
-| log_atividade | Duas FKs em usuario_id: uma SET NULL e outra NO ACTION, ambas preservadas. |
+| log_atividade | id BIGINT PK; usuario_id BIGINT opcional; descricao TEXT obrigatória; data_hora TIMESTAMP sem fuso opcional, default CURRENT_TIMESTAMP. Duas FKs em usuario_id: uma SET NULL e outra NO ACTION, ambas preservadas. |
 
 DEFAULT não implica NOT NULL. BIGINT permanece tipo do banco; esta tarefa não
 define serialização HTTP. Colunas de hora são timestamp without time zone, sem
@@ -27,3 +27,10 @@ papel do backend e proteção da Data API; revogação; semântica de status_reg
 obrigatoriedade de login de motorista; exclusão e histórico; limites numéricos e
 tratamento de NULL/zero; fuso histórico e fronteiras temporais. T1 preserva o
 estado auditado e não substitui essas respostas humanas.
+
+Na #31, gravação/consulta foram centralizadas no módulo auditoria sem DDL ou mudança
+de dados históricos. Novas mensagens usam evento fechado e ID, sem payload pessoal.
+A transação responsável confirma/reverte alteração e atividade juntas. A consulta
+ordena data_hora DESC NULLS LAST, id DESC; a paginação usa snapshot consistente.
+Serialização HTTP mantém a interpretação legada do driver; não determina fuso de
+origem nem converte timestamps históricos. Ver [contrato](../api/auditoria.md).

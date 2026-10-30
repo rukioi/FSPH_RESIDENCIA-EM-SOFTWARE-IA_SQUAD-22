@@ -6,6 +6,7 @@ import { sql } from '../../config/db.js';
 import bcrypt from 'bcrypt';
 import { autenticarRequisicao } from '../../security/session.js';
 import { autorizarPerfis } from '../../security/authorization.js';
+import { criarUsuarioComAtividade, editarUsuarioComAtividade, alterarStatusComAtividade } from './usuarios.repository.js';
 
 /** Restringe operações ao ADM atual, valida entradas e aplica status explícito idempotente. */
 export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -27,7 +28,7 @@ export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): 
   if (req.method === 'POST' && url.pathname === '/api/admin/usuarios') {
     const dados = validarDadosUsuario(await lerCorpoJson(req), true);
     if (!dados) { jsonCompartilhado(res, 400, { error: { code: 'ENTRADA_INVALIDA', message: 'Confira os campos informados.' } }); return; }
-    const { nome, email, perfil } = dados;
+    const { email } = dados;
     const senha = dados.senha!;
 
     const existente = await sql`SELECT id FROM public.usuario WHERE email = ${email}`;
@@ -37,18 +38,8 @@ export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): 
     }
 
     const senha_hash = await bcrypt.hash(senha, 10);
-    const novo = await sql`
-      INSERT INTO public.usuario (nome, email, senha_hash, perfil, ativo, criado_em)
-      VALUES (${nome}, ${email}, ${senha_hash}, ${perfil}, TRUE, NOW())
-      RETURNING id, nome, email, perfil, ativo, criado_em
-    `;
-
-    await sql`
-      INSERT INTO public.log_atividade (usuario_id, descricao, data_hora)
-      VALUES (${admin.id}, ${`Criou o utilizador ${email}`}, NOW())
-    `;
-
-    jsonCompartilhado(res, 201, novo[0]);
+    const novo = await criarUsuarioComAtividade(dados, senha_hash, admin.id);
+    jsonCompartilhado(res, 201, novo);
     return;
   }
 
@@ -58,38 +49,14 @@ export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): 
     if (BigInt(usuarioId) > 9223372036854775807n) { jsonCompartilhado(res, 400, { error: { code: 'ENTRADA_INVALIDA', message: 'Identificador inválido.' } }); return; }
     const dados = validarDadosUsuario(await lerCorpoJson(req), false);
     if (!dados) { jsonCompartilhado(res, 400, { error: { code: 'ENTRADA_INVALIDA', message: 'Confira os campos informados.' } }); return; }
-    const { nome, email, perfil, senha } = dados;
-
-    const usuarioAtual = await sql`SELECT id FROM public.usuario WHERE id = ${usuarioId}`;
-    if (usuarioAtual.length === 0) {
+    const atualizado = await editarUsuarioComAtividade(usuarioId, dados,
+      dados.senha ? await bcrypt.hash(dados.senha, 10) : undefined, admin.id);
+    if (!atualizado) {
       jsonCompartilhado(res, 404, { error: 'Utilizador não encontrado.' });
       return;
     }
 
-    let atualizado;
-    if (senha) {
-      const senha_hash = await bcrypt.hash(senha, 10);
-      atualizado = await sql`
-        UPDATE public.usuario
-        SET nome = ${nome}, email = ${email}, perfil = ${perfil}, senha_hash = ${senha_hash}
-        WHERE id = ${usuarioId}
-        RETURNING id, nome, email, perfil, ativo, criado_em
-      `;
-    } else {
-      atualizado = await sql`
-        UPDATE public.usuario
-        SET nome = ${nome}, email = ${email}, perfil = ${perfil}
-        WHERE id = ${usuarioId}
-        RETURNING id, nome, email, perfil, ativo, criado_em
-      `;
-    }
-
-    await sql`
-      INSERT INTO public.log_atividade (usuario_id, descricao, data_hora)
-      VALUES (${admin.id}, ${`Atualizou os dados do utilizador ID ${usuarioId}`}, NOW())
-    `;
-
-    jsonCompartilhado(res, 200, atualizado[0]);
+    jsonCompartilhado(res, 200, atualizado);
     return;
   }
 
@@ -103,15 +70,7 @@ export async function usuariosRoute(req: IncomingMessage, res: ServerResponse): 
       jsonCompartilhado(res, 400, { error: { code: 'ENTRADA_INVALIDA', message: 'Informe somente ativo como booleano.' } });
       return;
     }
-    const atualizado = await sql.begin(async tx => {
-      const [atual] = await tx`SELECT id, nome, email, perfil, ativo FROM public.usuario WHERE id = ${usuarioId} FOR UPDATE`;
-      if (!atual || atual.ativo === body.ativo) return atual;
-      const [alterado] = await tx`UPDATE public.usuario SET ativo = ${body.ativo} WHERE id = ${usuarioId}
-        RETURNING id, nome, email, perfil, ativo`;
-      await tx`INSERT INTO public.log_atividade (usuario_id, descricao, data_hora)
-        VALUES (${admin.id}, ${`Alterou o status do utilizador ID ${usuarioId} para ${body.ativo ? 'Ativo' : 'Inativo'}`}, NOW())`;
-      return alterado;
-    });
+    const atualizado = await alterarStatusComAtividade(usuarioId, body.ativo, admin.id);
     if (!atualizado) { jsonCompartilhado(res, 404, { error: 'Utilizador não encontrado.' }); return; }
 
     jsonCompartilhado(res, 200, atualizado);

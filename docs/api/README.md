@@ -92,3 +92,13 @@ ou false, sem toggle. Repetir estado retorna 200 sem novo evento. Cadastro/ediç
 usam enum real, inclusive SOLICITANTE_INTERNO, e rejeitam campos extras/internos.
 Esta quebra deliberada é aplicada em conjunto no frontend. Envelopes de sucesso
 legados, datas e paginação continuam para #32. Ver [usuarios.md](./usuarios.md).
+
+## Consulta de atividades — #31
+
+`GET /api/admin/auditoria/logs?page=1&limit=20` oferece paginação técnica (limit
+máximo 100), DTO mínimo camelCase e `{ data, meta: { page, limit, total } }`.
+Página/total usam o mesmo snapshot; ordem: data_hora DESC NULLS LAST, id DESC.
+Sem page e limit, o adaptador conserva o array completo e os campos legados
+explicitamente projetados. A remoção desse adaptador e a geração do contrato ficam
+para #32. Detalhes em [auditoria.md](./auditoria.md). Não há novos eventos, perfis,
+filtros de domínio ou conversão de horários históricos.
