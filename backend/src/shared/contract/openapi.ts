@@ -16,11 +16,7 @@ export function openapi() {
     const response = (name: string, description: string) => ({ description, headers: {'X-Request-Id':{description:'UUID gerado pelo servidor; IDs recebidos não são confiados.',schema:{type:'string',format:'uuid'}}}, content:{'application/json':{schema:ref(name)}} });
     const responses: Record<string, unknown> = { [operation.status]: response(operation.response,'Sucesso no formato atual') };
     for (const status of operation.errors) {
-      const error = operation.modulo === 'svo'
-        ? [400,404,409,413,415].includes(status) ? 'ErroSvo' : status === 401 ? 'ErroOperacionalSvo' : 'Erro'
-        : operation.modulo === 'usuarios' ? status === 400 ? 'ErroUsuario' : status === 404 ? 'ErroString' : 'Erro'
-        : 'Erro';
-      responses[status] = response(error,'Falha atual HTTP ' + status);
+      responses[status] = response('Erro','Falha atual HTTP ' + status);
     }
     responses[405] = { ...response('Erro','Método não permitido antes da autenticação'), headers:{Allow:{schema:{type:'string'}},'X-Request-Id':{schema:{type:'string'}}} };
     if (operation.errors.includes(429)) (responses[429] as {headers: Record<string,unknown>}).headers['Retry-After'] = {schema:{type:'string'},description:'Segundos até nova tentativa.'};

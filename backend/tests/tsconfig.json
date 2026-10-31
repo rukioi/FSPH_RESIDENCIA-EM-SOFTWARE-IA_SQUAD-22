@@ -2,9 +2,9 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "rootDir": "..",
+    "rootDir": "../..",
     "noEmit": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["../src/**/*.ts", "./**/*.ts"]
+  "include": ["../src/**/*.ts", "./**/*.ts", "../../api/**/*.ts"]
 }

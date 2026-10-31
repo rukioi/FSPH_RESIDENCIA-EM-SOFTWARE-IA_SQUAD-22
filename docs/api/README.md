@@ -36,6 +36,47 @@ validação HTTP global nem cria endpoint para os painéis demonstrativos.
 
 ## Respostas
 
+Todos os erros **400–499** produzidos pela API usam agora o envelope comum
+`{ "error": { "code", "message", "fields"? } }`, com mensagens em português do
+Brasil. A fronteira `shared/http/json.ts` adapta os envelopes antigos `{erro}` e
+`{error: string}`; códigos de domínio existentes, campos e status são preservados.
+Quando não havia código, usa `HTTP_<status>` (por exemplo `HTTP_409`). Não transforma
+erro em sucesso nem altera regras de negócio. Detalhes extras não são serializados.
+As exceções históricas de envelopes 4xx citadas abaixo foram substituídas por essa
+normalização; sucessos e erros 5xx mantêm os contratos existentes.
+
+No frontend, login público e operações autenticadas usam o mesmo cliente HTTP.
+Erro de hospedagem em texto/HTML, corpo vazio ou JSON inválido mantém status,
+`HTTP_<status>` e correlação, com mensagem local em pt-BR. Sucesso com JSON
+inválido recebe `RESPOSTA_INVALIDA`; falha de rede recebe `FALHA_REDE`.
+Nunca apresente ao usuário HTML, texto bruto da hospedagem, erro de parsing ou stack.
+Uma mensagem específica do envelope da API deve estar em pt-BR; validações novas
+e `fields` também seguem esse padrão.
+
+| Status | Orientação da mensagem local quando não há erro JSON da API |
+| --- | --- |
+| 400 / 422 | Conferir os dados/campos e tentar novamente |
+| 401 | Fazer login novamente |
+| 403 | Informar ausência de permissão |
+| 404 / 410 | Informar serviço/recurso indisponível |
+| 405 | Informar ação indisponível |
+| 408 | Informar tempo esgotado e permitir nova tentativa |
+| 409 | Atualizar os dados antes de tentar novamente |
+| 413 | Reduzir o conteúdo enviado |
+| 415 | Conferir formato do arquivo/dados |
+| 429 | Aguardar antes de tentar novamente |
+| Outros 4xx | Conferir a solicitação e tentar novamente |
+
+Exemplos normalizados de legado:
+
+```json
+{"error":{"code":"HTTP_404","message":"Usuário não encontrado."}}
+```
+
+```json
+{"error":{"code":"HTTP_409","message":"Motorista ou veículo já está em deslocamento."}}
+```
+
 | Código | Uso |
 | --- | --- |
 | 200 / 201 / 204 | Consulta ou alteração / criação / sucesso sem corpo. |
