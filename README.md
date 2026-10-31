@@ -82,7 +82,15 @@ prefixo `VITE_` para segredos. Não copie credenciais para o repositório.
 
 Use Root Directory na raiz do repositório, preset Vite, Node 24.x, instalação
 `npm ci`, build `npm run build --workspace frontend` e saída `frontend/dist`.
-Overrides de produção só mudam após novo deploy. Com a função publicada,
+Overrides de produção só mudam após novo deploy. Configure também
+`NODE_EXTRA_CA_CERTS=/var/task/backend/src/database/certs/supabase-ca.crt`
+em Preview e Production. O certificado público do Supabase acompanha a função
+por `includeFiles`; a conexão mantém validação da cadeia e do hostname. A CA foi
+obtida do [download público do Supabase](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt)
+e expira em abril de 2031. Alterações de variáveis exigem novo deploy; trocar
+`JWT_SECRET` invalida as sessões assinadas com o segredo anterior.
+
+Com a função publicada,
 `GET /api/auth/sessao` sem token deve responder 401 JSON `NAO_AUTENTICADO`;
 `GET /api/auth/login` deve responder 405 JSON com `Allow: POST`. Um 404 textual
 `The page could not be found` indica que a requisição não alcançou o backend.
