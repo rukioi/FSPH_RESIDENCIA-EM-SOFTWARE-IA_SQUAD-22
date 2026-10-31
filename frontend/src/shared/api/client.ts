@@ -4,9 +4,9 @@ import { apiOperations } from './generated/operations';
 import type { ApiOperations } from './generated/schema';
 
 /** Transporte comum: auth/401 via adaptador existente, cancelamento, 204, JSON e correlação do servidor. */
-export async function requestApi<T = unknown>(path: string, init: RequestInit = {}, parse?: (value:unknown)=>T): Promise<T> {
+export async function requestApi<T = unknown>(path: string, init: RequestInit = {}, parse?: (value:unknown)=>T, autenticada = true): Promise<T> {
   let response: Response;
-  try { response = await fetchAutenticada(path,init); }
+  try { response = await (autenticada ? fetchAutenticada(path,init) : fetch(path,init)); }
   catch (error) {
     if (error instanceof ApiError || error instanceof Error && error.name === 'AbortError') throw error;
     throw new ApiError(0,'FALHA_REDE','Não foi possível conectar ao servidor. Tente novamente.');
@@ -18,6 +18,7 @@ export async function requestApi<T = unknown>(path: string, init: RequestInit = 
   try { body = await response.json(); }
   catch {
     if (init.signal?.aborted) throw new DOMException('Solicitação cancelada.','AbortError');
+    if (!response.ok) throw apiError(response.status, undefined, requestId);
     throw new ApiError(response.status,'RESPOSTA_INVALIDA','A resposta do servidor é inválida. Tente novamente.',undefined,requestId);
   }
   if (!response.ok) throw apiError(response.status,body,requestId);

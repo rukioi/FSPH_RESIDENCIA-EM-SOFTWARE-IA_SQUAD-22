@@ -303,7 +303,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroUsuario"
+                $ref: "#/components/schemas/Erro"
         "401":
           description: Falha atual HTTP 401
           headers:
@@ -426,7 +426,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroUsuario"
+                $ref: "#/components/schemas/Erro"
         "401":
           description: Falha atual HTTP 401
           headers:
@@ -462,7 +462,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroString"
+                $ref: "#/components/schemas/Erro"
         "405":
           description: Método não permitido antes da autenticação
           headers:
@@ -561,7 +561,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroUsuario"
+                $ref: "#/components/schemas/Erro"
         "401":
           description: Falha atual HTTP 401
           headers:
@@ -597,7 +597,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroString"
+                $ref: "#/components/schemas/Erro"
         "405":
           description: Método não permitido antes da autenticação
           headers:
@@ -1084,7 +1084,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroSvo"
+                $ref: "#/components/schemas/Erro"
         "401":
           description: Falha atual HTTP 401
           headers:
@@ -1096,7 +1096,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroOperacionalSvo"
+                $ref: "#/components/schemas/Erro"
         "403":
           description: Falha atual HTTP 403
           headers:
@@ -1176,7 +1176,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroSvo"
+                $ref: "#/components/schemas/Erro"
         "401":
           description: Falha atual HTTP 401
           headers:
@@ -1188,7 +1188,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroOperacionalSvo"
+                $ref: "#/components/schemas/Erro"
         "403":
           description: Falha atual HTTP 403
           headers:
@@ -1225,7 +1225,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroSvo"
+                $ref: "#/components/schemas/Erro"
         "415":
           description: Falha atual HTTP 415
           headers:
@@ -1237,7 +1237,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroSvo"
+                $ref: "#/components/schemas/Erro"
         "500":
           description: Falha atual HTTP 500
           headers:
@@ -1299,7 +1299,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroSvo"
+                $ref: "#/components/schemas/Erro"
         "401":
           description: Falha atual HTTP 401
           headers:
@@ -1311,7 +1311,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroOperacionalSvo"
+                $ref: "#/components/schemas/Erro"
         "403":
           description: Falha atual HTTP 403
           headers:
@@ -1335,7 +1335,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroSvo"
+                $ref: "#/components/schemas/Erro"
         "405":
           description: Método não permitido antes da autenticação
           headers:
@@ -1360,7 +1360,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroSvo"
+                $ref: "#/components/schemas/Erro"
         "413":
           description: Falha atual HTTP 413
           headers:
@@ -1372,7 +1372,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroSvo"
+                $ref: "#/components/schemas/Erro"
         "415":
           description: Falha atual HTTP 415
           headers:
@@ -1384,7 +1384,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErroSvo"
+                $ref: "#/components/schemas/Erro"
         "500":
           description: Falha atual HTTP 500
           headers:

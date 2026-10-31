@@ -4,7 +4,16 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build --workspace frontend",
   "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "backend/src/database/certs/supabase-ca.crt"
+    }
+  },
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api"
+    },
     {
       "source": "/((?!api(?:/|$)).*)",
       "destination": "/index.html"

@@ -73,11 +73,34 @@ index.html; /api e /api/* ficam fora desse fallback, sem devolver HTML como JSON
 A configuração segue os overrides documentados pela
 [Vercel](https://vercel.com/docs/project-configuration/vercel-json).
 
-Essa configuração publica o frontend estático. Não publica o servidor node:http
-nem configura conexão de banco ou endereço externo de API. O proxy de /api no Vite
-vale somente no desenvolvimento; login/dados em ambiente publicado dependem de
-hospedagem/roteamento do backend aprovados separadamente. Build/preview aprovado
-não comprova integração operacional com o Supabase ou prontidão de produção.
+O frontend estático é acompanhado pela função [api/index.ts](./api/index.ts).
+O rewrite de `/api/:path*` encaminha ao mesmo dispatcher node:http usado localmente,
+sem abrir porta nem carregar arquivos de ambiente. O proxy do Vite continua
+exclusivo do desenvolvimento. Configure `DATABASE_URL` e `JWT_SECRET` (32 bytes
+UTF-8 ou mais) no ambiente correspondente da Vercel, somente no servidor; não use
+prefixo `VITE_` para segredos. Não copie credenciais para o repositório.
+
+Use Root Directory na raiz do repositório, preset Vite, Node 24.x, instalação
+`npm ci`, build `npm run build --workspace frontend` e saída `frontend/dist`.
+Overrides de produção só mudam após novo deploy. Configure também
+`NODE_EXTRA_CA_CERTS=/var/task/backend/src/database/certs/supabase-ca.crt`
+em Preview e Production. O certificado público do Supabase acompanha a função
+por `includeFiles`; a conexão mantém validação da cadeia e do hostname. A CA foi
+obtida do [download público do Supabase](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt)
+e expira em abril de 2031. Alterações de variáveis exigem novo deploy; trocar
+`JWT_SECRET` invalida as sessões assinadas com o segredo anterior.
+
+Com a função publicada,
+`GET /api/auth/sessao` sem token deve responder 401 JSON `NAO_AUTENTICADO`;
+`GET /api/auth/login` deve responder 405 JSON com `Allow: POST`. Um 404 textual
+`The page could not be found` indica que a requisição não alcançou o backend.
+
+Configuração inválida no bootstrap da função recebe 500 JSON genérico em português.
+As pré-condições de segurança do banco continuam em [segurança](./docs/seguranca.md).
+Esta correção não faz deploy nem comprova a configuração remota. Limites por
+processo (inclusive login) não são globais entre instâncias serverless; upload em
+disco local continua dependendo de hospedagem persistente própria, e não deve ser
+considerado armazenamento durável na Vercel.
 
 ## Estado e limites
 

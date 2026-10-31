@@ -67,10 +67,10 @@ JSON malformado:
 {"error":{"code":"JSON_INVALIDO","message":"Envie um JSON válido."}}
 ```
 
-Cadastro com email já encontrado mantém a resposta legada:
+Cadastro com email já encontrado mantém o status 400 com envelope normalizado:
 
 ```json
-{"error":"Já existe um utilizador registado com este e-mail."}
+{"error":{"code":"HTTP_400","message":"Já existe um usuário cadastrado com este e-mail."}}
 ```
 
 ### 401 — Sessão inválida/ausente ou conta inativa/inexistente
@@ -90,7 +90,7 @@ JWT antigo de ADM não preserva acesso quando o perfil no banco muda.
 ### 404 — Usuário inexistente na edição/status
 
 ```json
-{"error":"Utilizador não encontrado."}
+{"error":{"code":"HTTP_404","message":"Usuário não encontrado."}}
 ```
 
 Caminho desconhecido é tratado pelo despacho comum, com NAO_ENCONTRADO.

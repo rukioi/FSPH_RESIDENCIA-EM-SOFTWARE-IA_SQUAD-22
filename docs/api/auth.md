@@ -127,6 +127,19 @@ O frontend guarda somente JWT em sessionStorage durante a aba aberta; confirma
 sessão pela API. Não armazena usuário/token em localStorage. Os detalhes técnicos
 comuns estão em [README.md](./README.md).
 
+## Publicação e erros de transporte
+
+O login usa o cliente HTTP compartilhado sem Bearer; a sessão mantém o adaptador
+Bearer/401. Ambos validam o JSON antes de aplicar o usuário. Resposta de hospedagem
+em texto ou HTML nunca aparece como erro de parsing na tela: é convertida para
+`ApiError` com status, código `HTTP_<status>` e mensagem em pt-BR. Token só é salvo
+após validar a resposta de login e o destino autorizado do perfil.
+
+A função Vercel encaminha `/api/*` ao backend existente. Sem token, `/sessao`
+responde 401 JSON; 404 textual da Vercel indica função/roteamento ausente. Variáveis
+de servidor e novo deploy são necessários conforme o [README](../../README.md#preview-na-vercel).
+Não há confirmação de conexão remota ao banco nesta correção.
+
 ## O que a entrega não faz
 
 Não cria contas ou redefine senhas no login. Não cria tabela de sessões, refresh,

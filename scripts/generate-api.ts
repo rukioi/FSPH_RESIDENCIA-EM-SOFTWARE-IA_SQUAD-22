@@ -31,6 +31,17 @@ export function checkCompatibility(previous: Document, current: Document) {
   for (const [path,methods] of Object.entries(previous.paths)) for (const [method,definition] of Object.entries(methods)) {
     const candidate = structuredClone(current.paths[path]?.[method]) as {responses?: Record<string,unknown>} | undefined;
     const old = definition as {responses?: Record<string,unknown>};
+    // Migração autorizada dos 4xx: somente a troca exata do envelope legado pelo comum.
+    // Status, headers, descrições, sucessos e componentes continuam protegidos pelo gate.
+    for (const [status, previousResponse] of Object.entries(old.responses ?? {})) {
+      if (Number(status) < 400 || Number(status) >= 500) continue;
+      const before = previousResponse as {content?: {'application/json'?: {schema?: {$ref?: string}}}};
+      const ref = before.content?.['application/json']?.schema?.$ref;
+      if (!ref || !['ErroSvo','ErroOperacionalSvo','ErroUsuario','ErroString'].some(name => ref === '#/components/schemas/' + name)) continue;
+      const expected = structuredClone(before);
+      expected.content!['application/json']!.schema = {$ref:'#/components/schemas/Erro'};
+      if (JSON.stringify(candidate?.responses?.[status]) === JSON.stringify(expected)) candidate!.responses![status] = previousResponse;
+    }
     // Migração explícita #30: somente o novo erro 404 comum deste POST.
     if (path === '/api/abastecimentos' && method === 'post' && !old.responses?.[404] && candidate?.responses?.[404]) {
       const expected = { ...(old.responses?.[500] as object), description:'Falha atual HTTP 404' };

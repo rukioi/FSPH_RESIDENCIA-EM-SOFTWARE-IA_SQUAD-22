@@ -33,10 +33,10 @@ Consulta vazia: `[]`. Despacho:
 ### 400 — JSON malformado ou entrada inválida
 
 ```json
-{"erro":"O corpo da requisição precisa ser um JSON válido."}
+{"error":{"code":"HTTP_400","message":"O corpo da requisição precisa ser um JSON válido."}}
 ```
 
-Validações de campos mantêm `{erro: mensagem}`. O filtro GET exige
+Validações de campos usam `error.code` `HTTP_400` e `error.message` em pt-BR. O filtro GET exige
 AGUARDANDO_DESPACHO e consulta PENDENTE_ALOCACAO, preservando o legado.
 
 ### 401 — Sem sessão
@@ -45,7 +45,7 @@ AGUARDANDO_DESPACHO e consulta PENDENTE_ALOCACAO, preservando o legado.
 {"error":{"code":"NAO_AUTENTICADO","message":"Autenticação necessária."}}
 ```
 
-Identidade inválida mantém `{ "erro": "Identificação do usuário inválida." }`.
+Identidade inválida usa `HTTP_401` e a mensagem "Identificação do usuário inválida." no envelope comum.
 
 ### 403 — Perfil sem permissão
 
@@ -56,7 +56,7 @@ Identidade inválida mantém `{ "erro": "Identificação do usuário inválida."
 ### 404 — Ordem indisponível ou referência inexistente
 
 ```json
-{"erro":"Motorista ou veículo não encontrado."}
+{"error":{"code":"HTTP_404","message":"Motorista ou veículo não encontrado."}}
 ```
 
 ### 405 — Método inválido
@@ -70,19 +70,19 @@ Inclui Allow: GET, POST ou PATCH conforme a rota.
 ### 409 — Estado ou alocação incompatível
 
 ```json
-{"erro":"Motorista ou veículo já está em deslocamento."}
+{"error":{"code":"HTTP_409","message":"Motorista ou veículo já está em deslocamento."}}
 ```
 
 ### 413 — Corpo excessivo
 
 ```json
-{"erro":"O corpo da requisição excede o limite de 64 KB."}
+{"error":{"code":"HTTP_413","message":"O corpo da requisição excede o limite de 64 KB."}}
 ```
 
 ### 415 — Tipo incompatível
 
 ```json
-{"erro":"Envie o corpo como application/json."}
+{"error":{"code":"HTTP_415","message":"Envie o corpo como application/json."}}
 ```
 
 ### 500 — Falha inesperada
@@ -101,7 +101,8 @@ Authorization: Bearer <token>
 ## O que a entrega não faz
 
 Não muda despacho, disponibilidade, perfis, estados ou limites temporais. Mantém
-transações do repository e os envelopes legados, documentados pela #32. A #30
+transações do repository e os sucessos legados, documentados pela #32. Todos os
+4xx passam pelo [normalizador comum](./README.md#respostas). A #30
 usa tipos gerados/validação de resposta e delimita o resumo local da sessão;
 não implementa histórico persistente novo.
 

@@ -2,15 +2,14 @@
 import { ROTAS } from '../../app/routes/rotas'
 import type { ApiSchemas } from '../api/generated/schema'
 import { ApiError } from '../api/errors'
+import { requestApi } from '../api/client'
+import { authSchemas } from '../../../../backend/src/modules/auth/auth.schemas'
 
 export type Credenciais = ApiSchemas['Credenciais']
 
 // Modelo de apresentação: admite os rótulos históricos normalizados pelo adaptador.
 export type UsuarioSessao = Pick<ApiSchemas['Sessao']['data'], 'id'> &
   Partial<Pick<ApiSchemas['Sessao']['data'], 'nome' | 'email'>> & { perfil: string }
-
-type RespostaLogin = ApiSchemas['Login']
-type RespostaSessao = ApiSchemas['Sessao']
 
 export type ResultadoLogin = {
   destino: string
@@ -77,32 +76,19 @@ export async function fetchAutenticada(
   return resposta
 }
 
+/** Valida o login público pelo transporte comum antes de persistir somente o token. */
 export async function entrar(
   credenciais: Credenciais,
 ): Promise<ResultadoLogin> {
-  const resposta = await fetch('/api/auth/login', {
+  const dados = await requestApi('/api/auth/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(credenciais),
-  })
+  }, value => authSchemas.Login.parse(value), false)
 
-  const dados = await resposta.json() as RespostaLogin | {
-    error?: string | { message?: string }
-  }
-
-  if (!resposta.ok) {
-    const erro = 'error' in dados ? dados.error : undefined
-    const mensagem = typeof erro === 'string'
-      ? erro
-      : erro?.message ?? 'Não foi possível realizar o login.'
-    throw new Error(mensagem)
-  }
-
-  if (!('token' in dados) || !dados.token || !('usuario' in dados)) {
-    throw new Error('A resposta da API de login está incompleta.')
-  }
+  if (!dados.token) throw new ApiError(200, 'RESPOSTA_INVALIDA', 'A resposta do servidor é inválida. Tente novamente.')
 
   const destino = destinoDoPerfil(dados.usuario.perfil)
   sessionStorage.setItem(TOKEN_CHAVE, dados.token)
@@ -113,23 +99,17 @@ export async function entrar(
   }
 }
 
+/** Confirma a sessão com validação runtime e normalização comum das falhas HTTP. */
 export async function buscarSessao(): Promise<UsuarioSessao | null> {
   if (!obterToken()) return null
 
-  const resposta = await fetchAutenticada('/api/auth/sessao')
-
-  if (!resposta.ok) return null
-
-  const resultado = await resposta.json() as RespostaSessao
-  const usuario = resultado.data
-
-  if (
-    !usuario ||
-    typeof usuario.id !== 'string' ||
-    typeof usuario.perfil !== 'string'
-  ) {
-    sair()
-    return null
+  let usuario
+  try {
+    const resultado = await requestApi('/api/auth/sessao', {}, value => authSchemas.Sessao.parse(value))
+    usuario = resultado.data
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null
+    throw error
   }
 
   return {

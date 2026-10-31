@@ -26,6 +26,16 @@ test('normaliza falha de rede sem apresentar mensagem técnica', async () => {
   await expect(requestApi('/api/motoristas')).rejects.toMatchObject({status:0,code:'FALHA_REDE',message:'Não foi possível conectar ao servidor. Tente novamente.'});
 });
 
+test.each([400, 401, 403, 404, 405, 408, 409, 410, 413, 415, 422, 429, 499])('normaliza HTTP %i mesmo quando a hospedagem devolve texto', async status => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('The page could not be found', {
+    status, headers: { 'Content-Type': 'text/plain', 'X-Request-Id': 'vercel-fixture' },
+  })));
+  await expect(requestApi('/api/veiculos')).rejects.toMatchObject({
+    status, code: `HTTP_${status}`, requestId: 'vercel-fixture',
+  });
+  await expect(requestApi('/api/veiculos')).rejects.not.toThrow(/Unexpected token|The page/);
+});
+
 test('ignora resposta de transporte encerrada depois do cancelamento',async () => {
   const controller=new AbortController();
   vi.stubGlobal('fetch',vi.fn().mockImplementation(async()=>{
