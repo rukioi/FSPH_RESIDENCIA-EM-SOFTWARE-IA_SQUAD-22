@@ -5,6 +5,7 @@ import '../shared/styles/tema.css'
 
 import { navegar, useCaminho } from './routes/router'
 import { ROTAS } from './routes/rotas'
+import { AuthSkeleton } from './AuthSkeleton'
 
 import { AdminLayout } from '../layouts/administrador/AdminLayout'
 import { perfilPodeAcessar } from '../shared/services/access.service'
@@ -33,10 +34,11 @@ const paginas: Record<string, ComponentType> = {
   [ROTAS.auditoria]: Auditoria,
 }
 
+/** Confirma a sessão da rota atual antes de montar qualquer página protegida. */
 export function App() {
   const caminho = useCaminho()
   const [sessao, setSessao] = useState<UsuarioSessao | null>(null)
-  const [verificando, setVerificando] = useState(true)
+  const [caminhoVerificado, setCaminhoVerificado] = useState<string | null>(null)
 
   useEffect(() => {
     let ativa = true
@@ -44,19 +46,19 @@ export function App() {
     if (!obterToken()) {
       sair()
       setSessao(null)
-      setVerificando(false)
+      setCaminhoVerificado(null)
       if (caminho !== ROTAS.login) navegar(ROTAS.login, true)
       return () => {
         ativa = false
       }
     }
 
-    setVerificando(true)
+    setCaminhoVerificado(null)
     void buscarSessao().then((usuario) => {
       if (!ativa) return
 
       setSessao(usuario)
-      setVerificando(false)
+      setCaminhoVerificado(caminho)
 
       if (!usuario) {
         sair()
@@ -76,7 +78,7 @@ export function App() {
       if (!ativa) return
       sair()
       setSessao(null)
-      setVerificando(false)
+      setCaminhoVerificado(null)
       navegar(ROTAS.login, true)
     })
 
@@ -94,8 +96,8 @@ export function App() {
     return <Login />
   }
 
-  if (verificando || !sessao || !perfilPodeAcessar(caminho, sessao.perfil)) {
-    return <p role="status">Verificando autenticação...</p>
+  if (caminhoVerificado !== caminho || !sessao || !perfilPodeAcessar(caminho, sessao.perfil)) {
+    return <AuthSkeleton caminho={caminho} />
   }
 
   // Tela do Gestor de Frota

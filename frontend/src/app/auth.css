@@ -1,0 +1,166 @@
+.auth-skeleton {
+  min-height: 100vh;
+  background: var(--fundo);
+}
+
+.auth-skeleton__estrutura {
+  display: grid;
+  grid-template-columns: var(--largura-menu) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.auth-skeleton__bloco {
+  display: block;
+  height: 16px;
+  width: 100%;
+  border-radius: 6px;
+  background: var(--borda);
+  animation: auth-skeleton-pulso 1.6s ease-in-out infinite;
+}
+
+.auth-skeleton__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 24px 20px;
+  background: var(--azul-escuro);
+}
+
+.auth-skeleton__menu .auth-skeleton__bloco {
+  opacity: 0.25;
+}
+
+.auth-skeleton__marca,
+.auth-skeleton__perfil {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-skeleton__perfil {
+  margin-top: auto;
+}
+
+.auth-skeleton__avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--raio);
+}
+
+.auth-skeleton__itens {
+  display: grid;
+  gap: 28px;
+}
+
+.auth-skeleton__cabecalho {
+  height: var(--altura-cabecalho);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  background: var(--branco);
+}
+
+.auth-skeleton__caminho {
+  width: min(40%, 240px);
+}
+
+.auth-skeleton__usuario {
+  width: 120px;
+  margin-left: auto;
+}
+
+.auth-skeleton__conteudo {
+  display: grid;
+  gap: 24px;
+  padding: 32px 40px 48px;
+}
+
+.auth-skeleton__titulo {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.auth-skeleton__titulo > :first-child {
+  width: min(65%, 320px);
+  height: 36px;
+}
+
+.auth-skeleton__titulo > :last-child {
+  width: min(90%, 560px);
+}
+
+.auth-skeleton__indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.auth-skeleton__cartao,
+.auth-skeleton__painel {
+  display: grid;
+  gap: 24px;
+  padding: 24px;
+}
+
+.auth-skeleton__valor {
+  width: 40%;
+  height: 32px;
+}
+
+.auth-skeleton__filtros,
+.auth-skeleton__linha {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 24px;
+  padding: 24px;
+}
+
+.auth-skeleton__filtros > span {
+  height: 40px;
+}
+
+.auth-skeleton__paineis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.auth-skeleton__grafico {
+  height: 200px;
+}
+
+.auth-skeleton__lista {
+  overflow: hidden;
+}
+
+.auth-skeleton__linha + .auth-skeleton__linha {
+  border-top: 1px solid var(--borda);
+}
+
+@keyframes auth-skeleton-pulso {
+  50% { opacity: 0.5; }
+}
+
+@media (max-width: 900px) {
+  .auth-skeleton__estrutura { grid-template-columns: minmax(0, 1fr); }
+  .auth-skeleton__menu { display: none; }
+  .auth-skeleton__conteudo { padding: 24px 16px 40px; }
+  .auth-skeleton__cabecalho { padding: 0 12px; }
+  .auth-skeleton__usuario { width: 40px; height: 40px; border-radius: 50%; }
+  .auth-skeleton__indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .auth-skeleton__paineis,
+  .auth-skeleton__filtros { grid-template-columns: minmax(0, 1fr); }
+  .auth-skeleton__cartao,
+  .auth-skeleton__filtros,
+  .auth-skeleton__linha { padding: 16px; gap: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-skeleton__bloco { animation: none; }
+}
