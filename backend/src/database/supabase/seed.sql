@@ -46,6 +46,36 @@ INSERT INTO public.solicitacao_obito (id, codigo, atendente_id, nome_falecido, l
   (-27005, 'T1-O-4', -27005, 'Pessoa fictícia', 'Local fictício', 'Endereço fictício', 'Solicitante fictício', '2026-01-15 12:00:00')
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO public.solicitacao_obito (
+  id, codigo, atendente_id, nome_falecido,
+  local_falecimento, endereco_remocao,
+  solicitante_nome, criado_em, status_triagem,
+  canal_atendimento, triado_por_id, triado_em
+) VALUES
+  (
+    -27006, 'T1-O-5', -27005, 'Pessoa fictícia',
+    'Local fictício', 'Endereço fictício',
+    'Solicitante fictício', '2026-01-15 12:00:00',
+    'AGUARDANDO_TRIAGEM', 'TELEFONE', NULL, NULL
+  ),
+  (
+    -27007, 'T1-O-6', -27005, 'Pessoa fictícia',
+    'Local fictício', 'Endereço fictício',
+    'Solicitante fictício', '2026-01-15 12:00:00',
+    'ENCAMINHADA_IML', 'TELEFONE',
+    -27005, '2026-01-15 12:00:00'
+  )
+ON CONFLICT (id) DO NOTHING;
+
+UPDATE public.solicitacao_obito
+SET
+  status_triagem = 'CONFIRMADA_SVO',
+  canal_atendimento = 'TELEFONE',
+  triado_por_id = -27005,
+  triado_em = '2026-01-15 12:00:00'
+WHERE id BETWEEN -27005 AND -27001;
+
+
 INSERT INTO public.ordem_coleta (id, solicitacao_obito_id, veiculo_id, motorista_id, km_inicial, km_final, data_inicio, data_fim, validada_por_svo, status) VALUES
   (-27001, -27001, -27004, -27001, 1000, 1010, '2026-01-15 12:00:00', '2026-01-15 13:00:00', false, 'PENDENTE_ALOCACAO'),
   (-27002, -27002, -27004, -27002, 1000, 1010, '2026-01-15 12:00:00', '2026-01-15 13:00:00', false, 'EM_DESLOCAMENTO'),

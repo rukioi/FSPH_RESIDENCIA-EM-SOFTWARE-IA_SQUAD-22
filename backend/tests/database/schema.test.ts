@@ -14,10 +14,10 @@ test('reconstrói o snapshot completo auditado, incluindo ACL/RLS e tipos exatos
   const metadata = canonical(row.metadata as Metadata);
   expect(metadata).toEqual(expected);
   expect(metadata.tables).toHaveLength(10);
-  expect(metadata.columns).toHaveLength(99);
-  expect(metadata.enums).toHaveLength(7);
-  expect(metadata.indexes).toHaveLength(19);
-  expect(metadata.constraints).toHaveLength(36);
+  expect(metadata.columns).toHaveLength(106);
+  expect(metadata.enums).toHaveLength(8);
+  expect(metadata.indexes).toHaveLength(21);
+  expect(metadata.constraints).toHaveLength(40);
   expect(metadata.triggers).toEqual([]);
   expect(metadata.policies).toEqual([]);
   expect(metadata.tables.every(t => !t.rls && !t.forceRls)).toBe(true);

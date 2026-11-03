@@ -38,6 +38,7 @@ test('seed cobre todos os perfis e estados reais, com hash artificial válido', 
     ['status_veiculo', 'veiculo', 'status'], ['tipo_veiculo', 'veiculo', 'tipo'],
     ['status_solicitacao', 'solicitacao_viagem', 'status'],
     ['status_viagem', 'viagem', 'status'], ['status_ordem_coleta', 'ordem_coleta', 'status'],
+    ['status_triagem_svo', 'solicitacao_obito', 'status_triagem'],
   ]) {
     const rows = await sql`select distinct ${sql(column)}::text as value from ${sql(table)}
       where id between -27099 and -27001`;

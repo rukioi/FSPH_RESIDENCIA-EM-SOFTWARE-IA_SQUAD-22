@@ -52,6 +52,7 @@ erDiagram
     timestamp_without_time_zone data_fim "nullable"
     boolean validada_por_svo "nullable"
     status_ordem_coleta status "nullable"
+    smallint quantidade_corpos "nullable"
   }
   solicitacao_obito {
     bigint id PK "NOT NULL"
@@ -65,6 +66,12 @@ erDiagram
     character_varying_20_ solicitante_telefone "nullable"
     text observacoes_medicas "nullable"
     timestamp_without_time_zone criado_em "nullable"
+    status_triagem_svo status_triagem "nullable"
+    character_varying_20_ canal_atendimento "nullable"
+    character_varying_255_ ponto_referencia "nullable"
+    text triagem_observacoes "nullable"
+    bigint triado_por_id FK "nullable"
+    timestamp_without_time_zone triado_em "nullable"
   }
   solicitacao_viagem {
     bigint id PK "NOT NULL"
@@ -129,6 +136,7 @@ erDiagram
   solicitacao_obito |o--o| ordem_coleta : "ordem_coleta_solicitacao_obito_id_fkey DELETE NO ACTION"
   veiculo |o--o{ ordem_coleta : "ordem_coleta_veiculo_id_fkey DELETE NO ACTION"
   usuario |o--o{ solicitacao_obito : "solicitacao_obito_atendente_id_fkey DELETE NO ACTION"
+  usuario |o--o{ solicitacao_obito : "solicitacao_obito_triador_fk DELETE NO ACTION"
   motorista |o--o{ solicitacao_viagem : "fk_solicitacao_viagem_motorista DELETE SET NULL"
   veiculo |o--o{ solicitacao_viagem : "fk_solicitacao_viagem_veiculo DELETE SET NULL"
   usuario |o--o{ solicitacao_viagem : "solicitacao_viagem_solicitante_id_fkey DELETE NO ACTION"
