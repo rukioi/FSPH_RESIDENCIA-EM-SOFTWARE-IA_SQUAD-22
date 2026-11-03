@@ -10,6 +10,8 @@ CREATE TYPE public."status_ordem_coleta" AS ENUM ('PENDENTE_ALOCACAO', 'EM_DESLO
 ALTER TYPE public."status_ordem_coleta" OWNER TO "postgres";
 CREATE TYPE public."status_solicitacao" AS ENUM ('PENDENTE', 'AGENDADA', 'PRONTA_PARA_INICIAR', 'EM_ANDAMENTO', 'CONCLUIDA', 'REPROVADA');
 ALTER TYPE public."status_solicitacao" OWNER TO "postgres";
+CREATE TYPE public."status_triagem_svo" AS ENUM ('AGUARDANDO_TRIAGEM', 'CONFIRMADA_SVO', 'ENCAMINHADA_IML');
+ALTER TYPE public."status_triagem_svo" OWNER TO "supabase_admin";
 CREATE TYPE public."status_veiculo" AS ENUM ('DISPONIVEL', 'EM_VIAGEM', 'EM_MANUTENCAO', 'INDISPONIVEL');
 ALTER TYPE public."status_veiculo" OWNER TO "postgres";
 CREATE TYPE public."status_viagem" AS ENUM ('AGENDADA', 'EM_TRANSPORTE', 'CONCLUIDA', 'CANCELADA');
@@ -91,7 +93,8 @@ CREATE TABLE public."ordem_coleta" (
   "data_inicio" timestamp without time zone,
   "data_fim" timestamp without time zone,
   "validada_por_svo" boolean DEFAULT false,
-  "status" status_ordem_coleta DEFAULT 'PENDENTE_ALOCACAO'::status_ordem_coleta
+  "status" status_ordem_coleta DEFAULT 'PENDENTE_ALOCACAO'::status_ordem_coleta,
+  "quantidade_corpos" smallint
 );
 ALTER TABLE public."ordem_coleta" OWNER TO "postgres";
 CREATE TABLE public."solicitacao_obito" (
@@ -105,7 +108,13 @@ CREATE TABLE public."solicitacao_obito" (
   "solicitante_parentesco" character varying(50),
   "solicitante_telefone" character varying(20),
   "observacoes_medicas" text,
-  "criado_em" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+  "criado_em" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "status_triagem" status_triagem_svo DEFAULT 'AGUARDANDO_TRIAGEM'::status_triagem_svo,
+  "canal_atendimento" character varying(20) DEFAULT 'TELEFONE'::character varying,
+  "ponto_referencia" character varying(255),
+  "triagem_observacoes" text,
+  "triado_por_id" bigint,
+  "triado_em" timestamp without time zone
 );
 ALTER TABLE public."solicitacao_obito" OWNER TO "postgres";
 CREATE TABLE public."solicitacao_viagem" (
@@ -183,9 +192,12 @@ ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_cpf_key" UNIQUE (cpf);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_pkey" PRIMARY KEY (id);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_usuario_id_key" UNIQUE (usuario_id);
 ALTER TABLE public."ordem_coleta" ADD CONSTRAINT "ordem_coleta_pkey" PRIMARY KEY (id);
+ALTER TABLE public."ordem_coleta" ADD CONSTRAINT "ordem_coleta_quantidade_corpos_check" CHECK (quantidade_corpos >= 1 AND quantidade_corpos <= 4);
 ALTER TABLE public."ordem_coleta" ADD CONSTRAINT "ordem_coleta_solicitacao_obito_id_key" UNIQUE (solicitacao_obito_id);
+ALTER TABLE public."solicitacao_obito" ADD CONSTRAINT "solicitacao_obito_canal_check" CHECK (canal_atendimento IS NULL OR canal_atendimento::text = 'TELEFONE'::text);
 ALTER TABLE public."solicitacao_obito" ADD CONSTRAINT "solicitacao_obito_codigo_key" UNIQUE (codigo);
 ALTER TABLE public."solicitacao_obito" ADD CONSTRAINT "solicitacao_obito_pkey" PRIMARY KEY (id);
+ALTER TABLE public."solicitacao_obito" ADD CONSTRAINT "solicitacao_obito_triagem_decisao_check" CHECK (status_triagem IS NULL OR status_triagem = 'AGUARDANDO_TRIAGEM'::status_triagem_svo AND triado_por_id IS NULL AND triado_em IS NULL OR (status_triagem = ANY (ARRAY['CONFIRMADA_SVO'::status_triagem_svo, 'ENCAMINHADA_IML'::status_triagem_svo])) AND triado_por_id IS NOT NULL AND triado_em IS NOT NULL);
 ALTER TABLE public."solicitacao_viagem" ADD CONSTRAINT "solicitacao_viagem_codigo_key" UNIQUE (codigo);
 ALTER TABLE public."solicitacao_viagem" ADD CONSTRAINT "solicitacao_viagem_pkey" PRIMARY KEY (id);
 ALTER TABLE public."usuario" ADD CONSTRAINT "usuario_email_key" UNIQUE (email);
@@ -205,12 +217,15 @@ ALTER TABLE public."ordem_coleta" ADD CONSTRAINT "ordem_coleta_motorista_id_fkey
 ALTER TABLE public."ordem_coleta" ADD CONSTRAINT "ordem_coleta_solicitacao_obito_id_fkey" FOREIGN KEY (solicitacao_obito_id) REFERENCES solicitacao_obito(id);
 ALTER TABLE public."ordem_coleta" ADD CONSTRAINT "ordem_coleta_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
 ALTER TABLE public."solicitacao_obito" ADD CONSTRAINT "solicitacao_obito_atendente_id_fkey" FOREIGN KEY (atendente_id) REFERENCES usuario(id);
+ALTER TABLE public."solicitacao_obito" ADD CONSTRAINT "solicitacao_obito_triador_fk" FOREIGN KEY (triado_por_id) REFERENCES usuario(id);
 ALTER TABLE public."solicitacao_viagem" ADD CONSTRAINT "fk_solicitacao_viagem_motorista" FOREIGN KEY (motorista_id) REFERENCES motorista(id) ON DELETE SET NULL;
 ALTER TABLE public."solicitacao_viagem" ADD CONSTRAINT "fk_solicitacao_viagem_veiculo" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id) ON DELETE SET NULL;
 ALTER TABLE public."solicitacao_viagem" ADD CONSTRAINT "solicitacao_viagem_solicitante_id_fkey" FOREIGN KEY (solicitante_id) REFERENCES usuario(id);
 ALTER TABLE public."viagem" ADD CONSTRAINT "viagem_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
 ALTER TABLE public."viagem" ADD CONSTRAINT "viagem_solicitacao_id_fkey" FOREIGN KEY (solicitacao_id) REFERENCES solicitacao_viagem(id);
 ALTER TABLE public."viagem" ADD CONSTRAINT "viagem_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
+CREATE INDEX ordem_coleta_veiculo_status_idx ON public.ordem_coleta USING btree (veiculo_id, status) WHERE (veiculo_id IS NOT NULL);
+CREATE INDEX solicitacao_obito_triagem_criado_idx ON public.solicitacao_obito USING btree (status_triagem, criado_em DESC);
 ALTER TABLE public."abastecimento" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public."abastecimento" NO FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public."abastecimento" FROM PUBLIC, postgres, anon, authenticated, service_role;

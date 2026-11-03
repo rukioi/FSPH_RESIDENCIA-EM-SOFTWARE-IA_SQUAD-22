@@ -50,6 +50,16 @@
     },
     {
       "acl": null,
+      "name": "status_triagem_svo",
+      "owner": "supabase_admin",
+      "values": [
+        "AGUARDANDO_TRIAGEM",
+        "CONFIRMADA_SVO",
+        "ENCAMINHADA_IML"
+      ]
+    },
+    {
+      "acl": null,
       "name": "status_veiculo",
       "owner": "postgres",
       "values": [
@@ -591,6 +601,16 @@
       "generated": ""
     },
     {
+      "name": "quantidade_corpos",
+      "type": "smallint",
+      "table": "ordem_coleta",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 13,
+      "generated": ""
+    },
+    {
       "name": "id",
       "type": "bigint",
       "table": "solicitacao_obito",
@@ -698,6 +718,66 @@
       "identity": "",
       "nullable": true,
       "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "status_triagem",
+      "type": "status_triagem_svo",
+      "table": "solicitacao_obito",
+      "default": "'AGUARDANDO_TRIAGEM'::status_triagem_svo",
+      "identity": "",
+      "nullable": true,
+      "position": 12,
+      "generated": ""
+    },
+    {
+      "name": "canal_atendimento",
+      "type": "character varying(20)",
+      "table": "solicitacao_obito",
+      "default": "'TELEFONE'::character varying",
+      "identity": "",
+      "nullable": true,
+      "position": 13,
+      "generated": ""
+    },
+    {
+      "name": "ponto_referencia",
+      "type": "character varying(255)",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 14,
+      "generated": ""
+    },
+    {
+      "name": "triagem_observacoes",
+      "type": "text",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 15,
+      "generated": ""
+    },
+    {
+      "name": "triado_por_id",
+      "type": "bigint",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 16,
+      "generated": ""
+    },
+    {
+      "name": "triado_em",
+      "type": "timestamp without time zone",
+      "table": "solicitacao_obito",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 17,
       "generated": ""
     },
     {
@@ -1198,6 +1278,11 @@
       "definition": "CREATE UNIQUE INDEX ordem_coleta_solicitacao_obito_id_key ON public.ordem_coleta USING btree (solicitacao_obito_id)"
     },
     {
+      "name": "ordem_coleta_veiculo_status_idx",
+      "table": "ordem_coleta",
+      "definition": "CREATE INDEX ordem_coleta_veiculo_status_idx ON public.ordem_coleta USING btree (veiculo_id, status) WHERE (veiculo_id IS NOT NULL)"
+    },
+    {
       "name": "solicitacao_obito_codigo_key",
       "table": "solicitacao_obito",
       "definition": "CREATE UNIQUE INDEX solicitacao_obito_codigo_key ON public.solicitacao_obito USING btree (codigo)"
@@ -1206,6 +1291,11 @@
       "name": "solicitacao_obito_pkey",
       "table": "solicitacao_obito",
       "definition": "CREATE UNIQUE INDEX solicitacao_obito_pkey ON public.solicitacao_obito USING btree (id)"
+    },
+    {
+      "name": "solicitacao_obito_triagem_criado_idx",
+      "table": "solicitacao_obito",
+      "definition": "CREATE INDEX solicitacao_obito_triagem_criado_idx ON public.solicitacao_obito USING btree (status_triagem, criado_em DESC)"
     },
     {
       "name": "solicitacao_viagem_codigo_key",
@@ -1650,6 +1740,20 @@
       "referencedColumns": null
     },
     {
+      "name": "ordem_coleta_quantidade_corpos_check",
+      "type": "c",
+      "table": "ordem_coleta",
+      "columns": [
+        "quantidade_corpos"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (quantidade_corpos >= 1 AND quantidade_corpos <= 4)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
       "name": "ordem_coleta_solicitacao_obito_id_fkey",
       "type": "f",
       "table": "ordem_coleta",
@@ -1712,6 +1816,20 @@
       ]
     },
     {
+      "name": "solicitacao_obito_canal_check",
+      "type": "c",
+      "table": "solicitacao_obito",
+      "columns": [
+        "canal_atendimento"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (canal_atendimento IS NULL OR canal_atendimento::text = 'TELEFONE'::text)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
       "name": "solicitacao_obito_codigo_key",
       "type": "u",
       "table": "solicitacao_obito",
@@ -1736,6 +1854,38 @@
       "onUpdate": " ",
       "validated": true,
       "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "solicitacao_obito_triador_fk",
+      "type": "f",
+      "table": "solicitacao_obito",
+      "columns": [
+        "triado_por_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (triado_por_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "solicitacao_obito_triagem_decisao_check",
+      "type": "c",
+      "table": "solicitacao_obito",
+      "columns": [
+        "status_triagem",
+        "triado_por_id",
+        "triado_em"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (status_triagem IS NULL OR status_triagem = 'AGUARDANDO_TRIAGEM'::status_triagem_svo AND triado_por_id IS NULL AND triado_em IS NULL OR (status_triagem = ANY (ARRAY['CONFIRMADA_SVO'::status_triagem_svo, 'ENCAMINHADA_IML'::status_triagem_svo])) AND triado_por_id IS NOT NULL AND triado_em IS NOT NULL)",
       "references": null,
       "referencedColumns": null
     },
