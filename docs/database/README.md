@@ -47,11 +47,15 @@ Não configure esses comandos com a conexão compartilhada.
 
 ## Aplicação incremental e fixtures
 
-`db:test:prepare` aplica arquivos novos ordenados por nome, em uma transação com
-advisory lock e histórico de SHA-256 em `fsph_test_harness.migrations` (finais de
-linha normalizados para LF entre Windows/Linux). Arquivo já
-aplicado com hash diferente provoca erro; não há reset, repair ou reaplicação de DDL.
-O seed roda na mesma transação. A baseline falha se encontrar tabelas já existentes:
+`db:test:prepare` aplica arquivos novos ordenados por nome, cada um em sua própria
+transação, com seu registro SHA-256 em `fsph_test_harness.migrations` (finais de
+linha normalizados para LF entre Windows/Linux). Uma conexão reservada mantém
+advisory lock de sessão durante todas as transações. O histórico completo é
+conferido antes de executar arquivos pendentes. Hash divergente provoca erro;
+não há reset, repair ou reaplicação de DDL. O seed roda em transação separada,
+somente depois dos commits das migrations, permitindo usar APROVADA após o commit
+do ALTER TYPE. Falha posterior preserva migrations anteriores já confirmadas;
+nova preparação retoma pelos arquivos pendentes. A baseline falha se encontrar tabelas já existentes:
 não é um mecanismo de reconciliação para banco existente.
 
 Fixtures usam IDs negativos reservados de -27099 a -27001, nomes explícitos,
@@ -61,6 +65,19 @@ dos sete enums; não representam combinações ou regras de alocação aprovadas
 O seed não avança sequências positivas e `ON CONFLICT (id) DO NOTHING` permite
 repetição. Testes adicionais usam transações com rollback e IDs próprios.
 Nenhuma linha operacional foi consultada ou exportada.
+
+A fixture -27007 cobre APROVADA sem motorista/veículo artificiais. As quatro
+migrations incrementais da Sprint 7 não foram reescritas. Os testes de schema
+exigem os novos campos nullable, a posição de APROVADA no enum, CHECK de retorno,
+FK e índice da auditoria, além da igualdade integral com o snapshot gerado. As
+contagens são derivadas desse snapshot, não substituídas por números adivinhados.
+
+Neste checkout Windows não foram encontrados Docker/psql/pg_ctl nem o comprovante
+`.test-db/provision.json`. Os snapshots versionados continuam sendo os anteriores
+à Sprint 7: não foram fabricados ou editados manualmente. Até preparar o banco
+isolado e executar db:docs:generate/check, o gate de schema permanece pendente e
+deve detectar a diferença. Os testes unitários do runner comprovam apenas a
+orquestração de commits com mocks, não a execução das migrations no PostgreSQL.
 
 ## Esquema auditado e proveniência
 

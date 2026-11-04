@@ -1,6 +1,7 @@
 
 import { sql } from '../../database/connection.js';
 import { registrarAtividades } from '../auditoria/auditoria.service.js';
+import { verificarDisponibilidade } from '../alocacao/alocacao.repository.js';
 
 /** Lista ordens de coleta que ainda aguardam alocação de motorista e veículo. */
 export async function listarOrdensPendentes() {
@@ -133,8 +134,8 @@ export async function criarSolicitacao(
  * Despacha a ordem na mesma transação, com bloqueio das linhas envolvidas.
  *
  * A ordem precisa estar em PENDENTE_ALOCACAO. Motorista e veículo precisam
- * existir e estar DISPONIVEL, que é o único estado elegível já definido
- * para os dois. Nenhum dos dois pode estar em outra ordem EM_DESLOCAMENTO.
+ * existir e estar DISPONIVEL. Ordens EM_DESLOCAMENTO/EM_TRANSPORTE e qualquer
+ * reserva institucional ativa impedem despacho, pois não há fim previsto SVO.
  * Pendência de CNH ou de documento do veículo não entra nesta regra: o
  * painel só avisa, e não há restrição de despacho definida para isso.
  *
@@ -147,7 +148,7 @@ export async function despacharOrdem(
   dados: DadosDespacho
 ): Promise<ResultadoDespacho> {
   try {
-    return await sql.begin(async (transacao) => {
+    return await sql.begin('isolation level read committed', async (transacao) => {
       const ordens = await transacao`
         SELECT id
         FROM public.ordem_coleta
@@ -160,46 +161,8 @@ export async function despacharOrdem(
         return { tipo: 'ordem_indisponivel' };
       }
 
-      const motoristas = await transacao`
-        SELECT id, status
-        FROM public.motorista
-        WHERE id = ${dados.motoristaId}
-        FOR UPDATE
-      `;
-
-      const veiculos = await transacao`
-        SELECT id, status
-        FROM public.veiculo
-        WHERE id = ${dados.veiculoId}
-        FOR UPDATE
-      `;
-
-      if (motoristas.length !== 1 || veiculos.length !== 1) {
-        return { tipo: 'referencia_inexistente' };
-      }
-
-      if (
-        String(motoristas[0].status) !== 'DISPONIVEL'
-        || String(veiculos[0].status) !== 'DISPONIVEL'
-      ) {
-        return { tipo: 'recurso_inelegivel' };
-      }
-
-      const conflitos = await transacao`
-        SELECT id
-        FROM public.ordem_coleta
-        WHERE status = 'EM_DESLOCAMENTO'
-          AND (
-            motorista_id = ${dados.motoristaId}
-            OR veiculo_id = ${dados.veiculoId}
-          )
-        ORDER BY id
-        FOR UPDATE
-      `;
-
-      if (conflitos.length > 0) {
-        return { tipo: 'conflito_alocacao' };
-      }
+      const disponibilidade = await verificarDisponibilidade(transacao, String(dados.motoristaId), String(dados.veiculoId), null);
+      if (disponibilidade !== 'disponivel') return { tipo: disponibilidade };
 
       const atualizadas = await transacao`
         UPDATE public.ordem_coleta

@@ -2,30 +2,61 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import type { ReservedSql } from 'postgres';
 import { root, verifiedSql } from './verify-test-db.js';
 
-/** Aplica somente migrations novas em transação; recusa alteração de histórico. */
+async function transaction(connection: ReservedSql, operation: () => Promise<unknown>) {
+  await connection`begin`;
+  try {
+    await operation();
+    await connection`commit`;
+  } catch (error) {
+    await connection`rollback`;
+    throw error;
+  }
+}
+
+/** Confirma cada migration antes do seed, sob lock de sessão e proveniência isolada verificada. */
 export async function prepare() {
   const sql = await verifiedSql(true);
   try {
-    await sql.begin(async tx => {
-      await tx`select pg_advisory_xact_lock(270027)`;
-      await tx`create schema if not exists fsph_test_harness`;
-      await tx`create table if not exists fsph_test_harness.migrations
-        (name text primary key, sha256 text not null)`;
+    const connection = await sql.reserve();
+    let locked = false;
+    try {
+      await connection`select pg_advisory_lock(270027)`;
+      locked = true;
+      await transaction(connection, async () => {
+        await connection`create schema if not exists fsph_test_harness`;
+        await connection`create table if not exists fsph_test_harness.migrations
+          (name text primary key, sha256 text not null)`;
+      });
       const directory = resolve(root, 'backend/src/database/supabase/migrations');
-      for (const name of readdirSync(directory).filter(n => /^\d+_[a-z0-9_-]+\.sql$/.test(n)).sort()) {
+      const migrations = readdirSync(directory).filter(n => /^\d+_[a-z0-9_-]+\.sql$/.test(n)).sort().map(name => {
         const source = readFileSync(resolve(directory, name), 'utf8').replaceAll('\r\n', '\n');
         const hash = createHash('sha256').update(source).digest('hex');
-        const [applied] = await tx`select sha256 from fsph_test_harness.migrations where name = ${name}`;
-        if (applied && applied.sha256 !== hash) throw new Error('Migration já aplicada foi alterada: ' + name);
-        if (!applied) {
-          await tx.unsafe(source);
-          await tx`insert into fsph_test_harness.migrations values (${name}, ${hash})`;
+        return {name,source,hash};
+      });
+      const history = await connection`select name, sha256 from fsph_test_harness.migrations`;
+      const applied = new Map(history.map(row => [String(row.name), String(row.sha256)]));
+      // Verifica todo o histórico antes de executar qualquer migration pendente.
+      for (const migration of migrations) {
+        if (applied.has(migration.name) && applied.get(migration.name) !== migration.hash) {
+          throw new Error('Migration já aplicada foi alterada: ' + migration.name);
         }
       }
-      await tx.unsafe(readFileSync(resolve(root, 'backend/src/database/supabase/seed.sql'), 'utf8'));
-    });
+      for (const {name,source,hash} of migrations) {
+        if (applied.has(name)) continue;
+        await transaction(connection, async () => {
+          await connection.unsafe(source);
+          await connection`insert into fsph_test_harness.migrations values (${name}, ${hash})`;
+        });
+      }
+      // O novo valor de enum já foi confirmado em outra transação.
+      await transaction(connection, () => connection.unsafe(readFileSync(resolve(root, 'backend/src/database/supabase/seed.sql'), 'utf8')));
+    } finally {
+      try { if (locked) await connection`select pg_advisory_unlock(270027)`; }
+      finally { await connection.release(); }
+    }
   } finally { await sql.end(); }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

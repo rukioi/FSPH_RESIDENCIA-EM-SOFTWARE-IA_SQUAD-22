@@ -8,7 +8,7 @@ CREATE TYPE public."status_motorista" AS ENUM ('DISPONIVEL', 'EM_VIAGEM', 'FOLGA
 ALTER TYPE public."status_motorista" OWNER TO "postgres";
 CREATE TYPE public."status_ordem_coleta" AS ENUM ('PENDENTE_ALOCACAO', 'EM_DESLOCAMENTO', 'EM_TRANSPORTE', 'CONCLUIDA', 'CANCELADA');
 ALTER TYPE public."status_ordem_coleta" OWNER TO "postgres";
-CREATE TYPE public."status_solicitacao" AS ENUM ('PENDENTE', 'AGENDADA', 'PRONTA_PARA_INICIAR', 'EM_ANDAMENTO', 'CONCLUIDA', 'REPROVADA');
+CREATE TYPE public."status_solicitacao" AS ENUM ('PENDENTE', 'APROVADA', 'AGENDADA', 'PRONTA_PARA_INICIAR', 'EM_ANDAMENTO', 'CONCLUIDA', 'REPROVADA');
 ALTER TYPE public."status_solicitacao" OWNER TO "postgres";
 CREATE TYPE public."status_triagem_svo" AS ENUM ('AGUARDANDO_TRIAGEM', 'CONFIRMADA_SVO', 'ENCAMINHADA_IML');
 ALTER TYPE public."status_triagem_svo" OWNER TO "supabase_admin";
@@ -65,7 +65,8 @@ CREATE TABLE public."log_atividade" (
   "id" bigint DEFAULT nextval('log_atividade_id_seq'::regclass) NOT NULL,
   "usuario_id" bigint,
   "descricao" text NOT NULL,
-  "data_hora" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+  "data_hora" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  "solicitacao_viagem_id" bigint
 );
 ALTER TABLE public."log_atividade" OWNER TO "postgres";
 CREATE TABLE public."motorista" (
@@ -129,7 +130,9 @@ CREATE TABLE public."solicitacao_viagem" (
   "motivo_rejeicao" text,
   "criado_em" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
   "veiculo_id" bigint,
-  "motorista_id" bigint
+  "motorista_id" bigint,
+  "finalidade" text,
+  "data_hora_retorno_previsto" timestamp without time zone
 );
 ALTER TABLE public."solicitacao_viagem" OWNER TO "postgres";
 CREATE TABLE public."usuario" (
@@ -200,6 +203,7 @@ ALTER TABLE public."solicitacao_obito" ADD CONSTRAINT "solicitacao_obito_pkey" P
 ALTER TABLE public."solicitacao_obito" ADD CONSTRAINT "solicitacao_obito_triagem_decisao_check" CHECK (status_triagem IS NULL OR status_triagem = 'AGUARDANDO_TRIAGEM'::status_triagem_svo AND triado_por_id IS NULL AND triado_em IS NULL OR (status_triagem = ANY (ARRAY['CONFIRMADA_SVO'::status_triagem_svo, 'ENCAMINHADA_IML'::status_triagem_svo])) AND triado_por_id IS NOT NULL AND triado_em IS NOT NULL);
 ALTER TABLE public."solicitacao_viagem" ADD CONSTRAINT "solicitacao_viagem_codigo_key" UNIQUE (codigo);
 ALTER TABLE public."solicitacao_viagem" ADD CONSTRAINT "solicitacao_viagem_pkey" PRIMARY KEY (id);
+ALTER TABLE public."solicitacao_viagem" ADD CONSTRAINT "solicitacao_viagem_retorno_previsto_check" CHECK (data_hora_retorno_previsto IS NULL OR data_hora_retorno_previsto > data_hora_saida);
 ALTER TABLE public."usuario" ADD CONSTRAINT "usuario_email_key" UNIQUE (email);
 ALTER TABLE public."usuario" ADD CONSTRAINT "usuario_pkey" PRIMARY KEY (id);
 ALTER TABLE public."veiculo" ADD CONSTRAINT "veiculo_pkey" PRIMARY KEY (id);
@@ -211,6 +215,7 @@ ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_motorista_id_fk
 ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
 ALTER TABLE public."documento_veiculo" ADD CONSTRAINT "documento_veiculo_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "fk_log_atividade_usuario" FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL;
+ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_solicitacao_viagem_id_fkey" FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id);
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuario(id);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE;
 ALTER TABLE public."ordem_coleta" ADD CONSTRAINT "ordem_coleta_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
@@ -224,6 +229,7 @@ ALTER TABLE public."solicitacao_viagem" ADD CONSTRAINT "solicitacao_viagem_solic
 ALTER TABLE public."viagem" ADD CONSTRAINT "viagem_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
 ALTER TABLE public."viagem" ADD CONSTRAINT "viagem_solicitacao_id_fkey" FOREIGN KEY (solicitacao_id) REFERENCES solicitacao_viagem(id);
 ALTER TABLE public."viagem" ADD CONSTRAINT "viagem_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
+CREATE INDEX idx_log_atividade_solicitacao_viagem_id ON public.log_atividade USING btree (solicitacao_viagem_id);
 CREATE INDEX ordem_coleta_veiculo_status_idx ON public.ordem_coleta USING btree (veiculo_id, status) WHERE (veiculo_id IS NOT NULL);
 CREATE INDEX solicitacao_obito_triagem_criado_idx ON public.solicitacao_obito USING btree (status_triagem, criado_em DESC);
 ALTER TABLE public."abastecimento" DISABLE ROW LEVEL SECURITY;

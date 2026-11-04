@@ -25,9 +25,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   banco().mockReset();
   Object.assign(sql, {
-    begin: vi.fn(async (
-      operacao: (transacao: typeof sql) => Promise<unknown>,
-    ) => operacao(sql)),
+    begin: vi.fn(async (...args: unknown[]) => {
+      const operacao = args.at(-1) as (transacao: typeof sql) => Promise<unknown>;
+      return operacao(sql);
+    }),
   });
 });
 
@@ -43,6 +44,7 @@ test('BE-S5-02 despacha ordem, motorista e veículo elegíveis na mesma transaç
     .mockResolvedValueOnce([{ id: 1 }] as never)
     .mockResolvedValueOnce([{ id: 2, status: 'DISPONIVEL' }] as never)
     .mockResolvedValueOnce([{ id: 3, status: 'DISPONIVEL' }] as never)
+    .mockResolvedValueOnce([] as never)
     .mockResolvedValueOnce([] as never)
     .mockResolvedValueOnce([
       {
@@ -70,8 +72,10 @@ test('BE-S5-02 despacha ordem, motorista e veículo elegíveis na mesma transaç
   });
 
   const consultas = textosSql();
-  expect(consultas).toHaveLength(5);
-  expect(consultas.filter((consulta) => consulta.includes('FOR UPDATE'))).toHaveLength(4);
+  expect(consultas).toHaveLength(6);
+  expect(consultas.filter((consulta) => consulta.includes('FOR UPDATE'))).toHaveLength(3);
+  expect(consultas.some(consulta => consulta.includes('public.solicitacao_viagem'))).toBe(true);
+  expect(consultas.some(consulta => consulta.includes('EM_TRANSPORTE'))).toBe(true);
   expect(consultas.some((consulta) => consulta.includes('PENDENTE_ALOCACAO'))).toBe(true);
   expect(consultas.some((consulta) => consulta.includes('EM_DESLOCAMENTO'))).toBe(true);
   expect(consultas.some((consulta) => consulta.includes('UPDATE public.ordem_coleta'))).toBe(true);
@@ -137,6 +141,14 @@ test('BE-S5-02 não despacha recurso já em deslocamento', async () => {
 
   expect(resultado).toEqual({ tipo: 'conflito_alocacao' });
   expect(textosSql().some((consulta) => consulta.includes('UPDATE public.ordem_coleta'))).toBe(false);
+});
+
+test('SCRUM-139 impede despacho SVO sobre reserva institucional, inclusive futura', async () => {
+  banco().mockResolvedValueOnce([{id:1}]).mockResolvedValueOnce([{id:2,status:'DISPONIVEL'}])
+    .mockResolvedValueOnce([{id:3,status:'DISPONIVEL'}]).mockResolvedValueOnce([]).mockResolvedValueOnce([{id:1024}]);
+  expect(await despacharOrdem({ordemId:1,motoristaId:2,veiculoId:3})).toEqual({tipo:'conflito_alocacao'});
+  expect(textosSql().some(query => query.includes('UPDATE public.ordem_coleta'))).toBe(false);
+  expect(banco().mock.calls[4].slice(1)).toEqual([null,null,'2','3',null,null,null]);
 });
 
 test('BE-S5-02 mapeia referência rejeitada pelo banco sem erro genérico', async () => {

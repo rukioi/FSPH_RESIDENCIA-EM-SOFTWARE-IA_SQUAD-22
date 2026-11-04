@@ -70,7 +70,7 @@ Inclui Allow: GET, POST ou PATCH conforme a rota.
 ### 409 — Estado ou alocação incompatível
 
 ```json
-{"error":{"code":"HTTP_409","message":"Motorista ou veículo já está em deslocamento."}}
+{"error":{"code":"HTTP_409","message":"Motorista ou veículo possui uma alocação conflitante."}}
 ```
 
 ### 413 — Corpo excessivo
@@ -100,8 +100,14 @@ Authorization: Bearer <token>
 
 ## O que a entrega não faz
 
-Não muda despacho, disponibilidade, perfis, estados ou limites temporais. Mantém
-transações do repository e os sucessos legados, documentados pela #32. Todos os
+SCRUM-139 atualiza disponibilidade do despacho: ordens EM_DESLOCAMENTO ou
+EM_TRANSPORTE e qualquer reserva institucional ativa (AGENDADA,
+PRONTA_PARA_INICIAR, EM_ANDAMENTO), inclusive futura, bloqueiam o recurso.
+SVO não possui fim previsto, portanto não promete liberação antes de uma reserva.
+Transação READ COMMITTED bloqueia ordem, motorista e veículo, nessa ordem; a
+operação compartilhada consulta conflitos após os locks, sem bloquear outras
+ordens/pedidos. Nenhum horário SVO é inventado. Não muda perfis, estados ou
+sucessos legados, documentados pela #32. Todos os
 4xx passam pelo [normalizador comum](./README.md#respostas). A #30
 usa tipos gerados/validação de resposta e delimita o resumo local da sessão;
 não implementa histórico persistente novo.

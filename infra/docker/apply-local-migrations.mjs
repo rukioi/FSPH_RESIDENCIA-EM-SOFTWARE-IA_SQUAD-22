@@ -30,6 +30,7 @@ function digest(sql) {
 const databaseUrl = verifyTarget();
 const client = new pg.Client({ connectionString: databaseUrl, ssl: false, connectionTimeoutMillis: 5000 });
 let transaction = false;
+let locked = false;
 try {
   await client.connect();
   const identity = await client.query(`
@@ -42,9 +43,10 @@ try {
     throw new Error('Identidade do banco Compose não confere. Nenhuma migration aplicada.');
   }
 
+  await client.query('SELECT pg_advisory_lock(2026, 215)');
+  locked = true;
   await client.query('BEGIN');
   transaction = true;
-  await client.query('SELECT pg_advisory_xact_lock(2026, 215)');
   await client.query('CREATE SCHEMA IF NOT EXISTS fsph_compose_meta');
   await client.query(`
     CREATE TABLE IF NOT EXISTS fsph_compose_meta.migrations (
@@ -53,6 +55,9 @@ try {
       applied_at timestamptz NOT NULL DEFAULT now()
     )
   `);
+
+  await client.query('COMMIT');
+  transaction = false;
 
   async function apply(filename, content) {
     const hash = digest(content);
@@ -66,11 +71,15 @@ try {
       console.log(`Já aplicada: ${filename}`);
       return;
     }
+    await client.query('BEGIN');
+    transaction = true;
     await client.query(content);
     await client.query(
       'INSERT INTO fsph_compose_meta.migrations(filename, sha256) VALUES ($1, $2)',
       [filename, hash]
     );
+    await client.query('COMMIT');
+    transaction = false;
     console.log(`Aplicada: ${filename}`);
   }
 
@@ -78,17 +87,23 @@ try {
   if (!files.length || !files.some(name => name.includes('baseline'))) {
     throw new Error('Baseline versionada ausente; preparação recusada.');
   }
-  for (const filename of files) {
-    await apply(filename, await readFile(resolve(MIGRATIONS, filename), 'utf8'));
+  const sources = await Promise.all(files.map(async filename => ({filename,content:await readFile(resolve(MIGRATIONS,filename),'utf8')})));
+  sources.push({filename:'__seed_fixture_v1.sql',content:await readFile(SEED,'utf8')});
+  // Valida todo o historico antes de qualquer migration pendente.
+  for (const {filename,content} of sources) {
+    const previous = await client.query('SELECT sha256 FROM fsph_compose_meta.migrations WHERE filename = $1',[filename]);
+    if (previous.rows.length && previous.rows[0].sha256 !== digest(content)) {
+      throw new Error('Arquivo SQL ja aplicado foi alterado: ' + filename + '. Nao ha reparo automatico.');
+    }
   }
-  await apply('__seed_fixture_v1.sql', await readFile(SEED, 'utf8'));
-  await client.query('COMMIT');
-  transaction = false;
+  for (const {filename,content} of sources) await apply(filename,content);
+
   console.log('Banco Compose local preparado. Nenhuma conexão remota foi utilizada.');
 } catch (error) {
   if (transaction) await client.query('ROLLBACK').catch(() => {});
   console.error(error instanceof Error ? error.message : 'Erro na preparação Compose.');
   process.exitCode = 1;
 } finally {
-  await client.end().catch(() => {});
+  try { if (locked) await client.query('SELECT pg_advisory_unlock(2026, 215)'); }
+  finally { await client.end().catch(() => {}); }
 }

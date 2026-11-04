@@ -12,7 +12,14 @@ export interface LinhaAtividade {
 export interface PaginacaoAtividades { page: number; limit: number }
 
 /** Insere somente descrições produzidas pelo serviço na transação do módulo chamador. */
-export async function inserirAtividades(tx: postgres.TransactionSql, usuarioId: string, descricoes: string[]): Promise<void> {
+export async function inserirAtividades(tx: postgres.TransactionSql, usuarioId: string, descricoes: string[], solicitacoes?: (string|null)[]): Promise<void> {
+  if (solicitacoes) {
+    if (solicitacoes.length!==descricoes.length) throw new Error('Vínculos de atividade inválidos.');
+    await tx`INSERT INTO public.log_atividade (usuario_id, descricao, solicitacao_viagem_id)
+      SELECT ${usuarioId}, d.descricao, d.solicitacao_id
+      FROM unnest(${descricoes}::text[], ${solicitacoes}::bigint[]) AS d(descricao, solicitacao_id)`;
+    return;
+  }
   await tx`INSERT INTO public.log_atividade (usuario_id, descricao)
     SELECT ${usuarioId}, unnest(${descricoes}::text[])`;
 }

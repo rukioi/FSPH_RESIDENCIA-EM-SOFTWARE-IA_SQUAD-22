@@ -27,8 +27,9 @@ test('gate detecta remoção de rota/status e mudança incompatível de componen
 test('migração #30 permite somente 404 comum de abastecimento e sua descrição técnica',()=>{
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
-test('inventário fechado mantém 29 operações e limites de pathname compatíveis',()=>{
-  expect(operations).toHaveLength(29);
+test('inventário mantém as 29 operações anteriores e as onze de solicitações',()=>{
+  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(29);
+  expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
     const path = operation.path.replace('{id}','123');
@@ -36,6 +37,18 @@ test('inventário fechado mantém 29 operações e limites de pathname compatív
     expect(routePattern(operation).test(path+'/')).toBe(operation.modulo==='usuarios');
     expect(routePattern(operation).test(path+'/extra')).toBe(false);
   }
+});
+
+test('SCRUM-137/138 publicam criação, consulta e decisões com contrato validado', () => {
+  expect(operations.filter(operation => operation.modulo === 'solicitacoes').map(o => o.path)).toEqual([
+    '/api/solicitacoes-viagem/{id}','/api/solicitacoes-viagem/{id}/historico',
+    '/api/solicitacoes-viagem/agenda','/api/solicitacoes-viagem/disponibilidade','/api/solicitacoes-viagem/{id}/reagendar',
+    '/api/solicitacoes-viagem/{id}',
+    '/api/solicitacoes-viagem/{id}/agendar',
+    '/api/solicitacoes-viagem/{id}/aprovar', '/api/solicitacoes-viagem/{id}/rejeitar',
+    '/api/solicitacoes-viagem', '/api/solicitacoes-viagem']);
+  expect(openapi().paths['/api/solicitacoes-viagem'].post).toHaveProperty('x-runtime-validation', true);
+  expect(independent("import {readFileSync} from 'node:fs'; import {checkCoverage} from './scripts/generate-api.ts'; checkCoverage(JSON.parse(readFileSync('docs/api/legacy-manifest.json','utf8'))); console.log('ok');")).toContain('ok');
 });
 test('schemas do piloto preservam defaults null, campos ignorados, parcialidade e condicional de locação',()=>{
   const input = {placa:'T32',marca:'Fixture',modelo:'Fixture',ano:2026,tipo:null,capacidade_obitos:null,extra:'ignorado'};

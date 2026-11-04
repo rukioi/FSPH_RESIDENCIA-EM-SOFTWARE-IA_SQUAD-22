@@ -1,5 +1,49 @@
 /* Gerado por client:generate. Não editar. */
 export const apiOperations = {
+  "solicitacoes_get__api_solicitacoes_viagem_id_": {
+    "method": "GET",
+    "path": "/api/solicitacoes-viagem/{id}"
+  },
+  "solicitacoes_patch__api_solicitacoes_viagem_id_": {
+    "method": "PATCH",
+    "path": "/api/solicitacoes-viagem/{id}"
+  },
+  "solicitacoes_get__api_solicitacoes_viagem_id_historico": {
+    "method": "GET",
+    "path": "/api/solicitacoes-viagem/{id}/historico"
+  },
+  "solicitacoes_get__api_solicitacoes_viagem_agenda": {
+    "method": "GET",
+    "path": "/api/solicitacoes-viagem/agenda"
+  },
+  "solicitacoes_get__api_solicitacoes_viagem_disponibilidade": {
+    "method": "GET",
+    "path": "/api/solicitacoes-viagem/disponibilidade"
+  },
+  "solicitacoes_post__api_solicitacoes_viagem_id_reagendar": {
+    "method": "POST",
+    "path": "/api/solicitacoes-viagem/{id}/reagendar"
+  },
+  "solicitacoes_post__api_solicitacoes_viagem_id_agendar": {
+    "method": "POST",
+    "path": "/api/solicitacoes-viagem/{id}/agendar"
+  },
+  "solicitacoes_post__api_solicitacoes_viagem_id_aprovar": {
+    "method": "POST",
+    "path": "/api/solicitacoes-viagem/{id}/aprovar"
+  },
+  "solicitacoes_post__api_solicitacoes_viagem_id_rejeitar": {
+    "method": "POST",
+    "path": "/api/solicitacoes-viagem/{id}/rejeitar"
+  },
+  "solicitacoes_post__api_solicitacoes_viagem": {
+    "method": "POST",
+    "path": "/api/solicitacoes-viagem"
+  },
+  "solicitacoes_get__api_solicitacoes_viagem": {
+    "method": "GET",
+    "path": "/api/solicitacoes-viagem"
+  },
   "auth_post__api_auth_login": {
     "method": "POST",
     "path": "/api/auth/login"

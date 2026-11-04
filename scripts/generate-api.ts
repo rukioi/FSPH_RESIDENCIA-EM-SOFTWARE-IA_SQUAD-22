@@ -12,13 +12,13 @@ export const specification = () => stringify(openapi(), { lineWidth: 0 });
 /** Deriva a tabela de cobertura e limites dos mesmos descritores usados no dispatcher. */
 export const inventory = () => '# Inventário da API atual — #32\n\nGerado por api:generate; não editar manualmente. ' + operations.length + ' operações.\n\n' +
   '| Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n' +
-  operations.map(o=>`| ${o.method.toUpperCase()} | ${o.path} | ${o.perfis.join(', ') || 'pública'} | ${o.body ?? 'sem corpo'} | ${o.status} ${o.response} | ${[...o.errors,405].join(', ')} | ${o.modulo === 'veiculos' ? 'piloto' : 'legado'} | ${o.notes} |`).join('\n')+'\n\nCaminho desconhecido: 404 comum. Método não permitido: 405 + Allow, antes de auth. Todas as respostas recebem X-Request-Id. As exceções fechadas estão em [legacy-manifest.json](./legacy-manifest.json). Schemas legados documentam o transporte; não substituem os validadores existentes.\n';
+  operations.map(o=>`| ${o.method.toUpperCase()} | ${o.path} | ${o.perfis.join(', ') || 'pública'} | ${o.body ?? 'sem corpo'} | ${o.status} ${o.response} | ${[...o.errors,405].join(', ')} | ${o.modulo === 'veiculos' ? 'piloto' : o.modulo === 'solicitacoes' ? 'validado' : 'legado'} | ${o.notes} |`).join('\n')+'\n\nCaminho desconhecido: 404 comum. Método não permitido: 405 + Allow, antes de auth. Todas as respostas recebem X-Request-Id. As exceções fechadas estão em [legacy-manifest.json](./legacy-manifest.json). Schemas legados documentam o transporte; não substituem os validadores existentes.\n';
 
 /** Valida cobertura fechada: toda operação legada precisa de exceção explícita e toda família de rotas de contribuição. */
 export function checkCoverage(manifest: { operations: {method:string;path:string;reason:string}[] }) {
   const keys = operations.map(o=>o.method.toUpperCase()+' '+o.path);
   if (new Set(keys).size !== keys.length) throw new Error('Operação duplicada no contrato.');
-  const expected = operations.filter(o=>o.modulo !== 'veiculos').map(o=>o.method.toUpperCase()+' '+o.path).sort();
+  const expected = operations.filter(o=>!['veiculos','solicitacoes'].includes(o.modulo)).map(o=>o.method.toUpperCase()+' '+o.path).sort();
   const actual = manifest.operations.map(o=>o.method+' '+o.path).sort();
   if (JSON.stringify(expected) !== JSON.stringify(actual) || manifest.operations.some(o=>!o.reason.trim())) throw new Error('Manifesto legado fora da lista fechada. Nova rota exige contrato e adaptação explícita.');
   const modules = readdirSync(resolve(root,'backend/src/modules'),{withFileTypes:true}).filter(d=>d.isDirectory() && readdirSync(resolve(root,'backend/src/modules',d.name)).some(f=>f.endsWith('.routes.ts'))).map(d=>d.name).sort();

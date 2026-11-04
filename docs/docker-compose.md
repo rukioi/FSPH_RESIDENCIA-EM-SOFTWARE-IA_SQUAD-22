@@ -26,7 +26,7 @@ docker compose ps
 ```
 
 O primeiro start inicia o PostgreSQL, carrega somente os papéis locais sintéticos,
-executa as migrations ordenadas e o seed fictício em uma **transação com lock**,
+executa as migrations ordenadas e o seed fictício com **lock de sessão e uma transação por migration**, seguida do seed em transação própria,
 inicia o backend e então o frontend. O serviço `db-migrate` é uma tarefa de uma
 execução: **Exited (0)** é normal. A partir do segundo start, o histórico SHA-256
 impede reaplicar migrations, evita duplicação e recusa alteração de SQL já aplicado.
