@@ -1,0 +1,33 @@
+name: SCRUM-130 temporary generated contract sync
+on:
+  push:
+    branches:
+      - feat/scrum-130-registro-svo
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Regenerate API and client from source
+        run: |
+          npm run api:generate
+          npm run client:generate
+          git diff --stat
+      - name: Commit only official generated artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/api/openapi.yaml docs/api/inventory.md frontend/src/shared/api/generated/schema.d.ts frontend/src/shared/api/generated/operations.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(api): regenerate official SVO artifacts for SCRUM-130"
+            git push origin HEAD:feat/scrum-130-registro-svo
+          fi
