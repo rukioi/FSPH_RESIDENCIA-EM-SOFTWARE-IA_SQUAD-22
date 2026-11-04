@@ -111,10 +111,6 @@ export async function criarSolicitacaoController(
       jsonCompartilhado(response, 409, { erro: 'Conflito ao gerar o protocolo da ocorrência.' });
       return;
     }
-    if (codigo === '23503') {
-      jsonCompartilhado(response, 409, { erro: 'Atendente não está disponível para registrar a ocorrência.' });
-      return;
-    }
     jsonCompartilhado(response, 500, {
       error: { code: 'ERRO_INTERNO', message: 'Não foi possível criar a solicitação de óbito.' },
     });
