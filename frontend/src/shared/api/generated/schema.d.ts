@@ -119,6 +119,11 @@ export type Auditoria =
     };
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "StatusTriagem".
+ */
+export type StatusTriagem = 'AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML';
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "OrdensSvo".
  */
 export type OrdensSvo = {
@@ -131,6 +136,19 @@ export type OrdensSvo = {
   solicitacao_codigo: string;
   nome_falecido: string | null;
   endereco_remocao: string;
+}[];
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "SolicitacoesSvo".
+ */
+export type SolicitacoesSvo = {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  codigo: string;
+  status_triagem: ('AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML') | null;
+  criado_em: string | null;
 }[];
 
 export interface ApiSchemas {
@@ -174,9 +192,11 @@ export interface ApiSchemas {
   Graficos: Graficos;
   DashboardGestor: DashboardGestor;
   PendenciasDashboard: PendenciasDashboard;
+  StatusTriagem: StatusTriagem;
   OrdensSvo: OrdensSvo;
   CriarSolicitacaoSvo: CriarSolicitacaoSvo;
   SolicitacaoSvo: SolicitacaoSvo;
+  SolicitacoesSvo: SolicitacoesSvo;
   DespacharSvo: DespacharSvo;
   OrdemDespachada: OrdemDespachada;
 }
@@ -819,6 +839,8 @@ export interface CriarSolicitacaoSvo {
   solicitanteParentesco?: string | null;
   solicitanteTelefone?: string | null;
   observacoesMedicas?: string | null;
+  pontoReferencia?: string | null;
+  canalAtendimento?: 'TELEFONE';
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -826,13 +848,13 @@ export interface CriarSolicitacaoSvo {
  */
 export interface SolicitacaoSvo {
   solicitacao: {
-    id: number;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
     codigo: string;
-  };
-  ordemColeta: {
-    id: number;
-    codigo: string;
-    status: 'PENDENTE_ALOCACAO';
+    statusTriagem: 'AGUARDANDO_TRIAGEM';
+    criadoEm: string | null;
   };
   atividades: string[];
 }
@@ -870,6 +892,7 @@ export interface ApiOperations {
   'dashboard_get__api_dashboard_pendencias': { body: undefined; response: ApiSchemas['PendenciasDashboard'] };
   'dashboard_get__api_dashboard_gestor': { body: undefined; response: ApiSchemas['DashboardGestor'] };
   'svo_get__api_svo_ordens_coleta': { body: undefined; response: ApiSchemas['OrdensSvo'] };
+  'svo_get__api_svo_solicitacoes': { body: undefined; response: ApiSchemas['SolicitacoesSvo'] };
   'svo_post__api_svo_solicitacoes': { body: ApiSchemas['CriarSolicitacaoSvo']; response: ApiSchemas['SolicitacaoSvo'] };
   'svo_patch__api_svo_ordens_coleta_id_despachar': { body: ApiSchemas['DespacharSvo']; response: ApiSchemas['OrdemDespachada'] };
   'veiculos_get__api_veiculos': { body: undefined; response: ApiSchemas['ListaVeiculos'] };

@@ -44,3 +44,8 @@ test('PATCH de despacho sem token retorna 401', async () => {
 
   expect(response.status).toBe(401);
 });
+
+test('GET de solicitações sem token retorna 401', async () => {
+  const response = await fetch(`${baseUrl}/api/svo/solicitacoes`);
+  expect(response.status).toBe(401);
+});

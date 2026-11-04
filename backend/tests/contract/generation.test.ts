@@ -27,8 +27,8 @@ test('gate detecta remoção de rota/status e mudança incompatível de componen
 test('migração #30 permite somente 404 comum de abastecimento e sua descrição técnica',()=>{
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
-test('inventário fechado mantém 29 operações e limites de pathname compatíveis',()=>{
-  expect(operations).toHaveLength(29);
+test('inventário fechado mantém 30 operações e limites de pathname compatíveis',()=>{
+  expect(operations).toHaveLength(30);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
     const path = operation.path.replace('{id}','123');

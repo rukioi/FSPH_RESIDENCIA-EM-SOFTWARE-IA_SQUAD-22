@@ -40,7 +40,7 @@ test('métodos inválidos de todas as famílias retornam 405/Allow', async () =>
     ['/api/admin/usuarios/1/status/', 'PATCH'], ['/api/admin/auditoria/logs', 'GET'],
     ['/api/dashboard', 'GET'], ['/api/dashboard/pendencias', 'GET'],
     ['/api/dashboard/graficos', 'GET'], ['/api/dashboard/gestor', 'GET'],
-    ['/api/svo/ordens-coleta', 'GET'], ['/api/svo/solicitacoes', 'POST'], ['/api/svo/ordens-coleta/1/despachar', 'PATCH'],
+    ['/api/svo/ordens-coleta', 'GET'], ['/api/svo/solicitacoes', 'GET, POST'], ['/api/svo/ordens-coleta/1/despachar', 'PATCH'],
     ['/api/veiculos', 'GET, POST'], ['/api/veiculos/1', 'PUT, PATCH, DELETE'],
     ['/api/motoristas', 'GET, POST'], ['/api/motoristas/1', 'PUT, PATCH, DELETE'],
     ['/api/abastecimentos', 'GET, POST'], ['/api/documentos', 'GET, POST'], ['/api/documentos/pendencias', 'GET'],

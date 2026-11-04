@@ -22,13 +22,15 @@ export async function listarOrdensPendentes() {
 
 export interface NovaSolicitacaoObito {
   atendenteId: string;
-  nomeFalecido?: string;
+  nomeFalecido?: string | null;
   localFalecimento: string;
   enderecoRemocao: string;
   solicitanteNome: string;
-  solicitanteParentesco?: string;
-  solicitanteTelefone?: string;
-  observacoesMedicas?: string;
+  solicitanteParentesco?: string | null;
+  solicitanteTelefone?: string | null;
+  observacoesMedicas?: string | null;
+  canalAtendimento?: 'TELEFONE';
+  pontoReferencia?: string | null;
 }
 
 export interface DadosDespacho {
@@ -51,78 +53,56 @@ export type ResultadoDespacho =
   | { tipo: 'recurso_inelegivel' }
   | { tipo: 'conflito_alocacao' };
 
-/**
- * Cria a solicitação, a ordem de coleta e os registros de atividade na mesma transação.
- */
-export async function criarSolicitacao(
-  dados: NovaSolicitacaoObito
-) {
-  return await sql.begin(async (transacao) => {
-    const resultado = await transacao`
-      SELECT nextval('public.solicitacao_obito_id_seq') AS id
-    `;
+/** Lista até 20 ocorrências recentes, sem dados pessoais; consultas ampliadas pertencem à SCRUM-146. */
+export async function listarSolicitacoes(status?: 'AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML') {
+  const filtro = status ?? null;
+  const registros = await sql`
+    SELECT id::text AS id, codigo, status_triagem::text AS status_triagem, criado_em
+    FROM public.solicitacao_obito
+    WHERE (${filtro}::text IS NULL OR status_triagem::text = ${filtro})
+    ORDER BY criado_em DESC NULLS LAST, id DESC
+    LIMIT 20
+  `;
+  return registros.map(registro => ({
+    id: String(registro.id),
+    codigo: String(registro.codigo),
+    status_triagem: registro.status_triagem === null ? null : String(registro.status_triagem),
+    criado_em: registro.criado_em instanceof Date
+      ? registro.criado_em.toISOString() : registro.criado_em === null ? null : String(registro.criado_em),
+  }));
+}
 
-    const id = Number(resultado[0].id);
+/** Cria SOMENTE ocorrência e atividade na mesma transação; triagem e ordem são da SCRUM-131. */
+export async function criarSolicitacao(dados: NovaSolicitacaoObito) {
+  return sql.begin(async transacao => {
+    const [sequencia] = await transacao`SELECT nextval('public.solicitacao_obito_id_seq')::text AS id`;
+    const id = String(sequencia.id);
     const codigo = `#SVO-${id}`;
-
-    const solicitacoes = await transacao`
+    const [registro] = await transacao`
       INSERT INTO public.solicitacao_obito (
-        id,
-        codigo,
-        atendente_id,
-        nome_falecido,
-        local_falecimento,
-        endereco_remocao,
-        solicitante_nome,
-        solicitante_parentesco,
-        solicitante_telefone,
-        observacoes_medicas
+        id, codigo, atendente_id, nome_falecido, local_falecimento,
+        endereco_remocao, solicitante_nome, solicitante_parentesco,
+        solicitante_telefone, observacoes_medicas, ponto_referencia,
+        canal_atendimento, status_triagem
+      ) VALUES (
+        ${id}, ${codigo}, ${dados.atendenteId}, ${dados.nomeFalecido ?? null},
+        ${dados.localFalecimento}, ${dados.enderecoRemocao}, ${dados.solicitanteNome},
+        ${dados.solicitanteParentesco ?? null}, ${dados.solicitanteTelefone ?? null},
+        ${dados.observacoesMedicas ?? null}, ${dados.pontoReferencia ?? null},
+        'TELEFONE', 'AGUARDANDO_TRIAGEM'
       )
-      VALUES (
-        ${id},
-        ${codigo},
-        ${dados.atendenteId},
-        ${dados.nomeFalecido ?? null},
-        ${dados.localFalecimento},
-        ${dados.enderecoRemocao},
-        ${dados.solicitanteNome},
-        ${dados.solicitanteParentesco ?? null},
-        ${dados.solicitanteTelefone ?? null},
-        ${dados.observacoesMedicas ?? null}
-      )
-      RETURNING id, codigo
+      RETURNING id::text AS id, codigo, status_triagem::text AS status_triagem, criado_em
     `;
-
-    const solicitacaoId = Number(solicitacoes[0].id);
-
-    const ordensCriadas = await transacao`
-      INSERT INTO public.ordem_coleta (
-        solicitacao_obito_id
-      )
-      VALUES (
-        ${solicitacaoId}
-      )
-      RETURNING id, status
-    `;
-
-    const ordemId = Number(ordensCriadas[0].id);
-    const statusOrdem = String(ordensCriadas[0].status);
-    const codigoOrdem = `#OC-${ordemId}`;
-
     const atividades = await registrarAtividades(transacao, dados.atendenteId, [
-      { operacao: 'solicitacao_confirmada', recursoId: String(solicitacaoId) },
-      { operacao: 'ordem_gerada', recursoId: String(ordemId), solicitacaoId: String(solicitacaoId) },
+      { operacao: 'solicitacao_registrada', recursoId: id },
     ]);
-
     return {
       solicitacao: {
-        id: solicitacaoId,
-        codigo,
-      },
-      ordemColeta: {
-        id: ordemId,
-        codigo: codigoOrdem,
-        status: statusOrdem,
+        id: String(registro.id),
+        codigo: String(registro.codigo),
+        statusTriagem: 'AGUARDANDO_TRIAGEM' as const,
+        criadoEm: registro.criado_em instanceof Date
+          ? registro.criado_em.toISOString() : registro.criado_em === null ? null : String(registro.criado_em),
       },
       atividades,
     };

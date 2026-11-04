@@ -95,7 +95,7 @@ test('FK de exclusão conserva 500 legado sem SQL/dado sensível',async()=>{
 });
 test('consultas legadas reais correspondem aos schemas sem exigir migração de formato',async()=>{
   for (const operation of operations.filter(o=>o.method==='get' && o.modulo!=='veiculos')) {
-    const path = operation.path+(operation.modulo==='svo' ? '?status=AGUARDANDO_DESPACHO' : '');
+    const path = operation.path+(operation.path==='/api/svo/ordens-coleta' ? '?status=AGUARDANDO_DESPACHO' : '');
     const response = await call(path,'GET',undefined,operation.modulo==='svo' ? svo : admin);
     expect(response.status,operation.id).toBe(200);
     const body = await response.json();

@@ -4,7 +4,7 @@ import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from
 export type EventoAtividade =
   | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'usuario_status'; recursoId: string; ativo: boolean }
-  | { operacao: 'solicitacao_confirmada'; recursoId: string }
+  | { operacao: 'solicitacao_confirmada' | 'solicitacao_registrada'; recursoId: string }
   | { operacao: 'ordem_gerada'; recursoId: string; solicitacaoId: string };
 
 export interface AtividadeDto {
@@ -31,6 +31,7 @@ function descrever(evento: EventoAtividade): string {
       if (typeof evento.ativo !== 'boolean') throw new Error('Estado de atividade inválido.');
       return `Alterou o status do usuário ID ${id} para ${evento.ativo ? 'Ativo' : 'Inativo'}`;
     case 'solicitacao_confirmada': return `Solicitação #SVO-${id} confirmada na ligação`;
+    case 'solicitacao_registrada': return `Solicitação #SVO-${id} registrada por telefone`;
     case 'ordem_gerada': return `Ordem de coleta #OC-${id} gerada para #SVO-${identificador(evento.solicitacaoId)}`;
     default: throw new Error('Operação de atividade inválida.');
   }

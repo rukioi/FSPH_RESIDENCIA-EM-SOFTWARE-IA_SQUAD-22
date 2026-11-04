@@ -35,7 +35,7 @@ export function Svo() {
   const [atividades, setAtividades] =
     useState<AtividadeSvo[]>([]);
 
-  const [solicitacoesConfirmadas, setSolicitacoesConfirmadas] =
+  const [solicitacoesRegistradas, setSolicitacoesRegistradas] =
     useState(0);
 
   const [erroOrdens, setErroOrdens] = useState("");
@@ -140,13 +140,13 @@ export function Svo() {
     );
 
     if (!mounted.current) return;
-    setSolicitacoesConfirmadas(
+    setSolicitacoesRegistradas(
       (valor) => valor + 1,
     );
 
     adicionarAtividade(
-      "Nova solicitação confirmada",
-      `${resultado.ordemColeta.codigo} criada com sucesso.`,
+      "Solicitação registrada",
+      `${resultado.solicitacao.codigo} registrada e aguardando triagem.`,
     );
 
     setTelaAtual("dashboard");
@@ -222,8 +222,8 @@ export function Svo() {
 
   return (
     <DashboardSvo
-      solicitacoesConfirmadas={
-        solicitacoesConfirmadas
+      solicitacoesRegistradas={
+        solicitacoesRegistradas
       }
       ordensAguardando={ordensAguardando}
       ordensProntas={ordensProntas}

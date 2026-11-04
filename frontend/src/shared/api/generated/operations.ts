@@ -48,6 +48,10 @@ export const apiOperations = {
     "method": "GET",
     "path": "/api/svo/ordens-coleta"
   },
+  "svo_get__api_svo_solicitacoes": {
+    "method": "GET",
+    "path": "/api/svo/solicitacoes"
+  },
   "svo_post__api_svo_solicitacoes": {
     "method": "POST",
     "path": "/api/svo/solicitacoes"

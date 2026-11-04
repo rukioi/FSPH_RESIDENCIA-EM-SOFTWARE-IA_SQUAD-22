@@ -185,55 +185,34 @@ test('BE-S5-02 propaga falha inesperada do despacho', async () => {
   })).rejects.toThrow('falha inesperada');
 });
 
-test('BE-S5-02 cria solicitação, ordem e atividades', async () => {
-  const consultas = vi
-    .fn()
+test('SCRUM-130 cria ocorrência pendente sem gerar ordem, com atividade única', async () => {
+  const consultas = vi.fn()
     .mockResolvedValueOnce([{ id: '10' }])
-    .mockResolvedValueOnce([
-      { id: '10', codigo: '#SVO-10' },
-    ])
-    .mockResolvedValueOnce([
-      { id: '20', status: 'PENDENTE_ALOCACAO' },
-    ])
+    .mockResolvedValueOnce([{
+      id: '10', codigo: '#SVO-10', status_triagem: 'AGUARDANDO_TRIAGEM',
+      criado_em: new Date('2026-11-04T12:00:00.000Z'),
+    }])
     .mockResolvedValueOnce([]);
-
-  const bancoSimulado = sql;
-
-  const executarTransacao = async (
-    operacao: (transacao: typeof sql) => Promise<unknown>,
-  ) => {
-    return await operacao(consultas as unknown as typeof sql);
-  };
-
-  const iniciarTransacao = vi.fn(executarTransacao);
-
-Object.assign(bancoSimulado, {
-  begin: iniciarTransacao,
-});
+  const iniciarTransacao = vi.fn(async (op: (tx: typeof sql) => Promise<unknown>) =>
+    op(consultas as unknown as typeof sql));
+  Object.assign(sql, { begin: iniciarTransacao });
 
   const resultado = await criarSolicitacao({
-    atendenteId: '1',
-    localFalecimento: 'Hospital Teste',
-    enderecoRemocao: 'Rua Teste, 123',
-    solicitanteNome: 'Pessoa Teste',
+    atendenteId: '1', localFalecimento: 'Hospital Teste',
+    enderecoRemocao: 'Rua Teste, 123', solicitanteNome: 'Pessoa Teste',
+    pontoReferencia: 'Próximo ao hospital',
   });
-
   expect(resultado).toEqual({
     solicitacao: {
-      id: 10,
-      codigo: '#SVO-10',
+      id: '10', codigo: '#SVO-10', statusTriagem: 'AGUARDANDO_TRIAGEM',
+      criadoEm: '2026-11-04T12:00:00.000Z',
     },
-    ordemColeta: {
-      id: 20,
-      codigo: '#OC-20',
-      status: 'PENDENTE_ALOCACAO',
-    },
-    atividades: [
-      'Solicitação #SVO-10 confirmada na ligação',
-      'Ordem de coleta #OC-20 gerada para #SVO-10',
-    ],
+    atividades: ['Solicitação #SVO-10 registrada por telefone'],
   });
-
-  expect(consultas).toHaveBeenCalledTimes(4);
+  expect(consultas).toHaveBeenCalledTimes(3);
+  const statements = consultas.mock.calls.map(call => (call[0] as TemplateStringsArray).join(' ')).join('\n');
+  expect(statements).toContain('INSERT INTO public.solicitacao_obito');
+  expect(statements).toContain('AGUARDANDO_TRIAGEM');
+  expect(statements).not.toContain('INSERT INTO public.ordem_coleta');
   expect(iniciarTransacao).toHaveBeenCalledOnce();
 });

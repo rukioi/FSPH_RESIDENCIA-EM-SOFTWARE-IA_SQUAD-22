@@ -1135,11 +1135,106 @@ paths:
               schema:
                 $ref: "#/components/schemas/Erro"
   /api/svo/solicitacoes:
+    get:
+      operationId: svo_get__api_svo_solicitacoes
+      tags:
+        - svo
+      description: "Consulta inicial limitada a 20 registros com protocolo, estado e data. Filtros avançados, detalhes e paginação: SCRUM-146."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - AGUARDANDO_TRIAGEM
+              - CONFIRMADA_SVO
+              - ENCAMINHADA_IML
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SolicitacoesSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
     post:
       operationId: svo_post__api_svo_solicitacoes
       tags:
         - svo
-      description: Formato atual preservado; query params não declarados são ignorados.
+      description: Registra somente a ocorrência telefônica em AGUARDANDO_TRIAGEM; nenhuma ordem até confirmação SVO na SCRUM-131.
       security:
         - bearerAuth: []
       x-perfis:
@@ -1210,6 +1305,18 @@ paths:
             X-Request-Id:
               schema:
                 type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -4742,6 +4849,12 @@ components:
             - documentos
       required:
         - data
+    StatusTriagem:
+      type: string
+      enum:
+        - AGUARDANDO_TRIAGEM
+        - CONFIRMADA_SVO
+        - ENCAMINHADA_IML
     OrdensSvo:
       type: array
       items:
@@ -4780,33 +4893,49 @@ components:
       properties:
         localFalecimento:
           type: string
-          pattern: \S
+          minLength: 1
+          maxLength: 255
         enderecoRemocao:
           type: string
-          pattern: \S
+          minLength: 1
+          maxLength: 255
         solicitanteNome:
           type: string
-          pattern: \S
+          minLength: 1
+          maxLength: 150
         nomeFalecido:
-          type:
-            - string
-            - "null"
+          anyOf:
+            - type: string
+              maxLength: 150
+            - type: "null"
         solicitanteParentesco:
-          type:
-            - string
-            - "null"
+          anyOf:
+            - type: string
+              maxLength: 50
+            - type: "null"
         solicitanteTelefone:
-          type:
-            - string
-            - "null"
+          anyOf:
+            - type: string
+              pattern: ^[+0-9 ()-]{7,20}$
+            - type: "null"
         observacoesMedicas:
-          type:
-            - string
-            - "null"
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+        pontoReferencia:
+          anyOf:
+            - type: string
+              maxLength: 255
+            - type: "null"
+        canalAtendimento:
+          type: string
+          const: TELEFONE
       required:
         - localFalecimento
         - enderecoRemocao
         - solicitanteNome
+      additionalProperties: false
     SolicitacaoSvo:
       type: object
       properties:
@@ -4814,34 +4943,58 @@ components:
           type: object
           properties:
             id:
-              type: number
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
             codigo:
               type: string
+            statusTriagem:
+              type: string
+              const: AGUARDANDO_TRIAGEM
+            criadoEm:
+              type:
+                - string
+                - "null"
           required:
             - id
             - codigo
-        ordemColeta:
-          type: object
-          properties:
-            id:
-              type: number
-            codigo:
-              type: string
-            status:
-              type: string
-              const: PENDENTE_ALOCACAO
-          required:
-            - id
-            - codigo
-            - status
+            - statusTriagem
+            - criadoEm
         atividades:
           type: array
           items:
             type: string
       required:
         - solicitacao
-        - ordemColeta
         - atividades
+    SolicitacoesSvo:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            pattern: ^-?\d+$
+            description: BIGINT serializado pelo postgres como string; não converter para Number.
+          codigo:
+            type: string
+          status_triagem:
+            anyOf:
+              - type: string
+                enum:
+                  - AGUARDANDO_TRIAGEM
+                  - CONFIRMADA_SVO
+                  - ENCAMINHADA_IML
+              - type: "null"
+          criado_em:
+            type:
+              - string
+              - "null"
+        required:
+          - id
+          - codigo
+          - status_triagem
+          - criado_em
     DespacharSvo:
       type: object
       properties:

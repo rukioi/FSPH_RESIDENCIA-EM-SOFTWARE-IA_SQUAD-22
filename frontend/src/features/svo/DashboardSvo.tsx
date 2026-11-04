@@ -18,7 +18,7 @@ import type {
 import "./DashboardSvo.css";
 
 type DashboardSvoProps = {
-  solicitacoesConfirmadas: number;
+  solicitacoesRegistradas: number;
   ordensAguardando: OrdemColeta[];
   ordensProntas: OrdemPronta[];
   atividades: AtividadeSvo[];
@@ -37,7 +37,7 @@ type DashboardSvoProps = {
 
 /** Apresenta ordens consultadas e delimita contadores/atividades ao recorte desta sessão. */
 export function DashboardSvo({
-  solicitacoesConfirmadas,
+  solicitacoesRegistradas,
   ordensAguardando,
   ordensProntas,
   atividades,
@@ -96,7 +96,7 @@ export function DashboardSvo({
       <div className="svo-dashboard__kpis">
         <article className="svo-dashboard__card">
           <div className="svo-dashboard__card-topo">
-            <span>Solicitações confirmadas</span>
+            <span>Solicitações registradas</span>
             <span
               className="svo-dashboard__icone svo-dashboard__icone--verde"
               aria-hidden="true"
@@ -105,8 +105,8 @@ export function DashboardSvo({
             </span>
           </div>
 
-          <strong>{solicitacoesConfirmadas}</strong>
-          <small>Confirmados nesta sessão</small>
+          <strong>{solicitacoesRegistradas}</strong>
+          <small>Registros nesta sessão</small>
         </article>
 
         <article className="svo-dashboard__card">
