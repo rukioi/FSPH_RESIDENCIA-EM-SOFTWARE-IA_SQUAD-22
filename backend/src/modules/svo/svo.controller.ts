@@ -91,10 +91,29 @@ export async function criarSolicitacaoController(
   response: ServerResponse,
   atendenteId: string,
 ): Promise<void> {
-  const corpo = await lerDadosDaRequisicao(request, response);
-  if (corpo === undefined) return;
 
-  const validacao = svoSchemas.CriarSolicitacaoSvo.safeParse(corpo);
+const corpo = await lerDadosDaRequisicao(request, response);
+if (corpo === undefined) return;
+
+let dadosNormalizados: unknown = corpo;
+
+if (
+  corpo !== null &&
+  typeof corpo === 'object' &&
+  !Array.isArray(corpo)
+) {
+  const dados = corpo as Record<string, unknown>;
+  const telefone = dados.solicitanteTelefone;
+
+  if (typeof telefone === 'string' && telefone.trim() === '') {
+    dadosNormalizados = {
+      ...dados,
+      solicitanteTelefone: undefined,
+    };
+  }
+}
+
+const validacao = svoSchemas.CriarSolicitacaoSvo.safeParse(dadosNormalizados);
   if (!validacao.success) {
     jsonCompartilhado(response, 400, {
       erro: 'Dados da ocorrência inválidos ou campos não permitidos.',
