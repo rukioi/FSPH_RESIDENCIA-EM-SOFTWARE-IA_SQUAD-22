@@ -4,7 +4,7 @@ import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from
 export type EventoAtividade =
   | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'usuario_status'; recursoId: string; ativo: boolean }
-  | { operacao: 'solicitacao_confirmada'; recursoId: string }
+  | { operacao: 'solicitacao_confirmada' | 'solicitacao_registrada'; recursoId: string }
   | { operacao: 'solicitacao_viagem_criada'; recursoId: string }
   | { operacao: 'solicitacao_viagem_aprovada' | 'solicitacao_viagem_reprovada'; recursoId: string }
   | { operacao: 'solicitacao_viagem_agendada'; recursoId: string }
@@ -35,6 +35,7 @@ function descrever(evento: EventoAtividade): string {
     case 'usuario_status':
       if (typeof evento.ativo !== 'boolean') throw new Error('Estado de atividade inválido.');
       return `Alterou o status do usuário ID ${id} para ${evento.ativo ? 'Ativo' : 'Inativo'}`;
+    case 'solicitacao_registrada': return `Solicitação #SVO-${id} registrada por telefone`;
     case 'solicitacao_confirmada': return `Solicitação #SVO-${id} confirmada na ligação`;
     case 'solicitacao_viagem_criada': return `Criou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_aprovada': return `Aprovou a solicitação de transporte ID ${id}`;

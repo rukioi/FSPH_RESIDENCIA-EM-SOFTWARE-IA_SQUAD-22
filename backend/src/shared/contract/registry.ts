@@ -76,7 +76,13 @@ export const operations: Operacao[] = [
     ['/api/dashboard','/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],s,gestor)),
   op('svo','get','/api/svo/ordens-coleta','OrdensSvo',['ATENDENTE_SVO'],{errors:[400,401,403,500],errorSchema:'ErroOperacionalSvo',
     query:[{name:'status',required:true,schema:z.literal('AGUARDANDO_DESPACHO')}],notes:'status público AGUARDANDO_DESPACHO consulta PENDENTE_ALOCACAO no banco. Array direto; sem paginação.'}),
-  op('svo','post','/api/svo/solicitacoes','SolicitacaoSvo',['ATENDENTE_SVO'],{body:'CriarSolicitacaoSvo',errorSchema:'ErroOperacionalSvo'}),
+  op('svo','get','/api/svo/solicitacoes','SolicitacoesSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,500],errorSchema:'ErroOperacionalSvo',
+    query:[{name:'status',required:false,schema:schemas.StatusTriagem}],
+    notes:'Consulta inicial limitada a 20 registros com protocolo, estado e data. Filtros avançados, detalhes e paginação: SCRUM-146.'}),
+  op('svo','post','/api/svo/solicitacoes','SolicitacaoSvo',['ATENDENTE_SVO'],{
+    body:'CriarSolicitacaoSvo',errors:[400,401,403,409,413,415,500],errorSchema:'ErroOperacionalSvo',
+    notes:'Registra somente a ocorrência telefônica em AGUARDANDO_TRIAGEM; nenhuma ordem até confirmação SVO na SCRUM-131.'}),
   op('svo','patch','/api/svo/ordens-coleta/{id}/despachar','OrdemDespachada',['ATENDENTE_SVO'],{body:'DespacharSvo',errors:[400,401,403,404,409,413,415,500],errorSchema:'ErroOperacionalSvo'}),
   op('veiculos','get','/api/veiculos','ListaVeiculos',consultaFrota,{notes:'Lista completa id DESC, sem paginação. Piloto validado em runtime.'}),
   op('veiculos','post','/api/veiculos','RespostaVeiculo',gestor,{body:'CriarVeiculo',errors:[400,401,403,409,413,415,500]}),

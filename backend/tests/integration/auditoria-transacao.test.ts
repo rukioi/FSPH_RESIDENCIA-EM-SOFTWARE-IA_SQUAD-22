@@ -73,7 +73,7 @@ for (const caso of [
 const dadosSvo = { localFalecimento: 'Fixture Hospital', enderecoRemocao: 'Fixture Rua',
   solicitanteNome: sentinela, solicitanteTelefone: '11999990000', observacoesMedicas: sentinela };
 
-test('SVO reverte solicitação, ordem e as duas atividades quando a atividade falha no banco', async () => {
+test('SVO reverte ocorrência e evento quando a auditoria falha no banco', async () => {
   const original = repository.inserirAtividades;
   const spy = vi.spyOn(repository, 'inserirAtividades').mockImplementationOnce((tx, _id, descricoes) =>
     original(tx, '319999999', descricoes));
@@ -90,13 +90,15 @@ test('SVO reverte solicitação, ordem e as duas atividades quando a atividade f
     on so.id=oc.solicitacao_obito_id where oc.solicitacao_obito_id is not null and so.id is null`).toHaveLength(0);
 });
 
-test('SVO confirma as duas atividades sem dados pessoais; gravação usa a transação do chamador', async () => {
+test('SVO registra um evento sem dados pessoais na transação do cadastro', async () => {
   const response = await call('/api/svo/solicitacoes', 'POST', dadosSvo, svoToken);
   expect(response.status).toBe(201);
   const body = await response.json();
   const rows = await sql`select descricao from public.log_atividade where usuario_id=31103 order by id`;
-  expect(rows).toHaveLength(2);
+  expect(rows).toHaveLength(1);
   expect(rows.map(r => r.descricao)).toEqual(body.atividades);
+  expect(body.ordemColeta).toBeUndefined();
+  expect(body.solicitacao.statusTriagem).toBe('AGUARDANDO_TRIAGEM');
   expect(JSON.stringify(rows)).not.toMatch(/SENHA|TOKEN|CPF|TELEFONE|MEDICO|11999990000/);
   const quantidade = await numeroAtividades();
   await expect(sql.begin(async tx => {

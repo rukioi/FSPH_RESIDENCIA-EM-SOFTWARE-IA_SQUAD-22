@@ -42,7 +42,8 @@ test.each(['42',null])('histórico filtra vínculo estruturado e escopo %s em p�
 test.each(['solicitacao_viagem_criada','solicitacao_viagem_aprovada','solicitacao_viagem_reprovada','solicitacao_viagem_editada','solicitacao_viagem_agendada','solicitacao_viagem_reagendada'] as const)('evento %s persiste vínculo sem interpretar a descrição',async operacao=>{
   mocks.db.mockResolvedValueOnce([]);
   await registrarAtividades(mocks.db as unknown as postgres.TransactionSql,'42',[{operacao,recursoId:'1024'}]);
-  const [parts,...values]=mocks.db.mock.calls[0];expect(parts.join('?')).toContain('(usuario_id, descricao, solicitacao_viagem_id)');
+  const [parts,...values]=mocks.db.mock.calls[0];expect(parts.join('?')).toContain('(usuario_id, descricao, solicitacao_viagem_id, data_hora)');
+  expect(parts.join('?')).toContain('clock_timestamp()::timestamp');
   expect(values[0]).toBe('42');expect(values[2]).toEqual(['1024']);
 });
 test('eventos SVO e usuários continuam sem vínculo institucional',async()=>{

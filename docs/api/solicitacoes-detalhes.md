@@ -35,6 +35,10 @@ Resposta ao solicitante:
 
 Para ADM/Gestor, cada item também contém responsavel com ID/nome, ou null se
 o usuário não existir. Solicitante não recebe esse campo. Nenhum papel recebe email.
+**Exceção à convenção temporal da API:** dataHora não contém offset e não representa
+um instante UTC. Clientes não devem acrescentar Z, assumir -03:00 ou converter
+com Date sem uma convenção de fuso comprovada para aquele registro.
+
 dataHora é o valor civil de log_atividade.data_hora, timestamp without time zone:
 não se infere UTC ou offset histórico. Pode ser null, ordenado ao final.
 Ordenação data_hora ASC NULLS LAST e id ASC numérico para desempate; página e
@@ -117,3 +121,22 @@ Mocks verificam autorização, SQL, vínculo por evento e respostas. Schema, FK,
 consultou detalhes e histórico estruturado após criação, aprovação, agendamento
 e reagendamento. Isso não substitui testes específicos de todas as ordenações,
 falhas de auditoria e disputas concorrentes no banco real.
+
+Nos novos eventos institucionais, data_hora é definido por clock_timestamp()
+no INSERT posterior à aquisição dos locks, convertido para timestamp civil pelo
+fuso da sessão PostgreSQL. Não usa o início da transação nem converte logs
+históricos. A ausência de offset permanece explícita, inclusive nos registros novos.
+
+A implantação da FK/índice em tabela populada exige o
+[rollout em etapas da auditoria](../database/sprint7-auditoria-rollout.md),
+com validação e índice concorrente separados. A migration histórica não é reescrita.
+
+## Prova HTTP em PostgreSQL isolado
+
+A suíte backend/tests/integration/solicitacoes-http.test.ts usa o app, sessão,
+repositórios e PostgreSQL reais, sem mocks. Cobre criação, consulta, decisões,
+edição, agendamento, reagendamento, agenda, disponibilidade, detalhes e histórico,
+além de 401/403/400, isolamento e dois pedidos concorrentes. Uma barreira de locks
+comprova decisão única (200/409); a regressão temporal inicia a edição antes da
+aprovação, aguarda seu lock e exige a ordem Criou → Aprovou → Editou. O teste
+falha com CURRENT_TIMESTAMP de início de transação e passa com o relógio de inserção.

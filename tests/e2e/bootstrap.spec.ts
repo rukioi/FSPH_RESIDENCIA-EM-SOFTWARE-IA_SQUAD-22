@@ -112,25 +112,19 @@ for(const width of [390,768,1280]) {
   });
 }
 
-test('SVO confirma despacho existente e mantém conflito sem confirmação local',async({page,request})=>{
-  const created=await request.post('/api/svo/solicitacoes',{headers:{Authorization:`Bearer ${svoToken}`},
+test('SVO registra solicitação aguardando triagem, sem criar ordem', async ({page,request})=>{
+  const response = await request.post('/api/svo/solicitacoes',{headers:{Authorization:`Bearer ${svoToken}`},
     data:{localFalecimento:'Fixture',enderecoRemocao:'Endereço fictício T30',solicitanteNome:'Fixture T30'}});
-  expect(created.status()).toBe(201);const order=(await created.json()).ordemColeta;
-  await page.goto('/login');await page.evaluate(t=>sessionStorage.setItem('token',t),svoToken);
+  expect(response.status()).toBe(201);
+  const body = await response.json();
+  expect(body.solicitacao.statusTriagem).toBe('AGUARDANDO_TRIAGEM');
+  expect(body.solicitacao.codigo).toBe(`#SVO-${body.solicitacao.id}`);
+  expect(body.ordemColeta).toBeUndefined();
+  const ordens = await sql`SELECT id FROM public.ordem_coleta
+    WHERE solicitacao_obito_id=${body.solicitacao.id}`;
+  expect(ordens).toHaveLength(0);
+  await page.goto('/login');
+  await page.evaluate(token=>sessionStorage.setItem('token',token),svoToken);
   await page.goto('/svo');
-  const row=page.locator('.svo-despacho').getByRole('row').filter({hasText:`OC-${order.id}`});
-  await row.getByRole('button',{name:'Preparar despacho'}).click();
-  const dialog=page.getByRole('dialog');
-  await dialog.getByLabel('Veículo',{exact:true}).selectOption('30003');
-  await dialog.getByLabel('Motorista',{exact:true}).selectOption('30003');
-  await page.route('**/despachar',route=>route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({erro:'Recurso indisponível. Tente novamente.'})}));
-  await dialog.getByRole('button',{name:'Confirmar despacho',exact:true}).click();
-  await expect(dialog.getByRole('alert')).toContainText('Recurso indisponível');
-  await expect(row).toBeVisible();
-  await page.unroute('**/despachar');
-  await dialog.getByRole('button',{name:'Confirmar despacho',exact:true}).click();
-  await expect(dialog).toHaveCount(0);
-  await expect(row).toHaveCount(0);
-  const [persisted]=await sql`select status,motorista_id,veiculo_id from ordem_coleta where id=${order.id}`;
-  expect(persisted).toMatchObject({status:'EM_DESLOCAMENTO',motorista_id:'30003',veiculo_id:'30003'});
+  await expect(page.getByRole('heading',{name:'Dashboard SVO'})).toBeVisible();
 });

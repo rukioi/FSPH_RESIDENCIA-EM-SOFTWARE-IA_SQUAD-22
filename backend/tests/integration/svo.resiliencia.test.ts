@@ -8,6 +8,7 @@ import { SignJWT } from 'jose';
 vi.mock('../../src/modules/svo/svo.repository.js', () => ({
   listarOrdensPendentes: vi.fn(),
   criarSolicitacao: vi.fn(),
+  listarSolicitacoes: vi.fn(),
   despacharOrdem: vi.fn(),
 }));
 

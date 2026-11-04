@@ -144,7 +144,7 @@ export function NovaSolicitacaoSvo({
           />
         </div>
 
-        {enviando && <p role="status">Confirmando solicitação...</p>}
+        {enviando && <p role="status">Registrando solicitação...</p>}
         {erro && (
           <p className="svo-formulario__erro" role="alert">
             {erro}
@@ -166,7 +166,7 @@ export function NovaSolicitacaoSvo({
             className="svo-formulario__confirmar"
             disabled={enviando}
           >
-            {enviando ? "Confirmando..." : "Confirmar"}
+            {enviando ? "Registrando..." : "Registrar"}
           </button>
         </div>
       </form>

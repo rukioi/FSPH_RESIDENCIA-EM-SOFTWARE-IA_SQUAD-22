@@ -125,3 +125,7 @@ Nenhum teste faz repair ou grava histórico Supabase. A criação real do banco 
 continua coberta por db:test:prepare com baseline e todos os incrementais ordenados;
 db:docs:check confere o resultado contra schema, metadados e DER. Esses ensaios não
 atestam nem corrigem o ambiente compartilhado.
+
+Para a FK e o índice da auditoria em tabela populada, seguir também o
+[rollout em etapas da auditoria](./sprint7-auditoria-rollout.md). Não usar o
+runner transacional para CREATE INDEX CONCURRENTLY.
