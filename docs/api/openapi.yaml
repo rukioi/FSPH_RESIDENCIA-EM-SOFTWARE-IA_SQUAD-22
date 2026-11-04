@@ -1139,7 +1139,7 @@ paths:
       operationId: svo_get__api_svo_solicitacoes
       tags:
         - svo
-      description: Consulta inicial limitada a 20 registros com protocolo, estado e data. Filtros avançados, detalhes e paginação: SCRUM-146.
+      description: "Consulta inicial limitada a 20 registros com protocolo, estado e data. Filtros avançados, detalhes e paginação: SCRUM-146."
       security:
         - bearerAuth: []
       x-perfis:

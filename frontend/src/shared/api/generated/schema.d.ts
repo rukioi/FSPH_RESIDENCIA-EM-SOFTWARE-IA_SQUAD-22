@@ -137,6 +137,19 @@ export type OrdensSvo = {
   nome_falecido: string | null;
   endereco_remocao: string;
 }[];
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "SolicitacoesSvo".
+ */
+export type SolicitacoesSvo = {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  codigo: string;
+  status_triagem: ('AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML') | null;
+  criado_em: string | null;
+}[];
 
 export interface ApiSchemas {
   Erro: Erro;
@@ -845,19 +858,6 @@ export interface SolicitacaoSvo {
   };
   atividades: string[];
 }
-/**
- * This interface was referenced by `ApiSchemas`'s JSON-Schema
- * via the `definition` "SolicitacoesSvo".
- */
-export type SolicitacoesSvo = {
-  /**
-   * BIGINT serializado pelo postgres como string; não converter para Number.
-   */
-  id: string;
-  codigo: string;
-  status_triagem: 'AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML' | null;
-  criado_em: string | null;
-}[];
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "DespacharSvo".
