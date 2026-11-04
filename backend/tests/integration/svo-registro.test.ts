@@ -20,8 +20,13 @@ const dados = {
 };
 
 beforeAll(async () => {
-  tokenSvo = await criarJwt({ id: '-27005', perfil: 'ATENDENTE_SVO' });
-  tokenAdmin = await criarJwt({ id: '-27001', perfil: 'ADM' });
+  // A rota SVO requer identificador positivo; estas contas são fixtures locais do teste isolado.
+  await sql`INSERT INTO public.usuario (id, nome, email, senha_hash, perfil, ativo)
+    VALUES
+      (33001, 'Fixture SCRUM-130 SVO', 's130-svo@example.invalid', 'sem-login', 'ATENDENTE_SVO', TRUE),
+      (33002, 'Fixture SCRUM-130 ADM', 's130-adm@example.invalid', 'sem-login', 'ADM', TRUE)`;
+  tokenSvo = await criarJwt({ id: '33001', perfil: 'ATENDENTE_SVO' });
+  tokenAdmin = await criarJwt({ id: '33002', perfil: 'ADM' });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
@@ -30,9 +35,10 @@ afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()));
   for (const id of cadastradas) {
     await sql`DELETE FROM public.log_atividade
-      WHERE usuario_id = -27005 AND descricao = ${'Solicitação #SVO-' + id + ' registrada por telefone'}`;
+      WHERE usuario_id = 33001 AND descricao = ${'Solicitação #SVO-' + id + ' registrada por telefone'}`;
     await sql`DELETE FROM public.solicitacao_obito WHERE id = ${id}`;
   }
+  await sql`DELETE FROM public.usuario WHERE id IN (33001, 33002)`;
   await sql.end();
 });
 
@@ -67,7 +73,7 @@ test('registro válido grava apenas ocorrência aguardando triagem e uma ativida
       canal_atendimento, ponto_referencia, criado_em
     FROM public.solicitacao_obito WHERE id = ${body.solicitacao.id}`;
   expect(registro).toMatchObject({
-    id: body.solicitacao.id, atendente_id: '-27005',
+    id: body.solicitacao.id, atendente_id: '33001',
     status_triagem: 'AGUARDANDO_TRIAGEM', canal_atendimento: 'TELEFONE',
     ponto_referencia: 'Em frente à praça',
   });
@@ -77,7 +83,7 @@ test('registro válido grava apenas ocorrência aguardando triagem e uma ativida
   expect(ordens.total).toBe(0);
   const atividades = await sql`
     SELECT descricao FROM public.log_atividade
-    WHERE usuario_id = -27005 AND descricao = ${body.atividades[0]}`;
+    WHERE usuario_id = 33001 AND descricao = ${body.atividades[0]}`;
   expect(atividades).toHaveLength(1);
 });
 
