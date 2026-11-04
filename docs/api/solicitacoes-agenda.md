@@ -161,10 +161,14 @@ e status AGENDADA. Não aplica a regra de voltar a PENDENTE do PATCH de edição
 ## O que a entrega não faz
 
 Sem cancelamento, execução de viagens, horários SVO inventados, acesso novo para
-solicitante/motorista/SVO ou promessa de disponibilidade futura. Não adiciona
-DDL, migration ou mudança de histórico. Disponibilidade não ignora reservas
+solicitante/motorista/SVO ou promessa de disponibilidade futura. Estes endpoints
+não exigem migration adicional às quatro institucionais incluídas na entrega;
+seus pré-requisitos e a reconciliação remota estão no
+[procedimento de rollout](../database/sprint7-reconciliacao.md).
+Disponibilidade não ignora reservas
 próprias: a exclusão só existe na validação transacional do reagendamento.
 
 Testes com mocks verificam rotas, filtros, escopo, SQL, ordem de locks e falhas.
-Persistência, snapshots, normalização temporal, rollback e disputas concorrentes
-continuam pendentes de comprovação no PostgreSQL isolado.
+Os snapshots foram regenerados e conferidos em PostgreSQL isolado; o smoke real
+cobriu agendamento e reagendamento com persistência e histórico. Isso não comprova
+todos os filtros da agenda/disponibilidade, falhas de rollback ou concorrência real.

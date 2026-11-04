@@ -118,15 +118,22 @@ a consulta seguinte veja a reserva recém-confirmada pelo outro fluxo.
 A garantia exige que todas as alocações passem pelos dois fluxos atualizados.
 Escritas SQL externas não são protegidas por esse protocolo de aplicação.
 
-## O que a entrega não faz
+## Limites do endpoint de agendamento
 
 Não executa viagem, inventa fim SVO, cancela, reagenda, reserva veículo is_svo
-exclusivamente ou introduz regras de CNH/capacidade não aprovadas. Não muda DDL,
-migrations ou histórico. Depende da coluna e constraint de retorno já confirmadas
-pelo responsável. Não cria novo evento de auditoria do despacho SVO: a auditoria
+exclusivamente ou introduz regras de CNH/capacidade não aprovadas.
+A entrega inclui 20261104000002_add_retorno_previsto.sql, com coluna timestamp
+without time zone nullable e CHECK solicitacao_viagem_retorno_previsto_check.
+Banco novo executa o incremento após a baseline; banco com a alteração manual
+precisa de [inspeção e reconciliação explícitas](../database/sprint7-reconciliacao.md),
+sem repetir ADD CONSTRAINT nem ignorar definições divergentes. A migration e seu
+hash são preservados. Não cria novo evento de auditoria do despacho SVO: a auditoria
 nova é do agendamento institucional, preservando o fluxo SVO fora das verificações
 de disponibilidade autorizadas.
 
-Testes com mocks validam parâmetros SQL, locks, permissões e falhas; não provam
-rollback, conversão temporal nem disputas entre transações PostgreSQL reais.
-Essa validação permanece pendente no harness isolado.
+Testes com mocks validam parâmetros SQL, locks, permissões e falhas. A reconstrução
+do schema e o CHECK foram validados em PostgreSQL isolado. O smoke real comprovou
+agendamento com IDs negativos, horário institucional e rejeição de duplicidade;
+não é uma prova de todas as disputas concorrentes ou falhas de rollback. Os cenários
+de reconciliação novo/equivalente/divergente são ensaiados em tabelas efêmeras
+pelo teste de banco descrito no procedimento de rollout.

@@ -100,10 +100,13 @@ Content-Type: application/json
 {"motivo":"Pedido sem justificativa institucional."}
 ```
 
-## O que a entrega não faz
+## Limites dos endpoints de decisão
 
 Não agenda, aloca recursos, executa viagem, edita pedido, cancela, reabre decisão
-ou muda o SVO. APROVADA não equivale a AGENDADA. Enum remoto e migrations locais
-foram informados pelo responsável, sem execução/alteração nesta entrega.
-Testes com mocks verificam fluxo e SQL, não provam locks, rollback ou disputa
-entre transações PostgreSQL reais. Essa prova permanece pendente no banco isolado.
+ou muda o SVO. APROVADA não equivale a AGENDADA. A entrega inclui a migration
+20261104000001_add_status_aprovada.sql, que adiciona APROVADA após PENDENTE no enum
+public.status_solicitacao. Ela é confirmada antes de o seed usar o novo valor.
+O enum e os snapshots foram verificados no PostgreSQL isolado; aprovação também
+passou no smoke HTTP real. Mocks não comprovam todos os cenários de rollback e
+disputa entre transações. O estado manual informado do Supabase exige
+[reconciliação do histórico](../database/sprint7-reconciliacao.md) antes do rollout.

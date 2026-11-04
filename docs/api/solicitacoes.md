@@ -138,10 +138,13 @@ saia dos anos 0001–9999 no horário institucional, inclusive carry de arredond
 de frações para microssegundos. Erro 400 antes de consultar ou gravar dados. Essa
 validação também vale para PATCH, agendamento, reagendamento, agenda e disponibilidade.
 
-Coluna finalidade TEXT NULL confirmada pelo responsável como aplicada manualmente
-no Supabase; ainda não consta da baseline isolada. Esta entrega não lê credenciais,
-cria DDL, migration ou snapshot. O banco de destino precisa conter essa coluna.
-Falta versionar/reconciliar essa alteração em tarefa autorizada.
+A entrega inclui a migration 20261104000000_add_finalidade_solicitacao_viagem.sql,
+que adiciona finalidade TEXT nullable após a baseline, preservando registros antigos.
+Schema, metadados e DER versionados já incluem esse incremento e foram conferidos
+em PostgreSQL Docker isolado. A aplicação manual no Supabase foi informada pelo
+responsável; equivalência e histórico remoto ainda precisam ser reconciliados
+conforme o [procedimento de rollout](../database/sprint7-reconciliacao.md).
+A inclusão no Git não comprova a reconciliação do banco compartilhado.
 
 Testes sem banco: `npx vitest run --config backend/tests/solicitacoes.config.ts`.
 Mocks verificam HTTP, escopo, parâmetros SQL e falhas transacionais; não comprovam

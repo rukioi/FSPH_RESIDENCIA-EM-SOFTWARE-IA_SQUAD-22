@@ -61,7 +61,7 @@ não é um mecanismo de reconciliação para banco existente.
 Fixtures usam IDs negativos reservados de -27099 a -27001, nomes explícitos,
 e-mails `example.invalid`, datas fixas e hash bcrypt exclusivamente artificial.
 A senha das fixtures é `T1-fixture-2026!`. Elas cobrem todos os perfis e valores
-dos sete enums; não representam combinações ou regras de alocação aprovadas.
+dos oito enums; não representam combinações ou regras de alocação aprovadas.
 O seed não avança sequências positivas e `ON CONFLICT (id) DO NOTHING` permite
 repetição. Testes adicionais usam transações com rollback e IDs próprios.
 Nenhuma linha operacional foi consultada ou exportada.
@@ -72,12 +72,19 @@ exigem os novos campos nullable, a posição de APROVADA no enum, CHECK de retor
 FK e índice da auditoria, além da igualdade integral com o snapshot gerado. As
 contagens são derivadas desse snapshot, não substituídas por números adivinhados.
 
-Neste checkout Windows não foram encontrados Docker/psql/pg_ctl nem o comprovante
-`.test-db/provision.json`. Os snapshots versionados continuam sendo os anteriores
-à Sprint 7: não foram fabricados ou editados manualmente. Até preparar o banco
-isolado e executar db:docs:generate/check, o gate de schema permanece pendente e
-deve detectar a diferença. Os testes unitários do runner comprovam apenas a
-orquestração de commits com mocks, não a execução das migrations no PostgreSQL.
+Os artefatos versionados schema.sql, schema-metadata.json e der.mmd já incluem
+a evolução SVO e as quatro migrations institucionais da Sprint 7. Foram gerados
+dos catálogos do PostgreSQL 17 Docker isolado; db:docs:check passou sem drift.
+O snapshot atual contém 10 tabelas, 109 colunas, 8 enums, 42 constraints e 22 índices,
+conforme schema-metadata.json. Os testes preservam a comparação integral de
+metadados; mocks não substituem a prova real de banco.
+
+A aplicação manual informada no Supabase ainda exige inspeção de equivalência
+e reconciliação do histórico antes de qualquer rollout. O
+[procedimento obrigatório](./sprint7-reconciliacao.md) contém consultas somente de
+leitura, critérios de parada e responsabilidades. O schema compartilhado não foi
+consultado nem corrigido por esta validação; não reaplicar a baseline ou o CHECK
+existente. As migrations e seus hashes permanecem imutáveis.
 
 ## Esquema auditado e proveniência
 
@@ -86,7 +93,9 @@ Fonte: catálogos do Supabase conectado, consultados em leitura pelo MCP em
 Foram capturados tipos completos via `format_type`, defaults, enums em ordem,
 sequências (sem valores correntes), proprietários, ACLs de objetos/schema/defaults,
 constraints com validação e ações, índices, RLS, policies e triggers não internos.
-São 10 tabelas, 99 colunas, 7 enums, 36 constraints e 19 índices PK/UNIQUE.
+A captura histórica da baseline contém 10 tabelas, 99 colunas, 7 enums, 36 constraints
+e 19 índices PK/UNIQUE; esses números não representam o snapshot atual, evoluído
+pelos incrementais descritos acima.
 Nenhum trigger público não interno ou policy pública foi encontrado.
 Uma consulta complementar confirmou ausência de ACLs por coluna, rotinas em public
 e defaults globais de ACL para postgres/supabase_admin fora do schema public.

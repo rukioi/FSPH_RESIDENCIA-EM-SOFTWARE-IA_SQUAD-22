@@ -106,8 +106,14 @@ quando IDs numéricos coincidirem. Lotes mistos mantêm a correspondência por e
 Não associa logs antigos com vínculo null, não interpreta texto, não cria eventos
 de ações que não ocorreram nem reconstrói valores anteriores ou motivos a partir
 de descrições. Não muda as outras operações ou a auditoria administrativa.
-Coluna nullable/FK/índice foram confirmados pelo responsável; esta entrega não
-altera DDL, migrations, estrutura ou o banco compartilhado.
+A entrega inclui 20261104000003_add_solicitacao_viagem_id_log_atividade.sql:
+coluna solicitacao_viagem_id BIGINT nullable, FK para public.solicitacao_viagem(id)
+e índice idx_log_atividade_solicitacao_viagem_id. A API depende desses objetos.
+O vínculo não é preenchido em logs antigos. Sua inclusão não confirma a
+[reconciliação do histórico compartilhado](../database/sprint7-reconciliacao.md).
 
-Mocks verificam autorização, SQL, vínculo por evento e respostas; persistência,
-FK, snapshots, ordenação e rollback reais seguem pendentes no PostgreSQL isolado.
+Mocks verificam autorização, SQL, vínculo por evento e respostas. Schema, FK,
+índice e snapshots foram conferidos no PostgreSQL isolado; o smoke HTTP real
+consultou detalhes e histórico estruturado após criação, aprovação, agendamento
+e reagendamento. Isso não substitui testes específicos de todas as ordenações,
+falhas de auditoria e disputas concorrentes no banco real.

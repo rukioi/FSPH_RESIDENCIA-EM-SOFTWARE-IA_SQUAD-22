@@ -122,6 +122,9 @@ tem apenas botão Editar demonstrativo; campos e estados deste contrato foram
 confirmados explicitamente pelo responsável.
 
 Sem edição de reservas, solicitante, código ou identidade do responsável pelo
-corpo; sem nova migration, DDL, alteração do SVO ou política de disponibilidade.
+corpo. O PATCH não exige migration própria nem altera o SVO ou a política de
+disponibilidade. A entrega completa inclui as quatro migrations institucionais,
+com pré-requisitos e histórico descritos no
+[procedimento de rollout](../database/sprint7-reconciliacao.md).
 Mocks verificam fluxo e parâmetros SQL; locks, rollback e concorrência real
 continuam pendentes de prova no PostgreSQL isolado.
