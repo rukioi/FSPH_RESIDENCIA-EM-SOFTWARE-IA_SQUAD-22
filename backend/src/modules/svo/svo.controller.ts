@@ -4,9 +4,11 @@ import { registrarFalha } from '../../shared/logging/logger.js';
 import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { svoSchemas } from './svo.schemas.js';
 import {
   listarOrdensPendentes,
   criarSolicitacao,
+  listarSolicitacoes,
   despacharOrdem,
 } from './svo.repository.js';
 
@@ -58,92 +60,63 @@ export async function listarOrdensPendentesController(
   }
 }
 
-/**
- * Cria uma solicitação de óbito a partir de um JSON de até 64 KB.
- * Corpo grande responde 413. Falha de leitura não segue para o banco.
- */
+/** Consulta inicial da SCRUM-130: até 20 registros, sem informações pessoais. */
+export async function listarSolicitacoesController(
+  response: ServerResponse,
+  params: URLSearchParams,
+): Promise<void> {
+  if ([...params.keys()].some(key => key !== 'status') || params.getAll('status').length > 1) {
+    jsonCompartilhado(response, 400, { erro: 'Filtro inválido.' });
+    return;
+  }
+  const raw = params.get('status');
+  const filtro = raw === null ? undefined : svoSchemas.StatusTriagem.safeParse(raw);
+  if (filtro !== undefined && !filtro.success) {
+    jsonCompartilhado(response, 400, { erro: 'Status de triagem inválido.' });
+    return;
+  }
+  try {
+    jsonCompartilhado(response, 200, await listarSolicitacoes(filtro?.data));
+  } catch (erro) {
+    registrarFalha(erro);
+    jsonCompartilhado(response, 500, {
+      error: { code: 'ERRO_INTERNO', message: 'Não foi possível consultar solicitações SVO.' },
+    });
+  }
+}
+
+/** Registra atendimento telefônico autenticado; não cria ordem nem conclui triagem. */
 export async function criarSolicitacaoController(
   request: IncomingMessage,
   response: ServerResponse,
-  atendenteId: string
+  atendenteId: string,
 ): Promise<void> {
-  const dados = await lerDadosDaRequisicao(request, response);
+  const corpo = await lerDadosDaRequisicao(request, response);
+  if (corpo === undefined) return;
 
-  if (dados === undefined) {
-    return;
-  }
-
-  if (
-    typeof dados !== 'object' ||
-    dados === null ||
-    Array.isArray(dados)
-  ) {
+  const validacao = svoSchemas.CriarSolicitacaoSvo.safeParse(corpo);
+  if (!validacao.success) {
     jsonCompartilhado(response, 400, {
-      erro: 'Os dados da solicitação são inválidos.',
+      erro: 'Dados da ocorrência inválidos ou campos não permitidos.',
     });
     return;
   }
-
-  const camposObrigatorios = [
-    'localFalecimento',
-    'enderecoRemocao',
-    'solicitanteNome',
-  ] as const;
-
-  for (const campo of camposObrigatorios) {
-    const valor = (dados as Record<string, unknown>)[campo];
-
-    if (typeof valor !== 'string' || valor.trim() === '') {
-      jsonCompartilhado(response, 400, {
-        erro: `O campo ${campo} é obrigatório.`,
-      });
-      return;
-    }
-  }
-
-  const camposOpcionais = [
-    'nomeFalecido',
-    'solicitanteParentesco',
-    'solicitanteTelefone',
-    'observacoesMedicas',
-  ] as const;
-
-  for (const campo of camposOpcionais) {
-    const valor = (dados as Record<string, unknown>)[campo];
-
-    if (
-      valor !== undefined &&
-      valor !== null &&
-      typeof valor !== 'string'
-    ) {
-      jsonCompartilhado(response, 400, {
-        erro: `O campo ${campo} precisa ser um texto.`,
-      });
-      return;
-    }
-  }
-
   try {
-    const resultado = await criarSolicitacao({
-      atendenteId,
-      localFalecimento: (dados as Record<string, string>).localFalecimento,
-      enderecoRemocao: (dados as Record<string, string>).enderecoRemocao,
-      solicitanteNome: (dados as Record<string, string>).solicitanteNome,
-      nomeFalecido: (dados as Record<string, string>).nomeFalecido,
-      solicitanteParentesco: (dados as Record<string, string>).solicitanteParentesco,
-      solicitanteTelefone: (dados as Record<string, string>).solicitanteTelefone,
-      observacoesMedicas: (dados as Record<string, string>).observacoesMedicas,
-    });
-
+    const resultado = await criarSolicitacao({ ...validacao.data, atendenteId });
     jsonCompartilhado(response, 201, resultado);
   } catch (erro) {
     registrarFalha(erro);
-
+    const codigo = typeof erro === 'object' && erro !== null && 'code' in erro ? erro.code : undefined;
+    if (codigo === '23505') {
+      jsonCompartilhado(response, 409, { erro: 'Conflito ao gerar o protocolo da ocorrência.' });
+      return;
+    }
+    if (codigo === '23503') {
+      jsonCompartilhado(response, 409, { erro: 'Atendente não está disponível para registrar a ocorrência.' });
+      return;
+    }
     jsonCompartilhado(response, 500, {
-      error: {
-        code: 'ERRO_INTERNO',
-        message: 'Não foi possível criar a solicitação de óbito.',
-      },
+      error: { code: 'ERRO_INTERNO', message: 'Não foi possível criar a solicitação de óbito.' },
     });
   }
 }
