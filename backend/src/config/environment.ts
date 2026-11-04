@@ -8,7 +8,7 @@ export function carregarAmbiente(): void {
   }
 }
 
-/** Valida TLS sem incluir URL ou credenciais nos erros. Só loopback explícito permite desativá-lo. */
+/** Valida TLS sem incluir URL ou credenciais nos erros. Só loopback ou Compose local estritamente identificado permitem desativá-lo. */
 export function configurarBanco(env: NodeJS.ProcessEnv = process.env): {
   url: string; ssl: false | ConnectionOptions;
 } {
@@ -19,7 +19,10 @@ export function configurarBanco(env: NodeJS.ProcessEnv = process.env): {
   } catch { throw new Error('Configuração do banco inválida.'); }
   const local = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname);
   const mode = env.DB_TLS ?? 'verify';
-  if (!['verify', 'disable'].includes(mode) || (mode === 'disable' && !local)) {
+  const composeLocal = env.NODE_ENV === 'development' && env.FSPH_LOCAL_COMPOSE === '1'
+    && url.hostname === 'db' && url.port === '5432'
+    && url.pathname === '/fsph_compose_dev';
+  if (!['verify', 'disable'].includes(mode) || (mode === 'disable' && !local && !composeLocal)) {
     throw new Error('Configuração TLS do banco inválida.');
   }
   for (const key of [...url.searchParams.keys()]) {

@@ -1,0 +1,101 @@
+name: fsph-compose-dev-2026
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fsph_compose_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: fsph-compose-local-postgres-2026
+    volumes:
+      - fsph_compose_db_data:/var/lib/postgresql/data
+      - ./infra/docker/initdb/00-compose-roles.sql:/docker-entrypoint-initdb.d/00-compose-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d fsph_compose_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 10s
+    networks: [fsph-local]
+
+  db-migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: "no"
+    command: ["node", "/workspace/infra/docker/apply-local-migrations.mjs"]
+    environment:
+      NODE_ENV: development
+      FSPH_COMPOSE_MIGRATIONS: "1"
+      DATABASE_URL: postgres://postgres:fsph-compose-local-postgres-2026@db:5432/fsph_compose_dev
+    volumes:
+      - ./backend/src/database/supabase/migrations:/workspace/backend/src/database/supabase/migrations:ro
+      - ./backend/src/database/supabase/seed.sql:/workspace/backend/src/database/supabase/seed.sql:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [fsph-local]
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      FSPH_LOCAL_COMPOSE: "1"
+      DB_TLS: disable
+      DATABASE_URL: postgres://fsph_compose_app:fsph-compose-local-app-2026@db:5432/fsph_compose_dev
+      JWT_SECRET: fsph-compose-fixture-secret-local-only-not-for-production-2026
+    volumes:
+      - ./backend/src:/workspace/backend/src:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/auth/sessao').then(r=>process.exit(r.status===401?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    networks: [fsph-local]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    working_dir: /workspace/frontend
+    restart: unless-stopped
+    environment:
+      FSPH_DEV_API_TARGET: http://backend:3000
+    command: ["/workspace/node_modules/.bin/vite", "--host", "0.0.0.0", "--port", "5173", "--strictPort"]
+    volumes:
+      - ./frontend/src:/workspace/frontend/src:ro
+      - ./frontend/vite.config.ts:/workspace/frontend/vite.config.ts:ro
+      - ./frontend/index.html:/workspace/frontend/index.html:ro
+      # O Vite valida respostas com schemas compartilhados do backend.
+      - ./backend/src:/workspace/backend/src:ro
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "Promise.all([fetch('http://127.0.0.1:5173/'), fetch('http://127.0.0.1:5173/src/shared/services/svo.service.ts')]).then(rs=>process.exit(rs.every(r=>r.ok)?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    networks: [fsph-local]
+
+volumes:
+  fsph_compose_db_data:
+    name: fsph_compose_dev_db_data_2026
+
+networks:
+  fsph-local:
+    name: fsph_compose_dev_net_2026
+    driver: bridge

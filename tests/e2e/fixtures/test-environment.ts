@@ -12,6 +12,7 @@ Object.assign(env, {
   NODE_ENV: 'test', DATABASE_URL: testUrl,
   FSPH_TEST_NONCE: verifyContainer().nonce,
   JWT_SECRET: 'fixture-t1-jwt-2026-32-bytes-minimum',
+  LOGIN_RATE_LIMIT: '100',
 });
 process.env = env;
 const { createServer } = await import('vite');

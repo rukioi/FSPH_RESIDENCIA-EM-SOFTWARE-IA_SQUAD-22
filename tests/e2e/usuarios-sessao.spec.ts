@@ -125,6 +125,9 @@ test('desativação encerra o acesso na próxima consulta',async ({page})=>{
   await expect(page.getByRole('heading',{name:'Gestão de usuários'})).toBeVisible();
   await sql`update public.usuario set ativo=false where id=${sessionId}`;
   await page.reload();
-  await expect(page).toHaveURL(/\/login$/);
-  expect(await page.evaluate(()=>sessionStorage.getItem('token'))).toBeNull();
+  await page.waitForURL(/\/login$/, { waitUntil: 'load' });
+  await expect(page.getByRole('heading', { name: 'Acesse sua conta' })).toBeVisible();
+  await expect.poll(async () => {
+    return page.evaluate(() => sessionStorage.getItem('token'));
+  }).toBeNull();
 });
