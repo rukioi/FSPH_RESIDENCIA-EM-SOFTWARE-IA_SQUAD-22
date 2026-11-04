@@ -71,7 +71,7 @@ Registros legados podem ter `status_triagem: null` e devem ser conciliados pela 
 
 ## Erros e segurança
 
-**400**: dados de entrada/campos extras/filtro de status inválidos; **401**: sessão inexistente ou inválida; **403**: perfil não autorizado; **405**: método inválido, header `Allow`; **409**: conflito de unicidade ou atendente; **413**: corpo excessivo; **415**: tipo de mídia diferente de JSON; **500**: erro interno sem informações pessoais. Erros 4xx usam envelope `{"error":{"code":"HTTP_400","message":"..."}}` (exceto códigos especializados já existentes). `X-Request-Id` acompanha toda resposta.
+**400**: dados de entrada/campos extras/filtro de status inválidos; **401**: sessão inexistente ou inválida; **403**: perfil não autorizado; **405**: método inválido, header `Allow`; **409**: conflito de unicidade do protocolo; **413**: corpo excessivo; **415**: tipo de mídia diferente de JSON; **500**: erro interno sem informações pessoais. Erros 4xx usam envelope `{"error":{"code":"HTTP_400","message":"..."}}` (exceto códigos especializados já existentes). `X-Request-Id` acompanha toda resposta.
 
 ## Dependências de banco e subtasks
 
