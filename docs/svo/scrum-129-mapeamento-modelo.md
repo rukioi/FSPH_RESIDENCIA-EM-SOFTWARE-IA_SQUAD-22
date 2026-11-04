@@ -1,6 +1,6 @@
 # SCRUM-129 — Inventário e validação do modelo SVO (AS-IS × TO-BE)
 
-> Estado: inventário técnico concluído; decisões de domínio e homologação pendentes.  
+> Estado: inventário técnico concluído; decisões e implementações distribuídas por subtasks. A revisão da SCRUM-129 valida o levantamento e a matriz de responsabilidades, sem declarar as funcionalidades operacionais prontas.  
 > Recorte: 04/11/2026. **Auditoria exclusivamente de leitura** no Supabase conectado; nenhuma DDL, DML, seed, alteração de RLS, migration, deploy ou teste destrutivo foi executado.  
 > Jira: [SCRUM-129](https://unit-tiradentes.atlassian.net/browse/SCRUM-129) · Pai: SCRUM-125 · Banco: SCRUM-162 · Próxima implementação: SCRUM-130/131/132/145/147.
 
@@ -103,7 +103,7 @@ Triagem por perfil autorizado (registrar responsável e instante)
 | Observações médicas e triagem | Proteger como dados potencialmente sensíveis; restringir leitura e auditoria | RNF08/RNF14–16 |
 | Número de corpos e ocupação | Informar fonte/procedimento e instante de entrada/saída; **nunca deduzir = 1** | DVP §6.2 / SCRUM-147 |
 
-## 6. Decisões ainda necessárias antes de liberar o fluxo completo
+## 6. Decisões de domínio e critérios de encaminhamento
 
 1. **Triagem:** homologar nomes/estados `AGUARDANDO_TRIAGEM`, `CONFIRMADA_SVO`, `ENCAMINHADA_IML`; quem pode decidir/reverter e com qual justificativa. Nunca reutilizar `status_ordem_coleta` para triagem.
 2. **Quantidade e lotação:** validar entrada de `quantidade_corpos`, regras de reserva versus embarque/desembarque, transferência, cancelamento, conclusão, múltiplas ordens e atomicidade sob concorrência. Testar 3/4 → 4/4 → rejeição de quinto corpo.
@@ -117,7 +117,7 @@ Triagem por perfil autorizado (registrar responsável e instante)
 | Critério SCRUM-129 | Evidência/status |
 | --- | --- |
 | AS-IS × TO-BE por entidade, FK, status e RBAC | **Mapeado** neste documento, com referência ao schema remoto e à migration local. |
-| Identificação dos bloqueios e decisões de domínio | **Mapeados, aguardam homologação** (seção 6). |
+| Identificação dos bloqueios e decisões de domínio | **Mapeados e atribuídos** por responsável (seções 6 e 8); revisões de negócio específicas permanecem nos itens executores. |
 | Triagem antes de ordem; IML sem ordem; solicitação 0..1 ordem | **Modelo proposto**, migration local parcial; backend atual **não atende**. Implementar/testar em SCRUM-130/131. |
 | Lotação física máxima S10 sob concorrência | **Não implementada** no backend atual; somente faixa 1–4 por ordem na migration local. SCRUM-147. |
 | Migrations/rollback/testes isolados caso haja alteração de banco | **Fora do escopo de implementação desta SCRUM-129**, atribuídos à SCRUM-162. Não foram executados nesta auditoria. |
@@ -133,4 +133,39 @@ Triagem por perfil autorizado (registrar responsável e instante)
 
 ### Encaminhamento
 
-Revisar este inventário com a pessoa responsável pelo banco/PO. A SCRUM-162 está **Concluída no Jira e versionada no GitHub**, mas isso **não significa aplicada no Supabase remoto**. Após homologar decisões da seção 6 e revisar o status de banco/testes, liberar SCRUM-130 e SCRUM-131 em branch separada. **Não encerrar a SCRUM-129 automaticamente sem aceitação da equipe.**
+Revisar e aceitar o inventário e as decisões técnicas nesta SCRUM-129; cada implementação especializada conserva seus próprios testes, critérios de aceite e eventual validação de negócio. A SCRUM-162 está **Concluída no Jira e versionada no GitHub**, mas isso **não significa aplicada no Supabase remoto**. Não bloquear a preparação isolada da SCRUM-130 por falta de deploy remoto; manter testes de integração e homologação em ambiente controlado. **Não encerrar a SCRUM-129 automaticamente sem aceitação da equipe.**
+
+
+## 8. Fechamento de escopo por subtask — matriz de pendências
+
+**Regra de responsabilidade do squad:** uma lacuna não deve ficar sem responsável nem ser implementada duas vezes. A SCRUM-129 resolve **análise de schema e definição do contrato de domínio com base documental**; mudanças executáveis de schema pertencem à SCRUM-162; API, segurança e regras transacionais aos tickets indicados abaixo. Somente incorporar código à 129 quando a mudança for necessária ao aceite de mapeamento e **não existir task especializada**. Não alterar migrations já aplicadas nem o banco remoto diretamente.
+
+| Questão identificada | Conclusão técnica verificável nesta SCRUM-129 | Implementação / aceite final |
+| --- | --- | --- |
+| Tabelas `solicitacao_obito` e `ordem_coleta` | **Fechado:** ambas existem no remoto, com PK, FKs, UNIQUE de `codigo` e de `ordem_coleta.solicitacao_obito_id`. Inventário de outras quatro tabelas relacionadas registrado. | Nenhuma alteração de banco necessária para apenas provar existência. |
+| Cardinalidade solicitação/ordem | **Fechado:** modelo `solicitacao_obito (1) → (0..1) ordem_coleta`; UNIQUE existente garante no máximo uma ordem por ocorrência com FK preenchida. **Não** garante decisão SVO válida. | SCRUM-131 cria ordem apenas em decisão `CONFIRMADA_SVO`, na mesma transação, com auditoria e testes concorrentes. SCRUM-162 já preserva UNIQUE. |
+| Status de triagem | **Fechado como contrato técnico versionado:** `AGUARDANDO_TRIAGEM`, `CONFIRMADA_SVO`, `ENCAMINHADA_IML` são os nomes no SQL da SCRUM-162. Rascunho segue pendente, sem ordem. IML nunca gera ordem. Esses estados não substituem `status_ordem_coleta`. | SCRUM-131 implementa salvar rascunho e decisão final; procedimentos de revisão/correção de decisão devem ser aprovados na própria 131 caso necessários. |
+| Estado inicial e canal | **Fechado:** atendimento da população é telefônico, sem login externo; `atendente_id` deriva da sessão do `ATENDENTE_SVO`, com protocolo `codigo` e `criado_em`. SQL da SCRUM-162 prevê default de triagem aguardando e `canal_atendimento = TELEFONE` apenas nos **novos** registros. | SCRUM-130 implementa POST e DTO de ocorrência; SCRUM-162 suporta schema local versionado. |
+| Dados cadastrais / LGPD | **Fechado para o MVP técnico:** reusar nome/contato/parentesco e localização já previstos, com minimização. Não adicionar CPF/data de nascimento do solicitante por inferência. Observações médicas e de triagem exigem proteção e finalidade de acesso. | SCRUM-130 valida campos e contrato, SCRUM-145 protege acesso; retenção/ACL/RLS é SCRUM-205. Se PO exigir CPF/nascimento, registrar autorização e criar mudança versionada específica (sem implementar silenciosamente na 129). |
+| Dados de decisão e referência | **Fechado:** decisão final registra resultado, responsável (`triado_por_id`), instante (`triado_em`) e observação; retorno IML não recebe `ordem_coleta`. | Migration já elaborada em SCRUM-162 para banco isolado; comportamento e rollback transacional em SCRUM-131; leitura de detalhe/rascunho em SCRUM-146. |
+| Quantidade de corpos por ordem | **Fechado como estrutura mínima:** um registro de ordem **não equivale necessariamente a um corpo**; `quantidade_corpos` é explícita (1–4) na migration versionada, e legado fica NULL até conciliação. Não atribuir default 1 fictício. | SCRUM-147 define exatamente quando reserva, ocupa e libera vagas, com fonte operacional validada no domínio; SCRUM-148 informa execução; SCRUM-162 suporta a coluna/constraint local. |
+| Três S10 / capacidade | **Fechado:** o tipo operacional é S10 para coleta, capacidade física máxima **4 por veículo** conforme referência do Jira/DVP; `veiculo.is_svo` e `capacidade_obitos` não comprovam ocupação atual, nem três veículos efetivamente cadastrados. | SCRUM-147 valida frota real, regras/locks e soma de `quantidade_corpos`; SCRUM-132 consulta elegibilidade e realiza despacho. |
+| Equipe SVO / RBAC | **Fechado como inventário:** enum remoto inclui `ATENDENTE_SVO`, mas não `EQUIPE_SVO`; a população não tem conta. Sem fallback para ADM nem permissões definidas pelo frontend. | SCRUM-145 decide e implementa matriz por operação/vínculo, incluindo eventual mudança de enum **versionada** sob governança do banco. |
+| Eventos/auditoria | **Fechado:** `log_atividade` existe, mas não tem FK específica de ocorrência/ordem; eventos precisam referenciar o recurso sem expor dados sensíveis. | SCRUM-131 (decisão/ordem), SCRUM-148 (execução), SCRUM-146 (histórico), SCRUM-205 (retenção/integridade). |
+| Banco remoto × versionado | **Fechado:** migration SCRUM-162 existe no GitHub, mas não no remoto; remoto sem `status_triagem`, `quantidade_corpos` e histórico de migrations. **Isso não é bloqueio para desenvolver localmente** nem autorização para aplicar baseline. | Equipe de DB / SCRUM-162 e homologação de rollout (SCRUM-208): conciliar histórico, preservar linhas legadas, aprovar janela, backup, rollback e executar **apenas após autorização explícita**. |
+| Segurança do Supabase | **Fechado como verificação:** 10/10 tabelas com RLS ativo e 0 policies; papéis privilegiados podem contornar RLS. Habilitação não prova proteção efetiva do backend nem Data API. | SCRUM-205: auditoria RLS, ACL, runtime DB role, policies e testes de acesso. **Não** abrir `USING (true)` nem desligar RLS para testes. |
+| Listas e painel | **Fechado:** nenhuma implementação de dashboard/listagem deve ser interpretada a partir do mock Lovable. | SCRUM-146: filtros/detalhes/históricos; SCRUM-149: indicadores; FE SCRUM-133/135/150/152 consomem contratos reais. |
+| Despacho e conclusão | **Fechado:** `status_ordem_coleta` atual listado na seção 2. Fluxo SVO de ponta a ponta não está implementado. | SCRUM-132: elegibilidade e despacho; SCRUM-148: execução, cancelamento e conclusão; SCRUM-147: liberação/concorrência. |
+
+### 8.1 O que permanece para **revisão da própria SCRUM-129**
+
+- [x] Verificar a existência das entidades SVO e a estrutura do Supabase remoto.
+- [x] Inventariar colunas, tipos, enums, PK/FK, UNIQUE e índices relevantes.
+- [x] Documentar divergências entre schema remoto, migration versionada, código e regras do Jira.
+- [x] Definir mapa mínimo SVO/IML e 0..1 ordem **sem assumir comportamento já implementado**.
+- [x] Identificar responsáveis pelos itens executáveis e evitar duplicação entre subtasks.
+- [ ] **Aprovação do mapeamento e da matriz de encaminhamento pela equipe/PO** (etapa de governança, não lacuna de implementação da 129).
+
+### 8.2 Limites de aceite de cada execução subsequente
+
+A revisão da SCRUM-129 **não** substitui execução de testes nem prova que BL26–BL28 já funcionam. Migrations locais/rollback e checks DB são evidências da SCRUM-162; cadastro real é SCRUM-130; transição SVO/IML e idempotência são SCRUM-131; RBAC, lotação, despacho e execução permanecem nos tickets próprios. Não declarar deploy remoto, e2e, performance ou critérios de integração como aprovados antes de execução efetiva. Não alterar o estado da task Jira sem aceite do responsável.
