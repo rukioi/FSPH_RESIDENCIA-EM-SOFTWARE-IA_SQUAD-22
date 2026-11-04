@@ -130,3 +130,34 @@ test('sem sessão retorna 401; perfil ADM retorna 403 para GET e POST', async ()
   expect((await get('/api/svo/solicitacoes', tokenAdmin)).status).toBe(403);
   expect((await post(dados, tokenAdmin)).status).toBe(403);
 });
+
+
+test('telefone opcional em branco é aceito e armazenado como NULL', async () => {
+  const response = await post({
+    ...dados,
+    solicitanteTelefone: '   ',
+  });
+
+  expect(response.status).toBe(201);
+
+  const body = await response.json();
+  cadastradas.push(body.solicitacao.id);
+
+  expect(body.solicitacao.statusTriagem).toBe('AGUARDANDO_TRIAGEM');
+
+  const [registro] = await sql`
+    SELECT solicitante_telefone
+    FROM public.solicitacao_obito
+    WHERE id = ${body.solicitacao.id}
+  `;
+
+  expect(registro.solicitante_telefone).toBeNull();
+
+  const [ordens] = await sql`
+    SELECT count(*)::int AS total
+    FROM public.ordem_coleta
+    WHERE solicitacao_obito_id = ${body.solicitacao.id}
+  `;
+
+  expect(ordens.total).toBe(0);
+});
