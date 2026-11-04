@@ -6,6 +6,7 @@ import { autorizarPerfis } from '../../security/authorization.js';
 import {
   listarOrdensPendentesController,
   criarSolicitacaoController,
+  listarSolicitacoesController,
   despacharOrdemController,
 } from './svo.controller.js';
 
@@ -65,6 +66,11 @@ try {
     }
 
     await listarOrdensPendentesController(response);
+    return;
+  }
+
+  if (request.method === 'GET' && caminho === '/api/svo/solicitacoes') {
+    await listarSolicitacoesController(response, url.searchParams);
     return;
   }
 
