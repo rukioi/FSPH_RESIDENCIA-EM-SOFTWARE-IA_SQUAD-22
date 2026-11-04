@@ -23,7 +23,9 @@ try {
     process.exitCode = 1;
     void fecharBanco().catch(() => { process.exitCode = 1; });
   });
-  server.listen(3000, '127.0.0.1', () => registrarEvento('server_started'));
+  const listenHost = process.env.NODE_ENV === 'development'
+    && process.env.FSPH_LOCAL_COMPOSE === '1' ? '0.0.0.0' : '127.0.0.1';
+  server.listen(3000, listenHost, () => registrarEvento('server_started'));
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, encerrar);
 } catch {
   registrarEvento('startup_failed');
