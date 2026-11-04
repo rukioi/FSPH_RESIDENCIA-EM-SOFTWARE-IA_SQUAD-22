@@ -1,116 +1,82 @@
-# API — SVO (#28)
+# API — SVO (SCRUM-130)
 
-## Rotas
+## Registro telefônico e consulta inicial
 
-Bearer JWT, perfil ATENDENTE_SVO. A identidade positiva válida continua exigida.
+Todas as rotas SVO exigem JWT Bearer de usuário ativo com perfil efetivo `ATENDENTE_SVO`. A população comunica ocorrências por telefone, sem conta ou token. O backend extrai `atendente_id` da sessão autenticada, nunca do corpo JSON.
 
-| Método | Caminho | Corpo |
+| Método | Rota | Responsabilidade |
 | --- | --- | --- |
-| GET | /api/svo/ordens-coleta?status=AGUARDANDO_DESPACHO | não |
-| POST | /api/svo/solicitacoes | JSON até 64 KiB |
-| PATCH | /api/svo/ordens-coleta/:id/despachar | JSON até 64 KiB |
+| POST | `/api/svo/solicitacoes` | Registrar **somente** ocorrência pendente; não cria ordem de coleta |
+| GET | `/api/svo/solicitacoes` | Consultar até 20 solicitações recentes, sem informação pessoal |
+| GET | `/api/svo/solicitacoes?status=AGUARDANDO_TRIAGEM` | Filtrar por triagem; aceita também CONFIRMADA_SVO e ENCAMINHADA_IML |
+| GET | `/api/svo/ordens-coleta?status=AGUARDANDO_DESPACHO` | Legado: consulta ordens já existentes aguardando despacho |
+| PATCH | `/api/svo/ordens-coleta/:id/despachar` | Legado: despacho; refatoração na SCRUM-132 |
 
-Solicitação: localFalecimento, enderecoRemocao e solicitanteNome obrigatórios;
-nomeFalecido, solicitanteParentesco, solicitanteTelefone e observacoesMedicas
-opcionais. Despacho: motoristaId/veiculoId inteiros positivos.
+Filtros de período, paginação extensiva, detalhe, consulta por ID e histórico pertencem à SCRUM-146. Dashboard de indicadores é SCRUM-149.
 
-## Respostas
+## POST /api/svo/solicitacoes
 
-### 200 — Consulta ou despacho
+Campos obrigatórios: `localFalecimento` (1–255 caracteres), `enderecoRemocao` (1–255) e `solicitanteNome` (1–150). Dados são normalizados removendo espaços nas extremidades.
 
-Consulta vazia: `[]`. Despacho:
+Opcionais: `nomeFalecido` (até 150 caracteres), `solicitanteParentesco` (até 50), `solicitanteTelefone` (7–20, formato telefônico), `observacoesMedicas` (até 2.000), `pontoReferencia` (até 255) e `canalAtendimento` (somente `TELEFONE`). Não são aceitos campos internos ou extras como `atendenteId`, `perfil`, `statusTriagem`, CPF e nascimento. JSON até 64 KiB.
 
-```json
-{"id":1,"motorista_id":2,"veiculo_id":3,"status":"EM_DESLOCAMENTO"}
-```
-
-### 201 — Solicitação e ordem criadas
+**Exemplo fictício:**
 
 ```json
-{"solicitacao":{"id":1,"codigo":"#SVO-1"},"ordemColeta":{"id":1,"codigo":"#OC-1","status":"PENDENTE_ALOCACAO"},"atividades":["Solicitação #SVO-1 confirmada na ligação","Ordem de coleta #OC-1 gerada para #SVO-1"]}
+{
+  "localFalecimento": "Unidade fictícia",
+  "enderecoRemocao": "Rua de teste, 123",
+  "solicitanteNome": "Pessoa fictícia",
+  "pontoReferencia": "Próximo ao terminal",
+  "canalAtendimento": "TELEFONE"
+}
 ```
 
-### 400 — JSON malformado ou entrada inválida
+**201 Created**:
 
 ```json
-{"error":{"code":"HTTP_400","message":"O corpo da requisição precisa ser um JSON válido."}}
+{
+  "solicitacao": {
+    "id": "10",
+    "codigo": "#SVO-10",
+    "statusTriagem": "AGUARDANDO_TRIAGEM",
+    "criadoEm": "2026-11-04T12:00:00.000Z"
+  },
+  "atividades": ["Solicitação #SVO-10 registrada por telefone"]
+}
 ```
 
-Validações de campos usam `error.code` `HTTP_400` e `error.message` em pt-BR. O filtro GET exige
-AGUARDANDO_DESPACHO e consulta PENDENTE_ALOCACAO, preservando o legado.
+A resposta **não** tem `ordemColeta` porque RN07 exige confirmação posterior da triagem SVO (SCRUM-131). Os IDs `BIGINT` são strings, evitando perda de precisão. Cadastro e auditoria são transacionais: falha de atividade cancela o registro. Nenhum dado médico ou pessoal é colocado na descrição do evento.
 
-### 401 — Sem sessão
+O POST não possui chave de idempotência aprovada. Repetir uma solicitação HTTP válida pode gerar outro protocolo; não assumir que dois cadastros com mesmos campos sejam duplicados.
+
+## GET /api/svo/solicitacoes
+
+A consulta inicial retorna os **20 registros mais recentes**, ordenados por `criado_em DESC NULLS LAST, id DESC`, opcionalmente com um único filtro `status`. A resposta não expõe nome do falecido, solicitante, telefone nem observações.
+
+**200 OK**:
 
 ```json
-{"error":{"code":"NAO_AUTENTICADO","message":"Autenticação necessária."}}
+[
+  {
+    "id": "10",
+    "codigo": "#SVO-10",
+    "status_triagem": "AGUARDANDO_TRIAGEM",
+    "criado_em": "2026-11-04T12:00:00.000Z"
+  }
+]
 ```
 
-Identidade inválida usa `HTTP_401` e a mensagem "Identificação do usuário inválida." no envelope comum.
+Registros legados podem ter `status_triagem: null` e devem ser conciliados pela equipe de banco, não classificados automaticamente.
 
-### 403 — Perfil sem permissão
+## Erros e segurança
 
-```json
-{"error":{"code":"ACESSO_NEGADO","message":"Acesso não permitido."}}
-```
+**400**: dados de entrada/campos extras/filtro de status inválidos; **401**: sessão inexistente ou inválida; **403**: perfil não autorizado; **405**: método inválido, header `Allow`; **409**: conflito de unicidade ou atendente; **413**: corpo excessivo; **415**: tipo de mídia diferente de JSON; **500**: erro interno sem informações pessoais. Erros 4xx usam envelope `{"error":{"code":"HTTP_400","message":"..."}}` (exceto códigos especializados já existentes). `X-Request-Id` acompanha toda resposta.
 
-### 404 — Ordem indisponível ou referência inexistente
+## Dependências de banco e subtasks
 
-```json
-{"error":{"code":"HTTP_404","message":"Motorista ou veículo não encontrado."}}
-```
+A [migration versionada da SCRUM-162](../../backend/src/database/supabase/migrations/20261103000000_db_s7_01_svo_triagem.sql) define os campos `status_triagem`, `canal_atendimento`, `ponto_referencia` e outros; **não está aplicada ao Supabase remoto**. Desenvolvimento, migração e testes devem usar o PostgreSQL Docker **isolado**; nenhuma DDL/seed no Supabase compartilhado por esta PR.
 
-### 405 — Método inválido
+**SCRUM-131:** triagem/IML e criação única de ordem; **SCRUM-132:** despacho; **SCRUM-145:** RBAC por recurso/equipe; **SCRUM-146:** consultas detalhadas, filtros e histórico; **SCRUM-147:** lotação S10; **SCRUM-149:** indicadores; **SCRUM-205/208:** RLS/ACL e rollout.
 
-Inclui Allow: GET, POST ou PATCH conforme a rota.
-
-```json
-{"error":{"code":"METODO_NAO_PERMITIDO","message":"Método não permitido."}}
-```
-
-### 409 — Estado ou alocação incompatível
-
-```json
-{"error":{"code":"HTTP_409","message":"Motorista ou veículo já está em deslocamento."}}
-```
-
-### 413 — Corpo excessivo
-
-```json
-{"error":{"code":"HTTP_413","message":"O corpo da requisição excede o limite de 64 KB."}}
-```
-
-### 415 — Tipo incompatível
-
-```json
-{"error":{"code":"HTTP_415","message":"Envie o corpo como application/json."}}
-```
-
-### 500 — Falha inesperada
-
-```json
-{"error":{"code":"ERRO_INTERNO","message":"Não foi possível despachar a ordem de coleta."}}
-```
-
-## Exemplo mínimo
-
-```http
-GET /api/svo/ordens-coleta?status=AGUARDANDO_DESPACHO HTTP/1.1
-Authorization: Bearer <token>
-```
-
-## O que a entrega não faz
-
-Não muda despacho, disponibilidade, perfis, estados ou limites temporais. Mantém
-transações do repository e os sucessos legados, documentados pela #32. Todos os
-4xx passam pelo [normalizador comum](./README.md#respostas). A #30
-usa tipos gerados/validação de resposta e delimita o resumo local da sessão;
-não implementa histórico persistente novo.
-
-## Identidade comum — #29
-
-Todas as rotas acima consultam usuário ativo e perfil atual do banco a cada
-requisição, após validar JWT HS256/sub/exp e segredo mínimo de 32 bytes UTF-8.
-Conta inativa/inexistente ou token inválido: 401 NAO_AUTENTICADO. Perfil efetivo
-fora da lista existente: 403 ACESSO_NEGADO. Falha de consulta não usa claims como
-fallback e recebe 500 do tratamento comum. As listas de permissão e operações
-permanecem as documentadas acima. Ver [identidade compartilhada](./README.md#identidade-e-usuários--29).
+Fonte de contrato: `backend/src/shared/contract/registry.ts`. Executar `npm run api:generate`, `npm run client:generate`, `npm run api:check` e `npm run client:check` após alterar os schemas/rotas. Não editar artefatos gerados manualmente.
