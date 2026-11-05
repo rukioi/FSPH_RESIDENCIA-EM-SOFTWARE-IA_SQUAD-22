@@ -48,8 +48,6 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
     ['Destino', valores.destino],
     ['Passageiros', valores.passageiros],
     ['Finalidade', valores.finalidade],
-    ['Observações', valores.observacao || '—'],
-    ['Documentos ou objetos', valores.documentos || '—'],
   ]
 
   async function confirmarEnvio() {
@@ -59,7 +57,6 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
     setFalha('')
 
     try {
-      // Combina a data e o horário e converte para o formato ISO.
       const dataHoraSaida = new Date(
         `${valores.data}T${valores.horario}:00`,
       )
@@ -68,7 +65,6 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
         throw new Error('A data ou o horário informado é inválido.')
       }
 
-      // Envia somente os campos aceitos pelo contrato do backend.
       const resposta = await criarSolicitacao({
         origem: valores.origem.trim(),
         destino: valores.destino.trim(),
@@ -77,7 +73,6 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
         qtdPassageiros: Number(valores.passageiros),
       })
 
-      // O protocolo vem da resposta real da API.
       setProtocolo(resposta.codigoExibicao ?? resposta.codigo)
       setEtapa('enviada')
       window.scrollTo({ top: 0 })
@@ -187,7 +182,7 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
           </p>
 
           <p>
-            **Protocolo:** {protocolo}
+            <strong>Protocolo:</strong> {protocolo}
           </p>
 
           <div

@@ -137,8 +137,6 @@ export function SolicitacaoForm({ modo, valoresIniciais, ticket, rotuloEnviar, a
           {campo('destino', 'Destino', { obrigatorio: true, placeholder: 'Local de destino' })}
           {campo('passageiros', 'Quantidade de passageiros', { tipo: 'number', obrigatorio: true, min: 1, max: 50, placeholder: 'Ex.: 2' })}
           {campo('finalidade', 'Finalidade da solicitação', { obrigatorio: true, inteiro: true, placeholder: 'Ex.: transporte de equipe técnica para reunião' })}
-          {campo('observacao', 'Observações', { area: true, inteiro: true, placeholder: 'Informações adicionais para a equipe de transporte (opcional)' })}
-          {campo('documentos', 'Documentos ou objetos a transportar', { inteiro: true, placeholder: 'Ex.: caixas térmicas, envelopes lacrados (se houver)' })}
         </div>
       </section>
 
