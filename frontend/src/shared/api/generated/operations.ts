@@ -88,6 +88,38 @@ export const apiOperations = {
     "method": "GET",
     "path": "/api/dashboard/gestor"
   },
+  "svo_get__api_svo_recursos_disponiveis": {
+    "method": "GET",
+    "path": "/api/svo/recursos-disponiveis"
+  },
+  "svo_get__api_svo_veiculos_id_ocupacao": {
+    "method": "GET",
+    "path": "/api/svo/veiculos/{id}/ocupacao"
+  },
+  "svo_get__api_svo_ordens_coleta_minhas": {
+    "method": "GET",
+    "path": "/api/svo/ordens-coleta/minhas"
+  },
+  "svo_get__api_svo_ordens_coleta_minhas_id_": {
+    "method": "GET",
+    "path": "/api/svo/ordens-coleta/minhas/{id}"
+  },
+  "svo_patch__api_svo_ordens_coleta_id_iniciar": {
+    "method": "PATCH",
+    "path": "/api/svo/ordens-coleta/{id}/iniciar"
+  },
+  "svo_patch__api_svo_ordens_coleta_id_etapa": {
+    "method": "PATCH",
+    "path": "/api/svo/ordens-coleta/{id}/etapa"
+  },
+  "svo_patch__api_svo_ordens_coleta_id_concluir": {
+    "method": "PATCH",
+    "path": "/api/svo/ordens-coleta/{id}/concluir"
+  },
+  "svo_patch__api_svo_ordens_coleta_id_cancelar": {
+    "method": "PATCH",
+    "path": "/api/svo/ordens-coleta/{id}/cancelar"
+  },
   "svo_get__api_svo_ordens_coleta": {
     "method": "GET",
     "path": "/api/svo/ordens-coleta"

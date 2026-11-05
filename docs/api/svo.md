@@ -2,7 +2,7 @@
 
 ## Registro telefônico e consulta inicial
 
-Todas as rotas SVO exigem JWT Bearer de usuário ativo com perfil efetivo `ATENDENTE_SVO`. A população comunica ocorrências por telefone, sem conta ou token. O backend extrai `atendente_id` da sessão autenticada, nunca do corpo JSON.
+Todas as rotas SVO exigem JWT Bearer de usuário ativo. Registro telefônico, triagem, consultas administrativas, dashboard, elegibilidade, despacho e cancelamento exigem o perfil `ATENDENTE_SVO`. A consulta das próprias ordens e as etapas de execução exigem `MOTORISTA`, com vínculo obrigatório por `motorista.usuario_id`. A população comunica ocorrências por telefone, sem conta ou token. O backend extrai `atendente_id` da sessão autenticada, nunca do corpo JSON.
 
 | Método | Rota | Responsabilidade |
 | --- | --- | --- |
@@ -139,6 +139,13 @@ A [migration versionada da SCRUM-162](../../backend/src/database/supabase/migrat
 
 Fonte de contrato: `backend/src/shared/contract/registry.ts`. Executar `npm run api:generate`, `npm run client:generate`, `npm run api:check` e `npm run client:check` após alterar os schemas/rotas. Não editar artefatos gerados manualmente.
 
+## Operação da frota SVO — SCRUM-132/145/147/148
+
+O contrato de consulta de candidatos, lotação 0/4 e execução própria do motorista está em
+[svo-operacional-sprint7.md](./svo-operacional-sprint7.md). A autorização do motorista é
+verificada pelo vínculo de `motorista.usuario_id`, não pelo ID recebido no corpo. O antigo
+GET/triagem/dashboard do atendente não foi aberto ao motorista.
+
 ## Disponibilidade compartilhada com o transporte institucional
 
 O despacho existente mantém as verificações de referência e estado dos recursos.
@@ -154,7 +161,7 @@ disponibilidade não antecipa triagem ou geração de ordem da SCRUM-131.
 
 ## Consultas adicionais — SCRUM-146
 
-Os seis GETs de consulta, detalhe e histórico, sem mudança de comportamento das rotas legadas, estão descritos em [svo-consultas-scrum146.md](./svo-consultas-scrum146.md). O detalhe da solicitação permite recuperar a triagem parcial e não realiza decisão. O histórico só reproduz eventos reais conhecidos e não presume que despacho/execução já sejam auditados.
+Os seis GETs de consulta, detalhe e histórico, sem mudança de comportamento das rotas legadas, estão descritos em [svo-consultas-scrum146.md](./svo-consultas-scrum146.md). O detalhe da solicitação permite recuperar a triagem parcial e não realiza decisão. O histórico reproduz somente eventos reais persistidos em `log_atividade`, incluindo despacho, início, entrada em transporte, conclusão e cancelamento de ordens SVO. Os vínculos ainda dependem de descrições fechadas porque o log legado não tem FK específica de ordem; nenhum evento é inventado.
 
 ## Indicadores operacionais — SCRUM-149
 

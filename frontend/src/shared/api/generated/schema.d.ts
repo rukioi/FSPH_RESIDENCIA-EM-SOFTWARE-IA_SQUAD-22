@@ -227,6 +227,14 @@ export interface ApiSchemas {
   DashboardOperacionalSvo: DashboardOperacionalSvo;
   FilasOperacionaisSvo: FilasOperacionaisSvo;
   AtividadesRecentesSvo: AtividadesRecentesSvo;
+  RecursosDisponiveisSvo: RecursosDisponiveisSvo;
+  OcupacaoSvo: OcupacaoSvo;
+  MinhasOrdensSvo: MinhasOrdensSvo;
+  MinhaOrdemSvo: MinhaOrdemSvo;
+  IniciarOrdemSvo: IniciarOrdemSvo;
+  ConcluirOrdemSvo: ConcluirOrdemSvo;
+  CancelarOrdemSvo: CancelarOrdemSvo;
+  OrdemExecucaoSvo: OrdemExecucaoSvo;
   EditarSolicitacaoViagem: EditarSolicitacaoViagem;
   AgendarSolicitacaoViagem: AgendarSolicitacaoViagem;
   RespostaAgendamentoSolicitacaoViagem: RespostaAgendamentoSolicitacaoViagem;
@@ -1299,6 +1307,120 @@ export interface AtividadesRecentesSvo {
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RecursosDisponiveisSvo".
+ */
+export interface RecursosDisponiveisSvo {
+  motoristas: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    nome: string;
+  }[];
+  veiculos: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    placa: string;
+    modelo: string;
+    ocupacao: number;
+    capacidade: 4;
+    disponivel: boolean;
+  }[];
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "OcupacaoSvo".
+ */
+export interface OcupacaoSvo {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  placa: string;
+  ocupacao: number;
+  capacidade: 4;
+  disponivel: boolean;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "MinhasOrdensSvo".
+ */
+export interface MinhasOrdensSvo {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    solicitacaoCodigo: string;
+    status: 'PENDENTE_ALOCACAO' | 'EM_DESLOCAMENTO' | 'EM_TRANSPORTE' | 'CONCLUIDA' | 'CANCELADA';
+    quantidadeCorpos: number | null;
+    veiculoId: string | null;
+    kmInicial: number | null;
+    kmFinal: number | null;
+    enderecoRemocao: string;
+    dataInicio: string | null;
+    dataFim: string | null;
+  }[];
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "MinhaOrdemSvo".
+ */
+export interface MinhaOrdemSvo {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  codigo: string;
+  solicitacaoCodigo: string;
+  status: 'PENDENTE_ALOCACAO' | 'EM_DESLOCAMENTO' | 'EM_TRANSPORTE' | 'CONCLUIDA' | 'CANCELADA';
+  quantidadeCorpos: number | null;
+  veiculoId: string | null;
+  kmInicial: number | null;
+  kmFinal: number | null;
+  enderecoRemocao: string;
+  dataInicio: string | null;
+  dataFim: string | null;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "IniciarOrdemSvo".
+ */
+export interface IniciarOrdemSvo {
+  kmInicial: number;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ConcluirOrdemSvo".
+ */
+export interface ConcluirOrdemSvo {
+  kmFinal: number;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CancelarOrdemSvo".
+ */
+export type CancelarOrdemSvo = Record<string, never>;
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "OrdemExecucaoSvo".
+ */
+export interface OrdemExecucaoSvo {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  status: 'PENDENTE_ALOCACAO' | 'EM_DESLOCAMENTO' | 'EM_TRANSPORTE' | 'CONCLUIDA' | 'CANCELADA';
+  dataInicio: string | null;
+  dataFim: string | null;
+  kmInicial: number | null;
+  kmFinal: number | null;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "EditarSolicitacaoViagem".
  */
 export interface EditarSolicitacaoViagem {
@@ -1691,6 +1813,14 @@ export interface ApiOperations {
   'dashboard_get__api_dashboard_graficos': { body: undefined; response: ApiSchemas['GraficosPeriodo'] };
   'dashboard_get__api_dashboard_pendencias': { body: undefined; response: ApiSchemas['PendenciasDashboard'] };
   'dashboard_get__api_dashboard_gestor': { body: undefined; response: ApiSchemas['DashboardGestorIndicadores'] };
+  'svo_get__api_svo_recursos_disponiveis': { body: undefined; response: ApiSchemas['RecursosDisponiveisSvo'] };
+  'svo_get__api_svo_veiculos_id_ocupacao': { body: undefined; response: ApiSchemas['OcupacaoSvo'] };
+  'svo_get__api_svo_ordens_coleta_minhas': { body: undefined; response: ApiSchemas['MinhasOrdensSvo'] };
+  'svo_get__api_svo_ordens_coleta_minhas_id_': { body: undefined; response: ApiSchemas['MinhaOrdemSvo'] };
+  'svo_patch__api_svo_ordens_coleta_id_iniciar': { body: ApiSchemas['IniciarOrdemSvo']; response: ApiSchemas['OrdemExecucaoSvo'] };
+  'svo_patch__api_svo_ordens_coleta_id_etapa': { body: undefined; response: ApiSchemas['OrdemExecucaoSvo'] };
+  'svo_patch__api_svo_ordens_coleta_id_concluir': { body: ApiSchemas['ConcluirOrdemSvo']; response: ApiSchemas['OrdemExecucaoSvo'] };
+  'svo_patch__api_svo_ordens_coleta_id_cancelar': { body: ApiSchemas['CancelarOrdemSvo']; response: ApiSchemas['OrdemExecucaoSvo'] };
   'svo_get__api_svo_ordens_coleta': { body: undefined; response: ApiSchemas['OrdensSvo'] };
   'svo_get__api_svo_solicitacoes': { body: undefined; response: ApiSchemas['SolicitacoesSvo'] };
   'svo_post__api_svo_solicitacoes': { body: ApiSchemas['CriarSolicitacaoSvo']; response: ApiSchemas['SolicitacaoSvo'] };

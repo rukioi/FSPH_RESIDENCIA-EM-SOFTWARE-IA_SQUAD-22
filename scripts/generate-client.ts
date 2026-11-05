@@ -13,6 +13,7 @@ export async function generateClient(check = false) {
   const schema = JSON.parse(JSON.stringify({type:'object',properties:Object.fromEntries(Object.keys(definitions).map(name=>[name,{$ref:'#/definitions/'+name}])),required:Object.keys(definitions),additionalProperties:false,definitions})
     .replaceAll('#/components/schemas/','#/definitions/'));
   const types = (await compile(schema as JSONSchema,'ApiSchemas',{bannerComment:'/* Gerado por client:generate de docs/api/openapi.yaml. Não editar. */',additionalProperties:false,style:{singleQuote:true},unknownAny:true,unreachableDefinitions:true}))
+    .replace(/export interface ([A-Za-z_$][\w$]*) \{\}/g, 'export type $1 = Record<string, never>;')
     .replace(/\{\}/g,'Record<string, never>');
   const bindings: Record<string,{method:string;path:string}> = {};
   let operationTypes = '\nexport interface ApiOperations {\n';

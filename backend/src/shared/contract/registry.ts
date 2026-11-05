@@ -12,13 +12,14 @@ import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
 import { svoSchemas } from '../../modules/svo/svo.schemas.js';
 import { svoConsultasSchemas } from '../../modules/svo/svo.consultas.schemas.js';
 import { svoDashboardSchemas } from '../../modules/svo/svo.dashboard.schemas.js';
+import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas.js';
 import { solicitacoesSchemas, statusSolicitacao } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
 export const schemas = { Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
-  ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...solicitacoesSchemas };
+  ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
 export type Modulo = 'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
@@ -79,6 +80,26 @@ export const operations: Operacao[] = [
     ['/api/dashboard','/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],
     i===1?'GraficosPeriodo':i===3?'DashboardGestorIndicadores':s,gestor,
     i===1||i===3?{runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notasDashboardPeriodo}:{})),
+  // SCRUM-132/145/147/148 — capacidades, vínculo por motorista e execução auditada.
+  op('svo','get','/api/svo/recursos-disponiveis','RecursosDisponiveisSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,500],notes:'Disponibilidade informativa: S10 própria Chevrolet com cadastro coerente, lotação ativa 0/4..4/4; CNH válida, motorista autenticável, documentos vencidos e reservas bloqueiam. Revalidar no PATCH de despacho.'}),
+  op('svo','get','/api/svo/veiculos/{id}/ocupacao','OcupacaoSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,404,500],notes:'Lotação ativa calculada pela soma de quantidade_corpos de ordens despachadas e em transporte; liberada na conclusão/cancelamento.'}),
+  op('svo','get','/api/svo/ordens-coleta/minhas','MinhasOrdensSvo',['MOTORISTA'],{
+    errors:[400,401,403,500],notes:'Somente ordens vinculadas a motorista.usuario_id da sessão; até 100 ordens por id DESC, sem paginação nem parâmetros de consulta; a lista pode estar truncada; sem dados médicos/pessoais do solicitante.'}),
+  op('svo','get','/api/svo/ordens-coleta/minhas/{id}','MinhaOrdemSvo',['MOTORISTA'],{
+    errors:[400,401,403,404,500],notes:'Ordem própria mínima; IDs não vinculados retornam 404 indistinguível.'}),
+  op('svo','patch','/api/svo/ordens-coleta/{id}/iniciar','OrdemExecucaoSvo',['MOTORISTA'],{
+    body:'IniciarOrdemSvo',errors:[400,401,403,404,409,413,415,500],
+    notes:'Exige atribuição do motorista e EM_DESLOCAMENTO ainda não iniciada; grava km inicial, data e auditoria.'}),
+  op('svo','patch','/api/svo/ordens-coleta/{id}/etapa','OrdemExecucaoSvo',['MOTORISTA'],{
+    errors:[400,401,403,404,409,500],notes:'EM_DESLOCAMENTO iniciada -> EM_TRANSPORTE, com log transacional.'}),
+  op('svo','patch','/api/svo/ordens-coleta/{id}/concluir','OrdemExecucaoSvo',['MOTORISTA'],{
+    body:'ConcluirOrdemSvo',errors:[400,401,403,404,409,413,415,500],
+    notes:'EM_TRANSPORTE -> CONCLUIDA; km final não inferior ao inicial; libera lotação e audita.'}),
+  op('svo','patch','/api/svo/ordens-coleta/{id}/cancelar','OrdemExecucaoSvo',['ATENDENTE_SVO'],{
+    body:'CancelarOrdemSvo',errors:[400,401,403,404,409,413,415,500],
+    notes:'Atendente cancela ordem ainda aberta; liberação de lotação pela exclusão do estado ativo.'}),
   op('svo','get','/api/svo/ordens-coleta','OrdensSvo',['ATENDENTE_SVO'],{errors:[400,401,403,500],errorSchema:'ErroOperacionalSvo',
     query:[{name:'status',required:true,schema:z.literal('AGUARDANDO_DESPACHO')}],notes:'status público AGUARDANDO_DESPACHO consulta PENDENTE_ALOCACAO no banco. Array direto; sem paginação.'}),
   op('svo','get','/api/svo/solicitacoes','SolicitacoesSvo',['ATENDENTE_SVO'],{
