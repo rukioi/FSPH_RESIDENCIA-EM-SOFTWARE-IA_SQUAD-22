@@ -12,7 +12,8 @@ export type EventoAtividade =
   | { operacao: 'solicitacao_viagem_editada'; recursoId: string }
   | { operacao: 'solicitacao_viagem_reagendada'; recursoId: string }
   | { operacao: 'triagem_rascunho_salvo' | 'triagem_confirmada_svo' | 'triagem_encaminhada_iml'; recursoId: string }
-  | { operacao: 'ordem_gerada'; recursoId: string; solicitacaoId: string };
+  | { operacao: 'ordem_gerada'; recursoId: string; solicitacaoId: string }
+  | { operacao: 'ordem_despachada'|'ordem_iniciada'|'ordem_transporte'|'ordem_concluida'|'ordem_cancelada'; recursoId: string };
 
 export interface AtividadeDto {
   id: string;
@@ -53,6 +54,11 @@ function descrever(evento: EventoAtividade): string {
     case 'solicitacao_viagem_reagendada': return `Reagendou a solicitação de transporte ID ${id}`;
 
     case 'ordem_gerada': return `Ordem de coleta #OC-${id} gerada para #SVO-${identificador(evento.solicitacaoId)}`;
+    case 'ordem_despachada': return `Ordem de coleta #OC-${id} despachada`;
+    case 'ordem_iniciada': return `Ordem de coleta #OC-${id} iniciada`;
+    case 'ordem_transporte': return `Ordem de coleta #OC-${id} entrou em transporte`;
+    case 'ordem_concluida': return `Ordem de coleta #OC-${id} concluída`;
+    case 'ordem_cancelada': return `Ordem de coleta #OC-${id} cancelada`;
     default: throw new Error('Operação de atividade inválida.');
   }
 }

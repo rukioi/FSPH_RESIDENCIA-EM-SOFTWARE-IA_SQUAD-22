@@ -166,7 +166,7 @@ test('SCRUM-146/149: listas e dashboard validam HTTP, perfil efetivo e parâmetr
 test('consultas legadas reais correspondem aos schemas sem exigir migração de formato',async()=>{
   for (const operation of operations.filter(o=>o.method==='get' && !o.path.includes('{id}') && !['veiculos','solicitacoes'].includes(o.modulo))) {
     const path = operation.path+(operation.path==='/api/svo/ordens-coleta' ? '?status=AGUARDANDO_DESPACHO' : '');
-    const response = await call(path,'GET',undefined,operation.modulo==='svo' ? svo : admin);
+    const response = await call(path,'GET',undefined,operation.perfis.includes('MOTORISTA') ? negado : operation.modulo==='svo' ? svo : admin);
     expect(response.status,operation.id).toBe(200);
     const body = await response.json();
     const result = schemas[operation.response].safeParse(body);

@@ -9,10 +9,10 @@ import {
   listarOrdensPendentes,
   criarSolicitacao,
   listarSolicitacoes,
-  despacharOrdem,
   salvarTriagemParcial,
   finalizarTriagem,
 } from './svo.repository.js';
+import { prepararDespacho } from './svo.operacional.repository.js';
 
 export { ErroCorpoRequisicao, lerCorpoJson } from '../../shared/http/body.js';
 
@@ -212,7 +212,8 @@ export async function finalizarTriagemController(
 export async function despacharOrdemController(
   request: IncomingMessage,
   response: ServerResponse,
-  ordemId: number
+  ordemId: number,
+  atendenteId: string
 ): Promise<void> {
   const dados = await lerDadosDaRequisicao(request, response);
 
@@ -247,11 +248,11 @@ export async function despacharOrdemController(
   }
 
   try {
-    const resultado = await despacharOrdem({
+    const resultado = await prepararDespacho({
       ordemId,
       motoristaId: Number(motoristaId),
       veiculoId: Number(veiculoId),
-    });
+    }, atendenteId);
 
     if (resultado.tipo === 'ordem_indisponivel') {
       jsonCompartilhado(response, 404, {
@@ -281,7 +282,13 @@ export async function despacharOrdemController(
       return;
     }
 
-    jsonCompartilhado(response, 200, resultado.ordem);
+    if (resultado.tipo === 'despachada') {
+      jsonCompartilhado(response, 200, resultado.ordem);
+      return;
+    }
+    jsonCompartilhado(response, 500, {
+      error: { code: 'ERRO_INTERNO', message: 'Resultado de despacho inesperado.' },
+    });
   } catch (erro) {
     registrarFalha(erro);
 

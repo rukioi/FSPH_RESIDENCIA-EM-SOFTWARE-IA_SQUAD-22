@@ -16,6 +16,13 @@ import {
   detalharSvoController, historicoSvoController,
 } from './svo.consultas.controller.js';
 import { dashboardSvoController, filasSvoController, atividadesSvoController } from './svo.dashboard.controller.js';
+import { recursosSvoController, ocupacaoSvoController, minhasOrdensController,
+  minhaOrdemController, executarOrdemController, cancelarOrdemController } from './svo.operacional.controller.js';
+
+/** A rota aceita somente BIGINT positivo existente no intervalo do PostgreSQL. */
+function idSvoValido(raw:string):boolean {
+  return /^[1-9]\d{0,18}$/.test(raw) && BigInt(raw)<=9223372036854775807n;
+}
 
 /** Preserva autenticação e despacho operacional do SVO. */
 export async function svoRoute(
@@ -28,10 +35,13 @@ export async function svoRoute(
     return;
   }
 
-  if (!autorizarPerfis(usuario, ['ATENDENTE_SVO'], response)) {
+  // Perfis externos ao SVO recebem 403 antes da verificação do ID interno.
+  // Preserva a precedência de RBAC do contrato legado.
+  if (usuario.perfil !== 'ATENDENTE_SVO' && usuario.perfil !== 'MOTORISTA') {
+    autorizarPerfis(usuario, ['ATENDENTE_SVO'], response);
     return;
   }
-  
+
 if (!/^[1-9]\d*$/.test(usuario.id)) {
   jsonCompartilhado(response, 401, {
     erro: 'Identificação do usuário inválida.',
@@ -58,6 +68,43 @@ try {
 
   const url = new URL(request.url ?? '/', 'http://localhost');
   const caminho = url.pathname;
+
+  // SCRUM-145/148: MOTORISTA só acessa ordem própria, vinculada via motorista.usuario_id.
+  const propria = caminho.match(/^\/api\/svo\/ordens-coleta\/minhas\/([0-9]+)$/);
+  const executar = caminho.match(/^\/api\/svo\/ordens-coleta\/([0-9]+)\/(iniciar|etapa|concluir)$/);
+  if ((request.method==='GET' && (caminho==='/api/svo/ordens-coleta/minhas' || propria)) ||
+      (request.method==='PATCH' && executar)) {
+    if (!autorizarPerfis(usuario,['MOTORISTA'],response)) return;
+    if (propria && !idSvoValido(propria[1])) {
+      jsonCompartilhado(response,400,{erro:'ID SVO inválido.'});return;
+    }
+    if (executar && !idSvoValido(executar[1])) {
+      jsonCompartilhado(response,400,{erro:'ID SVO inválido.'});return;
+    }
+    if (request.method==='GET') {
+      if (propria) await minhaOrdemController(response,usuario.id,propria[1],url.searchParams);
+      else await minhasOrdensController(response,usuario.id,url.searchParams);
+    } else if (executar) {
+      await executarOrdemController(request,response,usuario.id,executar[1],
+        executar[2] as 'iniciar'|'etapa'|'concluir',url.searchParams);
+    }
+    return;
+  }
+  // Demais rotas continuam exclusivas do ATENDENTE_SVO; nunca ampliar o dashboard.
+  if (!autorizarPerfis(usuario,['ATENDENTE_SVO'],response)) return;
+  if (request.method==='GET' && caminho==='/api/svo/recursos-disponiveis') {
+    await recursosSvoController(response,url.searchParams);return;
+  }
+  const ocupacao = caminho.match(/^\/api\/svo\/veiculos\/([0-9]+)\/ocupacao$/);
+  if (request.method==='GET' && ocupacao) {
+    if(!idSvoValido(ocupacao[1])) {jsonCompartilhado(response,400,{erro:'ID SVO inválido.'});return;}
+    await ocupacaoSvoController(response,ocupacao[1],url.searchParams);return;
+  }
+  const cancelar = caminho.match(/^\/api\/svo\/ordens-coleta\/([0-9]+)\/cancelar$/);
+  if (request.method==='PATCH' && cancelar) {
+    if(!idSvoValido(cancelar[1])) {jsonCompartilhado(response,400,{erro:'ID SVO inválido.'});return;}
+    await cancelarOrdemController(request,response,usuario.id,cancelar[1],url.searchParams);return;
+  }
 
   // SCRUM-146: consultas ampliadas independentes, sem modificar os dois GETs legados.
   if (request.method === 'GET' && caminho === '/api/svo/solicitacoes/paginadas') {
@@ -158,7 +205,7 @@ if (request.method === 'PATCH' && rotaDespacho) {
     return;
   }
 
-  await despacharOrdemController(request, response, ordemId);
+  await despacharOrdemController(request, response, ordemId, usuario.id);
   return;
 }
 

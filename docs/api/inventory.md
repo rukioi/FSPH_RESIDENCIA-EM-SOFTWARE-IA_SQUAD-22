@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 52 operações.
+Gerado por api:generate; não editar manualmente. 60 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -26,6 +26,14 @@ Gerado por api:generate; não editar manualmente. 52 operações.
 | GET | /api/dashboard/graficos | ADM, GESTOR_FROTA | sem corpo | 200 GraficosPeriodo | 400, 401, 403, 500, 405 | validado | SCRUM-164: periodo=hoje|7d|30d|personalizado (padrão hoje). Personalizado exige inicio/fim ISO com offset, até 31 dias; demais períodos recusam inicio/fim. Query estrita. Período filtra saída institucional; fila pendente é atual, sem filtro temporal. Datas de auditoria são civis sem offset, não UTC. Motoristas indeterminados sem jornada/escala; nunca contar todos ou retornar zero fictício. |
 | GET | /api/dashboard/pendencias | ADM, GESTOR_FROTA | sem corpo | 200 PendenciasDashboard | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/dashboard/gestor | ADM, GESTOR_FROTA | sem corpo | 200 DashboardGestorIndicadores | 400, 401, 403, 500, 405 | validado | SCRUM-164: periodo=hoje|7d|30d|personalizado (padrão hoje). Personalizado exige inicio/fim ISO com offset, até 31 dias; demais períodos recusam inicio/fim. Query estrita. Período filtra saída institucional; fila pendente é atual, sem filtro temporal. Datas de auditoria são civis sem offset, não UTC. Motoristas indeterminados sem jornada/escala; nunca contar todos ou retornar zero fictício. |
+| GET | /api/svo/recursos-disponiveis | ATENDENTE_SVO | sem corpo | 200 RecursosDisponiveisSvo | 400, 401, 403, 500, 405 | legado | Disponibilidade informativa: S10 própria Chevrolet com cadastro coerente, lotação ativa 0/4..4/4; CNH válida, motorista autenticável, documentos vencidos e reservas bloqueiam. Revalidar no PATCH de despacho. |
+| GET | /api/svo/veiculos/{id}/ocupacao | ATENDENTE_SVO | sem corpo | 200 OcupacaoSvo | 400, 401, 403, 404, 500, 405 | legado | Lotação ativa calculada pela soma de quantidade_corpos de ordens despachadas e em transporte; liberada na conclusão/cancelamento. |
+| GET | /api/svo/ordens-coleta/minhas | MOTORISTA | sem corpo | 200 MinhasOrdensSvo | 400, 401, 403, 500, 405 | legado | Somente ordens vinculadas a motorista.usuario_id da sessão; sem dados médicos/pessoais do solicitante. |
+| GET | /api/svo/ordens-coleta/minhas/{id} | MOTORISTA | sem corpo | 200 MinhaOrdemSvo | 400, 401, 403, 404, 500, 405 | legado | Ordem própria mínima; IDs não vinculados retornam 404 indistinguível. |
+| PATCH | /api/svo/ordens-coleta/{id}/iniciar | MOTORISTA | IniciarOrdemSvo | 200 OrdemExecucaoSvo | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Exige atribuição do motorista e EM_DESLOCAMENTO ainda não iniciada; grava km inicial, data e auditoria. |
+| PATCH | /api/svo/ordens-coleta/{id}/etapa | MOTORISTA | sem corpo | 200 OrdemExecucaoSvo | 400, 401, 403, 404, 409, 500, 405 | legado | EM_DESLOCAMENTO iniciada -> EM_TRANSPORTE, com log transacional. |
+| PATCH | /api/svo/ordens-coleta/{id}/concluir | MOTORISTA | ConcluirOrdemSvo | 200 OrdemExecucaoSvo | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | EM_TRANSPORTE -> CONCLUIDA; km final não inferior ao inicial; libera lotação e audita. |
+| PATCH | /api/svo/ordens-coleta/{id}/cancelar | ATENDENTE_SVO | CancelarOrdemSvo | 200 OrdemExecucaoSvo | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Atendente cancela ordem ainda aberta; liberação de lotação pela exclusão do estado ativo. |
 | GET | /api/svo/ordens-coleta | ATENDENTE_SVO | sem corpo | 200 OrdensSvo | 400, 401, 403, 500, 405 | legado | status público AGUARDANDO_DESPACHO consulta PENDENTE_ALOCACAO no banco. Array direto; sem paginação. |
 | GET | /api/svo/solicitacoes | ATENDENTE_SVO | sem corpo | 200 SolicitacoesSvo | 400, 401, 403, 500, 405 | legado | Consulta inicial limitada a 20 registros com protocolo, estado e data. Filtros avançados, detalhes e paginação: SCRUM-146. |
 | POST | /api/svo/solicitacoes | ATENDENTE_SVO | CriarSolicitacaoSvo | 201 SolicitacaoSvo | 400, 401, 403, 409, 413, 415, 500, 405 | legado | Registra somente a ocorrência telefônica em AGUARDANDO_TRIAGEM; nenhuma ordem até confirmação SVO na SCRUM-131. |

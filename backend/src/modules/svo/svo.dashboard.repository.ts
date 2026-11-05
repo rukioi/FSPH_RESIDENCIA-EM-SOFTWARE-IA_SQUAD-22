@@ -133,6 +133,7 @@ export async function consultarAtividadesSvo(limite: number) {
        OR l.descricao ~ '^Triagem de #SVO-[0-9]+ confirmada como SVO$'
        OR l.descricao ~ '^Triagem de #SVO-[0-9]+ encaminhada ao IML$'
        OR l.descricao ~ '^Ordem de coleta #OC-[0-9]+ gerada para #SVO-[0-9]+$'
+       OR l.descricao ~ '^Ordem de coleta #OC-[0-9]+ (despachada|iniciada|entrou em transporte|concluída|cancelada)$'
     ORDER BY l.data_hora DESC NULLS LAST, l.id DESC LIMIT ${limite}
   `;
   return {

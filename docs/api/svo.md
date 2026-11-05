@@ -139,6 +139,13 @@ A [migration versionada da SCRUM-162](../../backend/src/database/supabase/migrat
 
 Fonte de contrato: `backend/src/shared/contract/registry.ts`. Executar `npm run api:generate`, `npm run client:generate`, `npm run api:check` e `npm run client:check` após alterar os schemas/rotas. Não editar artefatos gerados manualmente.
 
+## Operação da frota SVO — SCRUM-132/145/147/148
+
+O contrato de consulta de candidatos, lotação 0/4 e execução própria do motorista está em
+[svo-operacional-sprint7.md](./svo-operacional-sprint7.md). A autorização do motorista é
+verificada pelo vínculo de `motorista.usuario_id`, não pelo ID recebido no corpo. O antigo
+GET/triagem/dashboard do atendente não foi aberto ao motorista.
+
 ## Disponibilidade compartilhada com o transporte institucional
 
 O despacho existente mantém as verificações de referência e estado dos recursos.

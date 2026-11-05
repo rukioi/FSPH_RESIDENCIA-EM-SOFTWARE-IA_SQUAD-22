@@ -12,15 +12,17 @@ vi.mock('../../src/modules/svo/svo.repository.js', () => ({
   despacharOrdem: vi.fn(),
 }));
 
+vi.mock('../../src/modules/svo/svo.operacional.repository.js', () => ({
+  prepararDespacho: vi.fn(), recursosDisponiveisSvo: vi.fn(), ocupacaoSvo: vi.fn(),
+  minhasOrdens: vi.fn(), minhaOrdem: vi.fn(), executarOrdem: vi.fn(), cancelarOrdem: vi.fn(),
+}));
 import { createApp, isolarFalhaDaRequisicao } from '../../src/app.js';
 import {
   ErroCorpoRequisicao,
   lerCorpoJson,
 } from '../../src/modules/svo/svo.controller.js';
-import {
-  criarSolicitacao,
-  despacharOrdem,
-} from '../../src/modules/svo/svo.repository.js';
+import { criarSolicitacao } from '../../src/modules/svo/svo.repository.js';
+import { prepararDespacho } from '../../src/modules/svo/svo.operacional.repository.js';
 
 const segredo = 'segredo-ficticio-exclusivo-para-testes';
 const segredoAnterior = process.env.JWT_SECRET;
@@ -286,7 +288,7 @@ test('despacho mapeia ordem indisponível, referência e conflito', async () => 
   ] as const;
 
   for (const caso of casos) {
-    vi.mocked(despacharOrdem).mockResolvedValueOnce(
+    vi.mocked(prepararDespacho).mockResolvedValueOnce(
       caso.tipo === 'despachada'
         ? { tipo: 'despachada', ordem: caso.ordem }
         : { tipo: caso.tipo },

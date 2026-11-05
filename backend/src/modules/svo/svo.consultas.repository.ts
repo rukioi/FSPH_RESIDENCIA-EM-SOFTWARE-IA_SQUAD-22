@@ -156,13 +156,20 @@ export async function consultarHistoricoSvo(id: string, tipo: 'solicitacao' | 'o
         `Triagem de #SVO-${id} confirmada como SVO`,
         `Triagem de #SVO-${id} encaminhada ao IML`,
       ];
-      if (ordem) descricoes.push(`Ordem de coleta #OC-${String(ordem.id)} gerada para #SVO-${id}`);
+      if (ordem) {
+        const ordemId = String(ordem.id);
+        descricoes.push(`Ordem de coleta #OC-${ordemId} gerada para #SVO-${id}`,
+          ...['despachada','iniciada','entrou em transporte','concluída','cancelada']
+            .map(etapa=>`Ordem de coleta #OC-${ordemId} ${etapa}`));
+      }
     } else {
       const [ordem] = await tx`
         SELECT solicitacao_obito_id::text AS solicitacao_id FROM public.ordem_coleta WHERE id=${id}::bigint
       `;
       if (!ordem) return null;
-      descricoes = [`Ordem de coleta #OC-${id} gerada para #SVO-${String(ordem.solicitacao_id)}`];
+      descricoes = [`Ordem de coleta #OC-${id} gerada para #SVO-${String(ordem.solicitacao_id)}`,
+        ...['despachada','iniciada','entrou em transporte','concluída','cancelada']
+          .map(etapa=>`Ordem de coleta #OC-${id} ${etapa}`)];
     }
     const data = await tx`
       SELECT l.id::text AS id, l.descricao,
