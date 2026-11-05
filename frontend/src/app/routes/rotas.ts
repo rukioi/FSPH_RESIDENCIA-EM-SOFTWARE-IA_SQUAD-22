@@ -32,5 +32,11 @@ export function lerRotaSolicitacao(caminho: string, base: string) {
   const partes = caminho.slice(base.length + 1).split('/').filter(Boolean)
   if (partes.length === 0 || partes.length > 2) return null
   if (partes.length === 2 && partes[1] !== 'editar') return null
-  return { id: decodeURIComponent(partes[0]), editar: partes[1] === 'editar' }
+  let id: string
+  try {
+    id = decodeURIComponent(partes[0])
+  } catch {
+    return null
+  }
+  return { id, editar: partes[1] === 'editar' }
 }

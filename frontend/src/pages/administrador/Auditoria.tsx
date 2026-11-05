@@ -49,6 +49,7 @@ export function Auditoria() {
       } catch (erro) {
         if (!ativo) return
 
+        setAtividades([])
         setErro(
           erro instanceof Error
             ? erro.message

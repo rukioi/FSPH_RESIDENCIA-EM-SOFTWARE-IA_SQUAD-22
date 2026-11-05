@@ -92,7 +92,7 @@ export function TabelaAuditoria({
         </table>
 
         {carregando && (
-          <div className="vazio">
+          <div className="vazio" role="status">
             Carregando registros de auditoria...
           </div>
         )}
