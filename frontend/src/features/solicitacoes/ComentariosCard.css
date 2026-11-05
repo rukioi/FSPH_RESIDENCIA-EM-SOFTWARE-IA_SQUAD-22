@@ -1,0 +1,78 @@
+.comentarios {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 28px;
+}
+.comentarios__subtitulo {
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Observação original: fundo neutro com barra amarela */
+.comentarios__observacao {
+  padding: 14px 16px;
+  border-left: 4px solid var(--amarelo);
+  border-radius: 0 10px 10px 0;
+  background: var(--fundo);
+  line-height: 1.5;
+}
+.comentarios__observacao--vazia {
+  color: var(--texto-suave);
+  font-style: italic;
+}
+
+.comentarios__vazio {
+  padding: 14px 16px;
+  border: 1px dashed var(--borda);
+  border-radius: 10px;
+  color: var(--texto-suave);
+}
+
+/* Comentários: cartões brancos com barra azul */
+.comentarios__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.comentarios__item {
+  padding: 12px 16px;
+  border: 1px solid var(--borda);
+  border-left: 4px solid var(--azul);
+  border-radius: 0 10px 10px 0;
+  background: var(--branco);
+}
+.comentarios__autor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.comentarios__autor small {
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+.comentarios__item p {
+  line-height: 1.5;
+}
+
+.comentarios__form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+}
+.comentarios__form .campo {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .comentarios {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

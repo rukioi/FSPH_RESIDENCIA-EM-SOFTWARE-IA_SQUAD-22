@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Icone } from '../../shared/components/Icone'
 import { TabelaAuditoria } from '../../features/auditoria/TabelaAuditoria'
-import { TIPOS_EVENTO, eventosAuditoria } from '../../features/auditoria/dados'
+import { listarAtividades, type AtividadeAuditoria } from '../../shared/services/auditoria.service'
 import './Auditoria.css'
+
+const LIMITE = 20
 
 const PERIODOS = [
   { valor: 'todos', rotulo: 'Todo o período', horas: Infinity },
@@ -10,45 +12,139 @@ const PERIODOS = [
   { valor: '3d', rotulo: 'Últimos 3 dias', horas: 72 },
   { valor: '7d', rotulo: 'Últimos 7 dias', horas: 168 },
 ]
-const VAZIO = { busca: '', periodo: 'todos', usuario: '', perfil: '', evento: '' }
 
-const unicos = (l: string[]) => [...new Set(l)].sort((a, b) => a.localeCompare(b, 'pt-BR'))
-const USUARIOS = unicos(eventosAuditoria.map((e) => e.usuario))
-const PERFIS = unicos(eventosAuditoria.map((e) => e.perfil))
+const VAZIO = { busca: '', periodo: 'todos', usuario: '' }
 
-/** Filtra somente fixtures identificadas como demonstração, sem inferir campos do histórico real. */
+const unicos = (lista: string[]) =>
+  [...new Set(lista)].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+
 export function Auditoria() {
   const [f, setF] = useState(VAZIO)
-  const mudar = (campo: keyof typeof VAZIO, valor: string) => setF((x) => ({ ...x, [campo]: valor }))
+  const [pagina, setPagina] = useState(1)
+
+  const [atividades, setAtividades] = useState<AtividadeAuditoria[]>([])
+  const [total, setTotal] = useState(0)
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState('')
+
+  const mudar = (campo: keyof typeof VAZIO, valor: string) => {
+    setF((atual) => ({ ...atual, [campo]: valor }))
+  }
+
+  // Busca os registros da página atual no backend.
+  useEffect(() => {
+    let ativo = true
+
+    async function carregar() {
+      setCarregando(true)
+      setErro('')
+
+      try {
+        const resposta = await listarAtividades(pagina, LIMITE)
+
+        if (!ativo) return
+
+        setAtividades(resposta.data)
+        setTotal(resposta.meta.total)
+      } catch (erro) {
+        if (!ativo) return
+
+        setAtividades([])
+        setErro(
+          erro instanceof Error
+            ? erro.message
+            : 'Não foi possível carregar os registros de auditoria.',
+        )
+      } finally {
+        if (ativo) setCarregando(false)
+      }
+    }
+
+    carregar()
+
+    return () => {
+      ativo = false
+    }
+  }, [pagina])
+
+  // Os filtros abaixo são locais e atuam somente sobre a página carregada.
+  const usuarios = useMemo(
+    () => unicos(
+      atividades
+        .map((atividade) => atividade.usuarioNome)
+        .filter((nome): nome is string => Boolean(nome)),
+    ),
+    [atividades],
+  )
 
   const filtrados = useMemo(() => {
     const termo = f.busca.trim().toLowerCase()
     const horas = PERIODOS.find((p) => p.valor === f.periodo)?.horas ?? Infinity
-    const limite = Date.now() - horas * 3600_000
-    return eventosAuditoria.filter(
-      (e) =>
-        (horas === Infinity || new Date(e.dataHora).getTime() >= limite) &&
-        (!f.usuario || e.usuario === f.usuario) &&
-        (!f.perfil || e.perfil === f.perfil) &&
-        (!f.evento || e.evento === f.evento) &&
-        (!termo || [e.usuario, e.evento, e.modulo, e.detalhes].some((t) => t.toLowerCase().includes(termo))),
-    )
-  }, [f])
+    const limiteData = Date.now() - horas * 3600_000
+
+    return atividades.filter((atividade) => {
+      const data = atividade.dataHora
+        ? new Date(atividade.dataHora).getTime()
+        : null
+
+      const dentroPeriodo =
+        horas === Infinity || (data !== null && data >= limiteData)
+
+      const usuarioCorresponde =
+        !f.usuario || atividade.usuarioNome === f.usuario
+
+      const buscaCorresponde =
+        !termo ||
+        [
+          atividade.usuarioNome ?? '',
+          atividade.descricao,
+        ].some((texto) => texto.toLowerCase().includes(termo))
+
+      return dentroPeriodo && usuarioCorresponde && buscaCorresponde
+    })
+  }, [atividades, f])
 
   const filtrosAtivos = JSON.stringify(f) !== JSON.stringify(VAZIO)
+
+  const totalPaginas = Math.max(1, Math.ceil(total / LIMITE))
+  const de = total > 0 ? (pagina - 1) * LIMITE + 1 : 0
+  const ate = Math.min(pagina * LIMITE, total)
+
   const resumo = [
-    { rotulo: 'Eventos no filtro', valor: filtrados.length, classe: '' },
-    { rotulo: 'Sucesso', valor: filtrados.filter((e) => e.resultado === 'Sucesso').length, classe: 'auditoria__kpi--verde' },
-    { rotulo: 'Falhas', valor: filtrados.filter((e) => e.resultado === 'Falha').length, classe: 'auditoria__kpi--vermelho' },
-    { rotulo: 'Acessos negados', valor: filtrados.filter((e) => e.resultado === 'Negado').length, classe: 'auditoria__kpi--amarelo' },
+    {
+      rotulo: 'Eventos registrados',
+      valor: total,
+      classe: '',
+    },
+    {
+      rotulo: 'Eventos nesta página',
+      valor: atividades.length,
+      classe: '',
+    },
+    {
+      rotulo: 'Usuários nesta página',
+      valor: usuarios.length,
+      classe: '',
+    },
+    {
+      rotulo: 'Resultados dos filtros',
+      valor: filtrados.length,
+      classe: '',
+    },
   ]
+
+  function limparFiltros() {
+    setF(VAZIO)
+  }
 
   return (
     <div className="auditoria">
       <div className="pagina__topo">
         <div>
           <h1 className="pagina__titulo">Auditoria</h1>
-          <p className="pagina__descricao">Demonstração — registros ilustrativos. A consulta persistida ainda não está integrada a esta tela.</p>
+          <p className="pagina__descricao">
+            Consulte os registros de acessos e ações realizadas no sistema.
+          </p>
         </div>
       </div>
 
@@ -61,7 +157,11 @@ export function Auditoria() {
         ))}
       </ul>
 
-      <form className="auditoria__filtros cartao" onSubmit={(e) => e.preventDefault()} role="search">
+      <form
+        className="auditoria__filtros cartao"
+        onSubmit={(e) => e.preventDefault()}
+        role="search"
+      >
         <div className="campo auditoria__busca">
           <label htmlFor="aud-busca">Buscar</label>
           <div className="auditoria__busca-entrada">
@@ -69,15 +169,20 @@ export function Auditoria() {
             <input
               id="aud-busca"
               type="search"
-              placeholder="Usuário, evento, módulo ou detalhe"
+              placeholder="Usuário ou descrição da atividade"
               value={f.busca}
               onChange={(e) => mudar('busca', e.target.value)}
             />
           </div>
         </div>
+
         <div className="campo">
           <label htmlFor="aud-periodo">Período</label>
-          <select id="aud-periodo" value={f.periodo} onChange={(e) => mudar('periodo', e.target.value)}>
+          <select
+            id="aud-periodo"
+            value={f.periodo}
+            onChange={(e) => mudar('periodo', e.target.value)}
+          >
             {PERIODOS.map((p) => (
               <option key={p.valor} value={p.valor}>
                 {p.rotulo}
@@ -85,46 +190,52 @@ export function Auditoria() {
             ))}
           </select>
         </div>
+
         <div className="campo">
           <label htmlFor="aud-usuario">Usuário</label>
-          <select id="aud-usuario" value={f.usuario} onChange={(e) => mudar('usuario', e.target.value)}>
+          <select
+            id="aud-usuario"
+            value={f.usuario}
+            onChange={(e) => mudar('usuario', e.target.value)}
+          >
             <option value="">Todos</option>
-            {USUARIOS.map((u) => (
-              <option key={u}>{u}</option>
+            {usuarios.map((usuario) => (
+              <option key={usuario} value={usuario}>
+                {usuario}
+              </option>
             ))}
           </select>
         </div>
-        <div className="campo">
-          <label htmlFor="aud-perfil">Perfil</label>
-          <select id="aud-perfil" value={f.perfil} onChange={(e) => mudar('perfil', e.target.value)}>
-            <option value="">Todos</option>
-            {PERFIS.map((p) => (
-              <option key={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-        <div className="campo">
-          <label htmlFor="aud-evento">Tipo de evento</label>
-          <select id="aud-evento" value={f.evento} onChange={(e) => mudar('evento', e.target.value)}>
-            <option value="">Todos</option>
-            {TIPOS_EVENTO.map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-        </div>
+
         {filtrosAtivos && (
-          <button type="button" className="btn btn--secundario auditoria__limpar" onClick={() => setF(VAZIO)}>
+          <button
+            type="button"
+            className="btn btn--secundario auditoria__limpar"
+            onClick={limparFiltros}
+          >
             Limpar
           </button>
         )}
       </form>
 
-      {/* key força voltar à página 1 quando os filtros mudam */}
+      {erro && (
+        <div className="vazio" role="alert">
+          <strong>Não foi possível carregar a auditoria</strong>
+          {erro}
+        </div>
+      )}
+
       <TabelaAuditoria
-        key={JSON.stringify(f)}
-        eventos={filtrados}
+        atividades={filtrados}
+        carregando={carregando}
         filtrosAtivos={filtrosAtivos}
-        aoLimpar={() => setF(VAZIO)}
+        aoLimpar={limparFiltros}
+        pagina={pagina}
+        totalPaginas={totalPaginas}
+        de={de}
+        ate={ate}
+        total={total}
+        aoMudarPagina={setPagina}
       />
     </div>
   )
