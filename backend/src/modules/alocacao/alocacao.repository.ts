@@ -20,11 +20,11 @@ export async function verificarDisponibilidade(tx: postgres.TransactionSql, moto
     WHERE status IN ('AGENDADA', 'PRONTA_PARA_INICIAR', 'EM_ANDAMENTO')
       AND (${excluirSolicitacaoId}::bigint IS NULL OR id<>${excluirSolicitacaoId}::bigint)
       AND (motorista_id=${motoristaId} OR veiculo_id=${veiculoId})
-      AND (${intervalo?.inicio ?? null}::timestamp IS NULL
+      AND (${intervalo?.inicio ?? null}::text::timestamp IS NULL
         OR data_hora_retorno_previsto IS NULL
         OR data_hora_retorno_previsto <= data_hora_saida
-        OR (data_hora_saida < ${intervalo?.fim ?? null}::timestamp
-          AND data_hora_retorno_previsto > ${intervalo?.inicio ?? null}::timestamp)) LIMIT 1`;
+        OR (data_hora_saida < ${intervalo?.fim ?? null}::text::timestamp
+          AND data_hora_retorno_previsto > ${intervalo?.inicio ?? null}::text::timestamp)) LIMIT 1`;
   return reservas.length ? 'conflito_alocacao' : 'disponivel';
 }
 
@@ -51,6 +51,6 @@ export async function consultarRecursosDisponiveis(tx: postgres.TransactionSql, 
         WHERE s.status IN ('AGENDADA','PRONTA_PARA_INICIAR','EM_ANDAMENTO')
           AND (CASE WHEN r.tipo='motorista' THEN s.motorista_id ELSE s.veiculo_id END)=r.id
           AND (s.data_hora_retorno_previsto IS NULL OR s.data_hora_retorno_previsto<=s.data_hora_saida
-            OR (s.data_hora_saida<${intervalo.fim}::timestamp AND s.data_hora_retorno_previsto>${intervalo.inicio}::timestamp)))
+            OR (s.data_hora_saida<${intervalo.fim}::text::timestamp AND s.data_hora_retorno_previsto>${intervalo.inicio}::text::timestamp)))
     ORDER BY r.tipo,r.id`;
 }

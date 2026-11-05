@@ -75,7 +75,7 @@ contagens são derivadas desse snapshot, não substituídas por números adivinh
 Os artefatos versionados schema.sql, schema-metadata.json e der.mmd já incluem
 a evolução SVO e as quatro migrations institucionais da Sprint 7. Foram gerados
 dos catálogos do PostgreSQL 17 Docker isolado; db:docs:check passou sem drift.
-O snapshot atual contém 10 tabelas, 109 colunas, 8 enums, 42 constraints e 22 índices,
+O snapshot atual contém 10 tabelas, 109 colunas, 8 enums, 42 constraints e 27 índices,
 conforme schema-metadata.json. Os testes preservam a comparação integral de
 metadados; mocks não substituem a prova real de banco.
 
@@ -195,3 +195,21 @@ ser confirmados sem credenciais. A estratégia mínima é ensaiada exclusivament
 no harness, com papel runtime simulado sem privilégios de dono, revogações e
 provas reais de acesso, tudo em transação com rollback. Nenhum gerado foi editado.
 Pré-condições e limites de rollout em [segurança](../seguranca.md#identidade-e-autorização-atuais--29).
+
+## Complemento SCRUM-163/164
+
+O incremento 20261105000000_add_solicitacoes_query_indexes.sql adiciona cinco índices
+medidos em PostgreSQL isolado, sem editar as quatro migrations institucionais históricas.
+[Consultas, planos, limites e rollout](./sprint7-indices.md) documentam as medições
+e a reconciliação obrigatória em banco populado. O snapshot foi regenerado com
+db:docs:generate depois de todas as migrations no isolado; DER/dicionário não recebem
+edições manuais para simular mudanças. Não há alteração executada no Supabase.
+
+Para ensaio em ambiente novo sem dados operacionais, o runner aceita
+`npm run db:test:prepare -- --no-seed`. A opção apenas omite a carga de fixtures;
+não esvazia uma base existente, não muda o alvo e preserva identidade, hashes,
+advisory lock e uma transação por migration. Não executar a suíte usual dependente
+do seed nesse estado. Uma validação separada comprovou zero linhas antes de inserir
+somente a identidade fictícia necessária ao HTTP, com a base nova preservada.
+
+O fechamento por critério das dez SCRUMs está em [encerramento do backend](../solicitacoes/sprint7-encerramento.md). O preflight de catálogo [inspect-sprint7.sql](../../backend/src/database/scripts/inspect-sprint7.sql) é somente leitura e possui teste real READ ONLY; não substitui a comparação de equivalência nem autoriza reparar o histórico remoto.

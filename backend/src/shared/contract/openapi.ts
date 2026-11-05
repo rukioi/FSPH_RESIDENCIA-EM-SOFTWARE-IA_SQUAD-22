@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { operations, schemas } from './registry.js';
+import { operations, schemas, possuiValidacaoRuntime } from './registry.js';
 
 /** Gera OpenAPI 3.1 exclusivamente dos schemas puros, sem importar aplicação, ambiente ou pool. */
 export function openapi() {
@@ -25,7 +25,7 @@ export function openapi() {
     (paths[operation.path] ??= {})[operation.method] = {
       operationId:operation.id,tags:[operation.modulo],description:operation.notes,
       security:operation.perfis.length ? [{bearerAuth:[]}] : [],'x-perfis':operation.perfis,
-      'x-runtime-validation':['veiculos','solicitacoes'].includes(operation.modulo),parameters,
+      'x-runtime-validation':possuiValidacaoRuntime(operation),parameters,
       ...(operation.body ? {requestBody:{required:true,content}} : {}),responses,
     };
   }

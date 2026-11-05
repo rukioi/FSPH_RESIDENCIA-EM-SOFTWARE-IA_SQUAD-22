@@ -17,7 +17,7 @@ async function transaction(connection: ReservedSql, operation: () => Promise<unk
 }
 
 /** Confirma cada migration antes do seed, sob lock de sessão e proveniência isolada verificada. */
-export async function prepare() {
+export async function prepare(options:{seed?:boolean}={}) {
   const sql = await verifiedSql(true);
   try {
     const connection = await sql.reserve();
@@ -52,7 +52,7 @@ export async function prepare() {
         });
       }
       // O novo valor de enum já foi confirmado em outra transação.
-      await transaction(connection, () => connection.unsafe(readFileSync(resolve(root, 'backend/src/database/supabase/seed.sql'), 'utf8')));
+      if(options.seed!==false)await transaction(connection, () => connection.unsafe(readFileSync(resolve(root, 'backend/src/database/supabase/seed.sql'), 'utf8')));
     } finally {
       try { if (locked) await connection`select pg_advisory_unlock(270027)`; }
       finally { await connection.release(); }
@@ -60,6 +60,7 @@ export async function prepare() {
   } finally { await sql.end(); }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  await prepare();
-  console.log('Migrations e seed aplicados no banco isolado.');
+  const seed=!process.argv.includes('--no-seed');
+  await prepare({seed});
+  console.log(seed?'Migrations e seed aplicados no banco isolado.':'Migrations aplicadas no banco isolado, sem seed.');
 }

@@ -1,3 +1,5 @@
+import {comValidacaoTemporal} from './solicitacoes.erros.js';
+import {instanteEmMicrosPostgres} from './solicitacoes.datas.js';
 import type { UsuarioAutenticado } from '../../security/jwt.js';
 import { ErroHttp } from '../../shared/http/errors.js';
 import { criarSolicitacaoSchema, listarSolicitacoesSchema, solicitacao, rejeitarSolicitacaoSchema, idDecisaoSchema, decisaoSolicitacao, agendarSolicitacaoSchema, agendamentoSolicitacao, editarSolicitacaoSchema } from './solicitacoes.schemas.js';
@@ -46,7 +48,7 @@ function dto(row: LinhaSolicitacao) {
 /** Persiste entrada validada e mantém códigos de integridade conhecidos no domínio HTTP. */
 export async function criar(body: unknown, usuario: UsuarioAutenticado) {
   const entrada = prepararCriacao(body, usuario);
-  try { return dto(await inserirSolicitacao(entrada)); }
+  try { return dto(await comValidacaoTemporal(()=>inserirSolicitacao(entrada))); }
   catch (erro) {
     const code = typeof erro === 'object' && erro !== null && 'code' in erro ? erro.code : undefined;
     if (code === '23505') throw new ErroHttp(409, 'CODIGO_DUPLICADO', 'Já existe uma solicitação com esse código.');
@@ -77,7 +79,7 @@ export async function agendar(id: string, body: unknown, usuario: UsuarioAutenti
   if (!['ADM','GESTOR_FROTA'].includes(usuario.perfil)) throw new ErroHttp(403, 'ACESSO_NEGADO', 'Acesso não permitido.');
   const identificador = validar(idDecisaoSchema, id);
   const dados = validar(agendarSolicitacaoSchema, body);
-  try { return agendamentoSolicitacao.parse(await agendarSolicitacao(identificador, usuario.id, dados)); }
+  try { return agendamentoSolicitacao.parse(await comValidacaoTemporal(()=>agendarSolicitacao(identificador, usuario.id, dados))); }
   catch (erro) {
     const code = typeof erro === 'object' && erro !== null && 'code' in erro ? erro.code : undefined;
     if (code === '23503') throw new ErroHttp(404, 'REFERENCIA_INEXISTENTE', 'Motorista, veículo ou responsável não encontrado.');
@@ -92,7 +94,7 @@ export async function editar(id: string, body: unknown, usuario: UsuarioAutentic
   if (!['ADM','GESTOR_FROTA'].includes(usuario.perfil)) throw new ErroHttp(403,'ACESSO_NEGADO','Acesso não permitido.');
   const identificador = validar(idDecisaoSchema, id);
   const dados = validar(editarSolicitacaoSchema, body);
-  try { return dto(await editarSolicitacao(identificador, usuario.id, dados)); }
+  try { return dto(await comValidacaoTemporal(()=>editarSolicitacao(identificador, usuario.id, dados))); }
   catch (erro) {
     const code = typeof erro === 'object' && erro !== null && 'code' in erro ? erro.code : undefined;
     if (code === '23503') throw new ErroHttp(404,'REFERENCIA_INEXISTENTE','O responsável não foi encontrado.');
@@ -109,14 +111,14 @@ function autorizarAgenda(usuario:UsuarioAutenticado) {
 export async function listarAgenda(query:unknown,usuario:UsuarioAutenticado) {
   autorizarAgenda(usuario);
   const filtros=validar(consultarAgendaSchema,query);
-  const {data,total}=await consultarAgenda(filtros);
+  const {data,total}=await comValidacaoTemporal(()=>consultarAgenda(filtros));
   return respostaAgenda.parse({data,meta:{page:filtros.page,limit:filtros.limit,total}});
 }
 
 /** Disponibilidade é informativa; o write revalida todos os conflitos sob lock. */
 export async function listarDisponibilidade(query:unknown,usuario:UsuarioAutenticado) {
   autorizarAgenda(usuario);
-  return respostaDisponibilidade.parse({data:await consultarDisponibilidade(validar(consultarDisponibilidadeSchema,query))});
+  return respostaDisponibilidade.parse({data:await comValidacaoTemporal(()=>consultarDisponibilidade(validar(consultarDisponibilidadeSchema,query)))});
 }
 
 /** Reagenda apenas por gestor atual, com intervalo completo e saída futura, sem nova aprovação. */
@@ -124,8 +126,9 @@ export async function reagendar(id:string,body:unknown,usuario:UsuarioAutenticad
   autorizarAgenda(usuario);
   const identificador=validar(idDecisaoSchema,id);
   const dados=validar(reagendarSolicitacaoSchema,body);
-  if (Date.parse(dados.dataHoraSaida)<=Date.now()) throw new ErroHttp(400,'SAIDA_INVALIDA','A saída deve estar no futuro.');
-  try {return agendamentoSolicitacao.parse(await reagendarSolicitacao(identificador,usuario.id,dados));}
+  const saida=instanteEmMicrosPostgres(dados.dataHoraSaida);
+  if (saida===null||saida<=BigInt(Date.now())*1000n) throw new ErroHttp(400,'SAIDA_INVALIDA','A saída deve estar no futuro.');
+  try {return agendamentoSolicitacao.parse(await comValidacaoTemporal(()=>reagendarSolicitacao(identificador,usuario.id,dados)));}
   catch (erro) {
     const code=typeof erro==='object' && erro!==null && 'code' in erro ? erro.code : undefined;
     if (code==='23503') throw new ErroHttp(404,'REFERENCIA_INEXISTENTE','Motorista, veículo ou responsável não encontrado.');

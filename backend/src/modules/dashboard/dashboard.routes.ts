@@ -27,7 +27,7 @@ export async function dashboardRoute(
   ).pathname;
 
   if (caminho === '/api/dashboard/graficos') {
-    await dashboardGraficosController(response);
+    await dashboardGraficosController(response,new URL(request.url??'', 'http://localhost').searchParams);
     return;
   }
 
@@ -37,7 +37,7 @@ export async function dashboardRoute(
   }
 
   if (caminho === '/api/dashboard/gestor') {
-    await dashboardGestorController(response);
+    await dashboardGestorController(response,new URL(request.url??'', 'http://localhost').searchParams);
     return;
   }
 

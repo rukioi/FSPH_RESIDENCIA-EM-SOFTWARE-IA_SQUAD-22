@@ -232,6 +232,11 @@ ALTER TABLE public."viagem" ADD CONSTRAINT "viagem_veiculo_id_fkey" FOREIGN KEY 
 CREATE INDEX idx_log_atividade_solicitacao_viagem_id ON public.log_atividade USING btree (solicitacao_viagem_id);
 CREATE INDEX ordem_coleta_veiculo_status_idx ON public.ordem_coleta USING btree (veiculo_id, status) WHERE (veiculo_id IS NOT NULL);
 CREATE INDEX solicitacao_obito_triagem_criado_idx ON public.solicitacao_obito USING btree (status_triagem, criado_em DESC);
+CREATE INDEX solicitacao_viagem_autor_id_idx ON public.solicitacao_viagem USING btree (solicitante_id, id DESC);
+CREATE INDEX solicitacao_viagem_fila_pendente_idx ON public.solicitacao_viagem USING btree (criado_em, id) WHERE (status = 'PENDENTE'::status_solicitacao);
+CREATE INDEX solicitacao_viagem_motorista_reserva_idx ON public.solicitacao_viagem USING btree (motorista_id, data_hora_saida) INCLUDE (data_hora_retorno_previsto) WHERE (status = ANY (ARRAY['AGENDADA'::status_solicitacao, 'PRONTA_PARA_INICIAR'::status_solicitacao, 'EM_ANDAMENTO'::status_solicitacao]));
+CREATE INDEX solicitacao_viagem_saida_status_idx ON public.solicitacao_viagem USING btree (data_hora_saida, status, id);
+CREATE INDEX solicitacao_viagem_veiculo_reserva_idx ON public.solicitacao_viagem USING btree (veiculo_id, data_hora_saida) INCLUDE (data_hora_retorno_previsto) WHERE (status = ANY (ARRAY['AGENDADA'::status_solicitacao, 'PRONTA_PARA_INICIAR'::status_solicitacao, 'EM_ANDAMENTO'::status_solicitacao]));
 ALTER TABLE public."abastecimento" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public."abastecimento" NO FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public."abastecimento" FROM PUBLIC, postgres, anon, authenticated, service_role;

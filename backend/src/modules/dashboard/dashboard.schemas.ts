@@ -1,10 +1,13 @@
 import { z } from 'zod';
+import {graficosPeriodo,indicadoresInstitucionais,periodoDashboard} from './dashboard.indicadores.schemas.js';
 import { id, date, timestamp, dados } from '../../shared/contract/schemas.js';
 const contagens = z.array(z.object({ status: z.string().nullable(), total: z.number().int() }));
 const viagem = z.object({ id, codigo: z.string(), solicitante_id: id.nullable(), origem: z.string(), destino: z.string(), data_hora_saida: timestamp,
   qtd_passageiros: z.number().int().nullable(), status: z.string().nullable(), motivo_rejeicao: z.string().nullable(), criado_em: timestamp.nullable(),
   veiculo_id: id.nullable(), motorista_id: id.nullable() });
 export const dashboardSchemas = {
+  GraficosPeriodo:graficosPeriodo,
+  DashboardGestorIndicadores:dados(z.object({veiculosPorStatus:contagens,motoristasDisponiveis:z.number().int().nonnegative().nullable(),motoristasDisponiveisMotivo:z.string().nullable(),solicitacoesPorStatus:contagens,proximasViagens:z.array(viagem),periodo:periodoDashboard,indicadores:indicadoresInstitucionais})),
   Dashboard: dados(z.object({})), Graficos: dados(z.object({ veiculosPorStatus: contagens, solicitacoesPorStatus: contagens })),
   DashboardGestor: dados(z.object({ veiculosPorStatus: contagens, motoristasDisponiveis: z.number().int(), solicitacoesPorStatus: contagens, proximasViagens: z.array(viagem) }))
     .describe('motoristasDisponiveis é a contagem de TODOS os motoristas; cálculo legado preservado. Não há endpoint /kpis ou filtro por período.'),
