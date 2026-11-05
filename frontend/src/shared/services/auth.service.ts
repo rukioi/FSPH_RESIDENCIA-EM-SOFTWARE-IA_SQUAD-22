@@ -39,6 +39,8 @@ export function destinoDoPerfil(perfil: string): string {
       return ROTAS.dashboardGestor
     case 'ATENDENTE_SVO':
       return '/svo'
+    case 'SOLICITANTE_INTERNO':
+      return ROTAS.minhasSolicitacoes
     default:
       throw new Error('Este perfil não possui uma página inicial disponível.')
   }
