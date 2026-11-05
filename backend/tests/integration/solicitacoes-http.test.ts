@@ -179,3 +179,81 @@ test('auditoria de transação anterior fica após a aprovação cujo lock ela a
   const history=respostaHistorico.parse(await (await call('/'+pedido.id+'/historico')).json());
   expect(history.data.map(row=>row.descricao.split(' ')[0])).toEqual(['Criou','Aprovou','Editou']);
 });
+
+
+test('falha real da auditoria reverte as seis operações institucionais integralmente', async () => {
+  const pedido = await create({dataHoraSaida:'2099-12-20T08:00:00-03:00'});
+  const admin = await verifiedSql(true);
+  let installed = false;
+  const snapshot = async () => {
+    const [row] = await sql`SELECT row_to_json(s) AS pedido,
+      (SELECT count(*)::int FROM public.log_atividade WHERE solicitacao_viagem_id=s.id) AS logs
+      FROM public.solicitacao_viagem s WHERE id=${pedido.id}`;
+    return row;
+  };
+  try {
+    // Trigger exclusivo deste ensaio: só os atores próprios são afetados.
+    await admin.begin(async tx => {
+      await tx`CREATE FUNCTION public.fixture_s7_audit_failure() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+          IF NEW.usuario_id IN (7137002,7137003) AND NEW.solicitacao_viagem_id IS NOT NULL THEN
+            RAISE EXCEPTION 'fixture_audit_failure';
+          END IF;
+          RETURN NEW;
+        END $$`;
+      await tx`CREATE TRIGGER fixture_s7_audit_failure BEFORE INSERT ON public.log_atividade
+        FOR EACH ROW EXECUTE FUNCTION public.fixture_s7_audit_failure()`;
+    });
+    installed = true;
+    const beforeCreate = await sql`SELECT id::text FROM public.solicitacao_viagem WHERE solicitante_id=7137003 ORDER BY id`;
+    const logsBeforeCreate = await sql`SELECT id::text FROM public.log_atividade WHERE usuario_id=7137003 ORDER BY id`;
+    expect((await call('','POST',input,'a')).status).toBe(500);
+    expect(await sql`SELECT id::text FROM public.log_atividade WHERE usuario_id=7137003 ORDER BY id`).toEqual(logsBeforeCreate);
+    expect(await sql`SELECT id::text FROM public.solicitacao_viagem WHERE solicitante_id=7137003 ORDER BY id`).toEqual(beforeCreate);
+    for (const operation of [
+      {state:'PENDENTE',path:'',method:'PATCH',body:{origem:'Não pode persistir'}},
+      {state:'PENDENTE',path:'/aprovar',method:'POST',body:undefined},
+      {state:'PENDENTE',path:'/rejeitar',method:'POST',body:{motivo:'Não pode persistir'}},
+      {state:'APROVADA',path:'/agendar',method:'POST',body:{motoristaId,veiculoId,dataHoraRetornoPrevisto:'2099-12-20T17:00:00-03:00'}},
+      {state:'AGENDADA',path:'/reagendar',method:'POST',body:{motoristaId,veiculoId,dataHoraSaida:'2099-12-21T08:00:00-03:00',dataHoraRetornoPrevisto:'2099-12-21T17:00:00-03:00'}},
+    ]) {
+      await sql`UPDATE public.solicitacao_viagem SET status=${operation.state},motorista_id=${motoristaId},
+        veiculo_id=${veiculoId},data_hora_retorno_previsto='2099-12-20T17:00:00' WHERE id=${pedido.id}`;
+      const before = await snapshot();
+      const response = await call('/'+pedido.id+operation.path,operation.method,operation.body);
+      expect(response.status, operation.path).toBe(500);
+      expect(JSON.stringify(await response.json())).not.toMatch(/fixture_audit_failure|INSERT|23514/);
+      expect(await snapshot(), operation.path).toEqual(before);
+    }
+  } finally {
+    if (installed) await admin.begin(async tx => {
+      await tx`DROP TRIGGER fixture_s7_audit_failure ON public.log_atividade`;
+      await tx`DROP FUNCTION public.fixture_s7_audit_failure()`;
+    });
+    await admin.end();
+  }
+},15000);
+
+test('histórico institucional não permite escrita HTTP por nenhum perfil', async () => {
+  const pedido = await create();
+  const [before] = await sql`SELECT count(*)::int AS total FROM public.log_atividade WHERE solicitacao_viagem_id=${pedido.id}`;
+  for (const actor of ['a','b','adm','gestor','negado']) {
+    for (const method of ['POST','PATCH','PUT','DELETE']) {
+      expect((await call('/'+pedido.id+'/historico',method,{descricao:'Alterar histórico'},actor)).status).toBe(405);
+    }
+  }
+  const [after] = await sql`SELECT count(*)::int AS total FROM public.log_atividade WHERE solicitacao_viagem_id=${pedido.id}`;
+  expect(after).toEqual(before);
+});
+
+
+test('repetir decisão e agendamento não duplica atividade confirmada',async()=>{
+  const pedido=await create({dataHoraSaida:'2099-12-25T08:00:00-03:00'});
+  await approve(pedido.id);
+  expect((await call('/'+pedido.id+'/aprovar','POST')).status).toBe(409);
+  const body={motoristaId,veiculoId,dataHoraRetornoPrevisto:'2099-12-25T17:00:00-03:00'};
+  expect((await call('/'+pedido.id+'/agendar','POST',body)).status).toBe(200);
+  expect((await call('/'+pedido.id+'/agendar','POST',body)).status).toBe(409);
+  const [count]=await sql`SELECT count(*)::int AS total FROM public.log_atividade WHERE solicitacao_viagem_id=${pedido.id}`;
+  expect(count.total).toBe(3);
+});

@@ -168,7 +168,4 @@ seus pré-requisitos e a reconciliação remota estão no
 Disponibilidade não ignora reservas
 próprias: a exclusão só existe na validação transacional do reagendamento.
 
-Testes com mocks verificam rotas, filtros, escopo, SQL, ordem de locks e falhas.
-Os snapshots foram regenerados e conferidos em PostgreSQL isolado; o smoke real
-cobriu agendamento e reagendamento com persistência e histórico. Isso não comprova
-todos os filtros da agenda/disponibilidade, falhas de rollback ou concorrência real.
+Testes unitários e HTTP reais verificam filtros, limites, isolamento, intervalos adjacentes, reagendamento e rollback. solicitacoes-temporal.test.ts verifica parâmetros preparados repetidos e microssegundos; solicitacoes-aceite.test.ts verifica conflito com a reserva anterior e ordens SVO ativas. A disponibilidade consultada continua sem garantir a reserva.

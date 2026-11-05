@@ -84,8 +84,8 @@ test('intervalo usa desigualdades estritas, protege reservas sem fim e compara m
   const [parts,...values] = mocks.tx.mock.calls[3];
   const query = parts.join('?');
   expect(query).toContain('motorista_id=? OR veiculo_id=?');
-  expect(query).toContain('data_hora_saida < ?::timestamp');
-  expect(query).toContain('data_hora_retorno_previsto > ?::timestamp');
+  expect(query).toContain('data_hora_saida < ?::text::timestamp');
+  expect(query).toContain('data_hora_retorno_previsto > ?::text::timestamp');
   expect(query).toContain('data_hora_retorno_previsto IS NULL');
   expect(query).toContain('PRONTA_PARA_INICIAR'); expect(query).toContain('EM_ANDAMENTO');
   expect(query).not.toContain('FOR UPDATE');

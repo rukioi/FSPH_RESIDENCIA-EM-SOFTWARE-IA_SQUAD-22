@@ -202,6 +202,8 @@ export interface ApiSchemas {
   PendenciasDocumentos: PendenciasDocumentos;
   CriarDocumento: CriarDocumento;
   RespostaDocumento: RespostaDocumento;
+  GraficosPeriodo: GraficosPeriodo;
+  DashboardGestorIndicadores: DashboardGestorIndicadores;
   Dashboard: Dashboard;
   Graficos: Graficos;
   DashboardGestor: DashboardGestor;
@@ -763,6 +765,138 @@ export interface RespostaDocumento {
     status_regular: boolean | null;
     arquivo_nome: string | null;
     arquivo_tipo: string | null;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "GraficosPeriodo".
+ */
+export interface GraficosPeriodo {
+  data: {
+    veiculosPorStatus: {
+      status: string | null;
+      total: number;
+    }[];
+    solicitacoesPorStatus: {
+      status: string | null;
+      total: number;
+    }[];
+    periodo: {
+      periodo: 'hoje' | '7d' | '30d' | 'personalizado';
+      inicio: string;
+      fim: string;
+      criterio: 'dataHoraSaida';
+      fuso: 'America/Maceio';
+    };
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "DashboardGestorIndicadores".
+ */
+export interface DashboardGestorIndicadores {
+  data: {
+    veiculosPorStatus: {
+      status: string | null;
+      total: number;
+    }[];
+    motoristasDisponiveis: number | null;
+    motoristasDisponiveisMotivo: string | null;
+    solicitacoesPorStatus: {
+      status: string | null;
+      total: number;
+    }[];
+    proximasViagens: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      codigo: string;
+      solicitante_id: string | null;
+      origem: string;
+      destino: string;
+      /**
+       * Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+       */
+      data_hora_saida: string;
+      qtd_passageiros: number | null;
+      status: string | null;
+      motivo_rejeicao: string | null;
+      criado_em: string | null;
+      veiculo_id: string | null;
+      motorista_id: string | null;
+    }[];
+    periodo: {
+      periodo: 'hoje' | '7d' | '30d' | 'personalizado';
+      inicio: string;
+      fim: string;
+      criterio: 'dataHoraSaida';
+      fuso: 'America/Maceio';
+    };
+    indicadores: {
+      periodo: {
+        periodo: 'hoje' | '7d' | '30d' | 'personalizado';
+        inicio: string;
+        fim: string;
+        criterio: 'dataHoraSaida';
+        fuso: 'America/Maceio';
+      };
+      pendentes: number;
+      /**
+       * Estado atual APROVADA dos pedidos com saída no período; não conta eventos de decisão. Semântica provisória sujeita ao aceite da equipe.
+       */
+      aprovadas: number;
+      /**
+       * Estado atual REPROVADA dos pedidos com saída no período; não conta eventos de decisão. Semântica provisória sujeita ao aceite da equipe.
+       */
+      reprovadas: number;
+      veiculosDisponiveis: number;
+      filaAguardandoAnalise: {
+        /**
+         * BIGINT serializado pelo postgres como string; não converter para Number.
+         */
+        id: string;
+        codigo: string;
+        codigoExibicao: string;
+        origem: string;
+        destino: string;
+        criadoEm: string | null;
+        acao: 'ANALISAR';
+      }[];
+      atividadeRecente: {
+        /**
+         * BIGINT serializado pelo postgres como string; não converter para Number.
+         */
+        id: string;
+        /**
+         * BIGINT serializado pelo postgres como string; não converter para Number.
+         */
+        solicitacaoId: string;
+        codigo: string;
+        descricao: string;
+        dataHora: string | null;
+        responsavelId: string | null;
+      }[];
+      decisoesRecentes: {
+        /**
+         * BIGINT serializado pelo postgres como string; não converter para Number.
+         */
+        id: string;
+        /**
+         * BIGINT serializado pelo postgres como string; não converter para Number.
+         */
+        solicitacaoId: string;
+        codigo: string;
+        descricao: string;
+        dataHora: string | null;
+        responsavelId: string | null;
+      }[];
+      indicadoresIndisponiveis: {
+        indicador: 'IND-02' | 'IND-08' | 'IND-09';
+        estado: 'indisponivel';
+        motivo: string;
+      }[];
+    };
   };
 }
 /**
@@ -1352,9 +1486,9 @@ export interface ApiOperations {
   'usuarios_patch__api_admin_usuarios_id_status': { body: ApiSchemas['StatusUsuario']; response: ApiSchemas['UsuarioStatus'] };
   'auditoria_get__api_admin_auditoria_logs': { body: undefined; response: ApiSchemas['Auditoria'] };
   'dashboard_get__api_dashboard': { body: undefined; response: ApiSchemas['Dashboard'] };
-  'dashboard_get__api_dashboard_graficos': { body: undefined; response: ApiSchemas['Graficos'] };
+  'dashboard_get__api_dashboard_graficos': { body: undefined; response: ApiSchemas['GraficosPeriodo'] };
   'dashboard_get__api_dashboard_pendencias': { body: undefined; response: ApiSchemas['PendenciasDashboard'] };
-  'dashboard_get__api_dashboard_gestor': { body: undefined; response: ApiSchemas['DashboardGestor'] };
+  'dashboard_get__api_dashboard_gestor': { body: undefined; response: ApiSchemas['DashboardGestorIndicadores'] };
   'svo_get__api_svo_ordens_coleta': { body: undefined; response: ApiSchemas['OrdensSvo'] };
   'svo_get__api_svo_solicitacoes': { body: undefined; response: ApiSchemas['SolicitacoesSvo'] };
   'svo_post__api_svo_solicitacoes': { body: ApiSchemas['CriarSolicitacaoSvo']; response: ApiSchemas['SolicitacaoSvo'] };

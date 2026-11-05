@@ -72,3 +72,7 @@ e auditoria continuam somente ADM; SVO continua somente ATENDENTE_SVO; dashboard
 documentos e abastecimentos ADM/GESTOR_FROTA; veículos/motoristas permitem também
 ATENDENTE_SVO apenas para consulta. Não há fallback administrativo ou multitenancy.
 O frontend mantém as restrições de navegação já existentes.
+
+SCRUM-164: /api/dashboard/gestor e /api/dashboard/graficos permanecem restritos
+a ADM/GESTOR_FROTA, sem acesso de solicitante/motorista/SVO. Período e indicadores
+não alteram o escopo das solicitações individuais nem autorizam escrita em logs.

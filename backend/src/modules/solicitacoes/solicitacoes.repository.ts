@@ -1,4 +1,6 @@
 import type { z } from 'zod';
+// Parâmetros temporais entram como text: evita Date/UTC e truncamento de microssegundos no driver.
+// O PostgreSQL interpreta o offset ou o horário civil de acordo com o cast explícito de cada caminho.
 import type { criarSolicitacaoSchema, listarSolicitacoesSchema, statusSolicitacao, agendarSolicitacaoSchema, agendamentoSolicitacao, editarSolicitacaoSchema } from './solicitacoes.schemas.js';
 import { verificarDisponibilidade } from '../alocacao/alocacao.repository.js';
 import { sql } from '../../database/connection.js';
@@ -43,7 +45,7 @@ export async function editarSolicitacao(id: string, responsavelId: string, dados
       origem=COALESCE(${dados.origem ?? null}::text, origem),
       destino=COALESCE(${dados.destino ?? null}::text, destino),
       finalidade=COALESCE(${dados.finalidade ?? null}::text, finalidade),
-      data_hora_saida=COALESCE((${dados.dataHoraSaida ?? null}::timestamptz AT TIME ZONE 'America/Maceio'), data_hora_saida),
+      data_hora_saida=COALESCE((${dados.dataHoraSaida ?? null}::text::timestamptz AT TIME ZONE 'America/Maceio'), data_hora_saida),
       qtd_passageiros=COALESCE(${dados.qtdPassageiros ?? null}::integer, qtd_passageiros), status='PENDENTE'
       WHERE id=${id} AND status IN ('PENDENTE','APROVADA')
       RETURNING id::text, codigo, solicitante_id::text, origem, destino, finalidade,
@@ -61,8 +63,8 @@ export async function agendarSolicitacao(id: string, responsavelId: string, dado
   return sql.begin('isolation level read committed', async tx => {
     const [pedido] = await tx`SELECT status,
       to_char(data_hora_saida, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS inicio,
-      to_char((${dados.dataHoraRetornoPrevisto}::timestamptz AT TIME ZONE 'America/Maceio'), 'YYYY-MM-DD"T"HH24:MI:SS.US') AS fim,
-      (${dados.dataHoraRetornoPrevisto}::timestamptz AT TIME ZONE 'America/Maceio') > data_hora_saida AS retorno_valido
+      to_char((${dados.dataHoraRetornoPrevisto}::text::timestamptz AT TIME ZONE 'America/Maceio'), 'YYYY-MM-DD"T"HH24:MI:SS.US') AS fim,
+      (${dados.dataHoraRetornoPrevisto}::text::timestamptz AT TIME ZONE 'America/Maceio') > data_hora_saida AS retorno_valido
       FROM public.solicitacao_viagem WHERE id=${id} FOR UPDATE`;
     if (!pedido) throw new ErroHttp(404, 'NAO_ENCONTRADO', 'Solicitação não encontrada.');
     if (pedido.status !== 'APROVADA') throw new ErroHttp(409, 'ESTADO_INCOMPATIVEL', 'A solicitação precisa estar aprovada para ser agendada.');
@@ -73,7 +75,7 @@ export async function agendarSolicitacao(id: string, responsavelId: string, dado
     if (disponibilidade === 'conflito_alocacao') throw new ErroHttp(409, 'CONFLITO_ALOCACAO', 'Motorista ou veículo possui uma alocação conflitante.');
     const [row] = await tx<z.infer<typeof agendamentoSolicitacao>[]>`UPDATE public.solicitacao_viagem
       SET motorista_id=${dados.motoristaId}, veiculo_id=${dados.veiculoId},
-        data_hora_retorno_previsto=${pedido.fim}::timestamp, status='AGENDADA'
+        data_hora_retorno_previsto=${pedido.fim}::text::timestamp, status='AGENDADA'
       WHERE id=${id} AND status='APROVADA'
       RETURNING id::text, status, motorista_id::text AS "motoristaId", veiculo_id::text AS "veiculoId",
         to_char(data_hora_saida, 'YYYY-MM-DD"T"HH24:MI:SS.US') || '-03:00' AS "dataHoraSaida",
@@ -113,7 +115,7 @@ export async function inserirSolicitacao(entrada: NovaSolicitacao): Promise<Linh
     const [row] = await tx<LinhaSolicitacao[]>`INSERT INTO public.solicitacao_viagem
       (id, codigo, solicitante_id, origem, destino, finalidade, data_hora_saida, qtd_passageiros, status)
       VALUES (${id}, ${codigo}, ${entrada.solicitanteId}, ${dados.origem}, ${dados.destino}, ${dados.finalidade},
-        (${dados.dataHoraSaida}::timestamptz AT TIME ZONE 'America/Maceio'), ${dados.qtdPassageiros}, 'PENDENTE')
+        (${dados.dataHoraSaida}::text::timestamptz AT TIME ZONE 'America/Maceio'), ${dados.qtdPassageiros}, 'PENDENTE')
       RETURNING id::text, codigo, solicitante_id::text, origem, destino, finalidade,
         to_char(data_hora_saida, 'YYYY-MM-DD"T"HH24:MI:SS.US') || '-03:00' AS data_hora_saida,
         qtd_passageiros, status`;

@@ -156,3 +156,22 @@ POST de criação e GET não fazem aprovação, reprovação, edição, alocaç�
 de viagem ou mudanças de SVO. Sem cancelamento: diferença em relação à SCRUM-155,
 pois o protótipo não apresenta essa ação. Novas ações exigem endpoints/permissões
 e auditoria próprios. A SCRUM-138 acrescenta decisões e seus eventos, conforme contrato específico.
+
+## Complemento — preservação temporal
+
+Criação, edição, agendamento, reagendamento e filtros da agenda recebem parâmetros
+temporais textuais. O cast ocorre no servidor PostgreSQL: ISO com offset usa
+text → timestamptz → America/Maceio; horário civil já normalizado usa text → timestamp.
+Isso impede serialização intermediária para Date/UTC e perda de microssegundos em
+consultas preparadas. Não há deslocamento fixo de três horas ou conversão de
+registros históricos. Instantes/intervalos são comparados em microssegundos,
+coerentes com o banco; a leitura mantém a convenção institucional documentada.
+
+A validação de disponibilidade continua informativa; gravações revalidam recursos
+e conflitos dentro da transação, sem mudança de RBAC, estados, auditoria ou locks.
+As regressões HTTP/SQL e de precisão estão em
+[correção temporal](../solicitacoes/sprint7-correcao-temporal.md).
+
+## Validação de valores representáveis no PostgreSQL
+
+Origem, destino, finalidade e motivo de rejeição recusam o caractere NUL com 400 DADOS_INVALIDOS. Datas com offset passam pela validação civil e de intervalo; formatos/valores recusados pelo parser temporal do PostgreSQL (SQLSTATE 22007/22008) retornam 400 sem detalhes SQL. Os demais erros técnicos e de auditoria mantêm o tratamento existente e o rollback. Não há truncamento silencioso de texto nem conversão arbitrária de horário.

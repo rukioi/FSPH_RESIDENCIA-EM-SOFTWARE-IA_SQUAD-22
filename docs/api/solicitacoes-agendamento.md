@@ -131,9 +131,4 @@ hash são preservados. Não cria novo evento de auditoria do despacho SVO: a aud
 nova é do agendamento institucional, preservando o fluxo SVO fora das verificações
 de disponibilidade autorizadas.
 
-Testes com mocks validam parâmetros SQL, locks, permissões e falhas. A reconstrução
-do schema e o CHECK foram validados em PostgreSQL isolado. O smoke real comprovou
-agendamento com IDs negativos, horário institucional e rejeição de duplicidade;
-não é uma prova de todas as disputas concorrentes ou falhas de rollback. Os cenários
-de reconciliação novo/equivalente/divergente são ensaiados em tabelas efêmeras
-pelo teste de banco descrito no procedimento de rollout.
+Testes HTTP reais verificam agendamento, IDs assinados, horários, duplicidade, falha de auditoria com rollback e disputas concorrentes. solicitacoes-aceite.test.ts disputa o mesmo motorista/veículo entre despacho SVO e agendamento institucional: somente uma alocação vence. Reconciliação novo/equivalente/divergente também é ensaiada no PostgreSQL isolado, conforme o procedimento de rollout.

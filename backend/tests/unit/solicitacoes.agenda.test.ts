@@ -30,8 +30,8 @@ test('agenda normaliza período e usa o mesmo filtro temporal em lista e total',
   expect(mocks.tx.mock.calls[0].slice(1)).toEqual([query.inicio,query.fim]);
   for(const [parts,...values] of mocks.tx.mock.calls.slice(1)){
     expect(parts.join('?')).toContain("s.status='AGENDADA'");
-    expect(parts.join('?')).toContain('s.data_hora_saida<?::timestamp');
-    expect(parts.join('?')).toContain('s.data_hora_retorno_previsto>?::timestamp');
+    expect(parts.join('?')).toContain('s.data_hora_saida<?::text::timestamp');
+    expect(parts.join('?')).toContain('s.data_hora_retorno_previsto>?::text::timestamp');
     expect(values.slice(0,2)).toEqual([intervalo.fim,intervalo.inicio]);
   }
   expect(mocks.tx.mock.calls[1].slice(-2)).toEqual([5,5]);

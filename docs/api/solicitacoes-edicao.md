@@ -126,5 +126,4 @@ corpo. O PATCH não exige migration própria nem altera o SVO ou a política de
 disponibilidade. A entrega completa inclui as quatro migrations institucionais,
 com pré-requisitos e histórico descritos no
 [procedimento de rollout](../database/sprint7-reconciliacao.md).
-Mocks verificam fluxo e parâmetros SQL; locks, rollback e concorrência real
-continuam pendentes de prova no PostgreSQL isolado.
+Testes HTTP reais em solicitacoes-http.test.ts verificam edição, retorno à análise, bloqueios de estado e rollback da operação/auditoria. Os testes temporais e de aceite cobrem horários civis, estados incompatíveis e preservação da reserva. As evidências são exclusivamente do PostgreSQL isolado.

@@ -106,7 +106,4 @@ Não agenda, aloca recursos, executa viagem, edita pedido, cancela, reabre decis
 ou muda o SVO. APROVADA não equivale a AGENDADA. A entrega inclui a migration
 20261104000001_add_status_aprovada.sql, que adiciona APROVADA após PENDENTE no enum
 public.status_solicitacao. Ela é confirmada antes de o seed usar o novo valor.
-O enum e os snapshots foram verificados no PostgreSQL isolado; aprovação também
-passou no smoke HTTP real. Mocks não comprovam todos os cenários de rollback e
-disputa entre transações. O estado manual informado do Supabase exige
-[reconciliação do histórico](../database/sprint7-reconciliacao.md) antes do rollout.
+O enum e os snapshots foram verificados no PostgreSQL isolado. Testes HTTP reais verificam aprovação/rejeição, autorização, motivo inválido, estados incompatíveis, decisões concorrentes e rollback por falha na auditoria. O estado manual informado do Supabase exige [reconciliação do histórico](../database/sprint7-reconciliacao.md) antes do rollout.

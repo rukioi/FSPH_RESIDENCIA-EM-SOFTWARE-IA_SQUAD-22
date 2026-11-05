@@ -91,3 +91,13 @@ test.each([
 test('baseline de merge preserva mudanças independentes e rejeita conflito no mesmo campo',()=>{
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {mergeContractBaselines,checkCompatibility} from './scripts/generate-api.ts'; const base=openapi(),head=structuredClone(base),incoming=structuredClone(base);head.components.schemas.Veiculo.description='head';incoming.paths['/api/svo/solicitacoes'].post.description='main';const combined=mergeContractBaselines(base,head,incoming);if(combined.components.schemas.Veiculo.description!=='head'||combined.paths['/api/svo/solicitacoes'].post.description!=='main')throw Error('perdeu mudança');checkCompatibility(combined,structuredClone(combined));incoming.components.schemas.Veiculo.description='divergente';try{mergeContractBaselines(base,head,incoming);throw Error('aceitou conflito');}catch(e){if(e.message==='aceitou conflito')throw e;}console.log('ok');")).toContain('ok');
 });
+
+
+test('SCRUM-164 permite apenas a evolução aprovada do dashboard e mantém proteção de auth e queries',()=>{
+  expect(independent("import {execFileSync} from 'node:child_process';import {parse} from 'yaml';import {openapi} from './backend/src/shared/contract/openapi.ts';import {checkCompatibility} from './scripts/generate-api.ts';const previous=parse(execFileSync('git',['show','HEAD:docs/api/openapi.yaml'],{encoding:'utf8'}));checkCompatibility(previous,openapi());for(const mutate of [d=>delete d.components.schemas.DashboardGestorIndicadores.properties.data.properties.proximasViagens,d=>d.paths['/api/dashboard/gestor'].get.security=[],d=>d.paths['/api/dashboard/gestor'].get['x-perfis']=['MOTORISTA'],d=>d.paths['/api/dashboard/graficos'].get.parameters.push({name:'extra',in:'query'}),d=>d.paths['/api/dashboard/gestor'].get.responses[200].content['application/json'].schema.$ref='#/components/schemas/Usuario']){const current=openapi();mutate(current);try{checkCompatibility(previous,current);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
+});
+
+
+test('dashboard evoluído aplica schemas e deixa de ser exceção legada',()=>{
+  for(const path of ['/api/dashboard/gestor','/api/dashboard/graficos'])expect(openapi().paths[path].get).toHaveProperty('x-runtime-validation',true);
+});

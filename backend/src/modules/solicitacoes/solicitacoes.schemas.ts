@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { id, meta } from '../../shared/contract/schemas.js';
-import { dataHoraInstitucionalSchema } from './solicitacoes.datas.js';
+import { dataHoraInstitucionalSchema, intervaloTemporalValido } from './solicitacoes.datas.js';
 
 export const statusSolicitacao = z.enum(['PENDENTE', 'APROVADA', 'AGENDADA', 'PRONTA_PARA_INICIAR', 'EM_ANDAMENTO', 'CONCLUIDA', 'REPROVADA']);
-const texto = z.string().trim().min(1);
+const texto = z.string().trim().min(1).refine(value=>!value.includes('\u0000'),'Texto não pode conter o caractere NUL, incompatível com PostgreSQL.');
 export const rejeitarSolicitacaoSchema = z.strictObject({ motivo: texto });
 export const idDecisaoSchema = z.string().regex(/^[0-9]+$/).refine(value =>
   /^[0-9]{1,19}$/.test(value) && BigInt(value) <= 9223372036854775807n, 'Identificador inválido.');
@@ -71,8 +71,7 @@ const periodo = {
   inicio: dataHoraInstitucionalSchema, fim: dataHoraInstitucionalSchema,
 };
 const validarPeriodo = (value: {inicio:string;fim:string}, ctx: z.RefinementCtx) => {
-  const inicio = Date.parse(value.inicio); const fim = Date.parse(value.fim);
-  if (!Number.isFinite(inicio) || !Number.isFinite(fim) || fim <= inicio || fim-inicio > 31*86400000) {
+  if (!intervaloTemporalValido(value.inicio,value.fim,31)) {
     ctx.addIssue({code:'custom',path:['fim'],message:'Informe um intervalo válido de até 31 dias.'});
   }
 };
@@ -84,7 +83,7 @@ export const consultarAgendaSchema = z.strictObject({
 });
 export const consultarDisponibilidadeSchema = z.strictObject(periodo).superRefine(validarPeriodo);
 export const reagendarSolicitacaoSchema = agendarSolicitacaoSchema.extend({dataHoraSaida:dataHoraInstitucionalSchema})
-  .refine(value => Date.parse(value.dataHoraRetornoPrevisto) > Date.parse(value.dataHoraSaida), {path:['dataHoraRetornoPrevisto'],message:'Retorno deve ser posterior à saída.'});
+  .refine(value => intervaloTemporalValido(value.dataHoraSaida,value.dataHoraRetornoPrevisto), {path:['dataHoraRetornoPrevisto'],message:'Retorno deve ser posterior à saída.'});
 export const itemAgenda = z.object({
   id,codigo:z.string(),codigoExibicao:z.string(),status:z.literal('AGENDADA'),
   origem:z.string(),destino:z.string(),finalidade:z.string().nullable(),qtdPassageiros:z.number().int().nullable(),

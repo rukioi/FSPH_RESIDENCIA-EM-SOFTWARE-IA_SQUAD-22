@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import {parametrosPeriodoDashboard,notasDashboardPeriodo} from '../../modules/dashboard/dashboard.indicadores.schemas.js';
 import { erro, erroString, erroSvo, sucessoExclusao, gestor, consultaFrota } from './schemas.js';
 import { veiculosSchemas } from '../../modules/veiculos/veiculos.schemas.js';
 import { authSchemas } from '../../modules/auth/auth.schemas.js';
@@ -21,7 +22,7 @@ export type Modulo = 'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|
 export interface Operacao {
   id: string; modulo: Modulo; method: 'get'|'post'|'put'|'patch'|'delete'; path: string;
   perfis: string[]; response: SchemaName; status: number; body?: SchemaName;
-  errors: number[]; errorSchema?: SchemaName; notes: string; query?: { name: string; required: boolean; schema: z.ZodType }[];
+  errors: number[]; runtimeValidation?:boolean; errorSchema?: SchemaName; notes: string; query?: { name: string; required: boolean; schema: z.ZodType }[];
 }
 const op = (modulo: Modulo, method: Operacao['method'], path: string, response: SchemaName,
   perfis: string[], options: Partial<Omit<Operacao,'modulo'|'method'|'path'|'response'|'perfis'>> = {}): Operacao => ({
@@ -73,7 +74,9 @@ export const operations: Operacao[] = [
   op('auditoria','get','/api/admin/auditoria/logs','Auditoria',['ADM'],{errors:[400,401,403,500],notes:'Sem page/limit retorna array legado com email. Com qualquer parâmetro de paginação retorna DTO mínimo; defaults page=1, limit=20, max=100. Duplicatas/offset inseguro:400.',query:[
     {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)}, {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
   ...(['Dashboard','Graficos','PendenciasDashboard','DashboardGestor'] as const).map((s,i)=>op('dashboard','get',
-    ['/api/dashboard','/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],s,gestor)),
+    ['/api/dashboard','/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],
+    i===1?'GraficosPeriodo':i===3?'DashboardGestorIndicadores':s,gestor,
+    i===1||i===3?{runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notasDashboardPeriodo}:{})),
   op('svo','get','/api/svo/ordens-coleta','OrdensSvo',['ATENDENTE_SVO'],{errors:[400,401,403,500],errorSchema:'ErroOperacionalSvo',
     query:[{name:'status',required:true,schema:z.literal('AGUARDANDO_DESPACHO')}],notes:'status público AGUARDANDO_DESPACHO consulta PENDENTE_ALOCACAO no banco. Array direto; sem paginação.'}),
   op('svo','get','/api/svo/solicitacoes','SolicitacoesSvo',['ATENDENTE_SVO'],{
@@ -110,4 +113,9 @@ export const operations: Operacao[] = [
 export function routePattern(operation: Operacao): RegExp {
   const path = operation.path.replace(/\{id\}/g, '[0-9]+');
   return new RegExp('^' + path + (operation.modulo === 'usuarios' && path.includes('[0-9]+') ? '/?' : '') + '$');
+}
+
+/** Informa somente operações que efetivamente aplicam seus schemas no caminho HTTP. */
+export function possuiValidacaoRuntime(operation:Operacao):boolean{
+  return operation.runtimeValidation??['veiculos','solicitacoes'].includes(operation.modulo);
 }

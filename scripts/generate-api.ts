@@ -4,7 +4,9 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stringify, parse } from 'yaml';
 import { openapi } from '../backend/src/shared/contract/openapi.js';
-import { operations } from '../backend/src/shared/contract/registry.js';
+import { operations, possuiValidacaoRuntime } from '../backend/src/shared/contract/registry.js';
+import {z} from 'zod';
+import {parametrosPeriodoDashboard,notasDashboardPeriodo} from '../backend/src/modules/dashboard/dashboard.indicadores.schemas.js';
 
 export const root = fileURLToPath(new URL('../',import.meta.url));
 /** Serializa o contrato em ordem estável, sem data de geração ou informação do ambiente. */
@@ -12,13 +14,13 @@ export const specification = () => stringify(openapi(), { lineWidth: 0 });
 /** Deriva a tabela de cobertura e limites dos mesmos descritores usados no dispatcher. */
 export const inventory = () => '# Inventário da API atual — #32\n\nGerado por api:generate; não editar manualmente. ' + operations.length + ' operações.\n\n' +
   '| Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n' +
-  operations.map(o=>`| ${o.method.toUpperCase()} | ${o.path} | ${o.perfis.join(', ') || 'pública'} | ${o.body ?? 'sem corpo'} | ${o.status} ${o.response} | ${[...o.errors,405].join(', ')} | ${o.modulo === 'veiculos' ? 'piloto' : o.modulo === 'solicitacoes' ? 'validado' : 'legado'} | ${o.notes} |`).join('\n')+'\n\nCaminho desconhecido: 404 comum. Método não permitido: 405 + Allow, antes de auth. Todas as respostas recebem X-Request-Id. As exceções fechadas estão em [legacy-manifest.json](./legacy-manifest.json). Schemas legados documentam o transporte; não substituem os validadores existentes.\n';
+  operations.map(o=>`| ${o.method.toUpperCase()} | ${o.path} | ${o.perfis.join(', ') || 'pública'} | ${o.body ?? 'sem corpo'} | ${o.status} ${o.response} | ${[...o.errors,405].join(', ')} | ${o.modulo === 'veiculos' ? 'piloto' : possuiValidacaoRuntime(o) ? 'validado' : 'legado'} | ${o.notes} |`).join('\n')+'\n\nCaminho desconhecido: 404 comum. Método não permitido: 405 + Allow, antes de auth. Todas as respostas recebem X-Request-Id. As exceções fechadas estão em [legacy-manifest.json](./legacy-manifest.json). Schemas legados documentam o transporte; não substituem os validadores existentes.\n';
 
 /** Valida cobertura fechada: toda operação legada precisa de exceção explícita e toda família de rotas de contribuição. */
 export function checkCoverage(manifest: { operations: {method:string;path:string;reason:string}[] }) {
   const keys = operations.map(o=>o.method.toUpperCase()+' '+o.path);
   if (new Set(keys).size !== keys.length) throw new Error('Operação duplicada no contrato.');
-  const expected = operations.filter(o=>!['veiculos','solicitacoes'].includes(o.modulo)).map(o=>o.method.toUpperCase()+' '+o.path).sort();
+  const expected = operations.filter(o=>!possuiValidacaoRuntime(o)).map(o=>o.method.toUpperCase()+' '+o.path).sort();
   const actual = manifest.operations.map(o=>o.method+' '+o.path).sort();
   if (JSON.stringify(expected) !== JSON.stringify(actual) || manifest.operations.some(o=>!o.reason.trim())) throw new Error('Manifesto legado fora da lista fechada. Nova rota exige contrato e adaptação explícita.');
   const modules = readdirSync(resolve(root,'backend/src/modules'),{withFileTypes:true}).filter(d=>d.isDirectory() && readdirSync(resolve(root,'backend/src/modules',d.name)).some(f=>f.endsWith('.routes.ts'))).map(d=>d.name).sort();
@@ -46,6 +48,41 @@ export function checkCompatibility(previous: Document, current: Document) {
     if (path === '/api/abastecimentos' && method === 'post' && !old.responses?.[404] && candidate?.responses?.[404]) {
       const expected = { ...(old.responses?.[500] as object), description:'Falha atual HTTP 404' };
       if (JSON.stringify(candidate.responses[404]) === JSON.stringify(expected)) delete candidate.responses[404];
+    }
+    // SCRUM-164: transição fechada dos dois GETs para DTOs novos; componentes antigos permanecem imutáveis.
+    // Não autoriza alteração de perfis, security, headers, outros erros ou remoção de campos legados.
+    const dashboard = path==='/api/dashboard/gestor' ? ['DashboardGestor','DashboardGestorIndicadores']
+      : path==='/api/dashboard/graficos' ? ['Graficos','GraficosPeriodo'] : undefined;
+    if(method==='get' && dashboard && candidate){
+      const before=definition as {parameters?:unknown[];description?:string;responses?:Record<string,{content?:{'application/json'?:{schema?:{$ref?:string}}}}>};
+      const after=candidate as typeof before;
+      const oldRef=before.responses?.[200]?.content?.['application/json']?.schema?.$ref;
+      const newSchema=after.responses?.[200]?.content?.['application/json']?.schema;
+      if(oldRef==='#/components/schemas/'+dashboard[0] && newSchema?.$ref==='#/components/schemas/'+dashboard[1]){
+        const legacy=current.components.schemas[dashboard[0]];
+        const replacement=current.components.schemas[dashboard[1]];
+        const oldData=legacy?.properties?.data;
+        const newData=replacement?.properties?.data;
+        if(!oldData||typeof oldData!=='object'||!newData||typeof newData!=='object'||!oldData.properties||!newData.properties||newData.type!=='object')throw new Error('Dashboard sem formato legado.');
+        for(const name of oldData.required??[]){
+          if(!newData.required?.includes(name))throw new Error('Campo legado deixou de ser obrigatório: '+name);
+        }
+        for(const [name,shape] of Object.entries(oldData.properties)){
+          const actual=newData.properties[name];
+          if(dashboard[0]==='DashboardGestor'&&name==='motoristasDisponiveis'){
+            const {$schema:dialect,...expected}=z.toJSONSchema(z.number().int().nonnegative().nullable());void dialect;
+            if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error('Disponibilidade fora da evolução aprovada.');
+          }else if(JSON.stringify(actual)!==JSON.stringify(shape))throw new Error('Campo legado alterado no dashboard: '+name);
+        }
+        const runtime=candidate as Record<string,unknown>;
+        if(runtime['x-runtime-validation']===true&&(definition as Record<string,unknown>)['x-runtime-validation']===false)runtime['x-runtime-validation']=false;
+        newSchema.$ref=oldRef;
+        const expected=parametrosPeriodoDashboard.map(q=>({name:q.name,in:'query',required:q.required,schema:z.toJSONSchema(q.schema)}));
+        if(JSON.stringify(before.parameters)===JSON.stringify([]) && JSON.stringify(after.parameters)===JSON.stringify(expected))after.parameters=[];
+        if(after.description===notasDashboardPeriodo)after.description=before.description;
+        const error400={...(before.responses?.[500] as object),description:'Falha atual HTTP 400'};
+        if(!before.responses?.[400] && JSON.stringify(after.responses?.[400])===JSON.stringify(error400))delete after.responses![400];
+      }
     }
     if (JSON.stringify(definition) !== JSON.stringify(candidate)) throw new Error(`Contrato existente alterado: ${method.toUpperCase()} ${path}. Planeje compatibilidade explicitamente.`);
   }

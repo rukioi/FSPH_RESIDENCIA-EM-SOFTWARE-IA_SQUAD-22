@@ -2245,12 +2245,49 @@ paths:
       operationId: dashboard_get__api_dashboard_graficos
       tags:
         - dashboard
-      description: Formato atual preservado; query params não declarados são ignorados.
+      description: "SCRUM-164: periodo=hoje|7d|30d|personalizado (padrão hoje). Personalizado exige inicio/fim ISO com offset, até 31 dias; demais períodos recusam inicio/fim. Query estrita. Período filtra saída institucional; fila pendente é atual, sem filtro temporal. Datas de auditoria são civis sem offset, não UTC. Motoristas indeterminados sem jornada/escala; nunca contar todos ou retornar zero fictício."
       security:
         - bearerAuth: []
       x-perfis: *a1
-      x-runtime-validation: false
-      parameters: []
+      x-runtime-validation: true
+      parameters:
+        - name: periodo
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - hoje
+              - 7d
+              - 30d
+              - personalizado
+        - name: inicio
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+            allOf:
+              - not:
+                  pattern: ^0000-
+              - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+        - name: fim
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+            allOf:
+              - not:
+                  pattern: ^0000-
+              - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
       responses:
         "200":
           description: Sucesso no formato atual
@@ -2263,7 +2300,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Graficos"
+                $ref: "#/components/schemas/GraficosPeriodo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
         "401":
           description: Falha atual HTTP 401
           headers:
@@ -2391,12 +2440,49 @@ paths:
       operationId: dashboard_get__api_dashboard_gestor
       tags:
         - dashboard
-      description: Formato atual preservado; query params não declarados são ignorados.
+      description: "SCRUM-164: periodo=hoje|7d|30d|personalizado (padrão hoje). Personalizado exige inicio/fim ISO com offset, até 31 dias; demais períodos recusam inicio/fim. Query estrita. Período filtra saída institucional; fila pendente é atual, sem filtro temporal. Datas de auditoria são civis sem offset, não UTC. Motoristas indeterminados sem jornada/escala; nunca contar todos ou retornar zero fictício."
       security:
         - bearerAuth: []
       x-perfis: *a1
-      x-runtime-validation: false
-      parameters: []
+      x-runtime-validation: true
+      parameters:
+        - name: periodo
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - hoje
+              - 7d
+              - 30d
+              - personalizado
+        - name: inicio
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+            allOf:
+              - not:
+                  pattern: ^0000-
+              - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+        - name: fim
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+            allOf:
+              - not:
+                  pattern: ^0000-
+              - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
       responses:
         "200":
           description: Sucesso no formato atual
@@ -2409,7 +2495,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DashboardGestor"
+                $ref: "#/components/schemas/DashboardGestorIndicadores"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
         "401":
           description: Falha atual HTTP 401
           headers:
@@ -6330,6 +6428,417 @@ components:
             - status_regular
             - arquivo_nome
             - arquivo_tipo
+      required:
+        - data
+    GraficosPeriodo:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            veiculosPorStatus:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - status
+                  - total
+            solicitacoesPorStatus:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - status
+                  - total
+            periodo:
+              type: object
+              properties:
+                periodo:
+                  type: string
+                  enum:
+                    - hoje
+                    - 7d
+                    - 30d
+                    - personalizado
+                inicio:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                fim:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                criterio:
+                  type: string
+                  const: dataHoraSaida
+                fuso:
+                  type: string
+                  const: America/Maceio
+              required:
+                - periodo
+                - inicio
+                - fim
+                - criterio
+                - fuso
+          required:
+            - veiculosPorStatus
+            - solicitacoesPorStatus
+            - periodo
+      required:
+        - data
+    DashboardGestorIndicadores:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            veiculosPorStatus:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - status
+                  - total
+            motoristasDisponiveis:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                - type: "null"
+            motoristasDisponiveisMotivo:
+              type:
+                - string
+                - "null"
+            solicitacoesPorStatus:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - status
+                  - total
+            proximasViagens:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  codigo:
+                    type: string
+                  solicitante_id:
+                    anyOf:
+                      - type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      - type: "null"
+                  origem:
+                    type: string
+                  destino:
+                    type: string
+                  data_hora_saida:
+                    type: string
+                    description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                  qtd_passageiros:
+                    anyOf:
+                      - type: integer
+                        minimum: -9007199254740991
+                        maximum: 9007199254740991
+                      - type: "null"
+                  status:
+                    type:
+                      - string
+                      - "null"
+                  motivo_rejeicao:
+                    type:
+                      - string
+                      - "null"
+                  criado_em:
+                    anyOf:
+                      - type: string
+                        description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                      - type: "null"
+                  veiculo_id:
+                    anyOf:
+                      - type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      - type: "null"
+                  motorista_id:
+                    anyOf:
+                      - type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      - type: "null"
+                required:
+                  - id
+                  - codigo
+                  - solicitante_id
+                  - origem
+                  - destino
+                  - data_hora_saida
+                  - qtd_passageiros
+                  - status
+                  - motivo_rejeicao
+                  - criado_em
+                  - veiculo_id
+                  - motorista_id
+            periodo:
+              type: object
+              properties:
+                periodo:
+                  type: string
+                  enum:
+                    - hoje
+                    - 7d
+                    - 30d
+                    - personalizado
+                inicio:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                fim:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                criterio:
+                  type: string
+                  const: dataHoraSaida
+                fuso:
+                  type: string
+                  const: America/Maceio
+              required:
+                - periodo
+                - inicio
+                - fim
+                - criterio
+                - fuso
+            indicadores:
+              type: object
+              properties:
+                periodo:
+                  type: object
+                  properties:
+                    periodo:
+                      type: string
+                      enum:
+                        - hoje
+                        - 7d
+                        - 30d
+                        - personalizado
+                    inicio:
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    fim:
+                      type: string
+                      format: date-time
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    criterio:
+                      type: string
+                      const: dataHoraSaida
+                    fuso:
+                      type: string
+                      const: America/Maceio
+                  required:
+                    - periodo
+                    - inicio
+                    - fim
+                    - criterio
+                    - fuso
+                pendentes:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                aprovadas:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                  description: Estado atual APROVADA dos pedidos com saída no período; não conta eventos de decisão. Semântica provisória sujeita ao aceite da equipe.
+                reprovadas:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                  description: Estado atual REPROVADA dos pedidos com saída no período; não conta eventos de decisão. Semântica provisória sujeita ao aceite da equipe.
+                veiculosDisponiveis:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                filaAguardandoAnalise:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      codigo:
+                        type: string
+                      codigoExibicao:
+                        type: string
+                      origem:
+                        type: string
+                      destino:
+                        type: string
+                      criadoEm:
+                        type:
+                          - string
+                          - "null"
+                      acao:
+                        type: string
+                        const: ANALISAR
+                    required:
+                      - id
+                      - codigo
+                      - codigoExibicao
+                      - origem
+                      - destino
+                      - criadoEm
+                      - acao
+                atividadeRecente:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      solicitacaoId:
+                        type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      codigo:
+                        type: string
+                      descricao:
+                        type: string
+                      dataHora:
+                        type:
+                          - string
+                          - "null"
+                      responsavelId:
+                        anyOf:
+                          - type: string
+                            pattern: ^-?\d+$
+                            description: BIGINT serializado pelo postgres como string; não converter para Number.
+                          - type: "null"
+                    required:
+                      - id
+                      - solicitacaoId
+                      - codigo
+                      - descricao
+                      - dataHora
+                      - responsavelId
+                decisoesRecentes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      solicitacaoId:
+                        type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      codigo:
+                        type: string
+                      descricao:
+                        type: string
+                      dataHora:
+                        type:
+                          - string
+                          - "null"
+                      responsavelId:
+                        anyOf:
+                          - type: string
+                            pattern: ^-?\d+$
+                            description: BIGINT serializado pelo postgres como string; não converter para Number.
+                          - type: "null"
+                    required:
+                      - id
+                      - solicitacaoId
+                      - codigo
+                      - descricao
+                      - dataHora
+                      - responsavelId
+                indicadoresIndisponiveis:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      indicador:
+                        type: string
+                        enum:
+                          - IND-02
+                          - IND-08
+                          - IND-09
+                      estado:
+                        type: string
+                        const: indisponivel
+                      motivo:
+                        type: string
+                    required:
+                      - indicador
+                      - estado
+                      - motivo
+              required:
+                - periodo
+                - pendentes
+                - aprovadas
+                - reprovadas
+                - veiculosDisponiveis
+                - filaAguardandoAnalise
+                - atividadeRecente
+                - decisoesRecentes
+                - indicadoresIndisponiveis
+          required:
+            - veiculosPorStatus
+            - motoristasDisponiveis
+            - motoristasDisponiveisMotivo
+            - solicitacoesPorStatus
+            - proximasViagens
+            - periodo
+            - indicadores
       required:
         - data
     Dashboard:
