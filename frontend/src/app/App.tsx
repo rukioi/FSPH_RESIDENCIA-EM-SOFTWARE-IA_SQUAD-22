@@ -4,12 +4,13 @@ import type { ComponentType } from 'react'
 import '../shared/styles/tema.css'
 
 import { navegar, useCaminho } from './routes/router'
-import { ROTAS } from './routes/rotas'
+import { ROTAS, lerRotaSolicitacao } from './routes/rotas'
 import { AuthSkeleton } from './AuthSkeleton'
 
 import { AdminLayout } from '../layouts/administrador/AdminLayout'
 import { perfilPodeAcessar } from '../shared/services/access.service'
 import { GestorLayout } from '../layouts/gestor/GestorLayout'
+import { SolicitanteLayout } from '../layouts/solicitante/SolicitanteLayout'
 
 import { Login } from '../pages/login/Login'
 import { DashboardAdmin } from '../pages/administrador/DashboardAdm'
@@ -20,6 +21,12 @@ import { Veiculos } from "../pages/veiculos/Veiculos";
 import { Motoristas } from "../pages/motorista/Motoristas";
 
 import { Svo } from '../features/svo/Svo';
+import { Solicitacoes } from '../pages/gerente/Solicitacoes'
+import { Calendario } from '../pages/gerente/Calendario'
+import { NovaSolicitacao } from '../pages/solicitante/NovaSolicitacao'
+import { MinhasSolicitacoes } from '../pages/solicitante/MinhasSolicitacoes'
+import { DetalheSolicitacao } from '../features/solicitacoes/DetalheSolicitacao'
+import { EditarSolicitacao } from '../features/solicitacoes/EditarSolicitacao'
 import {
   buscarSessao,
   destinoDoPerfil,
@@ -123,6 +130,82 @@ export function App() {
       <GestorLayout usuario={sessao}>
         <Motoristas />
       </GestorLayout>
+    )
+  }
+
+  // ===== Solicitações e Calendário do Gestor de Frota =====
+  if (caminho === ROTAS.solicitacoesGestor) {
+    return (
+      <GestorLayout usuario={sessao}>
+        <Solicitacoes />
+      </GestorLayout>
+    )
+  }
+
+  if (caminho === ROTAS.calendarioGestor) {
+    return (
+      <GestorLayout usuario={sessao}>
+        <Calendario />
+      </GestorLayout>
+    )
+  }
+
+  // /gestor/solicitacoes/:id e /gestor/solicitacoes/:id/editar
+  const rotaGestor = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
+  if (rotaGestor) {
+    return (
+      <GestorLayout usuario={sessao}>
+        {rotaGestor.editar ? (
+          <EditarSolicitacao key={caminho} id={rotaGestor.id} perfil="gestor" base={ROTAS.solicitacoesGestor} />
+        ) : (
+          <DetalheSolicitacao
+            key={caminho}
+            id={rotaGestor.id}
+            perfil="gestor"
+            base={ROTAS.solicitacoesGestor}
+            rotuloVoltar="Solicitações"
+            autor={{ nome: sessao.nome ?? sessao.email ?? 'Gestor', cargo: 'Gestor de Frota' }}
+          />
+        )}
+      </GestorLayout>
+    )
+  }
+
+  // ===== Telas do Solicitante =====
+  if (caminho === ROTAS.novaSolicitacao) {
+    return (
+      <SolicitanteLayout usuario={sessao}>
+        <NovaSolicitacao usuario={sessao} />
+      </SolicitanteLayout>
+    )
+  }
+
+  if (caminho === ROTAS.minhasSolicitacoes) {
+    return (
+      <SolicitanteLayout usuario={sessao}>
+        <MinhasSolicitacoes usuario={sessao} />
+      </SolicitanteLayout>
+    )
+  }
+
+  // /solicitante/minhas-solicitacoes/:id e /:id/editar
+  const rotaSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)
+  if (rotaSolicitante) {
+    return (
+      <SolicitanteLayout usuario={sessao}>
+        {rotaSolicitante.editar ? (
+          <EditarSolicitacao key={caminho} id={rotaSolicitante.id} perfil="solicitante" base={ROTAS.minhasSolicitacoes} />
+        ) : (
+          <DetalheSolicitacao
+            key={caminho}
+            id={rotaSolicitante.id}
+            perfil="solicitante"
+            base={ROTAS.minhasSolicitacoes}
+            rotuloVoltar="Minhas Solicitações"
+            autor={{ nome: sessao.nome ?? sessao.email ?? 'Solicitante', cargo: 'Solicitante' }}
+          />
+        )}
+      </SolicitanteLayout>
     )
   }
 

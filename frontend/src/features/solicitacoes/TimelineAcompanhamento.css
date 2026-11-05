@@ -1,0 +1,102 @@
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.timeline__etapa {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: var(--branco);
+  color: var(--texto-suave);
+}
+.timeline__etapa strong {
+  margin-top: 8px;
+  font-weight: 700;
+}
+.timeline__etapa small {
+  font-size: 13px;
+}
+.timeline__numero {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--borda);
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Etapas alcançadas: azul */
+.timeline__etapa--feita {
+  border-color: #c9d8ff;
+  background: #f3f6ff;
+  color: var(--texto);
+}
+.timeline__etapa--feita .timeline__numero {
+  border-color: var(--azul);
+  background: var(--azul);
+  color: #fff;
+}
+/* Etapa atual: azul com destaque */
+.timeline__etapa--atual {
+  border: 2px solid var(--azul);
+  background: #eef3ff;
+  color: var(--texto);
+}
+.timeline__etapa--atual .timeline__numero {
+  border-color: var(--azul);
+  background: var(--azul);
+  color: #fff;
+}
+.timeline__etapa--atual small {
+  color: var(--azul);
+  font-weight: 700;
+}
+
+.timeline__recursos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--borda);
+}
+.timeline__recursos dt {
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+.timeline__recursos dd {
+  margin: 2px 0 0;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .timeline {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .timeline__etapa {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+  }
+  .timeline__numero {
+    grid-row: span 2;
+  }
+  .timeline__etapa strong {
+    margin-top: 0;
+  }
+  .timeline__recursos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

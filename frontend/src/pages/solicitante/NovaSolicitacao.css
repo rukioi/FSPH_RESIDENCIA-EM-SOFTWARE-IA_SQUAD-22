@@ -1,0 +1,18 @@
+.nova-sol {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.nova-sol__resumo {
+  margin: 0;
+}
+.nova-sol__resumo dt {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+.nova-sol__resumo dd {
+  margin: 4px 0 0;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
