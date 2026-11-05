@@ -158,7 +158,7 @@ export async function salvarTriagemParcialController(
       jsonCompartilhado(response, 404, { erro: 'Solicitação não encontrada.' });
     } else if (resultado.tipo === 'conflito') {
       jsonCompartilhado(response, 409, { erro: 'Triagem já encerrada ou registro legado não conciliado.' });
-    } else {
+    } else if (resultado.tipo === 'salva') {
       jsonCompartilhado(response, 200, resultado.dados);
     }
   } catch (erro) {
@@ -189,7 +189,7 @@ export async function finalizarTriagemController(
       jsonCompartilhado(response, 404, { erro: 'Solicitação não encontrada.' });
     } else if (resultado.tipo === 'conflito') {
       jsonCompartilhado(response, 409, { erro: 'Triagem já encerrada ou registro legado não conciliado.' });
-    } else {
+    } else if (resultado.tipo === 'finalizada') {
       jsonCompartilhado(response, 200, resultado.dados);
     }
   } catch (erro) {
