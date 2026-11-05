@@ -9,8 +9,11 @@ export interface FiltroOrdens extends ConsultaPagina {
   status?: 'PENDENTE_ALOCACAO' | 'EM_DESLOCAMENTO' | 'EM_TRANSPORTE' | 'CONCLUIDA' | 'CANCELADA';
 }
 
+/** Recebe a string civil selecionada pelo SQL, nunca converte timestamp sem fuso em UTC. */
 function instante(valor: unknown): string | null {
-  return valor == null ? null : valor instanceof Date ? valor.toISOString() : String(valor);
+  if (valor == null) return null;
+  if (typeof valor !== 'string') throw new Error('Timestamp civil não retornado como texto.');
+  return valor;
 }
 function optTexto(valor: unknown): string | null { return valor == null ? null : String(valor); }
 function optNumero(valor: unknown): number | null { return valor == null ? null : Number(valor); }
@@ -25,7 +28,8 @@ export async function consultarSolicitacoesPaginadas(f: FiltroSolicitacoes) {
   const status = f.status ?? null, inicio = f.inicio ?? null, fim = f.fim ?? null;
   return sql.begin('isolation level repeatable read read only', async tx => {
     const data = await tx`
-      SELECT id::text AS id, codigo, status_triagem::text AS status_triagem, criado_em
+      SELECT id::text AS id, codigo, status_triagem::text AS status_triagem,
+             to_char(criado_em, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS criado_em_civil
       FROM public.solicitacao_obito
       WHERE (${status}::text IS NULL OR status_triagem::text = ${status})
         AND (${inicio}::date IS NULL OR criado_em >= ${inicio}::date)
@@ -41,7 +45,7 @@ export async function consultarSolicitacoesPaginadas(f: FiltroSolicitacoes) {
     `;
     return {
       data: data.map(r => ({ id: String(r.id), codigo: String(r.codigo),
-        statusTriagem: optTexto(r.status_triagem), criadoEm: instante(r.criado_em) })),
+        statusTriagem: optTexto(r.status_triagem), criadoEm: instante(r.criado_em_civil) })),
       meta: { page: f.page, limit: f.limit, total: totalSeguro(contagem.total) },
     };
   });
@@ -76,8 +80,11 @@ export async function consultarOrdensPaginadas(f: FiltroOrdens) {
 /** Retoma os campos realmente persistidos; GET nunca cria ordem nem conclui triagem. */
 export async function consultarSolicitacaoDetalhada(id: string) {
   const [r] = await sql`
-    SELECT so.id::text AS id, so.codigo, so.criado_em, so.status_triagem::text AS status_triagem,
-      so.triagem_observacoes, so.triado_por_id::text AS triado_por_id, so.triado_em,
+    SELECT so.id::text AS id, so.codigo,
+      to_char(so.criado_em, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS criado_em,
+      so.status_triagem::text AS status_triagem,
+      so.triagem_observacoes, so.triado_por_id::text AS triado_por_id,
+      to_char(so.triado_em, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS triado_em,
       so.local_falecimento, so.endereco_remocao, so.ponto_referencia, so.canal_atendimento,
       so.solicitante_nome, so.solicitante_parentesco, so.solicitante_telefone,
       so.nome_falecido, so.observacoes_medicas,
@@ -113,7 +120,9 @@ export async function consultarOrdemDetalhada(id: string) {
       oc.solicitacao_obito_id::text AS solicitacao_id, so.codigo AS solicitacao_codigo,
       so.status_triagem::text AS status_triagem, so.endereco_remocao,
       oc.quantidade_corpos, oc.motorista_id::text AS motorista_id, oc.veiculo_id::text AS veiculo_id,
-      oc.km_inicial, oc.km_final, oc.data_inicio, oc.data_fim
+      oc.km_inicial, oc.km_final,
+      to_char(oc.data_inicio, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS data_inicio,
+      to_char(oc.data_fim, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS data_fim
     FROM public.ordem_coleta oc
     JOIN public.solicitacao_obito so ON so.id=oc.solicitacao_obito_id
     WHERE oc.id=${id}::bigint
@@ -156,7 +165,8 @@ export async function consultarHistoricoSvo(id: string, tipo: 'solicitacao' | 'o
       descricoes = [`Ordem de coleta #OC-${id} gerada para #SVO-${String(ordem.solicitacao_id)}`];
     }
     const data = await tx`
-      SELECT l.id::text AS id, l.descricao, l.data_hora,
+      SELECT l.id::text AS id, l.descricao,
+             to_char(l.data_hora, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS data_hora,
              l.usuario_id::text AS usuario_id, u.nome AS usuario_nome
       FROM public.log_atividade l LEFT JOIN public.usuario u ON u.id=l.usuario_id
       WHERE l.descricao=ANY(${descricoes}::text[])

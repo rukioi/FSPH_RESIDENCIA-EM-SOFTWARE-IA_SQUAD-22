@@ -99,9 +99,10 @@ test('SCRUM-146 consulta detalhes e históricos persistidos com autorização e 
   await sql.begin(async tx=>{
     await tx`INSERT INTO public.solicitacao_obito
       (id,codigo,atendente_id,local_falecimento,endereco_remocao,solicitante_nome,
-       status_triagem,triagem_observacoes,triado_por_id,triado_em)
+       status_triagem,triagem_observacoes,triado_por_id,triado_em,criado_em)
       VALUES (${solicitacaoId},'#SVO-32010',32002,'Unidade fictícia','Rua fictícia, 10',
-        'Solicitante fictício','CONFIRMADA_SVO','Triagem fictícia',32002,CURRENT_TIMESTAMP)`;
+        'Solicitante fictício','CONFIRMADA_SVO','Triagem fictícia',32002,
+        '2026-11-05 16:30:00.654321'::timestamp,'2026-11-05 14:30:00.123456'::timestamp)`;
     await tx`INSERT INTO public.ordem_coleta (id,solicitacao_obito_id,quantidade_corpos,status)
       VALUES (${ordemId},${solicitacaoId},1,'PENDENTE_ALOCACAO')`;
   });
@@ -117,6 +118,10 @@ test('SCRUM-146 consulta detalhes e históricos persistidos com autorização e 
       expect(response.status,path).toBe(200);
       const json = await response.json();
       expect(schemas[nomeSchema].safeParse(json).success,path).toBe(true);
+      if (path === '/api/svo/solicitacoes/32010') {
+        expect(json.criadoEm).toBe('2026-11-05T14:30:00.123456');
+        expect(json.triadoEm).toBe('2026-11-05T16:30:00.654321');
+      }
       expect((await call(path,'GET',undefined,negado)).status,path).toBe(403);
       expect((await fetch(base+path)).status,path).toBe(401);
     }
@@ -127,6 +132,34 @@ test('SCRUM-146 consulta detalhes e históricos persistidos com autorização e 
   } finally {
     await sql`DELETE FROM public.ordem_coleta WHERE id=${ordemId}`;
     await sql`DELETE FROM public.solicitacao_obito WHERE id=${solicitacaoId}`;
+  }
+});
+
+test('SCRUM-146/149: listas e dashboard validam HTTP, perfil efetivo e parâmetros',async()=>{
+  const caminhos = [
+    ['/api/svo/solicitacoes/paginadas?page=1&limit=5','ListaSolicitacoesSvoPaginada'],
+    ['/api/svo/ordens-coleta/paginadas?page=1&limit=5','ListaOrdensSvoPaginada'],
+    ['/api/svo/dashboard?periodo=7d','DashboardOperacionalSvo'],
+    ['/api/svo/dashboard/filas','FilasOperacionaisSvo'],
+    ['/api/svo/dashboard/atividades?limite=5','AtividadesRecentesSvo'],
+  ] as const;
+  for (const [path,nomeSchema] of caminhos) {
+    const ok = await call(path,'GET',undefined,svo);
+    expect(ok.status,path).toBe(200);
+    expect(schemas[nomeSchema].safeParse(await ok.json()).success,path).toBe(true);
+    expect((await call(path,'GET',undefined,negado)).status,path).toBe(403);
+    expect((await fetch(base+path)).status,path).toBe(401);
+  }
+  for (const path of [
+    '/api/svo/solicitacoes/paginadas?status=',
+    '/api/svo/solicitacoes/paginadas?page=0',
+    '/api/svo/solicitacoes/paginadas?limit=101',
+    '/api/svo/ordens-coleta/paginadas?status=INVALIDO',
+    '/api/svo/dashboard?periodo=amanha',
+    '/api/svo/dashboard/atividades?limite=51',
+    '/api/svo/dashboard/filas?desconhecido=1',
+  ]) {
+    expect((await call(path,'GET',undefined,svo)).status,path).toBe(400);
   }
 });
 

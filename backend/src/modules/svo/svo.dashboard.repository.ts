@@ -8,8 +8,11 @@ function quantidade(valor: unknown): number {
   if (!Number.isSafeInteger(n) || n < 0) throw new Error('Contagem do dashboard fora do intervalo seguro.');
   return n;
 }
+/** Datas civis já vêm formatadas pelo SQL: sem Z, UTC ou deslocamento artificial. */
 function instante(valor: unknown): string | null {
-  return valor == null ? null : valor instanceof Date ? valor.toISOString() : String(valor);
+  if (valor == null) return null;
+  if (typeof valor !== 'string') throw new Error('Timestamp civil não retornado como texto.');
+  return valor;
 }
 function texto(valor: unknown): string | null { return valor == null ? null : String(valor); }
 
@@ -85,7 +88,9 @@ export async function consultarFilasSvo() {
       WHERE status_triagem='AGUARDANDO_TRIAGEM'
     `;
     const itensTriagem = await tx`
-      SELECT id::text AS id, codigo, criado_em FROM public.solicitacao_obito
+      SELECT id::text AS id, codigo,
+             to_char(criado_em, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS criado_em_civil
+      FROM public.solicitacao_obito
       WHERE status_triagem='AGUARDANDO_TRIAGEM'
       ORDER BY criado_em ASC NULLS LAST, id ASC LIMIT 10
     `;
@@ -102,7 +107,7 @@ export async function consultarFilasSvo() {
     return {
       aguardandoTriagem: {
         total: quantidade(pendentes.total),
-        itens: itensTriagem.map(r => ({id:String(r.id),codigo:String(r.codigo),criadoEm:instante(r.criado_em)})),
+        itens: itensTriagem.map(r => ({id:String(r.id),codigo:String(r.codigo),criadoEm:instante(r.criado_em_civil)})),
       },
       aguardandoDespacho: {
         total: quantidade(despacho.total),
@@ -118,7 +123,8 @@ export async function consultarFilasSvo() {
  */
 export async function consultarAtividadesSvo(limite: number) {
   const registros = await sql`
-    SELECT l.id::text AS id, l.descricao, l.data_hora,
+    SELECT l.id::text AS id, l.descricao,
+           to_char(l.data_hora, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS data_hora,
            l.usuario_id::text AS usuario_id, u.nome AS usuario_nome
     FROM public.log_atividade l LEFT JOIN public.usuario u ON u.id=l.usuario_id
     WHERE l.descricao ~ '^Solicitação #SVO-[0-9]+ registrada por telefone$'
