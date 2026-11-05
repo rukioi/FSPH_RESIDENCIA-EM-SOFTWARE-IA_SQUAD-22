@@ -8,6 +8,7 @@ import { documentosRoute } from './modules/documentos/documentos.routes.js';
 import { authRoute } from './modules/auth/auth.routes.js';
 import { usuariosRoute } from './modules/usuarios/usuarios.routes.js';
 import { auditoriaRoute } from './modules/auditoria/auditoria.routes.js';
+import { solicitacoesRoute } from './modules/solicitacoes/solicitacoes.routes.js';
 
 import { enviarErro } from './shared/http/json.js';
 import { tratarErroTecnico } from './shared/http/errors.js';
@@ -22,7 +23,7 @@ export function isolarFalhaDaRequisicao(response: ServerResponse, operacao: Prom
 
 const handlers = { auth: authRoute, usuarios: usuariosRoute, auditoria: auditoriaRoute,
   dashboard: dashboardRoute, svo: svoRoute, veiculos: veiculosRoute, motoristas: motoristasRoute,
-  abastecimentos: abastecimentosRoute, documentos: documentosRoute };
+  abastecimentos: abastecimentosRoute, documentos: documentosRoute, solicitacoes: solicitacoesRoute };
 const rotas = operations.map(operation => ({ path: routePattern(operation),
   methods: operations.filter(item => item.path === operation.path).map(item => item.method.toUpperCase()),
   handler: handlers[operation.modulo] }));

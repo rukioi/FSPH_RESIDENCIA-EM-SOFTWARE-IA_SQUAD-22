@@ -138,3 +138,16 @@ A [migration versionada da SCRUM-162](../../backend/src/database/supabase/migrat
 **SCRUM-131:** triagem/IML e criação única de ordem; **SCRUM-132:** despacho; **SCRUM-145:** RBAC por recurso/equipe; **SCRUM-146:** consultas detalhadas, filtros e histórico; **SCRUM-147:** lotação S10; **SCRUM-149:** indicadores; **SCRUM-205/208:** RLS/ACL e rollout.
 
 Fonte de contrato: `backend/src/shared/contract/registry.ts`. Executar `npm run api:generate`, `npm run client:generate`, `npm run api:check` e `npm run client:check` após alterar os schemas/rotas. Não editar artefatos gerados manualmente.
+
+## Disponibilidade compartilhada com o transporte institucional
+
+O despacho existente mantém as verificações de referência e estado dos recursos.
+Bloqueia motorista e depois veículo na mesma ordem usada pelo agendamento
+institucional, em transação READ COMMITTED. Após adquirir os locks, consulta
+reservas AGENDADA, PRONTA_PARA_INICIAR e EM_ANDAMENTO; inclusive reservas futuras
+bloqueiam o despacho, pois o SVO não informa retorno previsto. Ordens SVO
+EM_DESLOCAMENTO e EM_TRANSPORTE bloqueiam conservadoramente os recursos no
+fluxo institucional. Não inventar janela de liberação. Conflito retorna 409.
+
+O registro telefônico da SCRUM-130 continua sem criar ordem: a integração de
+disponibilidade não antecipa triagem ou geração de ordem da SCRUM-131.

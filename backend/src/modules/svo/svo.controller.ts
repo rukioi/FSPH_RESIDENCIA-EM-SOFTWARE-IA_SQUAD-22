@@ -276,7 +276,7 @@ export async function despacharOrdemController(
 
     if (resultado.tipo === 'conflito_alocacao') {
       jsonCompartilhado(response, 409, {
-        erro: 'Motorista ou veículo já está em deslocamento.',
+        erro: 'Motorista ou veículo possui uma alocação conflitante.',
       });
       return;
     }

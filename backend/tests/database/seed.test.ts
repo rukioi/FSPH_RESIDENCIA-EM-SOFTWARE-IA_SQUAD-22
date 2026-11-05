@@ -48,6 +48,11 @@ test('seed cobre todos os perfis e estados reais, com hash artificial válido', 
   expect(await bcrypt.compare('T1-fixture-2026!', user.senha_hash)).toBe(true);
 });
 
+test('fixture APROVADA existe após commit da migration e não recebe alocação artificial', async () => {
+  const [row] = await sql`select status::text, motorista_id, veiculo_id from public.solicitacao_viagem where id=-27007`;
+  expect(row).toEqual({status:'APROVADA',motorista_id:null,veiculo_id:null});
+});
+
 test('prepare recusa alteração de migration já aplicada sem reaplicar seed ou DDL', async () => {
   const admin = await verifiedSql(true);
   const [applied] = await admin`select name, sha256 from fsph_test_harness.migrations order by name limit 1`;

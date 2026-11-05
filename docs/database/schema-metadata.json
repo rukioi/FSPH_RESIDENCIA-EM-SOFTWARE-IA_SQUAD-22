@@ -41,6 +41,7 @@
       "owner": "postgres",
       "values": [
         "PENDENTE",
+        "APROVADA",
         "AGENDADA",
         "PRONTA_PARA_INICIAR",
         "EM_ANDAMENTO",
@@ -378,6 +379,16 @@
       "identity": "",
       "nullable": true,
       "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "solicitacao_viagem_id",
+      "type": "bigint",
+      "table": "log_atividade",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 5,
       "generated": ""
     },
     {
@@ -901,6 +912,26 @@
       "generated": ""
     },
     {
+      "name": "finalidade",
+      "type": "text",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 13,
+      "generated": ""
+    },
+    {
+      "name": "data_hora_retorno_previsto",
+      "type": "timestamp without time zone",
+      "table": "solicitacao_viagem",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 14,
+      "generated": ""
+    },
+    {
       "name": "id",
       "type": "bigint",
       "table": "usuario",
@@ -1241,6 +1272,11 @@
       "name": "documento_veiculo_pkey",
       "table": "documento_veiculo",
       "definition": "CREATE UNIQUE INDEX documento_veiculo_pkey ON public.documento_veiculo USING btree (id)"
+    },
+    {
+      "name": "idx_log_atividade_solicitacao_viagem_id",
+      "table": "log_atividade",
+      "definition": "CREATE INDEX idx_log_atividade_solicitacao_viagem_id ON public.log_atividade USING btree (solicitacao_viagem_id)"
     },
     {
       "name": "log_atividade_pkey",
@@ -1622,6 +1658,22 @@
       "referencedColumns": null
     },
     {
+      "name": "log_atividade_solicitacao_viagem_id_fkey",
+      "type": "f",
+      "table": "log_atividade",
+      "columns": [
+        "solicitacao_viagem_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id)",
+      "references": "solicitacao_viagem",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
       "name": "log_atividade_usuario_id_fkey",
       "type": "f",
       "table": "log_atividade",
@@ -1946,6 +1998,21 @@
       "onUpdate": " ",
       "validated": true,
       "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "solicitacao_viagem_retorno_previsto_check",
+      "type": "c",
+      "table": "solicitacao_viagem",
+      "columns": [
+        "data_hora_retorno_previsto",
+        "data_hora_saida"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (data_hora_retorno_previsto IS NULL OR data_hora_retorno_previsto > data_hora_saida)",
       "references": null,
       "referencedColumns": null
     },

@@ -217,6 +217,22 @@ export interface ApiSchemas {
   TriagemFinalSvo: TriagemFinalSvo;
   DespacharSvo: DespacharSvo;
   OrdemDespachada: OrdemDespachada;
+  EditarSolicitacaoViagem: EditarSolicitacaoViagem;
+  AgendarSolicitacaoViagem: AgendarSolicitacaoViagem;
+  RespostaAgendamentoSolicitacaoViagem: RespostaAgendamentoSolicitacaoViagem;
+  RejeitarSolicitacaoViagem: RejeitarSolicitacaoViagem;
+  RespostaDecisaoSolicitacaoViagem: RespostaDecisaoSolicitacaoViagem;
+  CriarSolicitacaoViagem: CriarSolicitacaoViagem;
+  SolicitacaoViagem: SolicitacaoViagem;
+  RespostaSolicitacaoViagem: RespostaSolicitacaoViagem;
+  ListaSolicitacoesViagem: ListaSolicitacoesViagem;
+  RespostaDetalheSolicitacaoViagem: RespostaDetalheSolicitacaoViagem;
+  RespostaHistoricoSolicitacaoViagem: RespostaHistoricoSolicitacaoViagem;
+  ConsultarAgendaViagem: ConsultarAgendaViagem;
+  ConsultarDisponibilidadeViagem: ConsultarDisponibilidadeViagem;
+  ReagendarSolicitacaoViagem: ReagendarSolicitacaoViagem;
+  RespostaAgendaViagem: RespostaAgendaViagem;
+  RespostaDisponibilidadeViagem: RespostaDisponibilidadeViagem;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -945,8 +961,389 @@ export interface OrdemDespachada {
   veiculo_id: number;
   status: 'EM_DESLOCAMENTO';
 }
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "EditarSolicitacaoViagem".
+ */
+export interface EditarSolicitacaoViagem {
+  origem?: string;
+  destino?: string;
+  finalidade?: string;
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  dataHoraSaida?: string;
+  qtdPassageiros?: number;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "AgendarSolicitacaoViagem".
+ */
+export interface AgendarSolicitacaoViagem {
+  /**
+   * Inteiro em string entre -9223372036854775808 e 9223372036854775807; zero permitido, sujeito à existência do recurso.
+   */
+  motoristaId: string;
+  /**
+   * Inteiro em string entre -9223372036854775808 e 9223372036854775807; zero permitido, sujeito à existência do recurso.
+   */
+  veiculoId: string;
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  dataHoraRetornoPrevisto: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaAgendamentoSolicitacaoViagem".
+ */
+export interface RespostaAgendamentoSolicitacaoViagem {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    status: 'AGENDADA';
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    motoristaId: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    veiculoId: string;
+    dataHoraSaida: string;
+    dataHoraRetornoPrevisto: string;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RejeitarSolicitacaoViagem".
+ */
+export interface RejeitarSolicitacaoViagem {
+  motivo: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaDecisaoSolicitacaoViagem".
+ */
+export interface RespostaDecisaoSolicitacaoViagem {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    status: 'APROVADA' | 'REPROVADA';
+    motivoRejeicao: string | null;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CriarSolicitacaoViagem".
+ */
+export interface CriarSolicitacaoViagem {
+  origem: string;
+  destino: string;
+  finalidade: string;
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  dataHoraSaida: string;
+  qtdPassageiros: number;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "SolicitacaoViagem".
+ */
+export interface SolicitacaoViagem {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  codigo: string;
+  codigoExibicao: string;
+  solicitante: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    nome: string | null;
+  } | null;
+  origem: string;
+  destino: string;
+  finalidade: string | null;
+  dataHoraSaida: string;
+  qtdPassageiros: number | null;
+  status:
+    ('PENDENTE' | 'APROVADA' | 'AGENDADA' | 'PRONTA_PARA_INICIAR' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'REPROVADA') | null;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaSolicitacaoViagem".
+ */
+export interface RespostaSolicitacaoViagem {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    codigoExibicao: string;
+    solicitante: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      nome: string | null;
+    } | null;
+    origem: string;
+    destino: string;
+    finalidade: string | null;
+    dataHoraSaida: string;
+    qtdPassageiros: number | null;
+    status:
+      | ('PENDENTE' | 'APROVADA' | 'AGENDADA' | 'PRONTA_PARA_INICIAR' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'REPROVADA')
+      | null;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaSolicitacoesViagem".
+ */
+export interface ListaSolicitacoesViagem {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    codigoExibicao: string;
+    solicitante: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      nome: string | null;
+    } | null;
+    origem: string;
+    destino: string;
+    finalidade: string | null;
+    dataHoraSaida: string;
+    qtdPassageiros: number | null;
+    status:
+      | ('PENDENTE' | 'APROVADA' | 'AGENDADA' | 'PRONTA_PARA_INICIAR' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'REPROVADA')
+      | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaDetalheSolicitacaoViagem".
+ */
+export interface RespostaDetalheSolicitacaoViagem {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    codigoExibicao: string;
+    solicitante: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      nome: string | null;
+    } | null;
+    origem: string;
+    destino: string;
+    finalidade: string | null;
+    dataHoraSaida: string;
+    qtdPassageiros: number | null;
+    status:
+      | ('PENDENTE' | 'APROVADA' | 'AGENDADA' | 'PRONTA_PARA_INICIAR' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'REPROVADA')
+      | null;
+    motivoRejeicao: string | null;
+    dataHoraRetornoPrevisto: string | null;
+    motorista: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      nome: string;
+    } | null;
+    veiculo: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      placa: string;
+      modelo: string;
+    } | null;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaHistoricoSolicitacaoViagem".
+ */
+export interface RespostaHistoricoSolicitacaoViagem {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    descricao: string;
+    /**
+     * Timestamp da auditoria sem fuso; não se infere UTC ou offset histórico.
+     */
+    dataHora: string | null;
+    responsavel?: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      nome: string | null;
+    } | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ConsultarAgendaViagem".
+ */
+export interface ConsultarAgendaViagem {
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  inicio: string;
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  fim: string;
+  page?: string;
+  limit?: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ConsultarDisponibilidadeViagem".
+ */
+export interface ConsultarDisponibilidadeViagem {
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  inicio: string;
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  fim: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ReagendarSolicitacaoViagem".
+ */
+export interface ReagendarSolicitacaoViagem {
+  /**
+   * Inteiro em string entre -9223372036854775808 e 9223372036854775807; zero permitido, sujeito à existência do recurso.
+   */
+  motoristaId: string;
+  /**
+   * Inteiro em string entre -9223372036854775808 e 9223372036854775807; zero permitido, sujeito à existência do recurso.
+   */
+  veiculoId: string;
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  dataHoraRetornoPrevisto: string;
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  dataHoraSaida: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaAgendaViagem".
+ */
+export interface RespostaAgendaViagem {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    codigoExibicao: string;
+    status: 'AGENDADA';
+    origem: string;
+    destino: string;
+    finalidade: string | null;
+    qtdPassageiros: number | null;
+    motorista: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      nome: string;
+    } | null;
+    veiculo: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      placa: string;
+      modelo: string;
+    } | null;
+    dataHoraSaida: string;
+    dataHoraRetornoPrevisto: string | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaDisponibilidadeViagem".
+ */
+export interface RespostaDisponibilidadeViagem {
+  data: {
+    motoristas: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      nome: string;
+    }[];
+    veiculos: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      placa: string;
+      modelo: string;
+    }[];
+  };
+}
 
 export interface ApiOperations {
+  'solicitacoes_get__api_solicitacoes_viagem_id_': { body: undefined; response: ApiSchemas['RespostaDetalheSolicitacaoViagem'] };
+  'solicitacoes_patch__api_solicitacoes_viagem_id_': { body: ApiSchemas['EditarSolicitacaoViagem']; response: ApiSchemas['RespostaSolicitacaoViagem'] };
+  'solicitacoes_get__api_solicitacoes_viagem_id_historico': { body: undefined; response: ApiSchemas['RespostaHistoricoSolicitacaoViagem'] };
+  'solicitacoes_get__api_solicitacoes_viagem_agenda': { body: undefined; response: ApiSchemas['RespostaAgendaViagem'] };
+  'solicitacoes_get__api_solicitacoes_viagem_disponibilidade': { body: undefined; response: ApiSchemas['RespostaDisponibilidadeViagem'] };
+  'solicitacoes_post__api_solicitacoes_viagem_id_reagendar': { body: ApiSchemas['ReagendarSolicitacaoViagem']; response: ApiSchemas['RespostaAgendamentoSolicitacaoViagem'] };
+  'solicitacoes_post__api_solicitacoes_viagem_id_agendar': { body: ApiSchemas['AgendarSolicitacaoViagem']; response: ApiSchemas['RespostaAgendamentoSolicitacaoViagem'] };
+  'solicitacoes_post__api_solicitacoes_viagem_id_aprovar': { body: undefined; response: ApiSchemas['RespostaDecisaoSolicitacaoViagem'] };
+  'solicitacoes_post__api_solicitacoes_viagem_id_rejeitar': { body: ApiSchemas['RejeitarSolicitacaoViagem']; response: ApiSchemas['RespostaDecisaoSolicitacaoViagem'] };
+  'solicitacoes_post__api_solicitacoes_viagem': { body: ApiSchemas['CriarSolicitacaoViagem']; response: ApiSchemas['RespostaSolicitacaoViagem'] };
+  'solicitacoes_get__api_solicitacoes_viagem': { body: undefined; response: ApiSchemas['ListaSolicitacoesViagem'] };
   'auth_post__api_auth_login': { body: ApiSchemas['Credenciais']; response: ApiSchemas['Login'] };
   'auth_get__api_auth_sessao': { body: undefined; response: ApiSchemas['Sessao'] };
   'usuarios_get__api_admin_usuarios': { body: undefined; response: ApiSchemas['Usuarios'] };
