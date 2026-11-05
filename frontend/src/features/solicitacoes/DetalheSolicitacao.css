@@ -1,0 +1,40 @@
+.detalhe__info {
+  margin: 0;
+}
+.detalhe__info dt {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+.detalhe__info dd {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+
+.detalhe__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--borda);
+}
+.detalhe__acoes > span {
+  margin-right: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+.detalhe__aprovar {
+  border-color: #bfe3cc;
+  background: #e3f4ea;
+  color: var(--verde);
+}
+.detalhe__recusar {
+  border-color: #f2c2c4;
+  background: #fbe6e7;
+  color: #a8282d;
+}

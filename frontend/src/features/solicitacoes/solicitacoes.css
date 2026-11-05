@@ -1,0 +1,272 @@
+/* Estilos compartilhados das telas de Solicitações e Calendário.
+   Usa somente as variáveis e peças do tema.css / GestorLayout.css. */
+
+/* ---------- Campos extras (textarea e somente leitura) ---------- */
+.campo textarea {
+  min-height: 96px;
+  padding: 10px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--branco);
+  font: inherit;
+  color: inherit;
+  resize: vertical;
+}
+.campo textarea:focus {
+  border-color: var(--azul);
+  outline: 3px solid rgba(31, 94, 255, 0.18);
+}
+.campo--erro textarea {
+  border-color: var(--vermelho);
+}
+.campo input[readonly] {
+  background: var(--fundo);
+  color: var(--texto-suave);
+  cursor: not-allowed;
+}
+.campo__obrigatorio {
+  color: var(--vermelho);
+}
+.campo__ajuda {
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+/* ---------- Cartão com cabeçalho ---------- */
+.sol-cartao {
+  margin-bottom: 20px;
+}
+.sol-cartao__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--borda);
+}
+.sol-cartao__topo h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 900;
+}
+.sol-cartao__topo h2 svg {
+  color: var(--azul);
+}
+.sol-cartao__topo p {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+.sol-cartao__corpo {
+  padding: 22px 24px;
+}
+
+.sol-grade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+.sol-grade--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.sol-grade__inteiro {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Voltar / ações ---------- */
+.sol-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texto-suave);
+  font-weight: 700;
+}
+.sol-voltar:hover {
+  color: var(--texto);
+}
+.sol-voltar svg {
+  transform: rotate(90deg);
+}
+.sol-acoes-form {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.sol-aviso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px solid #bfe3cc;
+  border-radius: 10px;
+  background: #e3f4ea;
+  color: var(--verde);
+  font-weight: 700;
+}
+.sol-aviso--erro {
+  border-color: #f2c2c4;
+  background: #fbe6e7;
+  color: #a8282d;
+}
+
+/* ---------- Filtros e tabela ---------- */
+.sol-filtros {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--borda);
+}
+.sol-busca {
+  position: relative;
+}
+.sol-busca svg {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  color: var(--texto-suave);
+}
+.sol-busca input {
+  width: 100%;
+  padding-left: 40px;
+}
+.sol-total {
+  padding: 14px 20px 0;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+.sol-total strong {
+  color: var(--texto);
+}
+
+.sol-tabela-wrap {
+  overflow-x: auto;
+}
+.sol-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sol-tabela th {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--borda);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+.sol-tabela td {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--borda);
+  white-space: nowrap;
+}
+.sol-tabela tr:last-child td {
+  border-bottom: 0;
+}
+.sol-tabela__ticket {
+  font-weight: 900;
+}
+
+.sol-acoes {
+  display: flex;
+  gap: 8px;
+}
+.sol-acao {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--branco);
+  color: var(--texto-suave);
+}
+.sol-acao:hover {
+  background: var(--fundo);
+  color: var(--texto);
+}
+.sol-acao--aprovar {
+  border-color: #bfe3cc;
+  background: #e3f4ea;
+  color: var(--verde);
+}
+.sol-acao--recusar {
+  border-color: #f2c2c4;
+  background: #fbe6e7;
+  color: var(--vermelho);
+}
+.sol-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--azul);
+  font-weight: 700;
+}
+.sol-link svg {
+  transform: rotate(-90deg);
+}
+
+/* ---------- Carregando ---------- */
+.sol-carregando {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+.sol-carregando span {
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--fundo), var(--borda), var(--fundo));
+  background-size: 200% 100%;
+  animation: sol-brilho 1.2s linear infinite;
+}
+@keyframes sol-brilho {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 1100px) {
+  .sol-filtros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sol-busca {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 900px) {
+  .sol-grade--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .sol-grade,
+  .sol-grade--3,
+  .sol-filtros {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sol-cartao__topo,
+  .sol-cartao__corpo {
+    padding: 16px;
+  }
+  .sol-acoes-form .btn {
+    flex: 1;
+  }
+}

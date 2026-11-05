@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { navegar } from '../../app/routes/router'
+import { navegar, useCaminho } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
 import { sair } from '../../shared/services/auth.service'
 import type { UsuarioSessao } from '../../shared/services/auth.service'
@@ -45,12 +45,13 @@ function Icone({ nome, tamanho = 20 }: { nome: NomeIcone; tamanho?: number }) {
   )
 }
 
-const itensMenu: { nome: string; icone: NomeIcone }[] = [
-  { nome: 'Dashboard', icone: 'dashboard' },
-  { nome: 'Solicitações', icone: 'solicitacoes' },
-  { nome: 'Calendário', icone: 'calendario' },
-  { nome: 'Veículos', icone: 'veiculos' },
-  { nome: 'Motoristas', icone: 'motoristas' },
+// rota: tela já desenvolvida (os demais itens ainda não navegam)
+const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
+  { nome: 'Dashboard', icone: 'dashboard', rota: ROTAS.dashboardGestor },
+  { nome: 'Solicitações', icone: 'solicitacoes', rota: ROTAS.solicitacoesGestor },
+  { nome: 'Calendário', icone: 'calendario', rota: ROTAS.calendarioGestor },
+  { nome: 'Veículos', icone: 'veiculos', rota: ROTAS.veiculosGestor },
+  { nome: 'Motoristas', icone: 'motoristas', rota: ROTAS.motoristasGestor },
   { nome: 'Documentos', icone: 'documentos' },
   { nome: 'Abastecimentos', icone: 'abastecimentos' },
   { nome: 'Relatórios', icone: 'relatorios' },
@@ -73,7 +74,12 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
   }
   // Menu aberto por padrão no computador e fechado no celular
   const [menuAberto, setMenuAberto] = useState(window.innerWidth > 900)
-  const [itemAtivo, setItemAtivo] = useState('Dashboard')
+  // Item ativo segue a rota atual (inclusive detalhe/edição: /gestor/solicitacoes/...)
+  const caminho = useCaminho()
+  const [itemClicado, setItemClicado] = useState('Dashboard')
+  const itemAtivo =
+    itensMenu.find((item) => item.rota && (caminho === item.rota || caminho.startsWith(item.rota + '/')))?.nome ??
+    itemClicado
 
   return (
     <div className={menuAberto ? 'shell shell--aberto' : 'shell'}>
@@ -102,15 +108,8 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
           : 'menu__item'
       }
       onClick={() => {
-        setItemAtivo(item.nome)
-
-        if (item.nome === 'Dashboard') {
-          navegar(ROTAS.dashboardGestor)
-        } else if (item.nome === 'Veículos') {
-          navegar(ROTAS.veiculosGestor)
-        } else if (item.nome === 'Motoristas') {
-          navegar(ROTAS.motoristasGestor)
-        }
+        setItemClicado(item.nome)
+        if (item.rota) navegar(item.rota)
       }}
     >
       <Icone nome={item.icone} />
