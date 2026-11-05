@@ -150,6 +150,20 @@ export type SolicitacoesSvo = {
   status_triagem: ('AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML') | null;
   criado_em: string | null;
 }[];
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "FinalizarTriagemSvo".
+ */
+export type FinalizarTriagemSvo =
+  | {
+      decisao: 'CONFIRMADA_SVO';
+      triagemObservacoes: string;
+      quantidadeCorpos: number;
+    }
+  | {
+      decisao: 'ENCAMINHADA_IML';
+      triagemObservacoes: string;
+    };
 
 export interface ApiSchemas {
   Erro: Erro;
@@ -197,6 +211,10 @@ export interface ApiSchemas {
   CriarSolicitacaoSvo: CriarSolicitacaoSvo;
   SolicitacaoSvo: SolicitacaoSvo;
   SolicitacoesSvo: SolicitacoesSvo;
+  SalvarTriagemParcialSvo: SalvarTriagemParcialSvo;
+  FinalizarTriagemSvo: FinalizarTriagemSvo;
+  TriagemParcialSvo: TriagemParcialSvo;
+  TriagemFinalSvo: TriagemFinalSvo;
   DespacharSvo: DespacharSvo;
   OrdemDespachada: OrdemDespachada;
 }
@@ -860,6 +878,55 @@ export interface SolicitacaoSvo {
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "SalvarTriagemParcialSvo".
+ */
+export interface SalvarTriagemParcialSvo {
+  triagemObservacoes: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "TriagemParcialSvo".
+ */
+export interface TriagemParcialSvo {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  solicitacaoId: string;
+  statusTriagem: 'AGUARDANDO_TRIAGEM';
+  triagemObservacoes: string;
+  atividades: string[];
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "TriagemFinalSvo".
+ */
+export interface TriagemFinalSvo {
+  solicitacao: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    statusTriagem: 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML';
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    triadoPorId: string;
+    triadoEm: string;
+  };
+  ordemColeta: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    status: 'PENDENTE_ALOCACAO';
+    quantidadeCorpos: number;
+  } | null;
+  atividades: string[];
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "DespacharSvo".
  */
 export interface DespacharSvo {
@@ -894,6 +961,8 @@ export interface ApiOperations {
   'svo_get__api_svo_ordens_coleta': { body: undefined; response: ApiSchemas['OrdensSvo'] };
   'svo_get__api_svo_solicitacoes': { body: undefined; response: ApiSchemas['SolicitacoesSvo'] };
   'svo_post__api_svo_solicitacoes': { body: ApiSchemas['CriarSolicitacaoSvo']; response: ApiSchemas['SolicitacaoSvo'] };
+  'svo_patch__api_svo_solicitacoes_id_triagem': { body: ApiSchemas['SalvarTriagemParcialSvo']; response: ApiSchemas['TriagemParcialSvo'] };
+  'svo_post__api_svo_solicitacoes_id_triagem': { body: ApiSchemas['FinalizarTriagemSvo']; response: ApiSchemas['TriagemFinalSvo'] };
   'svo_patch__api_svo_ordens_coleta_id_despachar': { body: ApiSchemas['DespacharSvo']; response: ApiSchemas['OrdemDespachada'] };
   'veiculos_get__api_veiculos': { body: undefined; response: ApiSchemas['ListaVeiculos'] };
   'veiculos_post__api_veiculos': { body: ApiSchemas['CriarVeiculo']; response: ApiSchemas['RespostaVeiculo'] };
