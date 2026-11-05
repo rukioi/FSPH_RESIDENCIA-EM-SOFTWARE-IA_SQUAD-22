@@ -8,7 +8,6 @@ import {
   reagendarSolicitacaoSchema,
   rejeitarSolicitacaoSchema,
   solicitacoesSchemas,
-  listarSolicitacoesSchema,
   statusSolicitacao,
 } from '../../../../backend/src/modules/solicitacoes/solicitacoes.schemas';
 
