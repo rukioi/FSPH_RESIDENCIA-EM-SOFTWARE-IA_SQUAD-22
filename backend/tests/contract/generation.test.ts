@@ -32,15 +32,15 @@ test('migração #30 permite somente 404 comum de abastecimento e sua descriçã
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
-test('inventário fechado mantém 43 operações e limites de pathname compatíveis',()=>{
-  expect(operations).toHaveLength(43);
+test('inventário fechado mantém 52 operações e limites de pathname compatíveis',()=>{
+  expect(operations).toHaveLength(52);
   for (const method of ['patch','post'] as const) {
     expect(operations.filter(o => o.method === method && o.path === '/api/svo/solicitacoes/{id}/triagem')).toHaveLength(1);
   }
 });
 
-test('inventário mantém as 32 operações fora de solicitações e as onze de solicitações',()=>{
-  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(32);
+test('inventário mantém as 41 operações fora de solicitações e as onze de solicitações',()=>{
+  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(41);
   expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {

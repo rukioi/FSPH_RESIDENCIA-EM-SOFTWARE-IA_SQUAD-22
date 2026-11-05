@@ -219,6 +219,14 @@ export interface ApiSchemas {
   TriagemFinalSvo: TriagemFinalSvo;
   DespacharSvo: DespacharSvo;
   OrdemDespachada: OrdemDespachada;
+  ListaSolicitacoesSvoPaginada: ListaSolicitacoesSvoPaginada;
+  ListaOrdensSvoPaginada: ListaOrdensSvoPaginada;
+  DetalheSolicitacaoSvo: DetalheSolicitacaoSvo;
+  DetalheOrdemSvo: DetalheOrdemSvo;
+  HistoricoSvo: HistoricoSvo;
+  DashboardOperacionalSvo: DashboardOperacionalSvo;
+  FilasOperacionaisSvo: FilasOperacionaisSvo;
+  AtividadesRecentesSvo: AtividadesRecentesSvo;
   EditarSolicitacaoViagem: EditarSolicitacaoViagem;
   AgendarSolicitacaoViagem: AgendarSolicitacaoViagem;
   RespostaAgendamentoSolicitacaoViagem: RespostaAgendamentoSolicitacaoViagem;
@@ -1097,6 +1105,200 @@ export interface OrdemDespachada {
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaSolicitacoesSvoPaginada".
+ */
+export interface ListaSolicitacoesSvoPaginada {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    statusTriagem: string | null;
+    criadoEm: string | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaOrdensSvoPaginada".
+ */
+export interface ListaOrdensSvoPaginada {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    status: string | null;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    solicitacaoId: string;
+    solicitacaoCodigo: string;
+    quantidadeCorpos: number | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "DetalheSolicitacaoSvo".
+ */
+export interface DetalheSolicitacaoSvo {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  codigo: string;
+  statusTriagem: string | null;
+  criadoEm: string | null;
+  triagemObservacoes: string | null;
+  triadoPorId: string | null;
+  triadoEm: string | null;
+  localFalecimento: string;
+  enderecoRemocao: string;
+  pontoReferencia: string | null;
+  canalAtendimento: string | null;
+  solicitanteNome: string;
+  solicitanteParentesco: string | null;
+  solicitanteTelefone: string | null;
+  nomeFalecido: string | null;
+  observacoesMedicas: string | null;
+  ordemColeta: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    codigo: string;
+    status: string | null;
+    quantidadeCorpos: number | null;
+    motoristaId: string | null;
+    veiculoId: string | null;
+  } | null;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "DetalheOrdemSvo".
+ */
+export interface DetalheOrdemSvo {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  codigo: string;
+  status: string | null;
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  solicitacaoId: string;
+  solicitacaoCodigo: string;
+  quantidadeCorpos: number | null;
+  statusTriagem: string | null;
+  motoristaId: string | null;
+  veiculoId: string | null;
+  kmInicial: number | null;
+  kmFinal: number | null;
+  dataInicio: string | null;
+  dataFim: string | null;
+  enderecoRemocao: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "HistoricoSvo".
+ */
+export interface HistoricoSvo {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    descricao: string;
+    dataHora: string | null;
+    usuarioId: string | null;
+    usuarioNome: string | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "DashboardOperacionalSvo".
+ */
+export interface DashboardOperacionalSvo {
+  periodo: 'hoje' | '7d' | '30d';
+  inicio: string;
+  fim: string;
+  indicadores: {
+    aguardandoTriagem: number;
+    confirmadasSvo: number;
+    ordensColeta: number;
+    encaminhadasIml: number;
+  };
+  visaoGeral: {
+    aguardandoTriagem: number;
+    confirmadasSvo: number;
+    encaminhadasIml: number;
+    semClassificacao: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "FilasOperacionaisSvo".
+ */
+export interface FilasOperacionaisSvo {
+  aguardandoTriagem: {
+    total: number;
+    itens: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      codigo: string;
+      criadoEm: string | null;
+    }[];
+  };
+  aguardandoDespacho: {
+    total: number;
+    itens: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      id: string;
+      codigo: string;
+      solicitacaoCodigo: string;
+      quantidadeCorpos: number | null;
+    }[];
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "AtividadesRecentesSvo".
+ */
+export interface AtividadesRecentesSvo {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    descricao: string;
+    dataHora: string | null;
+    usuarioId: string | null;
+    usuarioNome: string | null;
+  }[];
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "EditarSolicitacaoViagem".
  */
 export interface EditarSolicitacaoViagem {
@@ -1495,6 +1697,15 @@ export interface ApiOperations {
   'svo_patch__api_svo_solicitacoes_id_triagem': { body: ApiSchemas['SalvarTriagemParcialSvo']; response: ApiSchemas['TriagemParcialSvo'] };
   'svo_post__api_svo_solicitacoes_id_triagem': { body: ApiSchemas['FinalizarTriagemSvo']; response: ApiSchemas['TriagemFinalSvo'] };
   'svo_patch__api_svo_ordens_coleta_id_despachar': { body: ApiSchemas['DespacharSvo']; response: ApiSchemas['OrdemDespachada'] };
+  'svo_get__api_svo_solicitacoes_paginadas': { body: undefined; response: ApiSchemas['ListaSolicitacoesSvoPaginada'] };
+  'svo_get__api_svo_solicitacoes_id_': { body: undefined; response: ApiSchemas['DetalheSolicitacaoSvo'] };
+  'svo_get__api_svo_solicitacoes_id_historico': { body: undefined; response: ApiSchemas['HistoricoSvo'] };
+  'svo_get__api_svo_ordens_coleta_paginadas': { body: undefined; response: ApiSchemas['ListaOrdensSvoPaginada'] };
+  'svo_get__api_svo_ordens_coleta_id_': { body: undefined; response: ApiSchemas['DetalheOrdemSvo'] };
+  'svo_get__api_svo_ordens_coleta_id_historico': { body: undefined; response: ApiSchemas['HistoricoSvo'] };
+  'svo_get__api_svo_dashboard': { body: undefined; response: ApiSchemas['DashboardOperacionalSvo'] };
+  'svo_get__api_svo_dashboard_filas': { body: undefined; response: ApiSchemas['FilasOperacionaisSvo'] };
+  'svo_get__api_svo_dashboard_atividades': { body: undefined; response: ApiSchemas['AtividadesRecentesSvo'] };
   'veiculos_get__api_veiculos': { body: undefined; response: ApiSchemas['ListaVeiculos'] };
   'veiculos_post__api_veiculos': { body: ApiSchemas['CriarVeiculo']; response: ApiSchemas['RespostaVeiculo'] };
   'veiculos_put__api_veiculos_id_': { body: ApiSchemas['EditarVeiculo']; response: ApiSchemas['RespostaVeiculo'] };

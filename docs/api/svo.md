@@ -151,3 +151,11 @@ fluxo institucional. Não inventar janela de liberação. Conflito retorna 409.
 
 O registro telefônico da SCRUM-130 continua sem criar ordem: a integração de
 disponibilidade não antecipa triagem ou geração de ordem da SCRUM-131.
+
+## Consultas adicionais — SCRUM-146
+
+Os seis GETs de consulta, detalhe e histórico, sem mudança de comportamento das rotas legadas, estão descritos em [svo-consultas-scrum146.md](./svo-consultas-scrum146.md). O detalhe da solicitação permite recuperar a triagem parcial e não realiza decisão. O histórico só reproduz eventos reais conhecidos e não presume que despacho/execução já sejam auditados.
+
+## Indicadores operacionais — SCRUM-149
+
+As três rotas de dashboard, filas e atividades próprias do SVO estão documentadas em [svo-dashboard-scrum149.md](./svo-dashboard-scrum149.md). Nenhum contrato do Dashboard institucional foi alterado.

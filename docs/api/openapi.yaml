@@ -3313,6 +3313,965 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
+  /api/svo/solicitacoes/paginadas:
+    get:
+      operationId: svo_get__api_svo_solicitacoes_paginadas
+      tags:
+        - svo
+      description: "SCRUM-146: lista paginada sem dados pessoais; datas civis inclusivas, filtro status e ordenação determinística."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: status
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - AGUARDANDO_TRIAGEM
+              - CONFIRMADA_SVO
+              - ENCAMINHADA_IML
+        - name: inicio
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^\d{4}-\d{2}-\d{2}$
+        - name: fim
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^\d{4}-\d{2}-\d{2}$
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaSolicitacoesSvoPaginada"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/solicitacoes/{id}:
+    get:
+      operationId: svo_get__api_svo_solicitacoes_id_
+      tags:
+        - svo
+      description: "SCRUM-146: detalhe restrito ao atendente; recupera rascunho salvo sem finalizar decisão."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DetalheSolicitacaoSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/solicitacoes/{id}/historico:
+    get:
+      operationId: svo_get__api_svo_solicitacoes_id_historico
+      tags:
+        - svo
+      description: "SCRUM-146: somente eventos reais com descrições exatas da auditoria legada; sem eventos artificiais."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoricoSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/ordens-coleta/paginadas:
+    get:
+      operationId: svo_get__api_svo_ordens_coleta_paginadas
+      tags:
+        - svo
+      description: "SCRUM-146: lista paginada de ordens reais; preserva endpoint legado de despacho."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: status
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - PENDENTE_ALOCACAO
+              - EM_DESLOCAMENTO
+              - EM_TRANSPORTE
+              - CONCLUIDA
+              - CANCELADA
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaOrdensSvoPaginada"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/ordens-coleta/{id}:
+    get:
+      operationId: svo_get__api_svo_ordens_coleta_id_
+      tags:
+        - svo
+      description: "SCRUM-146: detalhe operacional autorizado, sem observações médicas."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DetalheOrdemSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/ordens-coleta/{id}/historico:
+    get:
+      operationId: svo_get__api_svo_ordens_coleta_id_historico
+      tags:
+        - svo
+      description: "SCRUM-146: eventos auditados de geração de ordem realmente persistidos."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoricoSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/dashboard:
+    get:
+      operationId: svo_get__api_svo_dashboard
+      tags:
+        - svo
+      description: "SCRUM-149: IND-10..14 com fila atual independente do período, decisões por triado_em e distribuição por criado_em."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: periodo
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - hoje
+              - 7d
+              - 30d
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardOperacionalSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/dashboard/filas:
+    get:
+      operationId: svo_get__api_svo_dashboard_filas
+      tags:
+        - svo
+      description: "SCRUM-149: saldo real atual de triagem e despacho, mais 10 itens mínimos por fila."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FilasOperacionaisSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/dashboard/atividades:
+    get:
+      operationId: svo_get__api_svo_dashboard_atividades
+      tags:
+        - svo
+      description: "SCRUM-149 IND-07: eventos SVO reais, sem dados pessoais; limite 1..50."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: limite
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AtividadesRecentesSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
   /api/veiculos:
     get:
       operationId: veiculos_get__api_veiculos
@@ -7371,6 +8330,539 @@ components:
         - veiculo_id
         - status
       description: Conversão legada explícita para Number; precisão de BIGINT acima de MAX_SAFE_INTEGER não é garantida.
+    ListaSolicitacoesSvoPaginada:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              codigo:
+                type: string
+              statusTriagem:
+                type:
+                  - string
+                  - "null"
+              criadoEm:
+                type:
+                  - string
+                  - "null"
+            required:
+              - id
+              - codigo
+              - statusTriagem
+              - criadoEm
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+      required:
+        - data
+        - meta
+    ListaOrdensSvoPaginada:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              codigo:
+                type: string
+              status:
+                type:
+                  - string
+                  - "null"
+              solicitacaoId:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              solicitacaoCodigo:
+                type: string
+              quantidadeCorpos:
+                anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  - type: "null"
+            required:
+              - id
+              - codigo
+              - status
+              - solicitacaoId
+              - solicitacaoCodigo
+              - quantidadeCorpos
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+      required:
+        - data
+        - meta
+    DetalheSolicitacaoSvo:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        codigo:
+          type: string
+        statusTriagem:
+          type:
+            - string
+            - "null"
+        criadoEm:
+          type:
+            - string
+            - "null"
+        triagemObservacoes:
+          type:
+            - string
+            - "null"
+        triadoPorId:
+          anyOf:
+            - type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            - type: "null"
+        triadoEm:
+          type:
+            - string
+            - "null"
+        localFalecimento:
+          type: string
+        enderecoRemocao:
+          type: string
+        pontoReferencia:
+          type:
+            - string
+            - "null"
+        canalAtendimento:
+          type:
+            - string
+            - "null"
+        solicitanteNome:
+          type: string
+        solicitanteParentesco:
+          type:
+            - string
+            - "null"
+        solicitanteTelefone:
+          type:
+            - string
+            - "null"
+        nomeFalecido:
+          type:
+            - string
+            - "null"
+        observacoesMedicas:
+          type:
+            - string
+            - "null"
+        ordemColeta:
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                  pattern: ^-?\d+$
+                  description: BIGINT serializado pelo postgres como string; não converter para Number.
+                codigo:
+                  type: string
+                status:
+                  type:
+                    - string
+                    - "null"
+                quantidadeCorpos:
+                  anyOf:
+                    - type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    - type: "null"
+                motoristaId:
+                  anyOf:
+                    - type: string
+                      pattern: ^-?\d+$
+                      description: BIGINT serializado pelo postgres como string; não converter para Number.
+                    - type: "null"
+                veiculoId:
+                  anyOf:
+                    - type: string
+                      pattern: ^-?\d+$
+                      description: BIGINT serializado pelo postgres como string; não converter para Number.
+                    - type: "null"
+              required:
+                - id
+                - codigo
+                - status
+                - quantidadeCorpos
+                - motoristaId
+                - veiculoId
+            - type: "null"
+      required:
+        - id
+        - codigo
+        - statusTriagem
+        - criadoEm
+        - triagemObservacoes
+        - triadoPorId
+        - triadoEm
+        - localFalecimento
+        - enderecoRemocao
+        - pontoReferencia
+        - canalAtendimento
+        - solicitanteNome
+        - solicitanteParentesco
+        - solicitanteTelefone
+        - nomeFalecido
+        - observacoesMedicas
+        - ordemColeta
+    DetalheOrdemSvo:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        codigo:
+          type: string
+        status:
+          type:
+            - string
+            - "null"
+        solicitacaoId:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        solicitacaoCodigo:
+          type: string
+        quantidadeCorpos:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+        statusTriagem:
+          type:
+            - string
+            - "null"
+        motoristaId:
+          anyOf:
+            - type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            - type: "null"
+        veiculoId:
+          anyOf:
+            - type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            - type: "null"
+        kmInicial:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+        kmFinal:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+        dataInicio:
+          type:
+            - string
+            - "null"
+        dataFim:
+          type:
+            - string
+            - "null"
+        enderecoRemocao:
+          type: string
+      required:
+        - id
+        - codigo
+        - status
+        - solicitacaoId
+        - solicitacaoCodigo
+        - quantidadeCorpos
+        - statusTriagem
+        - motoristaId
+        - veiculoId
+        - kmInicial
+        - kmFinal
+        - dataInicio
+        - dataFim
+        - enderecoRemocao
+    HistoricoSvo:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              descricao:
+                type: string
+              dataHora:
+                type:
+                  - string
+                  - "null"
+              usuarioId:
+                anyOf:
+                  - type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  - type: "null"
+              usuarioNome:
+                type:
+                  - string
+                  - "null"
+            required:
+              - id
+              - descricao
+              - dataHora
+              - usuarioId
+              - usuarioNome
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+      required:
+        - data
+        - meta
+    DashboardOperacionalSvo:
+      type: object
+      properties:
+        periodo:
+          type: string
+          enum:
+            - hoje
+            - 7d
+            - 30d
+        inicio:
+          type: string
+        fim:
+          type: string
+        indicadores:
+          type: object
+          properties:
+            aguardandoTriagem:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            confirmadasSvo:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            ordensColeta:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            encaminhadasIml:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - aguardandoTriagem
+            - confirmadasSvo
+            - ordensColeta
+            - encaminhadasIml
+        visaoGeral:
+          type: object
+          properties:
+            aguardandoTriagem:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            confirmadasSvo:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            encaminhadasIml:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            semClassificacao:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - aguardandoTriagem
+            - confirmadasSvo
+            - encaminhadasIml
+            - semClassificacao
+      required:
+        - periodo
+        - inicio
+        - fim
+        - indicadores
+        - visaoGeral
+    FilasOperacionaisSvo:
+      type: object
+      properties:
+        aguardandoTriagem:
+          type: object
+          properties:
+            total:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            itens:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  codigo:
+                    type: string
+                  criadoEm:
+                    type:
+                      - string
+                      - "null"
+                required:
+                  - id
+                  - codigo
+                  - criadoEm
+          required:
+            - total
+            - itens
+        aguardandoDespacho:
+          type: object
+          properties:
+            total:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            itens:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  codigo:
+                    type: string
+                  solicitacaoCodigo:
+                    type: string
+                  quantidadeCorpos:
+                    anyOf:
+                      - type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      - type: "null"
+                required:
+                  - id
+                  - codigo
+                  - solicitacaoCodigo
+                  - quantidadeCorpos
+          required:
+            - total
+            - itens
+      required:
+        - aguardandoTriagem
+        - aguardandoDespacho
+    AtividadesRecentesSvo:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              descricao:
+                type: string
+              dataHora:
+                type:
+                  - string
+                  - "null"
+              usuarioId:
+                anyOf:
+                  - type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  - type: "null"
+              usuarioNome:
+                type:
+                  - string
+                  - "null"
+            required:
+              - id
+              - descricao
+              - dataHora
+              - usuarioId
+              - usuarioNome
+      required:
+        - data
     EditarSolicitacaoViagem:
       type: object
       properties:

@@ -10,13 +10,15 @@ import { abastecimentosSchemas } from '../../modules/abastecimentos/abasteciment
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
 import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
 import { svoSchemas } from '../../modules/svo/svo.schemas.js';
+import { svoConsultasSchemas } from '../../modules/svo/svo.consultas.schemas.js';
+import { svoDashboardSchemas } from '../../modules/svo/svo.dashboard.schemas.js';
 import { solicitacoesSchemas, statusSolicitacao } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
 export const schemas = { Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
-  ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...solicitacoesSchemas };
+  ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
 export type Modulo = 'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
@@ -93,6 +95,38 @@ export const operations: Operacao[] = [
     body:'FinalizarTriagemSvo',status:200,errors:[400,401,403,404,409,413,415,500],errorSchema:'ErroOperacionalSvo',
     notes:'Decisão SVO/IML transacional. SVO exige quantidadeCorpos de 1 a 4 e gera uma ordem; IML não gera ordem. Nova decisão após finalização: 409.'}),
   op('svo','patch','/api/svo/ordens-coleta/{id}/despachar','OrdemDespachada',['ATENDENTE_SVO'],{body:'DespacharSvo',errors:[400,401,403,404,409,413,415,500],errorSchema:'ErroOperacionalSvo'}),
+  op('svo','get','/api/svo/solicitacoes/paginadas','ListaSolicitacoesSvoPaginada',['ATENDENTE_SVO'],{
+    errors:[400,401,403,500], notes:'SCRUM-146: lista paginada sem dados pessoais; datas civis inclusivas, filtro status e ordenação determinística.',
+    query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+      {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+      {name:'status',required:false,schema:schemas.StatusTriagem},
+      {name:'inicio',required:false,schema:z.string().regex(/^\d{4}-\d{2}-\d{2}$/)},
+      {name:'fim',required:false,schema:z.string().regex(/^\d{4}-\d{2}-\d{2}$/)}]}),
+  op('svo','get','/api/svo/solicitacoes/{id}','DetalheSolicitacaoSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,404,500],notes:'SCRUM-146: detalhe restrito ao atendente; recupera rascunho salvo sem finalizar decisão.'}),
+  op('svo','get','/api/svo/solicitacoes/{id}/historico','HistoricoSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,404,500],notes:'SCRUM-146: somente eventos reais com descrições exatas da auditoria legada; sem eventos artificiais.',
+    query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+      {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('svo','get','/api/svo/ordens-coleta/paginadas','ListaOrdensSvoPaginada',['ATENDENTE_SVO'],{
+    errors:[400,401,403,500],notes:'SCRUM-146: lista paginada de ordens reais; preserva endpoint legado de despacho.',
+    query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+      {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+      {name:'status',required:false,schema:z.enum(['PENDENTE_ALOCACAO','EM_DESLOCAMENTO','EM_TRANSPORTE','CONCLUIDA','CANCELADA'])}]}),
+  op('svo','get','/api/svo/ordens-coleta/{id}','DetalheOrdemSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,404,500],notes:'SCRUM-146: detalhe operacional autorizado, sem observações médicas.'}),
+  op('svo','get','/api/svo/ordens-coleta/{id}/historico','HistoricoSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,404,500],notes:'SCRUM-146: eventos auditados de geração de ordem realmente persistidos.',
+    query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+      {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('svo','get','/api/svo/dashboard','DashboardOperacionalSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,500],notes:'SCRUM-149: IND-10..14 com fila atual independente do período, decisões por triado_em e distribuição por criado_em.',
+    query:[{name:'periodo',required:false,schema:z.enum(['hoje','7d','30d'])}]}),
+  op('svo','get','/api/svo/dashboard/filas','FilasOperacionaisSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,500],notes:'SCRUM-149: saldo real atual de triagem e despacho, mais 10 itens mínimos por fila.'}),
+  op('svo','get','/api/svo/dashboard/atividades','AtividadesRecentesSvo',['ATENDENTE_SVO'],{
+    errors:[400,401,403,500],notes:'SCRUM-149 IND-07: eventos SVO reais, sem dados pessoais; limite 1..50.',
+    query:[{name:'limite',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
   op('veiculos','get','/api/veiculos','ListaVeiculos',consultaFrota,{notes:'Lista completa id DESC, sem paginação. Piloto validado em runtime.'}),
   op('veiculos','post','/api/veiculos','RespostaVeiculo',gestor,{body:'CriarVeiculo',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('veiculos',method,'/api/veiculos/{id}','RespostaVeiculo',gestor,
