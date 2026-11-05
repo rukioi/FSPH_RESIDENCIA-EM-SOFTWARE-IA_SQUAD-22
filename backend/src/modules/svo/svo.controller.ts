@@ -10,6 +10,8 @@ import {
   criarSolicitacao,
   listarSolicitacoes,
   despacharOrdem,
+  salvarTriagemParcial,
+  finalizarTriagem,
 } from './svo.repository.js';
 
 export { ErroCorpoRequisicao, lerCorpoJson } from '../../shared/http/body.js';
@@ -132,6 +134,73 @@ const validacao = svoSchemas.CriarSolicitacaoSvo.safeParse(dadosNormalizados);
     }
     jsonCompartilhado(response, 500, {
       error: { code: 'ERRO_INTERNO', message: 'Não foi possível criar a solicitação de óbito.' },
+    });
+  }
+}
+
+/** Salva a triagem parcial sem mudar o estado da solicitação. */
+export async function salvarTriagemParcialController(
+  request: IncomingMessage,
+  response: ServerResponse,
+  solicitacaoId: string,
+  atendenteId: string,
+): Promise<void> {
+  const corpo = await lerDadosDaRequisicao(request, response);
+  if (corpo === undefined) return;
+  const validacao = svoSchemas.SalvarTriagemParcialSvo.safeParse(corpo);
+  if (!validacao.success) {
+    jsonCompartilhado(response, 400, { erro: 'Dados do rascunho de triagem inválidos.' });
+    return;
+  }
+  try {
+    const resultado = await salvarTriagemParcial({ solicitacaoId, atendenteId, ...validacao.data });
+    if (resultado.tipo === 'nao_encontrada') {
+      jsonCompartilhado(response, 404, { erro: 'Solicitação não encontrada.' });
+    } else if (resultado.tipo === 'conflito') {
+      jsonCompartilhado(response, 409, { erro: 'Triagem já encerrada ou registro legado não conciliado.' });
+    } else if (resultado.tipo === 'salva') {
+      jsonCompartilhado(response, 200, resultado.dados);
+    }
+  } catch (erro) {
+    registrarFalha(erro);
+    jsonCompartilhado(response, 500, {
+      error: { code: 'ERRO_INTERNO', message: 'Não foi possível salvar a triagem.' },
+    });
+  }
+}
+
+/** Finaliza a classificação SVO/IML, criando ordem somente quando SVO. */
+export async function finalizarTriagemController(
+  request: IncomingMessage,
+  response: ServerResponse,
+  solicitacaoId: string,
+  atendenteId: string,
+): Promise<void> {
+  const corpo = await lerDadosDaRequisicao(request, response);
+  if (corpo === undefined) return;
+  const validacao = svoSchemas.FinalizarTriagemSvo.safeParse(corpo);
+  if (!validacao.success) {
+    jsonCompartilhado(response, 400, { erro: 'Dados da decisão de triagem inválidos.' });
+    return;
+  }
+  try {
+    const resultado = await finalizarTriagem({ solicitacaoId, atendenteId, ...validacao.data });
+    if (resultado.tipo === 'nao_encontrada') {
+      jsonCompartilhado(response, 404, { erro: 'Solicitação não encontrada.' });
+    } else if (resultado.tipo === 'conflito') {
+      jsonCompartilhado(response, 409, { erro: 'Triagem já encerrada ou registro legado não conciliado.' });
+    } else if (resultado.tipo === 'finalizada') {
+      jsonCompartilhado(response, 200, resultado.dados);
+    }
+  } catch (erro) {
+    registrarFalha(erro);
+    const codigo = typeof erro === 'object' && erro !== null && 'code' in erro ? erro.code : undefined;
+    if (codigo === '23505') {
+      jsonCompartilhado(response, 409, { erro: 'Já existe uma ordem de coleta para a solicitação.' });
+      return;
+    }
+    jsonCompartilhado(response, 500, {
+      error: { code: 'ERRO_INTERNO', message: 'Não foi possível finalizar a triagem.' },
     });
   }
 }

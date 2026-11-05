@@ -2775,6 +2775,299 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
+  /api/svo/solicitacoes/{id}/triagem:
+    patch:
+      operationId: svo_patch__api_svo_solicitacoes_id_triagem
+      tags:
+        - svo
+      description: Salva triagem parcial sem decisão ou ordem. Apenas AGUARDANDO_TRIAGEM.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SalvarTriagemParcialSvo"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriagemParcialSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    post:
+      operationId: svo_post__api_svo_solicitacoes_id_triagem
+      tags:
+        - svo
+      description: "Decisão SVO/IML transacional. SVO exige quantidadeCorpos de 1 a 4 e gera uma ordem; IML não gera ordem. Nova decisão após finalização: 409."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ATENDENTE_SVO
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinalizarTriagemSvo"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriagemFinalSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
   /api/svo/ordens-coleta/{id}/despachar:
     patch:
       operationId: svo_patch__api_svo_ordens_coleta_id_despachar
@@ -6413,6 +6706,130 @@ components:
           - codigo
           - status_triagem
           - criado_em
+    SalvarTriagemParcialSvo:
+      type: object
+      properties:
+        triagemObservacoes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - triagemObservacoes
+      additionalProperties: false
+    FinalizarTriagemSvo:
+      oneOf:
+        - type: object
+          properties:
+            decisao:
+              type: string
+              const: CONFIRMADA_SVO
+            triagemObservacoes:
+              type: string
+              minLength: 1
+              maxLength: 2000
+            quantidadeCorpos:
+              type: integer
+              minimum: 1
+              maximum: 4
+          required:
+            - decisao
+            - triagemObservacoes
+            - quantidadeCorpos
+          additionalProperties: false
+        - type: object
+          properties:
+            decisao:
+              type: string
+              const: ENCAMINHADA_IML
+            triagemObservacoes:
+              type: string
+              minLength: 1
+              maxLength: 2000
+          required:
+            - decisao
+            - triagemObservacoes
+          additionalProperties: false
+    TriagemParcialSvo:
+      type: object
+      properties:
+        solicitacaoId:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        statusTriagem:
+          type: string
+          const: AGUARDANDO_TRIAGEM
+        triagemObservacoes:
+          type: string
+        atividades:
+          type: array
+          items:
+            type: string
+      required:
+        - solicitacaoId
+        - statusTriagem
+        - triagemObservacoes
+        - atividades
+    TriagemFinalSvo:
+      type: object
+      properties:
+        solicitacao:
+          type: object
+          properties:
+            id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            codigo:
+              type: string
+            statusTriagem:
+              type: string
+              enum:
+                - CONFIRMADA_SVO
+                - ENCAMINHADA_IML
+            triadoPorId:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            triadoEm:
+              type: string
+          required:
+            - id
+            - codigo
+            - statusTriagem
+            - triadoPorId
+            - triadoEm
+        ordemColeta:
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                  pattern: ^-?\d+$
+                  description: BIGINT serializado pelo postgres como string; não converter para Number.
+                codigo:
+                  type: string
+                status:
+                  type: string
+                  const: PENDENTE_ALOCACAO
+                quantidadeCorpos:
+                  type: integer
+                  minimum: 1
+                  maximum: 4
+              required:
+                - id
+                - codigo
+                - status
+                - quantidadeCorpos
+            - type: "null"
+        atividades:
+          type: array
+          items:
+            type: string
+      required:
+        - solicitacao
+        - ordemColeta
+        - atividades
     DespacharSvo:
       type: object
       properties:

@@ -1,3 +1,4 @@
+
 import type postgres from 'postgres';
 import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from './auditoria.repository.js';
 
@@ -10,6 +11,7 @@ export type EventoAtividade =
   | { operacao: 'solicitacao_viagem_agendada'; recursoId: string }
   | { operacao: 'solicitacao_viagem_editada'; recursoId: string }
   | { operacao: 'solicitacao_viagem_reagendada'; recursoId: string }
+  | { operacao: 'triagem_rascunho_salvo' | 'triagem_confirmada_svo' | 'triagem_encaminhada_iml'; recursoId: string }
   | { operacao: 'ordem_gerada'; recursoId: string; solicitacaoId: string };
 
 export interface AtividadeDto {
@@ -35,14 +37,21 @@ function descrever(evento: EventoAtividade): string {
     case 'usuario_status':
       if (typeof evento.ativo !== 'boolean') throw new Error('Estado de atividade inválido.');
       return `Alterou o status do usuário ID ${id} para ${evento.ativo ? 'Ativo' : 'Inativo'}`;
+
     case 'solicitacao_registrada': return `Solicitação #SVO-${id} registrada por telefone`;
     case 'solicitacao_confirmada': return `Solicitação #SVO-${id} confirmada na ligação`;
+
+    case 'triagem_rascunho_salvo': return `Rascunho da triagem de #SVO-${id} atualizado`;
+    case 'triagem_confirmada_svo': return `Triagem de #SVO-${id} confirmada como SVO`;
+    case 'triagem_encaminhada_iml': return `Triagem de #SVO-${id} encaminhada ao IML`;
+
     case 'solicitacao_viagem_criada': return `Criou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_aprovada': return `Aprovou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_reprovada': return `Reprovou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_agendada': return `Agendou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_editada': return `Editou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_reagendada': return `Reagendou a solicitação de transporte ID ${id}`;
+
     case 'ordem_gerada': return `Ordem de coleta #OC-${id} gerada para #SVO-${identificador(evento.solicitacaoId)}`;
     default: throw new Error('Operação de atividade inválida.');
   }
@@ -51,15 +60,28 @@ function descrever(evento: EventoAtividade): string {
 /** Registra apenas os eventos existentes, sem interpolar payload, nome ou contato pessoal. */
 export async function registrarAtividades(tx: postgres.TransactionSql, usuarioId: string, eventos: EventoAtividade[]): Promise<string[]> {
   const descricoes = eventos.map(descrever);
-  const solicitacoes=eventos.map(evento=>{
-    switch(evento.operacao) {
-      case 'solicitacao_viagem_criada': case 'solicitacao_viagem_aprovada': case 'solicitacao_viagem_reprovada':
-      case 'solicitacao_viagem_editada': case 'solicitacao_viagem_agendada': case 'solicitacao_viagem_reagendada':
+  const solicitacoes = eventos.map(evento => {
+    switch (evento.operacao) {
+      case 'solicitacao_viagem_criada':
+      case 'solicitacao_viagem_aprovada':
+      case 'solicitacao_viagem_reprovada':
+      case 'solicitacao_viagem_editada':
+      case 'solicitacao_viagem_agendada':
+      case 'solicitacao_viagem_reagendada':
         return identificador(evento.recursoId);
-      default:return null;
+      default:
+        return null;
     }
   });
-  if (descricoes.length) await inserirAtividades(tx, identificador(usuarioId), descricoes, solicitacoes.some(id=>id!==null)?solicitacoes:undefined);
+
+  if (descricoes.length) {
+    await inserirAtividades(
+      tx,
+      identificador(usuarioId),
+      descricoes,
+      solicitacoes.some(id => id !== null) ? solicitacoes : undefined
+    );
+  }
   return descricoes;
 }
 

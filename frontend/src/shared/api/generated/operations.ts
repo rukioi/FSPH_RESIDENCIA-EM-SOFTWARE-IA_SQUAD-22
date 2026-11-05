@@ -100,6 +100,14 @@ export const apiOperations = {
     "method": "POST",
     "path": "/api/svo/solicitacoes"
   },
+  "svo_patch__api_svo_solicitacoes_id_triagem": {
+    "method": "PATCH",
+    "path": "/api/svo/solicitacoes/{id}/triagem"
+  },
+  "svo_post__api_svo_solicitacoes_id_triagem": {
+    "method": "POST",
+    "path": "/api/svo/solicitacoes/{id}/triagem"
+  },
   "svo_patch__api_svo_ordens_coleta_id_despachar": {
     "method": "PATCH",
     "path": "/api/svo/ordens-coleta/{id}/despachar"

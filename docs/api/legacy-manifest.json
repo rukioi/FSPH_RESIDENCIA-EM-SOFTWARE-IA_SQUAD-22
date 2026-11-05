@@ -16,6 +16,8 @@
     {"method":"GET","path":"/api/svo/ordens-coleta","reason":"Array snake_case; status público AGUARDANDO_DESPACHO difere do banco PENDENTE_ALOCACAO; erro/erro objeto."},
     {"method":"GET","path":"/api/svo/solicitacoes","reason":"Até 20 ocorrências recentes, apenas protocolo, estado e horário; filtro de triagem validado. Paginação/detalhe na SCRUM-146."},
     {"method":"POST","path":"/api/svo/solicitacoes","reason":"Registro telefônico pendente, sem ordem; ID BIGINT string, validado por schema na SCRUM-130."},
+    {"method":"PATCH","path":"/api/svo/solicitacoes/{id}/triagem","reason":"SCRUM-131: payload de rascunho validado manualmente com Zod no controller; resposta direta ainda não é validada pelo registro global em runtime."},
+    {"method":"POST","path":"/api/svo/solicitacoes/{id}/triagem","reason":"SCRUM-131: decisão final SVO/IML validada manualmente com Zod no controller; resposta direta, transação e auditoria no módulo, sem validação runtime pelo contrato global."},
     {"method":"PATCH","path":"/api/svo/ordens-coleta/{id}/despachar","reason":"Objeto snake_case direto e IDs Number; erros {erro} ou {error}."},
     {"method":"GET","path":"/api/motoristas","reason":"Lista completa snake_case; CPF/telefone retirados somente para SVO."},
     {"method":"POST","path":"/api/motoristas","reason":"Validações manuais CPF/data/telefone e normalização existentes, sem migração runtime."},
