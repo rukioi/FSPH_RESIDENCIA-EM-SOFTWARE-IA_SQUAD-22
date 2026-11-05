@@ -84,6 +84,16 @@ export function checkCompatibility(previous: Document, current: Document) {
         if(!before.responses?.[400] && JSON.stringify(after.responses?.[400])===JSON.stringify(error400))delete after.responses![400];
       }
     }
+    // SCRUM-145/148: exceção para descrição documental desta rota, com texto antigo e novo exatos.
+    // Demais atributos (security, x-perfis, parâmetros, respostas e erros) seguem protegidos.
+    if (path === '/api/svo/ordens-coleta/minhas' && method === 'get' && candidate) {
+      const anterior = (definition as {description?:string}).description;
+      const nova = (candidate as {description?:string}).description;
+      if (anterior === 'Somente ordens vinculadas a motorista.usuario_id da sessão; sem dados médicos/pessoais do solicitante.' &&
+          nova === 'Somente ordens vinculadas a motorista.usuario_id da sessão; até 100 ordens por id DESC, sem paginação nem parâmetros de consulta; a lista pode estar truncada; sem dados médicos/pessoais do solicitante.') {
+        (candidate as {description?:string}).description = anterior;
+      }
+    }
     if (JSON.stringify(definition) !== JSON.stringify(candidate)) throw new Error(`Contrato existente alterado: ${method.toUpperCase()} ${path}. Planeje compatibilidade explicitamente.`);
   }
   for (const [name,schema] of Object.entries(previous.components.schemas)) {

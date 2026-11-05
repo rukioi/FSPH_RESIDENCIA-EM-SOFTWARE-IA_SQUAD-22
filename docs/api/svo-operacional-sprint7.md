@@ -21,6 +21,8 @@
 
 A rota existente `PATCH /api/svo/ordens-coleta/{id}/despachar`, perfil `ATENDENTE_SVO`, recebe `{"motoristaId":38110,"veiculoId":38120}` e mantém o envelope legado `id`, `motorista_id`, `veiculo_id`, `status='EM_DESLOCAMENTO'`. **Não confundir o estado de despacho EM_DESLOCAMENTO com a execução iniciada:** o `PATCH /iniciar` registra `data_inicio` e km inicial. Não inventamos estado `PRONTA_PARA_INICIAR` no enum de ordem.
 
+**Limite de consulta do motorista:** `GET /api/svo/ordens-coleta/minhas` devolve no máximo 100 ordens do usuário autenticado, ordenadas por `id DESC`. Não há paginação nem filtros: parâmetros de query retornam HTTP 400. Portanto, a lista pode omitir ordens mais antigas e não deve ser interpretada como histórico completo.
+
 ## Regras e concorrência
 
 1. Veículo elegível é uma **Chevrolet S10 própria**, marcada `is_svo=TRUE`, em estado `DISPONIVEL`, com capacidade cadastrada de pelo menos quatro e sem documentos registrados vencidos/irregulares. Motorista precisa estar `DISPONIVEL`, ter CNH não vencida e usuário ativo no papel `MOTORISTA`. A ausência de cadastro de documento específico não comprova regularidade completa: conferência documental permanece atividade da gestão.

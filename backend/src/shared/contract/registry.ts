@@ -86,7 +86,7 @@ export const operations: Operacao[] = [
   op('svo','get','/api/svo/veiculos/{id}/ocupacao','OcupacaoSvo',['ATENDENTE_SVO'],{
     errors:[400,401,403,404,500],notes:'Lotação ativa calculada pela soma de quantidade_corpos de ordens despachadas e em transporte; liberada na conclusão/cancelamento.'}),
   op('svo','get','/api/svo/ordens-coleta/minhas','MinhasOrdensSvo',['MOTORISTA'],{
-    errors:[400,401,403,500],notes:'Somente ordens vinculadas a motorista.usuario_id da sessão; sem dados médicos/pessoais do solicitante.'}),
+    errors:[400,401,403,500],notes:'Somente ordens vinculadas a motorista.usuario_id da sessão; até 100 ordens por id DESC, sem paginação nem parâmetros de consulta; a lista pode estar truncada; sem dados médicos/pessoais do solicitante.'}),
   op('svo','get','/api/svo/ordens-coleta/minhas/{id}','MinhaOrdemSvo',['MOTORISTA'],{
     errors:[400,401,403,404,500],notes:'Ordem própria mínima; IDs não vinculados retornam 404 indistinguível.'}),
   op('svo','patch','/api/svo/ordens-coleta/{id}/iniciar','OrdemExecucaoSvo',['MOTORISTA'],{
