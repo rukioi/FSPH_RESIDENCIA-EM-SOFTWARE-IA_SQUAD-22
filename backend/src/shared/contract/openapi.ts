@@ -25,7 +25,7 @@ export function openapi() {
     (paths[operation.path] ??= {})[operation.method] = {
       operationId:operation.id,tags:[operation.modulo],description:operation.notes,
       security:operation.perfis.length ? [{bearerAuth:[]}] : [],'x-perfis':operation.perfis,
-      'x-runtime-validation':operation.modulo === 'veiculos',parameters,
+      'x-runtime-validation':['veiculos','solicitacoes'].includes(operation.modulo),parameters,
       ...(operation.body ? {requestBody:{required:true,content}} : {}),responses,
     };
   }

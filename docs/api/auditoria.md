@@ -110,6 +110,11 @@ Authorization: Bearer <token>
 
 ## Eventos existentes centralizados
 
+SCRUM-157: os seis eventos institucionais abaixo gravam também
+solicitacao_viagem_id, na mesma transação da operação. Eventos SVO/usuários
+permanecem sem esse vínculo. Logs antigos não são associados ou reescritos.
+O histórico do pedido consulta exclusivamente a nova referência estruturada.
+
 | Operação | Descrição nova | Transação |
 | --- | --- | --- |
 | Cadastro de usuário | Criou o usuário ID n | Usuário + atividade |
@@ -117,6 +122,12 @@ Authorization: Bearer <token>
 | Status efetivamente alterado | Alterou o status do usuário ID n para Ativo/Inativo | Usuário + atividade; repetição sem evento |
 | Confirmação SVO | Solicitação #SVO-n confirmada na ligação | Solicitação + ordem + duas atividades |
 | Ordem gerada no cadastro SVO | Ordem de coleta #OC-n gerada para #SVO-m | Mesma transação SVO |
+| Criação de solicitação institucional (SCRUM-137) | Criou a solicitação de transporte ID n | Solicitação + atividade; falha reverte ambas |
+| Aprovação institucional (SCRUM-138) | Aprovou a solicitação de transporte ID n | Estado + atividade com ator da sessão, atomicamente |
+| Rejeição institucional (SCRUM-138) | Reprovou a solicitação de transporte ID n | Estado/motivo + atividade; motivo não é copiado para log |
+| Agendamento institucional (SCRUM-139) | Agendou a solicitação de transporte ID n | Recursos, retorno, estado e atividade atômicos |
+| Edição institucional (SCRUM-155) | Editou a solicitação de transporte ID n | Campos, estado PENDENTE e atividade do editor na mesma transação |
+| Reagendamento institucional (SCRUM-156) | Reagendou a solicitação de transporte ID n | Troca de reserva e atividade do ator na mesma transação |
 
 Preserva usuario_id/descricao/data_hora e as duas FKs atuais. Descrições novas de
 usuário passam a pt-BR e usam ID em vez de email; as SVO permanecem compatíveis.

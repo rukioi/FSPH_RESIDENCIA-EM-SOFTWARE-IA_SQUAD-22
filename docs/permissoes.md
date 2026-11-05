@@ -26,6 +26,35 @@ As regras são aplicadas no backend; o guarda de rotas no frontend melhora a nav
 
 ## Ao entregar uma funcionalidade
 
+SCRUM-137: POST /api/solicitacoes-viagem é exclusivo de SOLICITANTE_INTERNO.
+GET permite SOLICITANTE_INTERNO somente nos próprios pedidos e ADM/GESTOR_FROTA
+em todos os pedidos, incluindo nome/ID do solicitante. ATENDENTE_SVO e MOTORISTA
+não acessam esse recurso. Não há endpoint de cancelamento.
+As novas permissões de API não criam páginas frontend para o solicitante.
+
+SCRUM-138: somente ADM/GESTOR_FROTA aprovam ou rejeitam solicitações PENDENTE.
+Solicitante, MOTORISTA e ATENDENTE_SVO não decidem. Cada decisão registra o ator
+da sessão em log_atividade na mesma transação; decisão repetida recebe 409.
+
+SCRUM-139: somente ADM/GESTOR_FROTA agendam solicitações APROVADA, atribuindo
+motorista, veículo e retorno previsto. Atendente SVO continua despachando sem
+aprovação administrativa, mas ambos os fluxos respeitam reservas compartilhadas.
+
+SCRUM-155: somente ADM/GESTOR_FROTA editam origem, destino, finalidade, saída e
+passageiros via PATCH. PENDENTE permanece; APROVADA retorna a PENDENTE para nova
+análise. Demais estados: 409. Solicitante não edita. Recursos e retorno previsto
+não são aceitos; edição e atividade do ator atual confirmam atomicamente.
+
+SCRUM-156: somente ADM/GESTOR_FROTA consultam agenda/disponibilidade e reagendam
+pedidos AGENDADA, mantendo esse estado. Os demais perfis não ganham acesso.
+Consultas retornam somente dados operacionais mínimos; reserva e auditoria da
+troca são atômicas e revalidam os dois fluxos sob bloqueio de recursos.
+
+SCRUM-157: detalhes/histórico permitem ADM/GESTOR_FROTA em qualquer pedido;
+SOLICITANTE_INTERNO somente nos próprios. Inexistente ou inacessível: mesmo404.
+Responsável interno da atividade é omitido para solicitantes. Nenhum acesso novo
+para MOTORISTA/ATENDENTE_SVO; sem email/CPF/telefone/CNH nos DTOs dessas consultas.
+
 Registre aqui quem pode fazer o quê e em quais registros; implemente e teste no mesmo PR. Apenas o acesso ainda indefinido precisa de confirmação — não é necessário preencher toda a matriz antes de trabalhar.
 
 Organizações, vínculos e múltiplos papéis só entram no modelo se houver necessidade confirmada.

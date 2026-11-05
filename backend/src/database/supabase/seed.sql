@@ -28,7 +28,8 @@ INSERT INTO public.solicitacao_viagem (id, codigo, solicitante_id, origem, desti
   (-27003, 'T1-V-2', -27003, 'Origem fictícia', 'Destino fictício', '2026-01-15 12:00:00', 1, 'PRONTA_PARA_INICIAR', '2026-01-15 12:00:00', -27003, -27003),
   (-27004, 'T1-V-3', -27003, 'Origem fictícia', 'Destino fictício', '2026-01-15 12:00:00', 1, 'EM_ANDAMENTO', '2026-01-15 12:00:00', -27004, -27004),
   (-27005, 'T1-V-4', -27003, 'Origem fictícia', 'Destino fictício', '2026-01-15 12:00:00', 1, 'CONCLUIDA', '2026-01-15 12:00:00', -27001, -27001),
-  (-27006, 'T1-V-5', -27003, 'Origem fictícia', 'Destino fictício', '2026-01-15 12:00:00', 1, 'REPROVADA', '2026-01-15 12:00:00', -27002, -27002)
+  (-27006, 'T1-V-5', -27003, 'Origem fictícia', 'Destino fictício', '2026-01-15 12:00:00', 1, 'REPROVADA', '2026-01-15 12:00:00', -27002, -27002),
+  (-27007, 'T1-V-6', -27003, 'Origem fictícia', 'Destino fictício', '2026-01-15 12:00:00', 1, 'APROVADA', '2026-01-15 12:00:00', NULL, NULL)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.viagem (id, solicitacao_id, veiculo_id, motorista_id, km_inicial, km_final, data_inicio, data_fim, validada_por_gestor, status) VALUES

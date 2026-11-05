@@ -26,6 +26,7 @@ erDiagram
     bigint usuario_id FK "nullable"
     text descricao "NOT NULL"
     timestamp_without_time_zone data_hora "nullable"
+    bigint solicitacao_viagem_id FK "nullable"
   }
   motorista {
     bigint id PK "NOT NULL"
@@ -86,6 +87,8 @@ erDiagram
     timestamp_without_time_zone criado_em "nullable"
     bigint veiculo_id FK "nullable"
     bigint motorista_id FK "nullable"
+    text finalidade "nullable"
+    timestamp_without_time_zone data_hora_retorno_previsto "nullable"
   }
   usuario {
     bigint id PK "NOT NULL"
@@ -130,6 +133,7 @@ erDiagram
   veiculo ||--o{ abastecimento : "abastecimento_veiculo_id_fkey DELETE NO ACTION"
   veiculo |o--o{ documento_veiculo : "documento_veiculo_veiculo_id_fkey DELETE NO ACTION"
   usuario |o--o{ log_atividade : "fk_log_atividade_usuario DELETE SET NULL"
+  solicitacao_viagem |o--o{ log_atividade : "log_atividade_solicitacao_viagem_id_fkey DELETE NO ACTION"
   usuario |o--o{ log_atividade : "log_atividade_usuario_id_fkey DELETE NO ACTION"
   usuario |o--o| motorista : "motorista_usuario_id_fkey DELETE CASCADE"
   motorista |o--o{ ordem_coleta : "ordem_coleta_motorista_id_fkey DELETE NO ACTION"

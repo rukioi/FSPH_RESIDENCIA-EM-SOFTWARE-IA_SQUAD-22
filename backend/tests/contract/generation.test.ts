@@ -27,8 +27,9 @@ test('gate detecta remoção de rota/status e mudança incompatível de componen
 test('migração #30 permite somente 404 comum de abastecimento e sua descrição técnica',()=>{
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
-test('inventário fechado mantém 30 operações e limites de pathname compatíveis',()=>{
-  expect(operations).toHaveLength(30);
+test('inventário mantém as 30 operações anteriores e as onze de solicitações',()=>{
+  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(30);
+  expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
     const path = operation.path.replace('{id}','123');
@@ -36,6 +37,18 @@ test('inventário fechado mantém 30 operações e limites de pathname compatív
     expect(routePattern(operation).test(path+'/')).toBe(operation.modulo==='usuarios');
     expect(routePattern(operation).test(path+'/extra')).toBe(false);
   }
+});
+
+test('SCRUM-137/138 publicam criação, consulta e decisões com contrato validado', () => {
+  expect(operations.filter(operation => operation.modulo === 'solicitacoes').map(o => o.path)).toEqual([
+    '/api/solicitacoes-viagem/{id}','/api/solicitacoes-viagem/{id}/historico',
+    '/api/solicitacoes-viagem/agenda','/api/solicitacoes-viagem/disponibilidade','/api/solicitacoes-viagem/{id}/reagendar',
+    '/api/solicitacoes-viagem/{id}',
+    '/api/solicitacoes-viagem/{id}/agendar',
+    '/api/solicitacoes-viagem/{id}/aprovar', '/api/solicitacoes-viagem/{id}/rejeitar',
+    '/api/solicitacoes-viagem', '/api/solicitacoes-viagem']);
+  expect(openapi().paths['/api/solicitacoes-viagem'].post).toHaveProperty('x-runtime-validation', true);
+  expect(independent("import {readFileSync} from 'node:fs'; import {checkCoverage} from './scripts/generate-api.ts'; checkCoverage(JSON.parse(readFileSync('docs/api/legacy-manifest.json','utf8'))); console.log('ok');")).toContain('ok');
 });
 test('schemas do piloto preservam defaults null, campos ignorados, parcialidade e condicional de locação',()=>{
   const input = {placa:'T32',marca:'Fixture',modelo:'Fixture',ano:2026,tipo:null,capacidade_obitos:null,extra:'ignorado'};
@@ -59,4 +72,9 @@ test.each([
   expect(result.success).toBe(false);
   if (result.success) throw new Error('Entrada inválida aceita.');
   expect(erroValidacaoVeiculo(result.error,caso.create,body).code).toBe(caso.code);
+});
+
+
+test('baseline de merge preserva mudanças independentes e rejeita conflito no mesmo campo',()=>{
+  expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {mergeContractBaselines,checkCompatibility} from './scripts/generate-api.ts'; const base=openapi(),head=structuredClone(base),incoming=structuredClone(base);head.components.schemas.Veiculo.description='head';incoming.paths['/api/svo/solicitacoes'].post.description='main';const combined=mergeContractBaselines(base,head,incoming);if(combined.components.schemas.Veiculo.description!=='head'||combined.paths['/api/svo/solicitacoes'].post.description!=='main')throw Error('perdeu mudança');checkCompatibility(combined,structuredClone(combined));incoming.components.schemas.Veiculo.description='divergente';try{mergeContractBaselines(base,head,incoming);throw Error('aceitou conflito');}catch(e){if(e.message==='aceitou conflito')throw e;}console.log('ok');")).toContain('ok');
 });

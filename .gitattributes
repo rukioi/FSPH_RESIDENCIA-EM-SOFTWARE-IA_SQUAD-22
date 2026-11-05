@@ -1,0 +1,8 @@
+/docs/api/openapi.yaml text eol=lf
+/docs/api/inventory.md text eol=lf
+/frontend/src/shared/api/generated/schema.d.ts text eol=lf
+/frontend/src/shared/api/generated/operations.ts text eol=lf
+
+/docs/database/der.mmd text eol=lf
+/docs/database/schema-metadata.json text eol=lf
+/docs/database/schema.sql text eol=lf

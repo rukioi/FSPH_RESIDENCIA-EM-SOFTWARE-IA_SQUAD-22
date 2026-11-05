@@ -12,13 +12,13 @@ export const specification = () => stringify(openapi(), { lineWidth: 0 });
 /** Deriva a tabela de cobertura e limites dos mesmos descritores usados no dispatcher. */
 export const inventory = () => '# Inventário da API atual — #32\n\nGerado por api:generate; não editar manualmente. ' + operations.length + ' operações.\n\n' +
   '| Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n' +
-  operations.map(o=>`| ${o.method.toUpperCase()} | ${o.path} | ${o.perfis.join(', ') || 'pública'} | ${o.body ?? 'sem corpo'} | ${o.status} ${o.response} | ${[...o.errors,405].join(', ')} | ${o.modulo === 'veiculos' ? 'piloto' : 'legado'} | ${o.notes} |`).join('\n')+'\n\nCaminho desconhecido: 404 comum. Método não permitido: 405 + Allow, antes de auth. Todas as respostas recebem X-Request-Id. As exceções fechadas estão em [legacy-manifest.json](./legacy-manifest.json). Schemas legados documentam o transporte; não substituem os validadores existentes.\n';
+  operations.map(o=>`| ${o.method.toUpperCase()} | ${o.path} | ${o.perfis.join(', ') || 'pública'} | ${o.body ?? 'sem corpo'} | ${o.status} ${o.response} | ${[...o.errors,405].join(', ')} | ${o.modulo === 'veiculos' ? 'piloto' : o.modulo === 'solicitacoes' ? 'validado' : 'legado'} | ${o.notes} |`).join('\n')+'\n\nCaminho desconhecido: 404 comum. Método não permitido: 405 + Allow, antes de auth. Todas as respostas recebem X-Request-Id. As exceções fechadas estão em [legacy-manifest.json](./legacy-manifest.json). Schemas legados documentam o transporte; não substituem os validadores existentes.\n';
 
 /** Valida cobertura fechada: toda operação legada precisa de exceção explícita e toda família de rotas de contribuição. */
 export function checkCoverage(manifest: { operations: {method:string;path:string;reason:string}[] }) {
   const keys = operations.map(o=>o.method.toUpperCase()+' '+o.path);
   if (new Set(keys).size !== keys.length) throw new Error('Operação duplicada no contrato.');
-  const expected = operations.filter(o=>o.modulo !== 'veiculos').map(o=>o.method.toUpperCase()+' '+o.path).sort();
+  const expected = operations.filter(o=>!['veiculos','solicitacoes'].includes(o.modulo)).map(o=>o.method.toUpperCase()+' '+o.path).sort();
   const actual = manifest.operations.map(o=>o.method+' '+o.path).sort();
   if (JSON.stringify(expected) !== JSON.stringify(actual) || manifest.operations.some(o=>!o.reason.trim())) throw new Error('Manifesto legado fora da lista fechada. Nova rota exige contrato e adaptação explícita.');
   const modules = readdirSync(resolve(root,'backend/src/modules'),{withFileTypes:true}).filter(d=>d.isDirectory() && readdirSync(resolve(root,'backend/src/modules',d.name)).some(f=>f.endsWith('.routes.ts'))).map(d=>d.name).sort();
@@ -56,6 +56,32 @@ export function checkCompatibility(previous: Document, current: Document) {
     if (JSON.stringify(schema) !== JSON.stringify(candidate)) throw new Error('Componente existente alterado: '+name);
   }
 }
+/** Combina contratos dos dois pais sem ignorar alterações ou aceitar conflitos no mesmo campo. */
+export function mergeContractBaselines(base: Document, head: Document, incoming: Document): Document {
+  const equal = (a: unknown,b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  const object = (value: unknown): value is Record<string,unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+  const merge = (b: unknown,h: unknown,i: unknown,path: string): unknown => {
+    if (equal(h,b)) return i;
+    if (equal(i,b) || equal(h,i)) return h;
+    if (!object(b) || !object(h) || !object(i)) throw new Error('Conflito entre contratos dos pais em '+path);
+    const result: Record<string,unknown> = {};
+    for (const key of new Set([...Object.keys(b),...Object.keys(h),...Object.keys(i)])) {
+      const value=merge(b[key],h[key],i[key],path+'.'+key);
+      if (value !== undefined) result[key]=value;
+    }
+    return result;
+  };
+  return merge(base,head,incoming,'contrato') as Document;
+}
+
+function pendingMerge(): string | undefined {
+  try { return execFileSync('git',['rev-parse','--verify','--quiet','MERGE_HEAD'],{cwd:root,encoding:'utf8'}).trim(); }
+  catch (error) {
+    if (typeof error === 'object' && error !== null && 'status' in error && error.status === 1) return undefined;
+    throw error;
+  }
+}
+
 /** Regenera em memória e compara conteúdo; não requer banco nem segredos. */
 export function generateApi(check = false) {
   checkCoverage(JSON.parse(readFileSync(resolve(root,'docs/api/legacy-manifest.json'),'utf8')));
@@ -69,7 +95,16 @@ export function generateApi(check = false) {
     // Arquivo ausente somente na primeira entrega. Outros erros do git não são ignorados.
     const tracked = execFileSync('git',['ls-tree','--name-only','HEAD','docs/api/openapi.yaml'],{cwd:root,encoding:'utf8'}).trim();
     if (tracked) previous = execFileSync('git',['show','HEAD:docs/api/openapi.yaml'],{cwd:root,encoding:'utf8'});
-    if (previous) checkCompatibility(parse(previous),openapi());
+    if (previous) {
+      let baseline: Document = parse(previous);
+      const incoming = pendingMerge();
+      if (incoming) {
+        const base = execFileSync('git',['merge-base','HEAD',incoming],{cwd:root,encoding:'utf8'}).trim();
+        const read = (ref: string): Document => parse(execFileSync('git',['show',ref+':docs/api/openapi.yaml'],{cwd:root,encoding:'utf8'}));
+        baseline=mergeContractBaselines(read(base),baseline,read(incoming));
+      }
+      checkCompatibility(baseline,openapi());
+    }
   }
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) generateApi();
