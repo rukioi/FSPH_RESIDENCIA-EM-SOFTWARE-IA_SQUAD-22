@@ -11,6 +11,11 @@ import {
   salvarTriagemParcialController,
   finalizarTriagemController,
 } from './svo.controller.js';
+import {
+  listarSolicitacoesPaginadasController, listarOrdensPaginadasController,
+  detalharSvoController, historicoSvoController,
+} from './svo.consultas.controller.js';
+import { dashboardSvoController, filasSvoController, atividadesSvoController } from './svo.dashboard.controller.js';
 
 /** Preserva autenticação e despacho operacional do SVO. */
 export async function svoRoute(
@@ -53,6 +58,45 @@ try {
 
   const url = new URL(request.url ?? '/', 'http://localhost');
   const caminho = url.pathname;
+
+  // SCRUM-146: consultas ampliadas independentes, sem modificar os dois GETs legados.
+  if (request.method === 'GET' && caminho === '/api/svo/solicitacoes/paginadas') {
+    await listarSolicitacoesPaginadasController(response, url.searchParams);
+    return;
+  }
+  if (request.method === 'GET' && caminho === '/api/svo/ordens-coleta/paginadas') {
+    await listarOrdensPaginadasController(response, url.searchParams);
+    return;
+  }
+  const rotaConsultaSvo = caminho.match(/^\/api\/svo\/(solicitacoes|ordens-coleta)\/([0-9]+)(\/historico)?$/);
+  if (request.method === 'GET' && rotaConsultaSvo) {
+    const id = rotaConsultaSvo[2];
+    if (!/^[1-9]\d{0,18}$/.test(id) || BigInt(id) > 9223372036854775807n) {
+      jsonCompartilhado(response, 400, { erro: 'ID SVO inválido.' });
+      return;
+    }
+    const tipo = rotaConsultaSvo[1] === 'solicitacoes' ? 'solicitacao' : 'ordem';
+    if (rotaConsultaSvo[3]) {
+      await historicoSvoController(response, id, tipo, url.searchParams);
+    } else {
+      await detalharSvoController(response, id, tipo, url.searchParams);
+    }
+    return;
+  }
+  // SCRUM-149: indicadores SVO não compartilham contrato com dashboard institucional.
+  if (request.method === 'GET' && caminho === '/api/svo/dashboard') {
+    await dashboardSvoController(response, url.searchParams);
+    return;
+  }
+  if (request.method === 'GET' && caminho === '/api/svo/dashboard/filas') {
+    await filasSvoController(response, url.searchParams);
+    return;
+  }
+  if (request.method === 'GET' && caminho === '/api/svo/dashboard/atividades') {
+    await atividadesSvoController(response, url.searchParams);
+    return;
+  }
+
 
   if (
     request.method === 'GET' &&

@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 43 operações.
+Gerado por api:generate; não editar manualmente. 52 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -32,6 +32,15 @@ Gerado por api:generate; não editar manualmente. 43 operações.
 | PATCH | /api/svo/solicitacoes/{id}/triagem | ATENDENTE_SVO | SalvarTriagemParcialSvo | 200 TriagemParcialSvo | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Salva triagem parcial sem decisão ou ordem. Apenas AGUARDANDO_TRIAGEM. |
 | POST | /api/svo/solicitacoes/{id}/triagem | ATENDENTE_SVO | FinalizarTriagemSvo | 200 TriagemFinalSvo | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Decisão SVO/IML transacional. SVO exige quantidadeCorpos de 1 a 4 e gera uma ordem; IML não gera ordem. Nova decisão após finalização: 409. |
 | PATCH | /api/svo/ordens-coleta/{id}/despachar | ATENDENTE_SVO | DespacharSvo | 200 OrdemDespachada | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| GET | /api/svo/solicitacoes/paginadas | ATENDENTE_SVO | sem corpo | 200 ListaSolicitacoesSvoPaginada | 400, 401, 403, 500, 405 | legado | SCRUM-146: lista paginada sem dados pessoais; datas civis inclusivas, filtro status e ordenação determinística. |
+| GET | /api/svo/solicitacoes/{id} | ATENDENTE_SVO | sem corpo | 200 DetalheSolicitacaoSvo | 400, 401, 403, 404, 500, 405 | legado | SCRUM-146: detalhe restrito ao atendente; recupera rascunho salvo sem finalizar decisão. |
+| GET | /api/svo/solicitacoes/{id}/historico | ATENDENTE_SVO | sem corpo | 200 HistoricoSvo | 400, 401, 403, 404, 500, 405 | legado | SCRUM-146: somente eventos reais com descrições exatas da auditoria legada; sem eventos artificiais. |
+| GET | /api/svo/ordens-coleta/paginadas | ATENDENTE_SVO | sem corpo | 200 ListaOrdensSvoPaginada | 400, 401, 403, 500, 405 | legado | SCRUM-146: lista paginada de ordens reais; preserva endpoint legado de despacho. |
+| GET | /api/svo/ordens-coleta/{id} | ATENDENTE_SVO | sem corpo | 200 DetalheOrdemSvo | 400, 401, 403, 404, 500, 405 | legado | SCRUM-146: detalhe operacional autorizado, sem observações médicas. |
+| GET | /api/svo/ordens-coleta/{id}/historico | ATENDENTE_SVO | sem corpo | 200 HistoricoSvo | 400, 401, 403, 404, 500, 405 | legado | SCRUM-146: eventos auditados de geração de ordem realmente persistidos. |
+| GET | /api/svo/dashboard | ATENDENTE_SVO | sem corpo | 200 DashboardOperacionalSvo | 400, 401, 403, 500, 405 | legado | SCRUM-149: IND-10..14 com fila atual independente do período, decisões por triado_em e distribuição por criado_em. |
+| GET | /api/svo/dashboard/filas | ATENDENTE_SVO | sem corpo | 200 FilasOperacionaisSvo | 400, 401, 403, 500, 405 | legado | SCRUM-149: saldo real atual de triagem e despacho, mais 10 itens mínimos por fila. |
+| GET | /api/svo/dashboard/atividades | ATENDENTE_SVO | sem corpo | 200 AtividadesRecentesSvo | 400, 401, 403, 500, 405 | legado | SCRUM-149 IND-07: eventos SVO reais, sem dados pessoais; limite 1..50. |
 | GET | /api/veiculos | ADM, GESTOR_FROTA, ATENDENTE_SVO | sem corpo | 200 ListaVeiculos | 401, 403, 500, 405 | piloto | Lista completa id DESC, sem paginação. Piloto validado em runtime. |
 | POST | /api/veiculos | ADM, GESTOR_FROTA | CriarVeiculo | 201 RespostaVeiculo | 400, 401, 403, 409, 413, 415, 500, 405 | piloto | Formato atual preservado; query params não declarados são ignorados. |
 | PUT | /api/veiculos/{id} | ADM, GESTOR_FROTA | EditarVeiculo | 200 RespostaVeiculo | 400, 401, 403, 404, 409, 413, 415, 500, 405 | piloto | Alteração parcial; campos não suportados ignorados. Sem mudança de estados/disponibilidade. |

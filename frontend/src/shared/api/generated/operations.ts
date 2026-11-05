@@ -112,6 +112,42 @@ export const apiOperations = {
     "method": "PATCH",
     "path": "/api/svo/ordens-coleta/{id}/despachar"
   },
+  "svo_get__api_svo_solicitacoes_paginadas": {
+    "method": "GET",
+    "path": "/api/svo/solicitacoes/paginadas"
+  },
+  "svo_get__api_svo_solicitacoes_id_": {
+    "method": "GET",
+    "path": "/api/svo/solicitacoes/{id}"
+  },
+  "svo_get__api_svo_solicitacoes_id_historico": {
+    "method": "GET",
+    "path": "/api/svo/solicitacoes/{id}/historico"
+  },
+  "svo_get__api_svo_ordens_coleta_paginadas": {
+    "method": "GET",
+    "path": "/api/svo/ordens-coleta/paginadas"
+  },
+  "svo_get__api_svo_ordens_coleta_id_": {
+    "method": "GET",
+    "path": "/api/svo/ordens-coleta/{id}"
+  },
+  "svo_get__api_svo_ordens_coleta_id_historico": {
+    "method": "GET",
+    "path": "/api/svo/ordens-coleta/{id}/historico"
+  },
+  "svo_get__api_svo_dashboard": {
+    "method": "GET",
+    "path": "/api/svo/dashboard"
+  },
+  "svo_get__api_svo_dashboard_filas": {
+    "method": "GET",
+    "path": "/api/svo/dashboard/filas"
+  },
+  "svo_get__api_svo_dashboard_atividades": {
+    "method": "GET",
+    "path": "/api/svo/dashboard/atividades"
+  },
   "veiculos_get__api_veiculos": {
     "method": "GET",
     "path": "/api/veiculos"

@@ -93,8 +93,45 @@ test('FK de exclusão conserva 500 legado sem SQL/dado sensível',async()=>{
     expect(JSON.stringify(log.mock.calls)).not.toContain('documento_veiculo');
   } finally { log.mockRestore(); }
 });
+test('SCRUM-146 consulta detalhes e históricos persistidos com autorização e respostas válidas',async()=>{
+  const solicitacaoId = '32010';
+  const ordemId = '32011';
+  await sql.begin(async tx=>{
+    await tx`INSERT INTO public.solicitacao_obito
+      (id,codigo,atendente_id,local_falecimento,endereco_remocao,solicitante_nome,
+       status_triagem,triagem_observacoes,triado_por_id,triado_em)
+      VALUES (${solicitacaoId},'#SVO-32010',32002,'Unidade fictícia','Rua fictícia, 10',
+        'Solicitante fictício','CONFIRMADA_SVO','Triagem fictícia',32002,CURRENT_TIMESTAMP)`;
+    await tx`INSERT INTO public.ordem_coleta (id,solicitacao_obito_id,quantidade_corpos,status)
+      VALUES (${ordemId},${solicitacaoId},1,'PENDENTE_ALOCACAO')`;
+  });
+  try {
+    const casos = [
+      ['/api/svo/solicitacoes/32010','DetalheSolicitacaoSvo'],
+      ['/api/svo/solicitacoes/32010/historico','HistoricoSvo'],
+      ['/api/svo/ordens-coleta/32011','DetalheOrdemSvo'],
+      ['/api/svo/ordens-coleta/32011/historico','HistoricoSvo'],
+    ] as const;
+    for (const [path,nomeSchema] of casos) {
+      const response = await call(path,'GET',undefined,svo);
+      expect(response.status,path).toBe(200);
+      const json = await response.json();
+      expect(schemas[nomeSchema].safeParse(json).success,path).toBe(true);
+      expect((await call(path,'GET',undefined,negado)).status,path).toBe(403);
+      expect((await fetch(base+path)).status,path).toBe(401);
+    }
+    for (const path of ['/api/svo/solicitacoes/9223372036854775807',
+                        '/api/svo/ordens-coleta/9223372036854775807']) {
+      expect((await call(path,'GET',undefined,svo)).status,path).toBe(404);
+    }
+  } finally {
+    await sql`DELETE FROM public.ordem_coleta WHERE id=${ordemId}`;
+    await sql`DELETE FROM public.solicitacao_obito WHERE id=${solicitacaoId}`;
+  }
+});
+
 test('consultas legadas reais correspondem aos schemas sem exigir migração de formato',async()=>{
-  for (const operation of operations.filter(o=>o.method==='get' && !['veiculos','solicitacoes'].includes(o.modulo))) {
+  for (const operation of operations.filter(o=>o.method==='get' && !o.path.includes('{id}') && !['veiculos','solicitacoes'].includes(o.modulo))) {
     const path = operation.path+(operation.path==='/api/svo/ordens-coleta' ? '?status=AGUARDANDO_DESPACHO' : '');
     const response = await call(path,'GET',undefined,operation.modulo==='svo' ? svo : admin);
     expect(response.status,operation.id).toBe(200);
