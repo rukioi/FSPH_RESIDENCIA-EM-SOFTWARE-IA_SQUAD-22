@@ -14,7 +14,7 @@ test('preflight de rollout executa somente leitura e evidencia schema efetivo',a
   for(const [nome,tamanho] of [['codigo',20],['origem',255],['destino',255]] as const){
     expect(colunas.find(c=>c.table_name==='solicitacao_viagem'&&c.column_name===nome)).toMatchObject({data_type:'character varying',character_maximum_length:tamanho,compatibilidade:'EQUIVALENTE'});
   }
-  expect(colunas.find(c=>c.table_name==='log_atividade'&&c.column_name==='descricao')).toMatchObject({data_type:'text',is_nullable:'NO',compatibilidade:'EQUIVALENTE'});
+  expect(colunas.find(c=>c.table_name==='log_atividade'&&c.column_name==='descricao')).toMatchObject({data_type:'text',is_nullable:'NO',domain_name:null,domain_schema:null,compatibilidade:'EQUIVALENTE'});
   expect(colunas.find(c=>c.column_name==='finalidade')).toMatchObject({data_type:'text',is_nullable:'YES'});
   expect(colunas.find(c=>c.column_name==='data_hora_retorno_previsto')).toMatchObject({data_type:'timestamp without time zone',is_nullable:'YES'});
   expect(colunas.find(c=>c.column_name==='solicitacao_viagem_id')).toMatchObject({data_type:'bigint',is_nullable:'YES'});
@@ -40,4 +40,21 @@ test('preflight identifica limite divergente e descricao ausente ou incompatíve
     expect(linhas.find(c=>c.column_name==='origem')).toMatchObject({character_maximum_length:255,compatibilidade:'EQUIVALENTE'});
     expect(linhas.find(c=>c.column_name==='descricao')).toMatchObject({data_type:'integer',compatibilidade:'DIVERGENTE'});
   });
+});
+
+test('domínio text restritivo é divergente mesmo com tipo subjacente equivalente',async()=>{
+  const primeira=readFileSync(resolve(root,'backend/src/database/scripts/inspect-sprint7.sql'),'utf8').split(';')[0];
+  const consulta=primeira.replace("table_schema='public'","table_schema=pg_my_temp_schema()::regnamespace::text");
+  const rollback=new Error('rollback_fixture_dominio_preflight');
+  await expect(sql.begin(async tx=>{
+    await tx`CREATE TEMP TABLE s7_domain_anchor (id integer) ON COMMIT DROP`;
+    await tx`CREATE DOMAIN pg_temp.s7_texto_curto AS text CHECK (length(VALUE) <= 10)`;
+    await tx`CREATE TEMP TABLE log_atividade (descricao pg_temp.s7_texto_curto NOT NULL) ON COMMIT DROP`;
+    const linhas=await tx.unsafe(consulta);
+    expect(linhas.find(c=>c.table_name==='log_atividade'&&c.column_name==='descricao')).toMatchObject({
+      data_type:'text',character_maximum_length:null,is_nullable:'NO',domain_name:'s7_texto_curto',compatibilidade:'DIVERGENTE',
+    });
+    expect(linhas.find(c=>c.column_name==='descricao')?.domain_schema).toMatch(/^pg_temp_/);
+    throw rollback;
+  })).rejects.toBe(rollback);
 });
