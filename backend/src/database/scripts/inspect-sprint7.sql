@@ -1,10 +1,24 @@
 -- Preflight de catálogo SOMENTE LEITURA. Não repara histórico nem aprova rollout.
-SELECT 'colunas' AS verificacao, table_name, column_name, data_type, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_schema='public' AND
- ((table_name='solicitacao_viagem' AND column_name IN ('id','codigo','finalidade','status','data_hora_saida','data_hora_retorno_previsto','solicitante_id','motorista_id','veiculo_id','motivo_rejeicao')) OR
-  (table_name='log_atividade' AND column_name IN ('solicitacao_viagem_id','data_hora','usuario_id','acao')))
-ORDER BY table_name,ordinal_position;
+WITH esperadas(table_name,column_name,data_type,character_maximum_length,is_nullable) AS (
+  VALUES ('solicitacao_viagem','codigo','character varying',20,'NO'),
+         ('solicitacao_viagem','origem','character varying',255,'NO'),
+         ('solicitacao_viagem','destino','character varying',255,'NO'),
+         ('log_atividade','descricao','text',NULL,'NO')
+), atuais AS (
+  SELECT table_name,column_name,data_type,character_maximum_length,is_nullable,column_default,ordinal_position
+  FROM information_schema.columns
+  WHERE table_schema='public' AND
+   ((table_name='solicitacao_viagem' AND column_name IN ('id','codigo','finalidade','status','data_hora_saida','data_hora_retorno_previsto','solicitante_id','motorista_id','veiculo_id','motivo_rejeicao','origem','destino')) OR
+    (table_name='log_atividade' AND column_name IN ('solicitacao_viagem_id','data_hora','usuario_id','acao','descricao')))
+)
+SELECT 'colunas' AS verificacao,COALESCE(a.table_name,e.table_name) AS table_name,
+ COALESCE(a.column_name,e.column_name) AS column_name,a.data_type,a.character_maximum_length,a.is_nullable,a.column_default,
+ e.data_type AS tipo_esperado,e.character_maximum_length AS limite_esperado,e.is_nullable AS nulabilidade_esperada,
+ CASE WHEN e.column_name IS NULL THEN NULL WHEN a.column_name IS NULL THEN 'AUSENTE'
+      WHEN a.data_type=e.data_type AND a.character_maximum_length IS NOT DISTINCT FROM e.character_maximum_length
+       AND a.is_nullable=e.is_nullable THEN 'EQUIVALENTE' ELSE 'DIVERGENTE' END AS compatibilidade
+FROM atuais a FULL JOIN esperadas e ON a.table_name=e.table_name AND a.column_name=e.column_name
+ORDER BY table_name,a.ordinal_position NULLS LAST,column_name;
 
 SELECT 'estados' AS verificacao, e.enumlabel, e.enumsortorder
 FROM pg_catalog.pg_enum e JOIN pg_catalog.pg_type t ON t.oid=e.enumtypid
