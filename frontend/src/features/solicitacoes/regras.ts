@@ -89,8 +89,8 @@ export function fluxoInterrompido(status: StatusSolicitacao) {
 
 // ---------- Permissões por perfil e status ----------
 export function podeEditar(perfil: PerfilTela, status: StatusSolicitacao) {
-  if (perfil === 'solicitante') return status === 'Pendente'
-  return status === 'Pendente' || status === 'Aprovada' || status === 'Agendada'
+  if (perfil === 'solicitante') return false
+  return status === 'Pendente' || status === 'Aprovada'
 }
 
 export function podeCancelar(perfil: PerfilTela, status: StatusSolicitacao) {

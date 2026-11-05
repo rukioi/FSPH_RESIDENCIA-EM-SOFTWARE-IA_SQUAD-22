@@ -77,8 +77,8 @@ export function Calendario() {
       const fim = somarDias(inicio, 6)
 
       return {
-        inicio: iso(inicio),
-        fim: iso(fim),
+        inicio: `${iso(inicio)}T00:00:00-03:00`,
+        fim: `${iso(fim)}T23:59:59.999999-03:00`,
       }
     }
 
@@ -95,8 +95,8 @@ export function Calendario() {
     )
 
     return {
-      inicio: iso(inicio),
-      fim: iso(fim),
+      inicio: `${iso(inicio)}T00:00:00-03:00`,
+      fim: `${iso(fim)}T23:59:59.999999-03:00`,
     }
   }, [selecionado, visao])
 
