@@ -1,4 +1,4 @@
-# API — SVO (SCRUM-130)
+# API — SVO (SCRUM-130 / SCRUM-131)
 
 ## Registro telefônico e consulta inicial
 
@@ -10,6 +10,8 @@ Todas as rotas SVO exigem JWT Bearer de usuário ativo com perfil efetivo `ATEND
 | GET | `/api/svo/solicitacoes` | Consultar até 20 solicitações recentes, sem informação pessoal |
 | GET | `/api/svo/solicitacoes?status=AGUARDANDO_TRIAGEM` | Filtrar por triagem; aceita também CONFIRMADA_SVO e ENCAMINHADA_IML |
 | GET | `/api/svo/ordens-coleta?status=AGUARDANDO_DESPACHO` | Legado: consulta ordens já existentes aguardando despacho |
+| PATCH | `/api/svo/solicitacoes/:id/triagem` | Salvar rascunho sem decidir nem criar ordem |
+| POST | `/api/svo/solicitacoes/:id/triagem` | Finalizar SVO ou IML; ordem apenas para SVO confirmado |
 | PATCH | `/api/svo/ordens-coleta/:id/despachar` | Legado: despacho; refatoração na SCRUM-132 |
 
 Filtros de período, paginação extensiva, detalhe, consulta por ID e histórico pertencem à SCRUM-146. Dashboard de indicadores é SCRUM-149.
@@ -72,6 +74,62 @@ Registros legados podem ter `status_triagem: null` e devem ser conciliados pela 
 ## Erros e segurança
 
 **400**: dados de entrada/campos extras/filtro de status inválidos; **401**: sessão inexistente ou inválida; **403**: perfil não autorizado; **405**: método inválido, header `Allow`; **409**: conflito de unicidade do protocolo; **413**: corpo excessivo; **415**: tipo de mídia diferente de JSON; **500**: erro interno sem informações pessoais. Erros 4xx usam envelope `{"error":{"code":"HTTP_400","message":"..."}}` (exceto códigos especializados já existentes). `X-Request-Id` acompanha toda resposta.
+
+## Triagem SVO/IML — SCRUM-131
+
+As operações abaixo exigem JWT do perfil `ATENDENTE_SVO` e ID decimal positivo de até
+64 bits. Solicitação inexistente retorna 404; solicitação com triagem já concluída ou
+registro legado sem status conciliado retorna 409. O usuário responsável é obtido
+da sessão, nunca do JSON. Não se publicam informações médicas em atividades de auditoria.
+
+### PATCH /api/svo/solicitacoes/:id/triagem
+
+Corpo estrito: `{"triagemObservacoes":"Observações fictícias do rascunho"}`.
+O campo deve conter entre 1 e 2.000 caracteres após `trim`.
+O rascunho pode ser salvo novamente e altera somente `triagem_observacoes`, mantendo
+`status_triagem=AGUARDANDO_TRIAGEM`, `triado_por_id=NULL`, `triado_em=NULL`
+e nenhuma ordem vinculada. Responde 200 com:
+
+```json
+{
+  "solicitacaoId": "10",
+  "statusTriagem": "AGUARDANDO_TRIAGEM",
+  "triagemObservacoes": "Observações fictícias do rascunho",
+  "atividades": ["Rascunho da triagem de #SVO-10 atualizado"]
+}
+```
+
+### POST /api/svo/solicitacoes/:id/triagem
+
+Duas decisões definitivas mutuamente exclusivas:
+
+```json
+{"decisao":"CONFIRMADA_SVO","triagemObservacoes":"Justificativa fictícia","quantidadeCorpos":1}
+```
+
+```json
+{"decisao":"ENCAMINHADA_IML","triagemObservacoes":"Justificativa fictícia"}
+```
+
+A quantidade é explícita e só aceita inteiros de 1 a 4 para SVO; não há valor padrão.
+O campo de observação é exigido nos dois resultados. O endpoint responde 200 com
+`solicitacao` (ID, protocolo, status, responsável e instante), `ordemColeta`
+(ID, protocolo #OC, status `PENDENTE_ALOCACAO` e quantidade), ou `null` no
+ramo IML, e `atividades`. O protocolo #OC é derivado do ID existente da ordem.
+
+Estado, eventual ordem e auditoria são persistidos na mesma transação.
+A linha da solicitação é bloqueada com `FOR UPDATE`; decisões repetidas ou simultâneas
+não sobrescrevem a primeira decisão nem geram outra ordem. O banco conserva a
+constraint `UNIQUE` sobre o vínculo da ordem. Retorna 409 em novo POST de decisão concluída.
+
+Corpos/IDs inválidos retornam 400; ausência de sessão, 401; perfil indevido, 403;
+recurso inexistente, 404; concorrência/estado inválido, 409; mídia/corpo excedido,
+415/413; falha técnica, 500, com rollback.
+
+**Integração:** os nomes de campos e as exigências de justificativa/quantidade devem
+ser validados com o responsável por BL27 antes do acoplamento da UI (SCRUM-150).
+Consulta detalhada e histórico geral pertencem à SCRUM-146; indicadores à SCRUM-149.
+A implementação não aplica migration ao banco compartilhado.
 
 ## Dependências de banco e subtasks
 

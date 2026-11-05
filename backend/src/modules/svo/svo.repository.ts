@@ -33,6 +33,134 @@ export interface NovaSolicitacaoObito {
   pontoReferencia?: string | null;
 }
 
+export interface DadosTriagemParcial {
+  solicitacaoId: string;
+  atendenteId: string;
+  triagemObservacoes: string;
+}
+export type DadosTriagemFinal = {
+  solicitacaoId: string;
+  atendenteId: string;
+  triagemObservacoes: string;
+} & (
+  | { decisao: 'CONFIRMADA_SVO'; quantidadeCorpos: number }
+  | { decisao: 'ENCAMINHADA_IML' }
+);
+
+export type ResultadoTriagemParcial =
+  | { tipo: 'nao_encontrada' | 'conflito' }
+  | { tipo: 'salva'; dados: {
+      solicitacaoId: string; statusTriagem: 'AGUARDANDO_TRIAGEM';
+      triagemObservacoes: string; atividades: string[];
+    } };
+
+export type ResultadoTriagemFinal =
+  | { tipo: 'nao_encontrada' | 'conflito' }
+  | { tipo: 'finalizada'; dados: {
+      solicitacao: {
+        id: string; codigo: string; statusTriagem: 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML';
+        triadoPorId: string; triadoEm: string;
+      };
+      ordemColeta: {
+        id: string; codigo: string; status: 'PENDENTE_ALOCACAO'; quantidadeCorpos: number;
+      } | null;
+      atividades: string[];
+    } };
+
+/** Salva informações parciais com auditoria, sem mudar a decisão ou criar ordem. */
+export async function salvarTriagemParcial(dados: DadosTriagemParcial): Promise<ResultadoTriagemParcial> {
+  return sql.begin(async tx => {
+    const [solicitacao] = await tx`
+      SELECT id::text AS id, status_triagem::text AS status_triagem
+      FROM public.solicitacao_obito WHERE id = ${dados.solicitacaoId} FOR UPDATE
+    `;
+    if (!solicitacao) return { tipo: 'nao_encontrada' as const };
+    if (solicitacao.status_triagem !== 'AGUARDANDO_TRIAGEM') return { tipo: 'conflito' as const };
+    await tx`
+      UPDATE public.solicitacao_obito
+      SET triagem_observacoes = ${dados.triagemObservacoes}
+      WHERE id = ${dados.solicitacaoId}
+    `;
+    const atividades = await registrarAtividades(tx, dados.atendenteId, [
+      { operacao: 'triagem_rascunho_salvo', recursoId: dados.solicitacaoId },
+    ]);
+    return {
+      tipo: 'salva' as const,
+      dados: {
+        solicitacaoId: dados.solicitacaoId,
+        statusTriagem: 'AGUARDANDO_TRIAGEM' as const,
+        triagemObservacoes: dados.triagemObservacoes,
+        atividades,
+      },
+    };
+  });
+}
+
+/**
+ * Finaliza SVO/IML e cria no máximo uma ordem, na mesma transação auditada.
+ * Bloqueio por solicitação serializa decisões concorrentes; UNIQUE protege o vínculo.
+ */
+export async function finalizarTriagem(dados: DadosTriagemFinal): Promise<ResultadoTriagemFinal> {
+  return sql.begin(async tx => {
+    const [solicitacao] = await tx`
+      SELECT id::text AS id, codigo, status_triagem::text AS status_triagem
+      FROM public.solicitacao_obito WHERE id = ${dados.solicitacaoId} FOR UPDATE
+    `;
+    if (!solicitacao) return { tipo: 'nao_encontrada' as const };
+    if (solicitacao.status_triagem !== 'AGUARDANDO_TRIAGEM') return { tipo: 'conflito' as const };
+
+    const [atualizada] = await tx`
+      UPDATE public.solicitacao_obito
+      SET status_triagem = ${dados.decisao},
+          triagem_observacoes = ${dados.triagemObservacoes},
+          triado_por_id = ${dados.atendenteId},
+          triado_em = CURRENT_TIMESTAMP
+      WHERE id = ${dados.solicitacaoId}
+      RETURNING id::text AS id, codigo, status_triagem::text AS status_triagem,
+                triado_por_id::text AS triado_por_id, triado_em
+    `;
+
+    let ordemColeta: {
+      id: string; codigo: string; status: 'PENDENTE_ALOCACAO'; quantidadeCorpos: number;
+    } | null = null;
+    const eventos: Parameters<typeof registrarAtividades>[2] = [{
+      operacao: dados.decisao === 'CONFIRMADA_SVO' ? 'triagem_confirmada_svo' : 'triagem_encaminhada_iml',
+      recursoId: dados.solicitacaoId,
+    }];
+    if (dados.decisao === 'CONFIRMADA_SVO') {
+      const [ordem] = await tx`
+        INSERT INTO public.ordem_coleta (solicitacao_obito_id, quantidade_corpos, status)
+        VALUES (${dados.solicitacaoId}, ${dados.quantidadeCorpos}, 'PENDENTE_ALOCACAO')
+        RETURNING id::text AS id, status::text AS status, quantidade_corpos
+      `;
+      const ordemId = String(ordem.id);
+      ordemColeta = {
+        id: ordemId,
+        codigo: `#OC-${ordemId}`,
+        status: 'PENDENTE_ALOCACAO',
+        quantidadeCorpos: Number(ordem.quantidade_corpos),
+      };
+      eventos.push({ operacao: 'ordem_gerada', recursoId: ordemId, solicitacaoId: dados.solicitacaoId });
+    }
+    const atividades = await registrarAtividades(tx, dados.atendenteId, eventos);
+    return {
+      tipo: 'finalizada' as const,
+      dados: {
+        solicitacao: {
+          id: String(atualizada.id),
+          codigo: String(atualizada.codigo),
+          statusTriagem: dados.decisao,
+          triadoPorId: String(atualizada.triado_por_id),
+          triadoEm: atualizada.triado_em instanceof Date
+            ? atualizada.triado_em.toISOString() : String(atualizada.triado_em),
+        },
+        ordemColeta,
+        atividades,
+      },
+    };
+  });
+}
+
 export interface DadosDespacho {
   ordemId: number;
   motoristaId: number;

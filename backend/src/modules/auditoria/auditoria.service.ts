@@ -5,7 +5,8 @@ export type EventoAtividade =
   | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'usuario_status'; recursoId: string; ativo: boolean }
   | { operacao: 'solicitacao_confirmada' | 'solicitacao_registrada'; recursoId: string }
-  | { operacao: 'ordem_gerada'; recursoId: string; solicitacaoId: string };
+  | { operacao: 'ordem_gerada'; recursoId: string; solicitacaoId: string }
+  | { operacao: 'triagem_rascunho_salvo' | 'triagem_confirmada_svo' | 'triagem_encaminhada_iml'; recursoId: string };
 
 export interface AtividadeDto {
   id: string;
@@ -32,6 +33,9 @@ function descrever(evento: EventoAtividade): string {
       return `Alterou o status do usuário ID ${id} para ${evento.ativo ? 'Ativo' : 'Inativo'}`;
     case 'solicitacao_confirmada': return `Solicitação #SVO-${id} confirmada na ligação`;
     case 'solicitacao_registrada': return `Solicitação #SVO-${id} registrada por telefone`;
+    case 'triagem_rascunho_salvo': return `Rascunho da triagem de #SVO-${id} atualizado`;
+    case 'triagem_confirmada_svo': return `Triagem de #SVO-${id} confirmada como SVO`;
+    case 'triagem_encaminhada_iml': return `Triagem de #SVO-${id} encaminhada ao IML`;
     case 'ordem_gerada': return `Ordem de coleta #OC-${id} gerada para #SVO-${identificador(evento.solicitacaoId)}`;
     default: throw new Error('Operação de atividade inválida.');
   }

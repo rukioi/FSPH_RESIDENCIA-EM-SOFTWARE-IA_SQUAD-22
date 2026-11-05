@@ -48,6 +48,12 @@ export const operations: Operacao[] = [
   op('svo','post','/api/svo/solicitacoes','SolicitacaoSvo',['ATENDENTE_SVO'],{
     body:'CriarSolicitacaoSvo',errors:[400,401,403,409,413,415,500],errorSchema:'ErroOperacionalSvo',
     notes:'Registra somente a ocorrência telefônica em AGUARDANDO_TRIAGEM; nenhuma ordem até confirmação SVO na SCRUM-131.'}),
+  op('svo','patch','/api/svo/solicitacoes/{id}/triagem','TriagemParcialSvo',['ATENDENTE_SVO'],{
+    body:'SalvarTriagemParcialSvo',errors:[400,401,403,404,409,413,415,500],errorSchema:'ErroOperacionalSvo',
+    notes:'Salva triagem parcial sem decisão ou ordem. Apenas AGUARDANDO_TRIAGEM.'}),
+  op('svo','post','/api/svo/solicitacoes/{id}/triagem','TriagemFinalSvo',['ATENDENTE_SVO'],{
+    body:'FinalizarTriagemSvo',status:200,errors:[400,401,403,404,409,413,415,500],errorSchema:'ErroOperacionalSvo',
+    notes:'Decisão SVO/IML transacional. SVO exige quantidadeCorpos de 1 a 4 e gera uma ordem; IML não gera ordem. Nova decisão após finalização: 409.'}),
   op('svo','patch','/api/svo/ordens-coleta/{id}/despachar','OrdemDespachada',['ATENDENTE_SVO'],{body:'DespacharSvo',errors:[400,401,403,404,409,413,415,500],errorSchema:'ErroOperacionalSvo'}),
   op('veiculos','get','/api/veiculos','ListaVeiculos',consultaFrota,{notes:'Lista completa id DESC, sem paginação. Piloto validado em runtime.'}),
   op('veiculos','post','/api/veiculos','RespostaVeiculo',gestor,{body:'CriarVeiculo',errors:[400,401,403,409,413,415,500]}),

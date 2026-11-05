@@ -8,6 +8,8 @@ import {
   criarSolicitacaoController,
   listarSolicitacoesController,
   despacharOrdemController,
+  salvarTriagemParcialController,
+  finalizarTriagemController,
 } from './svo.controller.js';
 
 /** Preserva autenticação e despacho operacional do SVO. */
@@ -83,6 +85,21 @@ try {
   }
 
   
+const rotaTriagem = caminho.match(/^\/api\/svo\/solicitacoes\/([0-9]+)\/triagem$/);
+if (rotaTriagem && (request.method === 'PATCH' || request.method === 'POST')) {
+  const id = rotaTriagem[1];
+  if (!/^[1-9]\d{0,18}$/.test(id) || BigInt(id) > 9223372036854775807n) {
+    jsonCompartilhado(response, 400, { erro: 'ID da solicitação inválido.' });
+    return;
+  }
+  if (request.method === 'PATCH') {
+    await salvarTriagemParcialController(request, response, id, usuario.id);
+  } else {
+    await finalizarTriagemController(request, response, id, usuario.id);
+  }
+  return;
+}
+
 const rotaDespacho = caminho.match(
   /^\/api\/svo\/ordens-coleta\/([0-9]+)\/despachar$/
 );
