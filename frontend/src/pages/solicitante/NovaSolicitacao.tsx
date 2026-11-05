@@ -1,8 +1,10 @@
+
 import { useState } from 'react'
 import { navegar } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
 import { Icone } from '../../shared/components/Icone'
 import type { UsuarioSessao } from '../../shared/services/auth.service'
+import { criarSolicitacao } from '../../shared/services/solicitacoes.service'
 import { INSTITUICAO_DEMO } from '../../features/solicitacoes/dados'
 import { formatarData } from '../../features/solicitacoes/regras'
 import type { ValoresFormulario } from '../../features/solicitacoes/regras'
@@ -17,6 +19,7 @@ function instituicaoDaSessao(u: UsuarioSessao): string {
 
 export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
   const instituicao = instituicaoDaSessao(usuario)
+
   const vazio: ValoresFormulario = {
     instituicao,
     solicitante: usuario.nome ?? usuario.email ?? '',
@@ -29,8 +32,12 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
     observacao: '',
     documentos: '',
   }
+
   const [etapa, setEtapa] = useState<'formulario' | 'revisao' | 'enviada'>('formulario')
   const [valores, setValores] = useState<ValoresFormulario>(vazio)
+  const [salvando, setSalvando] = useState(false)
+  const [falha, setFalha] = useState('')
+  const [protocolo, setProtocolo] = useState('')
 
   const linhas: [string, string][] = [
     ['Instituição solicitante', valores.instituicao],
@@ -45,12 +52,54 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
     ['Documentos ou objetos', valores.documentos || '—'],
   ]
 
+  async function confirmarEnvio() {
+    if (salvando) return
+
+    setSalvando(true)
+    setFalha('')
+
+    try {
+      // Combina a data e o horário e converte para o formato ISO.
+      const dataHoraSaida = new Date(
+        `${valores.data}T${valores.horario}:00`,
+      )
+
+      if (Number.isNaN(dataHoraSaida.getTime())) {
+        throw new Error('A data ou o horário informado é inválido.')
+      }
+
+      // Envia somente os campos aceitos pelo contrato do backend.
+      const resposta = await criarSolicitacao({
+        origem: valores.origem.trim(),
+        destino: valores.destino.trim(),
+        finalidade: valores.finalidade.trim(),
+        dataHoraSaida: dataHoraSaida.toISOString(),
+        qtdPassageiros: Number(valores.passageiros),
+      })
+
+      // O protocolo vem da resposta real da API.
+      setProtocolo(resposta.codigoExibicao ?? resposta.codigo)
+      setEtapa('enviada')
+      window.scrollTo({ top: 0 })
+    } catch (erro) {
+      setFalha(
+        erro instanceof Error
+          ? erro.message
+          : 'Não foi possível enviar a solicitação. Tente novamente.',
+      )
+    } finally {
+      setSalvando(false)
+    }
+  }
+
   return (
     <div className="nova-sol">
       <div className="pagina__topo">
         <div>
           <h1 className="pagina__titulo">
-            {etapa === 'revisao' ? 'Revise sua solicitação' : 'Nova solicitação de transporte'}
+            {etapa === 'revisao'
+              ? 'Revise sua solicitação'
+              : 'Nova solicitação de transporte'}
           </h1>
           <p className="pagina__descricao">
             {etapa === 'revisao'
@@ -62,7 +111,6 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
 
       {etapa === 'formulario' && (
         <SolicitacaoForm
-          // a key recria o formulário com os valores atuais ao voltar da revisão
           key={JSON.stringify(valores)}
           modo="nova"
           valoresIniciais={valores}
@@ -70,6 +118,7 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
           aoCancelar={() => navegar(ROTAS.minhasSolicitacoes)}
           aoEnviar={(v) => {
             setValores(v)
+            setFalha('')
             setEtapa('revisao')
             window.scrollTo({ top: 0 })
           }}
@@ -84,6 +133,7 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
                 <Icone nome="solicitacoes" /> Resumo
               </h2>
             </div>
+
             <dl className="sol-cartao__corpo sol-grade nova-sol__resumo">
               {linhas.map(([rotulo, valor]) => (
                 <div key={rotulo}>
@@ -93,12 +143,36 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
               ))}
             </dl>
           </section>
+
+          {falha && (
+            <p role="alert" className="campo__erro">
+              {falha}
+            </p>
+          )}
+
+          {salvando && (
+            <p role="status">
+              Enviando solicitação, aguarde...
+            </p>
+          )}
+
           <div className="sol-acoes-form">
-            <button type="button" className="btn btn--secundario" onClick={() => setEtapa('formulario')}>
+            <button
+              type="button"
+              className="btn btn--secundario"
+              disabled={salvando}
+              onClick={() => setEtapa('formulario')}
+            >
               Voltar e corrigir
             </button>
-            <button type="button" className="btn btn--primario" onClick={() => setEtapa('enviada')}>
-              Confirmar envio
+
+            <button
+              type="button"
+              className="btn btn--primario"
+              disabled={salvando}
+              onClick={confirmarEnvio}
+            >
+              {salvando ? 'Enviando...' : 'Confirmar envio'}
             </button>
           </div>
         </>
@@ -106,20 +180,38 @@ export function NovaSolicitacao({ usuario }: { usuario: UsuarioSessao }) {
 
       {etapa === 'enviada' && (
         <div className="cartao vazio">
-          <strong>Solicitação conferida</strong>
-          <p>Demonstração: os dados não foram enviados. O envio será ativado na integração com o sistema.</p>
-          <div className="sol-acoes-form" style={{ justifyContent: 'center', marginTop: 16 }}>
+          <strong>Solicitação enviada com sucesso!</strong>
+
+          <p>
+            Sua solicitação foi registrada no sistema.
+          </p>
+
+          <p>
+            **Protocolo:** {protocolo}
+          </p>
+
+          <div
+            className="sol-acoes-form"
+            style={{ justifyContent: 'center', marginTop: 16 }}
+          >
             <button
               type="button"
               className="btn btn--secundario"
               onClick={() => {
                 setValores(vazio)
+                setProtocolo('')
+                setFalha('')
                 setEtapa('formulario')
               }}
             >
               Nova solicitação
             </button>
-            <button type="button" className="btn btn--primario" onClick={() => navegar(ROTAS.minhasSolicitacoes)}>
+
+            <button
+              type="button"
+              className="btn btn--primario"
+              onClick={() => navegar(ROTAS.minhasSolicitacoes)}
+            >
               Ver minhas solicitações
             </button>
           </div>
