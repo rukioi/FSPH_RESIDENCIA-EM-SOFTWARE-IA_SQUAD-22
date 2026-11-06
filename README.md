@@ -117,8 +117,9 @@ considerado armazenamento durável na Vercel.
 Login consulta public.usuario com bcrypt; JWT HS256/sub/exp, sessão atual sem cache
 e listas de autorização preservadas. Somente token usa sessionStorage. Cinco eventos
 existentes são gravados pela auditoria na transação do chamador; não é auditoria
-avançada. Dashboard/auditoria visuais usam demonstração ou indisponibilidade explícita;
-resumo SVO em memória identifica o recorte da sessão.
+avançada. A [Auditoria administrativa](./docs/api/auditoria.md) consulta os eventos
+paginados da API. O Dashboard de Gestão indica a indisponibilidade dos indicadores
+por período. O resumo SVO em memória identifica o recorte da sessão.
 
 A baseline reproduz grants amplos/RLS desligada: não constitui configuração segura
 para nova publicação. Data API/papel runtime remotos ainda exigem confirmação e
