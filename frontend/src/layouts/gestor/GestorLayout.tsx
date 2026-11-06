@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { navegar, useCaminho } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
 import { sair } from '../../shared/services/auth.service'
 import type { UsuarioSessao } from '../../shared/services/auth.service'
+import { Perfil } from '../../pages/gerente/Perfil'
 import './GestorLayout.css'
 
 const icones = {
@@ -66,6 +67,7 @@ function iniciais(nome: string): string {
 
 /* ---------- Layout ---------- */
 export function GestorLayout({ children, usuario: sessao }: { children: ReactNode; usuario: UsuarioSessao }) {
+  const perfilRef = useRef<HTMLDialogElement>(null)
   const nome = sessao.nome ?? sessao.email ?? 'Usuário'
   const usuario = {
     nome,
@@ -156,7 +158,7 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
               <span className="selo">{totalNotificacoes}</span>
             </button>
 
-            <button type="button" className="cabecalho__usuario">
+            <button type="button" className="cabecalho__usuario" aria-label="Meu perfil" onClick={() => perfilRef.current?.showModal()} disabled={!['ADM', 'GESTOR_FROTA'].includes(sessao.perfil)}>
               <span className="avatar">{usuario.iniciais}</span>
               <span className="cabecalho__usuario-texto">
                 <strong>{usuario.nome}</strong>
@@ -183,6 +185,10 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
 
         <main className="conteudo">{children}</main>
       </div>
+      <dialog ref={perfilRef} className="perfil-modal" aria-labelledby="perfil-titulo">
+        <Perfil usuario={sessao} />
+        <button type="button" className="perfil-modal__fechar" onClick={() => perfilRef.current?.close()}>Fechar</button>
+      </dialog>
     </div>
   )
 }

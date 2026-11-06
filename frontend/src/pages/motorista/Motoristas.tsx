@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { buscarMotoristas, cadastrarMotorista as salvarMotorista } from "../../shared/services/motoristas.service";
 import type { MotoristaDto, CriarMotoristaDto } from "../../shared/services/motoristas.service";
 import "./Motoristas.css";
+import '../../shared/styles/cartao-identidade.css';
 
 type HistoricoMotorista = {
   ticket?: string;
@@ -337,8 +338,9 @@ export function Motoristas() {
           <span aria-hidden="true">←</span> Motoristas
         </button>
 
-        <section className="motorista-detalhe-painel motorista-detalhe-perfil">
-          <header className="motorista-detalhe-perfil__cabecalho">
+        <section className="motorista-detalhe-painel motorista-detalhe-perfil cartao-identidade">
+          <header className="cartao-identidade__principal">
+            <span className="cartao-identidade__avatar" aria-hidden="true">{iniciais(motorista.nome)}</span>
             <div>
               <h1>{motorista.nome || "Motorista"}</h1>
               <p>{motorista.email || "E-mail não informado"}</p>
@@ -353,7 +355,7 @@ export function Motoristas() {
             </span>
           </header>
 
-          <div className="motorista-detalhe-campos">
+          <div className="motorista-detalhe-campos cartao-identidade__conteudo">
             <div>
               <span>CPF</span>
               <strong>{motorista.cpf || "Não informado"}</strong>
@@ -864,7 +866,7 @@ export function Motoristas() {
             );
 
             return (
-              <article className="motorista-card" key={chave}>
+              <article className={`motorista-card motorista-card--${classeStatus(motorista.status)}`} key={chave}>
                 <div className="motorista-card__topo">
                   <span className="motorista-avatar" aria-hidden="true">
                     {iniciais(motorista.nome)}
