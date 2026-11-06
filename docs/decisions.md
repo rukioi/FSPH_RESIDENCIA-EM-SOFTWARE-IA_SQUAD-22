@@ -130,6 +130,14 @@ A configuração TLS valida certificado/hostname por padrão; `DB_TLS=disable`
 inseguros da URL são recusados; sslmode seguro é normalizado para a política comum.
 O harness permite sem TLS somente o alvo isolado já verificado.
 
+Para simplificar `npm run dev` e o empacotamento serverless, a CA pública do
+Supabase passou a ser incorporada em `config/supabase-ca.ts`, aplicada somente a
+hosts `.pooler.supabase.com` e `.supabase.co`, junto às raízes padrão do Node.
+Isso dispensa arquivo `.crt`, `includeFiles` e configuração manual de
+`NODE_EXTRA_CA_CERTS`, preservando verificação de cadeia e hostname. Não há
+download no startup, nova dependência ou alteração de credenciais. A CA deve ser
+revisada quando o provedor a substituir e antes de sua expiração em abril de 2031.
+
 Não houve troca de framework, dependência nova ou mudança de regra operacional.
 As divergências preservadas ficam em [reorganization/deferred.md](./reorganization/deferred.md).
 

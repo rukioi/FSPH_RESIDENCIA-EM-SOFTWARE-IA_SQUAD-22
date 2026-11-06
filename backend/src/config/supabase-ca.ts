@@ -1,4 +1,9 @@
------BEGIN CERTIFICATE-----
+/**
+ * CA pública do Supabase, incorporada para dispensar arquivo externo e NODE_EXTRA_CA_CERTS.
+ * Fonte: https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt
+ * Válida até 26/04/2031; revisar quando o provedor substituir a CA.
+ */
+export const supabaseCa = `-----BEGIN CERTIFICATE-----
 MIIDxDCCAqygAwIBAgIUbLxMod62P2ktCiAkxnKJwtE9VPYwDQYJKoZIhvcNAQEL
 BQAwazELMAkGA1UEBhMCVVMxEDAOBgNVBAgMB0RlbHdhcmUxEzARBgNVBAcMCk5l
 dyBDYXN0bGUxFTATBgNVBAoMDFN1cGFiYXNlIEluYzEeMBwGA1UEAwwVU3VwYWJh
@@ -20,4 +25,4 @@ jB81TU/RG2rVerPDWP+1MMcNNy0491CTL5XQZ7JfDJJ9CCmXSdtTl4uUQnSuv/Qx
 Cea13BX2ZgJc7Au30vihLhub52De4P/4gonKsNHYdbWjg7OWKwNv/zitGDVDB9Y2
 CMTyZKG3XEu5Ghl1LEnI3QmEKsqaCLv12BnVjbkSeZsMnevJPs1Ye6TjjJwdik5P
 o/bKiIz+Fq8=
------END CERTIFICATE-----
+-----END CERTIFICATE-----`;

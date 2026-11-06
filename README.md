@@ -19,6 +19,16 @@ server.ts carrega a configuração da raiz antes de importar a aplicação. Não
 credenciais do PostgreSQL como login da aplicação. Assistentes não acessam arquivos
 de ambiente/credenciais existentes. Os testes usam somente fixtures explícitas.
 
+A conexão Supabase configura TLS automaticamente no backend. Basta `npm run dev`:
+não é necessário arquivo `.crt`, `NODE_EXTRA_CA_CERTS` ou comando adicional no
+PowerShell. A CA pública está incorporada ao código; certificado e hostname
+continuam verificados. Se uma configuração anterior definiu `NODE_EXTRA_CA_CERTS`
+com um caminho inexistente, remova essa variável do ambiente que inicia o Node.
+`JWT_SECRET` com menos de 32 bytes é recusado no login; use um segredo com pelo
+menos 32 bytes, diferente da senha do banco.
+Depois de alterar o `.env`, encerre o processo com Ctrl+C e execute `npm run dev`
+novamente para o backend carregar os novos valores.
+
 ## Organização atual
 
 | Caminho | Responsabilidade |
@@ -82,10 +92,10 @@ prefixo `VITE_` para segredos. Não copie credenciais para o repositório.
 
 Use Root Directory na raiz do repositório, preset Vite, Node 24.x, instalação
 `npm ci`, build `npm run build --workspace frontend` e saída `frontend/dist`.
-Overrides de produção só mudam após novo deploy. Configure também
-`NODE_EXTRA_CA_CERTS=/var/task/backend/src/database/certs/supabase-ca.crt`
-em Preview e Production. O certificado público do Supabase acompanha a função
-por `includeFiles`; a conexão mantém validação da cadeia e do hostname. A CA foi
+Overrides de produção só mudam após novo deploy. Não é necessário configurar
+`NODE_EXTRA_CA_CERTS` em Preview ou Production; remova a variável antiga caso
+exista. A CA pública do Supabase acompanha o código do backend, sem `includeFiles`
+nem caminho `/var/task`; a conexão mantém validação da cadeia e do hostname. A CA foi
 obtida do [download público do Supabase](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt)
 e expira em abril de 2031. Alterações de variáveis exigem novo deploy; trocar
 `JWT_SECRET` invalida as sessões assinadas com o segredo anterior.
