@@ -54,4 +54,93 @@
   border: 2px dashed var(--borda);
   border-radius: 16px;
   color: var(--texto-suave);
+}.dashboard-nota { color: var(--texto-suave); margin: 0 0 12px; }
+.dashboard-atualizar, .dashboard-filtros button { min-height: 40px; margin-bottom: 16px; padding: 0 14px; cursor: pointer; }
+.dashboard-filtros { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 16px; }
+.dashboard-filtros label { display: grid; gap: 4px; }
+.dashboard-filtros input { min-height: 40px; }
+.dashboard-filtros button { margin: 0; }
+.dashboard-filtros small { flex-basis: 100%; }
+.dashboard-lista { list-style: none; padding: 0; margin: 16px 0; }
+.dashboard-lista li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--borda); overflow-wrap: anywhere; }
+.dashboard-lista a { flex-shrink: 0; padding: 8px; }
+.painel-operacional h2 { font-size: 18px; }
+.painel-operacional p { color: var(--texto-suave); margin-top: 8px; }
+.dashboard-modulos > .painel-operacional { padding: 20px; min-width: 0; }
+.dashboard-modulos > .painel-operacional a { color: var(--azul-escuro); font-weight: 600; }
+
+/* Grade exclusiva do gestor: os widgets compartilhados mantêm seu contrato visual. */
+.gestor-dashboard { min-width: 0; }
+.gestor-dashboard .dashboard-modulos { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 20px; }
+.gestor-dashboard .gestor-painel { grid-column: span 2; padding: 22px; border-radius: 16px; box-shadow: none; }
+.gestor-dashboard .gestor-painel:nth-child(1),
+.gestor-dashboard .gestor-painel:nth-child(2) { grid-column: span 3; }
+.gestor-dashboard .gestor-painel:last-child { grid-column: 1 / -1; }
+.gestor-dashboard .gestor-painel h2 { margin: 0; font-size: 17px; line-height: 1.4; }
+.gestor-dashboard .gestor-painel p { font-size: 13px; line-height: 1.6; margin-bottom: 18px; }
+.gestor-dashboard .dashboard-lista { margin: 8px 0 18px; }
+.gestor-dashboard .dashboard-lista li { align-items: center; padding: 14px 0; font-size: 14px; line-height: 1.7; }
+.gestor-dashboard .dashboard-lista li:last-child { border-bottom: 0; }
+.gestor-dashboard a { text-decoration: none; }
+.gestor-dashboard a:hover { text-decoration: underline; }
+.gestor-dashboard .dashboard-lista a { border: 1px solid var(--borda); border-radius: 8px; background: #f8fafc; min-height: 40px; display: inline-flex; align-items: center; }
+.gestor-dashboard .card-kpi { border-radius: 16px; padding: 20px; justify-content: flex-start; min-width: 0; border-top: 3px solid #2866c7; }
+.gestor-dashboard .card-kpi:first-child { border-top-color: #c98200; }
+.gestor-dashboard .card-kpi:nth-child(3) { border-top-color: #21864b; }
+.gestor-dashboard .card-kpi a { color: var(--azul-escuro); font-size: 13px; font-weight: 700; margin-top: auto; padding-top: 16px; min-height: 40px; }
+.gestor-dashboard .card-kpi small { margin-bottom: 8px; overflow-wrap: anywhere; }
+.gestor-dashboard .dashboard-atualizar,
+.gestor-dashboard .dashboard-filtros button { border: 1px solid var(--borda); border-radius: 9px; background: white; color: var(--azul-escuro); font-weight: 700; min-height: 42px; }
+.gestor-dashboard button:disabled { opacity: .6; cursor: wait; }
+.gestor-dashboard .dashboard-filtros { padding: 18px; background: white; border: 1px solid var(--borda); border-radius: 12px; }
+.gestor-dashboard .dashboard-filtros input { border: 1px solid var(--borda); border-radius: 8px; padding: 8px; color: var(--texto); background: white; }
+.gestor-dashboard .dashboard-filtros label { font-size: 13px; font-weight: 600; }
+.gestor-dashboard .dashboard-nota { font-size: 13px; line-height: 1.6; }
+.gestor-dashboard :focus-visible { outline: 3px solid #2866c7; outline-offset: 3px; }
+.gestor-dashboard .periodo__botao { min-height: 40px; }
+.gestor-dashboard .periodo__botao--ativo:hover,
+.gestor-dashboard .periodo__botao--ativo:focus { color: #fff; }
+.gestor-carregando { padding: 16px; background: #eff6ff; border-radius: 10px; color: #245ea8; }
+.gestor-resultados--carregando { opacity: .55; pointer-events: none; }
+.gestor-sincronizacao { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; font-size: 12px; color: #31634d; }
+.gestor-sincronizacao > span { width: 7px; height: 7px; border-radius: 50%; background: #21864b; }
+.gestor-sincronizacao small { color: var(--texto-suave); margin-left: auto; }
+.gestor-dashboard .gestor-resultados--carregando { opacity: 1; pointer-events: auto; }
+.gestor-dashboard .gestor-painel { position: relative; }
+.gestor-dashboard .gestor-painel > h2 { padding-bottom: 12px; border-bottom: 1px solid #edf1f5; }
+.gestor-dashboard .gestor-painel > a { display: inline-flex; align-items: center; min-height: 40px; font-size: 13px; }
+.gestor-dashboard .dashboard-lista li > span { min-width: 0; }
+.gestor-dashboard .dashboard-lista li > span::first-line { font-weight: 600; }
+.gestor-dashboard .card-kpi strong { font-variant-numeric: tabular-nums; }
+.gestor-distribuicao { display: flex; align-items: center; gap: 28px; padding: 20px 0; }
+.gestor-donut { width: 154px; height: 154px; flex: 0 0 154px; border-radius: 50%; display: grid; place-items: center; }
+.gestor-donut > div { width: 112px; height: 112px; background: white; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.gestor-donut strong { font-size: 32px; }
+.gestor-donut small { color: var(--texto-suave); }
+.gestor-legenda { list-style: none; padding: 0; margin: 0; flex: 1; min-width: 0; }
+.gestor-legenda li { padding: 9px 0; font-size: 13px; }
+.gestor-legenda li > div:first-child { display: flex; align-items: center; gap: 8px; }
+.gestor-legenda li strong { margin-left: auto; }
+.gestor-legenda li span:nth-child(2) { text-transform: capitalize; overflow-wrap: anywhere; }
+.gestor-ponto { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.gestor-barra { height: 6px; background: #edf1f5; border-radius: 10px; margin-top: 8px; overflow: hidden; }
+.gestor-barra span { display: block; height: 100%; border-radius: inherit; }
+.gestor-distribuicao--frota { padding-top: 0; }
+@media (max-width: 1200px) {
+  .gestor-dashboard .dashboard-modulos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gestor-dashboard .gestor-painel,
+  .gestor-dashboard .gestor-painel:nth-child(1),
+  .gestor-dashboard .gestor-painel:nth-child(2) { grid-column: span 1; }
+  .gestor-distribuicao { flex-direction: column; align-items: stretch; gap: 12px; }
+  .gestor-donut { flex-basis: auto; margin: auto; }
+}
+@media (max-width: 640px) {
+  .gestor-dashboard .dashboard-modulos { grid-template-columns: minmax(0, 1fr); }
+  .gestor-dashboard .gestor-painel { padding: 18px; }
+  .gestor-dashboard .cards-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .gestor-dashboard .card-kpi { padding: 14px; }
+  .gestor-dashboard .card-kpi span { font-size: 13px; }
+  .gestor-dashboard .card-kpi strong { font-size: 30px; }
+  .gestor-dashboard .periodo { width: 100%; }
+  .gestor-dashboard .periodo__botao { padding: 0 10px; flex: 1; font-size: 12px; }
 }

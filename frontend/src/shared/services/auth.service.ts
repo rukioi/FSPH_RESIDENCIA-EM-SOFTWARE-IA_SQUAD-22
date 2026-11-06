@@ -4,6 +4,7 @@ import type { ApiSchemas } from '../api/generated/schema'
 import { ApiError } from '../api/errors'
 import { requestApi } from '../api/client'
 import { authSchemas } from '../../../../backend/src/modules/auth/auth.schemas'
+import { notifyDataChanged } from '../api/dataChanges'
 
 export type Credenciais = ApiSchemas['Credenciais']
 
@@ -124,4 +125,5 @@ export function obterToken(): string | null {
 
 export function sair(): void {
   sessionStorage.removeItem(TOKEN_CHAVE)
+  notifyDataChanged()
 }

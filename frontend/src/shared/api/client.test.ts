@@ -1,9 +1,21 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { requestApi } from './client';
 import { ApiError } from './errors';
+import { dataRevision } from './dataChanges';
 
 vi.mock('../services/auth.service', () => ({ fetchAutenticada: (...args: unknown[]) => fetch(...args as Parameters<typeof fetch>) }));
 afterEach(() => vi.unstubAllGlobals());
+test('invalida dados apenas depois de uma escrita bem-sucedida e validada', async () => {
+  const before = dataRevision();
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => new Response('{}')));
+  await requestApi('/api/veiculos');
+  expect(dataRevision()).toBe(before);
+  await requestApi('/api/veiculos', { method: 'POST' });
+  expect(dataRevision()).toBe(before + 1);
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 409 })));
+  await expect(requestApi('/api/veiculos', { method: 'PATCH' })).rejects.toThrow();
+  expect(dataRevision()).toBe(before + 1);
+});
 test('rejeita JSON de sucesso inválido sem apresentar lista vazia como sucesso', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{', { headers: { 'X-Request-Id': 'fixture-id' } })));
   await expect(requestApi('/api/veiculos')).rejects.toMatchObject({ code: 'RESPOSTA_INVALIDA', requestId: 'fixture-id' });
