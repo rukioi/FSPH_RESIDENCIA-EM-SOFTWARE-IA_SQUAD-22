@@ -1,3 +1,4 @@
+import { IconeGestor } from '../../shared/components/IconeGestor'
 import { useRemoteData } from '../../shared/api/useRemoteData';
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
@@ -592,7 +593,7 @@ export function Veiculos() {
           <div className="veiculos-indicador__topo">
             <span>Total</span>
             <span className="veiculos-indicador__icone veiculos-indicador__icone--azul">
-              ▣
+              <IconeGestor nome="veiculos" tamanho={18} />
             </span>
           </div>
           <strong>{veiculos.length}</strong>
@@ -603,7 +604,7 @@ export function Veiculos() {
           <div className="veiculos-indicador__topo">
             <span>Disponíveis</span>
             <span className="veiculos-indicador__icone veiculos-indicador__icone--verde">
-              ✓
+              <IconeGestor nome="confirmado" tamanho={18} />
             </span>
           </div>
           <strong>{totalDisponiveis}</strong>
@@ -614,7 +615,7 @@ export function Veiculos() {
           <div className="veiculos-indicador__topo">
             <span>Em viagem</span>
             <span className="veiculos-indicador__icone veiculos-indicador__icone--azul">
-              ⇄
+              <IconeGestor nome="rota" tamanho={18} />
             </span>
           </div>
           <strong>{totalEmViagem}</strong>
@@ -625,7 +626,7 @@ export function Veiculos() {
           <div className="veiculos-indicador__topo">
             <span>Em manutenção</span>
             <span className="veiculos-indicador__icone veiculos-indicador__icone--amarelo">
-              🔧
+              <IconeGestor nome="manutencao" tamanho={18} />
             </span>
           </div>
           <strong>{totalEmManutencao}</strong>
@@ -638,7 +639,7 @@ export function Veiculos() {
           <span className="veiculos-somente-leitor">
             Buscar por placa ou modelo
           </span>
-          <span aria-hidden="true">⌕</span>
+          <span aria-hidden="true"><IconeGestor nome="busca" tamanho={18} /></span>
           <input
             type="search"
             value={busca}
@@ -724,19 +725,7 @@ export function Veiculos() {
               <article className="veiculo-card" key={chave}>
                 <div className="veiculo-card__topo">
                   <span className="veiculo-card__icone" aria-hidden="true">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M5 11.5 6.5 7a2 2 0 0 1 1.9-1.4h7.2A2 2 0 0 1 17.5 7l1.5 4.5 1.2.4a1.2 1.2 0 0 1 .8 1.1V17h-2.2" />
-                      <path d="M5.2 17H3v-4a1.2 1.2 0 0 1 .8-1.1l1.2-.4M5 11.5h14M8 17h8" />
-                      <circle cx="6.5" cy="16.5" r="1.8" />
-                      <circle cx="17.5" cy="16.5" r="1.8" />
-                    </svg>
+                    <IconeGestor nome="veiculos" tamanho={36} />
                   </span>
 
                   <span
@@ -811,7 +800,7 @@ export function Veiculos() {
                       }
                     >
                       {veiculo.documentacao_regular
-                        ? "✓ Documentação regular"
+                        ? " Documentação regular"
                         : "⚠ Documentação pendente"}
                     </p>
                   )}

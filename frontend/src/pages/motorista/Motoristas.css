@@ -763,6 +763,15 @@
   box-shadow: 0 2px 5px rgb(16 24 40 / 8%);
 }
 
+.motorista-detalhe-painel.cartao-identidade {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.8fr);
+  gap: 24px;
+  padding: 20px;
+  border-radius: 16px;
+}
+.motorista-detalhe-perfil .motorista-detalhe-campos { padding: 4px 0; }
+
 .motorista-detalhe-perfil__cabecalho,
 .motorista-detalhe-secao__cabecalho {
   display: flex;
@@ -922,6 +931,7 @@
 }
 
 @media (max-width: 700px) {
+  .motorista-detalhe-painel.cartao-identidade { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .motorista-detalhe-campos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
@@ -1006,3 +1016,23 @@
     flex-direction: column;
   }
 }
+
+/* Cores de estado acompanham os rótulos, sem depender só da cor. */
+.motoristas-indicador { border-radius: 20px; padding: 20px; box-shadow: 0 10px 15px -3px rgb(16 24 40 / 6%), 0 4px 6px -2px rgb(16 24 40 / 3%); border-top: 3px solid #2165c5; }
+.motoristas-indicador:nth-child(2) { border-top-color: #168242; background: linear-gradient(135deg, #fff 65%, #effbf3); }
+.motoristas-indicador:nth-child(4) { border-top-color: #b46a00; background: linear-gradient(135deg, #fff 65%, #fff7e9); }
+.motoristas-indicador > strong { margin-top: 14px; font-size: 32px; }
+.motoristas-indicador:nth-child(2) > strong { color: #168242; }
+.motoristas-indicador:nth-child(4) > strong { color: #965900; }
+.motoristas-icone { width: 32px; height: 32px; border-radius: 50%; }
+.motorista-card { --motorista-cor: #2165c5; --motorista-suave: #e4efff; border-radius: 20px; border-top: 4px solid var(--motorista-cor); padding: 20px; box-shadow: 0 10px 15px -3px rgb(16 24 40 / 6%), 0 4px 6px -2px rgb(16 24 40 / 3%); }
+.motorista-card--disponivel { --motorista-cor: #168242; --motorista-suave: #dcf6e5; }
+.motorista-card--afastado, .motorista-card--indisponivel { --motorista-cor: #b4232c; --motorista-suave: #fee7e7; }
+.motorista-card--folga { --motorista-cor: #8c5b12; --motorista-suave: #fff0d5; }
+.motorista-card .motorista-avatar { width: 52px; height: 52px; flex-basis: 52px; background: var(--motorista-suave); color: var(--motorista-cor); }
+.motorista-card .motorista-status { border-radius: 999px; padding: 6px 10px; }
+.motorista-card__acoes { padding-top: 16px; gap: 12px; }
+.motorista-card__acoes .motorista-detalhes-botao { min-height: 44px; justify-content: center; padding: 10px 14px; border-radius: 12px; background: var(--azul-medio, #0f4585); color: #fff; font-weight: 700; }
+.motorista-card__acoes .motorista-detalhes-botao:hover { background: var(--azul-escuro, #0a2f5e); text-decoration: none; }
+.motoristas-botao-cadastrar { min-height: 44px; border-radius: 12px; }
+.motorista-voltar { min-height: 44px; }
