@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: { include: [
     'frontend/src/shared/services/dashboard-cache.test.ts',
+    'frontend/src/shared/services/dashboard.retry.test.ts',
     'frontend/src/shared/api/client.test.ts',
   ] },
 });

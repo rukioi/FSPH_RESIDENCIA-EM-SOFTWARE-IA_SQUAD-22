@@ -27,13 +27,28 @@ Detalhes técnicos não são apresentados como mensagens na página.
 ## Verificações locais
 
 - `npm run lint`, `npm run typecheck` e `npm run build`: passaram.
-- `npx vitest run -c vitest.dashboard.config.ts`: 23 testes passaram. Cobrem cache,
+- `npx vitest run -c vitest.dashboard.config.ts`: 26 testes passaram. Cobrem cache,
   expiração, sessão, invalidação, resposta antiga e transporte HTTP.
-- `npx playwright test -c playwright.dashboard.config.ts`: três testes passaram,
+- `npx playwright test -c playwright.dashboard.config.ts`: quatro testes passaram,
   um por largura. Conferem navegação, filtro, atualização automática, validação de
   intervalo, foco e ausência de rolagem horizontal. Capturas em `test-results/dashboard/`.
 - Capturas usam fixtures explícitas da API no Playwright, sem dados reais.
   Não constituem prova de integração com PostgreSQL.
+
+## Recuperação de falhas
+
+Leituras com erro de rede, timeout HTTP ou status 500/502/503/504 recebem duas
+novas tentativas silenciosas, após 1 e 3 segundos. Cancelamento interrompe também
+as esperas. Autenticação, autorização, entrada inválida e resposta incompatível
+não são repetidas. Após falha definitiva, a tela mantém o conteúdo anterior e
+exibe um aviso discreto com “Recarregar”. Foco/visibilidade simultâneos são
+agrupados para reduzir consultas duplicadas; polling não substitui consulta ativa.
+Isso trata a experiência diante de falhas transitórias, sem afirmar correção da
+causa de erros 500 do servidor, que exige diagnóstico pelos logs correlacionados.
+
+Os cenários antigos de bootstrap foram atualizados para validar dados reais no
+dashboard, em vez da antiga demonstração. O teste de redirecionamento com token
+fictício isola também os GETs operacionais, evitando 401 fora do cenário da guarda.
 - Suíte completa/banco local: bloqueada pelo harness, que recusou instância/volume
   preexistente sem comprovante de isolamento. Não houve remoção ou adoção do banco.
 - Não houve alteração de contrato, esquema, migrations ou escrita remota no banco.

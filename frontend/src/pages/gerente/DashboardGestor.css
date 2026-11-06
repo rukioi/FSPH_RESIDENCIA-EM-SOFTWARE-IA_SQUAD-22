@@ -112,6 +112,8 @@
 .gestor-dashboard .dashboard-lista li > span { min-width: 0; }
 .gestor-dashboard .dashboard-lista li > span::first-line { font-weight: 600; }
 .gestor-dashboard .card-kpi strong { font-variant-numeric: tabular-nums; }
+.gestor-aviso { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 14px; margin: 0 0 16px; border: 1px solid var(--borda); border-radius: 10px; background: #f8fafc; color: var(--texto-suave); font-size: 13px; line-height: 1.5; }
+.gestor-aviso button { min-height: 40px; padding: 0 10px; margin-left: auto; background: transparent; border: 0; color: var(--azul-escuro); font-weight: 600; cursor: pointer; }
 .gestor-distribuicao { display: flex; align-items: center; gap: 28px; padding: 20px 0; }
 .gestor-donut { width: 154px; height: 154px; flex: 0 0 154px; border-radius: 50%; display: grid; place-items: center; }
 .gestor-donut > div { width: 112px; height: 112px; background: white; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }

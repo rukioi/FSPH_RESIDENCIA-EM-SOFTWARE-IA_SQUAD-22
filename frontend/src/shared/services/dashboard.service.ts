@@ -3,6 +3,7 @@ import { executeApi } from '../api/client';
 import { parseResponse } from '../api/validation';
 import { obterToken } from './auth.service';
 import { dataRevision, onDataChanged } from '../api/dataChanges';
+import { consultarDashboardComRetry } from './dashboard.retry';
 
 const cache = new Map<string, { value: unknown; expires: number }>();
 let session: string | null = null;
@@ -15,7 +16,7 @@ async function cached<T>(key: string, signal: AbortSignal, load: () => Promise<T
   const hit = cache.get(key);
   if (token && hit && hit.expires > Date.now()) return hit.value as T;
   const revision = dataRevision();
-  const value = await load();
+  const value = await consultarDashboardComRetry(load, signal);
   signal.throwIfAborted();
   if (revision !== dataRevision() || token !== obterToken()) throw new DOMException('Consulta substituída.', 'AbortError');
   if (cache.size >= 12) cache.clear();
