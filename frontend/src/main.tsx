@@ -1,8 +1,36 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { App } from './app/App';
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { telaPreviewSvo } from './features/svo/preview'
+import './shared/styles/tema.css'
 
-const root = document.getElementById('root');
-if (!root) throw new Error('Elemento raiz não encontrado.');
+const elementoRaiz = document.getElementById('root')
 
-createRoot(root).render(<StrictMode><App /></StrictMode>);
+if (!elementoRaiz) {
+  throw new Error('Elemento raiz não encontrado.')
+}
+
+const reactRoot = createRoot(elementoRaiz)
+
+async function iniciar() {
+  if (import.meta.env.DEV && telaPreviewSvo(window.location.pathname)) {
+    const { PreviewSvo } = await import('./features/svo/PreviewSvo')
+
+    reactRoot.render(
+      <StrictMode>
+        <PreviewSvo />
+      </StrictMode>,
+    )
+
+    return
+  }
+
+  const { App } = await import('./app/App')
+
+  reactRoot.render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+}
+
+void iniciar()

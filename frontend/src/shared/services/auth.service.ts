@@ -37,8 +37,10 @@ export function destinoDoPerfil(perfil: string): string {
       return ROTAS.dashboard
     case 'GESTOR_FROTA':
       return ROTAS.dashboardGestor
+    case 'MOTORISTA':
+      return ROTAS.svoMinhasOrdens
     case 'ATENDENTE_SVO':
-      return '/svo'
+      return ROTAS.svoDashboard
     default:
       throw new Error('Este perfil não possui uma página inicial disponível.')
   }
