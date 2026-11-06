@@ -1,4 +1,4 @@
-import { ROTAS } from '../../app/routes/rotas'
+import { ROTAS, lerRotaSolicitacao } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
   [ROTAS.dashboard]: ['ADM'],
@@ -14,6 +14,11 @@ const perfisPorRota: Record<string, string[]> = {
   '/svo': ['ATENDENTE_SVO'],
 }
 
+/** Autoriza as telas conhecidas e os detalhes e edição de solicitações do Gestor. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
+  const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
+  if (solicitacao && /^[0-9]+$/.test(solicitacao.id)) {
+    return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil)
+  }
   return perfisPorRota[caminho]?.includes(perfil) ?? false
 }
