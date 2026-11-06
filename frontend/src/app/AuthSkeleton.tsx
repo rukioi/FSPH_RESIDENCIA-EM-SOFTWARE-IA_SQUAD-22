@@ -7,7 +7,9 @@ function Bloco({ classe = '' }: { classe?: string }) {
 
 /** Reserva a estrutura da rota sem montar páginas, ações ou dados antes da autorização. */
 export function AuthSkeleton({ caminho }: { caminho: string }) {
-  const dashboard = caminho === ROTAS.dashboard || caminho === ROTAS.dashboardGestor || caminho === '/svo'
+  const dashboard = caminho === ROTAS.dashboard ||
+    caminho === ROTAS.dashboardGestor ||
+    caminho.startsWith('/svo')
   const indicadores = dashboard || caminho === ROTAS.auditoria
 
   return (
