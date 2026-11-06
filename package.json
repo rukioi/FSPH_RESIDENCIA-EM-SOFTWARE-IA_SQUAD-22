@@ -11,7 +11,7 @@
     "npm": ">=10"
   },
   "scripts": {
-    "dev": "concurrently --kill-others --names backend,frontend \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
+    "dev": "node -e \"process.env.NODE_EXTRA_CA_CERTS=require('path').resolve('backend/src/database/certs/supabase-ca.crt'); const c=require('concurrently').default; c([{command:'npm run dev --workspace backend',name:'backend'},{command:'npm run dev --workspace frontend',name:'frontend'}],{killOthersOn:['failure','success']}).result.catch(()=>process.exitCode=1)\"",
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspaces && tsc --noEmit -p backend/tests/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json",
     "test": "vitest run",
