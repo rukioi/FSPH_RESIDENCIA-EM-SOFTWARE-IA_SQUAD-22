@@ -48,25 +48,37 @@ for (const width of [390, 768, 1280]) {
   });
 }
 
-test('skeleton dá lugar à página somente após confirmar a sessão e reaparece ao navegar', async ({ page }) => {
-  await page.addInitScript(() => sessionStorage.setItem('token', 'fixture-skeleton-token'));
-  let liberar: (() => void) | undefined;
-  await page.route('**/api/auth/sessao', async route => {
-    await new Promise<void>(resolve => { liberar = resolve; });
-    await route.fulfill({ json: { data: usuario } });
+test('skeleton dá lugar à página somente após confirmar a sessão e reaparece ao navegar', async ({ page, request }) => {
+  await expect.poll(async () => (await request.get('/api/auth/sessao')).status(), { timeout: 20_000 }).toBe(401);
+  const login = await request.post('/api/auth/login', {
+    data: { email: 't1-adm@example.invalid', senha: 'T1-fixture-2026!' },
   });
-  await page.goto('/admin/auditoria');
+  expect(login.status()).toBe(200);
+  await page.goto('/login');
+  await page.evaluate(token => sessionStorage.setItem('token', token), (await login.json()).token);
+
+  // Controla apenas o momento da consulta. A sessão e os dados da página vêm da API.
+  let sessao = Promise.withResolvers<void>();
+  await page.route('**/api/auth/sessao', async route => {
+    await sessao.promise;
+    await route.continue();
+  });
+  await Promise.all([
+    page.waitForRequest('**/api/auth/sessao'),
+    page.goto('/admin/auditoria'),
+  ]);
   await expect(page.getByRole('status', { name: 'Carregando página' })).toBeVisible();
-  await expect.poll(() => Boolean(liberar)).toBe(true);
-  liberar?.();
+  sessao.resolve();
   await expect(page.getByRole('heading', { name: 'Auditoria', exact: true })).toBeVisible();
   await expect(page.getByRole('status', { name: 'Carregando página' })).toHaveCount(0);
-  liberar = undefined;
-  await page.getByRole('link', { name: 'Configurações' }).click();
+  sessao = Promise.withResolvers<void>();
+  await Promise.all([
+    page.waitForRequest('**/api/auth/sessao'),
+    page.getByRole('link', { name: 'Configurações' }).click(),
+  ]);
   await expect(page.getByRole('status', { name: 'Carregando página' })).toBeVisible();
   await expect(page.getByRole('heading')).toHaveCount(0);
-  await expect.poll(() => Boolean(liberar)).toBe(true);
-  liberar?.();
+  sessao.resolve();
   await expect(page.getByRole('heading', { name: 'Configurações', exact: true })).toBeVisible();
 });
 

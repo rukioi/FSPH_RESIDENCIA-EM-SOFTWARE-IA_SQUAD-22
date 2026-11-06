@@ -57,7 +57,7 @@ Conserva array completo (sem limite), nomes de campos e serialização antigos:
 Os campos são explícitos; não há mais SELECT l.*. Array vazio: `[]`.
 O email permanece somente no adaptador legado protegido para evitar remoção
 silenciosa de campo. Novos consumidores devem usar paginação. A #32 documenta
-os dois formatos no contrato gerado; a UI permanece demonstrativa na #30.
+os dois formatos no contrato gerado. A tela administrativa atual usa o formato paginado.
 
 ## 400 — Paginação inválida
 
@@ -141,10 +141,9 @@ Sem eventos novos de login/negação/despacho, filtros de domínio, busca avanç
 dashboard, relatórios, trilha imutável completa, retenção automática, monitoramento
 ou garantia 24x7. Não altera FKs, schema, permissões ou requisitos operacionais.
 
-## Consumo visual — #30
+## Consumo pela tela administrativa
 
-A tela existente permanece identificada como **demonstração**, com dados
-ilustrativos e filtros locais sobre essas fixtures. Não atribui a registros reais
-perfil, resultado, módulo ou tipo de evento que o DTO mínimo não fornece. A adoção
-da consulta paginada em uma visualização apropriada fica adiada; o endpoint atual,
-seus formatos, acesso ADM e histórico persistido foram preservados.
+Ao abrir `/admin/auditoria`, a tela consulta a primeira página com `page=1&limit=20`
+usando a sessão ADM. A tabela mostra data e hora, usuário e descrição de cada
+atividade retornada. O total de eventos vem de `meta.total`. Busca, período e
+usuário filtram apenas a página carregada.

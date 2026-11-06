@@ -87,7 +87,7 @@ test('o proxy de desenvolvimento alcança o backend', async ({ request }) => {
 });
 
 for(const width of [390,768,1280]) {
-  test(`demonstrações e indisponibilidade explícitas em ${width}px`,async({page},info)=>{
+  test(`auditoria real e estados dos dashboards em ${width}px`,async({page},info)=>{
     await page.setViewportSize({width,height:900});
     await page.goto('/login'); await page.evaluate(t=>sessionStorage.setItem('token',t),admToken);
     let kpis=0;page.on('request',req=>{if(req.url().includes('/api/dashboard/kpis'))kpis++;});
@@ -98,8 +98,13 @@ for(const width of [390,768,1280]) {
     expect(kpis).toBe(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`dashboard-${width}.png`),fullPage:true});
-    await page.goto('/admin/auditoria');
-    await expect(page.locator('.pagina__descricao')).toContainText('Demonstração');
+    const [consulta] = await Promise.all([
+      page.waitForResponse('**/api/admin/auditoria/logs?page=1&limit=20'),
+      page.goto('/admin/auditoria'),
+    ]);
+    expect(consulta.status()).toBe(200);
+    const eventos = page.getByRole('region', { name: 'Eventos de auditoria' });
+    await expect(eventos.getByRole('cell', { name: `Criou o usuário ID ${svoId}`, exact: true })).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`auditoria-${width}.png`),fullPage:true});
     await page.evaluate(t=>sessionStorage.setItem('token',t),svoToken);
