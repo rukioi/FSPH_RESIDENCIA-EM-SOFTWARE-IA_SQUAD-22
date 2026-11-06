@@ -1,6 +1,24 @@
 import { expect, test } from '@playwright/test'
 
 for (const width of [390, 768, 1280]) {
+  test(`icones da frota em ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 900 })
+    await page.addInitScript(() => sessionStorage.setItem('token', 'fixture-perfil'))
+    await page.route('**/api/auth/sessao', route => route.fulfill({ json: { data: {
+      id: '42', nome: 'Gestora Exemplo', email: 'gestora@example.invalid', perfil: 'GESTOR_FROTA',
+    } } }))
+    await page.route('**/api/veiculos', route => route.fulfill({ json: { data: [{
+      id: '20', placa: 'ABC1D23', marca: 'Marca exemplo', modelo: 'Veiculo de teste', ano: 2026,
+      tipo: 'PASSEIO', status: 'DISPONIVEL', capacidade_obitos: null, quilometragem_atual: 1500,
+      is_svo: false, criado_em: null, capacidade_passageiros: 5, vinculo: 'PROPRIO', fornecedor_locacao: null,
+    }] } }))
+    await page.goto('/gestor/veiculos')
+    await expect(page.locator('.veiculo-card')).toBeVisible()
+    await expect(page.locator('.veiculo-card__icone svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: info.outputPath(`veiculos-icones-${width}.png`), fullPage: true })
+  })
+
   test(`gestor acessa o próprio perfil em ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 900 })
     await page.addInitScript(() => sessionStorage.setItem('token', 'fixture-perfil'))

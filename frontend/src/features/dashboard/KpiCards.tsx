@@ -1,3 +1,4 @@
+import { IconeGestor } from '../../shared/components/IconeGestor'
 import './KpiCards.css'
 import type { DashboardKpis } from '../../shared/types/dashboard'
 
@@ -16,7 +17,7 @@ export function KpiCards({ kpis }: KpiCardsProps = {}) {
             className="card-kpi__icone card-kpi__icone--amarelo"
             aria-hidden="true"
           >
-            ⏳
+            <IconeGestor nome="relogio" tamanho={18} />
           </span>
         </div>
 
@@ -31,7 +32,7 @@ export function KpiCards({ kpis }: KpiCardsProps = {}) {
             className="card-kpi__icone card-kpi__icone--azul"
             aria-hidden="true"
           >
-            ↔
+            <IconeGestor nome="rota" tamanho={18} />
           </span>
         </div>
 
@@ -46,7 +47,7 @@ export function KpiCards({ kpis }: KpiCardsProps = {}) {
             className="card-kpi__icone card-kpi__icone--verde"
             aria-hidden="true"
           >
-            ▣
+            <IconeGestor nome="veiculos" tamanho={18} />
           </span>
         </div>
 
@@ -61,7 +62,7 @@ export function KpiCards({ kpis }: KpiCardsProps = {}) {
             className="card-kpi__icone card-kpi__icone--verde"
             aria-hidden="true"
           >
-            ♙
+            <IconeGestor nome="motoristas" tamanho={18} />
           </span>
         </div>
 

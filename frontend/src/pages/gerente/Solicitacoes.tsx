@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { navegar } from '../../app/routes/router'
 import { ROTAS, rotaSolicitacao } from '../../app/routes/rotas'
-import { Icone } from '../../shared/components/Icone'
+import { IconeGestor as Icone } from '../../shared/components/IconeGestor'
 import { Paginacao, usePaginacao } from '../../shared/components/Paginacao'
 import {
   listarSolicitacoes,

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { navegar } from '../../app/routes/router'
 import { ROTAS, rotaSolicitacao } from '../../app/routes/rotas'
-import { Icone } from '../../shared/components/Icone'
+import { IconeGestor as Icone } from '../../shared/components/IconeGestor'
 import { buscarAgenda } from '../../shared/services/solicitacoes.service'
 import { formatarData } from '../../features/solicitacoes/regras'
 import type { Solicitacao } from '../../features/solicitacoes/regras'
