@@ -105,13 +105,16 @@ for(const width of [390,768,1280]) {
     await page.screenshot({path:info.outputPath(`auditoria-${width}.png`),fullPage:true});
   });
 
-  test(`Dashboard SVO usa indicadores da API em ${width}px`, async ({ page, context }, info) => {
+  test(`Dashboard SVO usa indicadores da API em ${width}px`, async ({ page, context, request }, info) => {
     const cards = page.locator('.svo-dashboard__kpis strong');
     async function conferirIndicadores(navegar: () => Promise<unknown>) {
-      const [resposta] = await Promise.all([
-        page.waitForResponse(r => new URL(r.url()).pathname === '/api/svo/dashboard'),
+      const [consulta] = await Promise.all([
+        page.waitForEvent('requestfinished', req => new URL(req.url()).pathname === '/api/svo/dashboard'),
         navegar(),
       ]);
+      expect((await consulta.response())?.status()).toBe(200);
+      // A leitura independente usa o mesmo período e atendente, inclusive após reload.
+      const resposta = await request.get(consulta.url(), { headers: { Authorization: `Bearer ${svoToken}` } });
       expect(resposta.status()).toBe(200);
       const { indicadores } = svoDashboardSchemas.DashboardOperacionalSvo.parse(await resposta.json());
       await expect(cards).toHaveText([
@@ -122,6 +125,7 @@ for(const width of [390,768,1280]) {
 
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/login');
+    await expect(page.getByRole('heading', { name: 'Acesse sua conta' })).toBeVisible();
     await page.evaluate(token => sessionStorage.setItem('token', token), svoToken);
     await conferirIndicadores(() => page.goto('/svo'));
     await expect(page.getByRole('heading', { name: 'Dashboard SVO', exact: true })).toBeVisible();
