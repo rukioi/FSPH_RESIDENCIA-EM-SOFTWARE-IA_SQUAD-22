@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
-import type { ConnectionOptions } from 'node:tls';
+import { rootCertificates, type ConnectionOptions } from 'node:tls';
+import { supabaseCa } from './supabase-ca.js';
 
 /** Carrega somente o ambiente da raiz, antes dos imports da aplicação; testes usam ambiente explícito. */
 export function carregarAmbiente(): void {
@@ -8,7 +9,7 @@ export function carregarAmbiente(): void {
   }
 }
 
-/** Valida TLS sem incluir URL ou credenciais nos erros. Só loopback ou Compose local estritamente identificado permitem desativá-lo. */
+/** Valida TLS e confia automaticamente na CA pública do Supabase, sem arquivo externo ou credenciais nos erros. Só loopback ou Compose local estritamente identificado permitem desativá-lo. */
 export function configurarBanco(env: NodeJS.ProcessEnv = process.env): {
   url: string; ssl: false | ConnectionOptions;
 } {
@@ -33,7 +34,15 @@ export function configurarBanco(env: NodeJS.ProcessEnv = process.env): {
       url.searchParams.delete(key);
     }
   }
-  return { url: url.toString(), ssl: mode === 'disable' ? false : { rejectUnauthorized: true } };
+  const supabase = url.hostname.endsWith('.pooler.supabase.com')
+    || url.hostname.endsWith('.supabase.co');
+  return {
+    url: url.toString(),
+    ssl: mode === 'disable' ? false : {
+      rejectUnauthorized: true,
+      ...(supabase ? { ca: [...rootCertificates, supabaseCa] } : {}),
+    },
+  };
 }
 
 /** Inteiro positivo com limite superior, sem refletir valor recebido em mensagens. */

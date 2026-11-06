@@ -39,10 +39,14 @@ Referência: [segurança de APIs REST da OWASP](https://cheatsheetseries.owasp.o
 - TLS do PostgreSQL verifica certificado e hostname. Não há fallback com
   rejectUnauthorized:false. URL com sslmode inseguro é recusada. A exceção
   `DB_TLS=disable` exige host loopback (`localhost`, `127.0.0.1` ou `::1`).
-  Não use essa exceção para túnel que encaminhe a banco remoto. Certificado de CA
-  privada deve ser confiado pelo runtime (por exemplo NODE_EXTRA_CA_CERTS no
-  processo), mantendo verificação; a CA/certificação do ambiente publicado não foi
-  inspecionada nesta execução. Falhas de confiança exigem corrigir a cadeia.
+  Não use essa exceção para túnel que encaminhe a banco remoto. Para hosts em
+  `.pooler.supabase.com` e `.supabase.co`, a CA pública Supabase Root 2021 é
+  incorporada ao código e adicionada às raízes padrão do Node na conexão do banco.
+  Não há leitura de `.crt`, download no startup ou necessidade de configurar
+  `NODE_EXTRA_CA_CERTS`. A verificação de cadeia e hostname permanece ativa;
+  outros hosts mantêm a confiança padrão do runtime. A CA expira em abril de 2031
+  e deve ser revisada quando o provedor a substituir. O ambiente publicado não
+  foi inspecionado nesta execução. Falhas de confiança exigem corrigir a cadeia.
 - O logger usa allowlist: evento fechado, UUID de correlação gerado pelo servidor
   e códigos técnicos conhecidos. Não serializa message/detail/cause, corpo, URL,
   credenciais, objetos do driver ou dados pessoais. Avisos do pool não são
