@@ -32,4 +32,3 @@ for (const width of [390, 768, 1280]) {
     await page.screenshot({ path: info.outputPath(`dashboard-${width}.png`), fullPage: true })
   })
 }
-
