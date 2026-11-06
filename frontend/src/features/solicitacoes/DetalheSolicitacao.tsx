@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { navegar } from '../../app/routes/router'
 import { rotaSolicitacao } from '../../app/routes/rotas'
@@ -71,20 +71,12 @@ function converterStatus(status: string | null): Status {
     case 'CONCLUIDA':
       return 'Concluída'
     default:
-      return 'Pendente'
+      return 'Não informado'
   }
 }
 
 function converterData(dataHora: string) {
-  const data = new Date(dataHora)
-
-  return {
-    data: formatarData(dataHora.slice(0, 10)),
-    horario: data.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-  }
+  return { data: formatarData(dataHora.slice(0, 10)), horario: dataHora.slice(11, 16) }
 }
 
 function montarSolicitacao(dados: DadosDetalhe): Solicitacao {
@@ -114,15 +106,7 @@ function montarSolicitacao(dados: DadosDetalhe): Solicitacao {
 
 function formatarDataHistorico(dataHora: string | null) {
   if (!dataHora) return 'Data não informada'
-
-  const data = new Date(dataHora)
-
-  if (Number.isNaN(data.getTime())) return 'Data não informada'
-
-  return data.toLocaleString('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  })
+  return `${formatarData(dataHora.slice(0, 10))} ${dataHora.slice(11, 16)}`
 }
 
 /** Tela de detalhamento compartilhada por Gestor e Solicitante. */
@@ -135,39 +119,52 @@ export function DetalheSolicitacao({
 }: Props) {
   const [dados, setDados] = useState<DadosDetalhe | null>(null)
   const [historico, setHistorico] = useState<DadosHistorico['data']>([])
+  const [erroHistorico, setErroHistorico] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
   const [processando, setProcessando] = useState(false)
   const [aviso, setAviso] = useState('')
+  const geracao = useRef(0)
+  const [paginaHistorico, setPaginaHistorico] = useState(1)
+  const [totalHistorico, setTotalHistorico] = useState(0)
 
   const carregar = useCallback(async () => {
+    const consulta = ++geracao.current
     setCarregando(true)
     setErro('')
 
     try {
       const detalhe = await buscarDetalheSolicitacao(id)
+      if (consulta !== geracao.current) return
       setDados(detalhe)
 
       try {
-        const resultadoHistorico = await buscarHistoricoSolicitacao(id)
+        const resultadoHistorico = await buscarHistoricoSolicitacao(id, { page: paginaHistorico })
+        if (consulta !== geracao.current) return
         setHistorico(resultadoHistorico.data)
+        setTotalHistorico(resultadoHistorico.meta.total)
+        setErroHistorico(false)
       } catch {
+        if (consulta !== geracao.current) return
         // A falha no histórico não impede a exibição dos detalhes.
         setHistorico([])
+        setErroHistorico(true)
       }
     } catch (erroApi) {
+      if (consulta !== geracao.current) return
       setErro(
         erroApi instanceof Error
           ? erroApi.message
           : 'Não foi possível carregar os detalhes da solicitação.',
       )
     } finally {
-      setCarregando(false)
+      if (consulta === geracao.current) setCarregando(false)
     }
-  }, [id])
+  }, [id, paginaHistorico])
 
   useEffect(() => {
     void carregar()
+    return () => { geracao.current += 1 }
   }, [carregar])
 
   async function analisar(acao: 'aprovar' | 'rejeitar') {
@@ -189,6 +186,7 @@ export function DetalheSolicitacao({
     }
 
     setProcessando(true)
+    geracao.current += 1
     setErro('')
     setAviso('')
 
@@ -226,6 +224,7 @@ export function DetalheSolicitacao({
       <div className="cartao vazio">
         <strong>Não foi possível carregar a solicitação</strong>
         <p>{erro}</p>
+        <button type="button" className="btn btn--secundario" onClick={() => void carregar()}>Tentar novamente</button>
         <button
           type="button"
           className="btn btn--secundario"
@@ -256,7 +255,7 @@ export function DetalheSolicitacao({
   }
 
   const s = montarSolicitacao(dados)
-  const codigo = dados.codigoExibicao || dados.codigo
+  const codigo = (dados.codigoExibicao || dados.codigo).replace(/^#/, '')
   const mostrarAcoes = podeAnalisar(perfil, s.status) || podeEditar(perfil, s.status)
 
   const info: [string, ReactNode][] = [
@@ -269,12 +268,10 @@ export function DetalheSolicitacao({
     ['Destino', s.destino],
     [
       'Passageiros',
-      `${s.passageiros} ${s.passageiros === 1 ? 'passageiro' : 'passageiros'}`,
+      dados.qtdPassageiros === null ? 'Não informado' : `${s.passageiros} ${s.passageiros === 1 ? 'passageiro' : 'passageiros'}`,
     ],
     ['Finalidade', s.finalidade],
-    ['Documentos/objetos', 'Nenhum informado'],
     ['Status', <StatusSolicitacao key="st" status={s.status} />],
-    ['Data de criação', s.criadaEm],
   ]
 
   return (
@@ -368,7 +365,7 @@ export function DetalheSolicitacao({
         </div>
       </section>
 
-      <TimelineAcompanhamento solicitacao={s} />
+      {s.status !== 'Não informado' && <TimelineAcompanhamento solicitacao={s} />}
 
       <section className="cartao sol-cartao" aria-labelledby="historico-titulo">
         <div className="sol-cartao__topo">
@@ -376,7 +373,9 @@ export function DetalheSolicitacao({
         </div>
 
         <div className="sol-cartao__corpo">
-          {historico.length === 0 ? (
+          {erroHistorico ? (
+            <p role="alert">Histórico indisponível. <button type="button" onClick={() => void carregar()}>Tentar novamente</button></p>
+          ) : historico.length === 0 ? (
             <p>Nenhuma movimentação registrada.</p>
           ) : (
             <ul className="comentarios__lista">
@@ -391,14 +390,21 @@ export function DetalheSolicitacao({
               ))}
             </ul>
           )}
+          {totalHistorico > 20 && !erroHistorico && (
+            <div className="sol-acoes-form" aria-label="Paginação do histórico">
+              <button type="button" className="btn btn--secundario" disabled={paginaHistorico === 1} onClick={() => setPaginaHistorico(p => p - 1)}>Anterior</button>
+              <span>Página {paginaHistorico} de {Math.ceil(totalHistorico / 20)}</span>
+              <button type="button" className="btn btn--secundario" disabled={paginaHistorico * 20 >= totalHistorico} onClick={() => setPaginaHistorico(p => p + 1)}>Próxima</button>
+            </div>
+          )}
         </div>
       </section>
 
-      <ComentariosCard
+      {perfil !== 'gestor' && <ComentariosCard
         observacao=""
         comentariosIniciais={[] as Comentario[]}
         autor={autor}
-      />
+      />}
     </>
   )
 }

@@ -12,6 +12,7 @@ type Props = {
   /** Exibido como campo bloqueado no modo edição. */
   ticket?: string
   rotuloEnviar: string
+  desabilitado?: boolean
   aoEnviar: (valores: ValoresFormulario) => void
   aoCancelar: () => void
 }
@@ -23,7 +24,7 @@ type Campo = keyof ValoresFormulario
  * Ticket, solicitante e instituição são SEMPRE somente leitura:
  * vêm da sessão (nova) ou do registro original (edição).
  */
-export function SolicitacaoForm({ modo, valoresIniciais, ticket, rotuloEnviar, aoEnviar, aoCancelar }: Props) {
+export function SolicitacaoForm({ modo, valoresIniciais, ticket, rotuloEnviar, desabilitado = false, aoEnviar, aoCancelar }: Props) {
   const [valores, setValores] = useState<ValoresFormulario>(valoresIniciais)
   const [erros, setErros] = useState<ErrosFormulario>({})
 
@@ -36,6 +37,16 @@ export function SolicitacaoForm({ modo, valoresIniciais, ticket, rotuloEnviar, a
   function enviar(e: FormEvent) {
     e.preventDefault()
     const encontrados = validarSolicitacao(valores)
+    if (modo === 'editar') {
+      // Registros legados podem ter campos nulos; o PATCH preserva campos omitidos.
+      for (const chave of Object.keys(encontrados) as Campo[]) {
+        if (valores[chave] === valoresIniciais[chave]) delete encontrados[chave]
+      }
+      const quantidade = Number(valores.passageiros)
+      if (valores.passageiros && Number.isInteger(quantidade) && quantidade >= 1 && quantidade <= 2147483647) {
+        delete encontrados.passageiros
+      }
+    }
     setErros(encontrados)
     const primeiro = Object.keys(encontrados)[0]
     if (primeiro) {
@@ -135,7 +146,7 @@ export function SolicitacaoForm({ modo, valoresIniciais, ticket, rotuloEnviar, a
           {campo('horario', 'Horário', { tipo: 'time', obrigatorio: true })}
           {campo('origem', 'Origem', { obrigatorio: true, placeholder: 'Local de saída' })}
           {campo('destino', 'Destino', { obrigatorio: true, placeholder: 'Local de destino' })}
-          {campo('passageiros', 'Quantidade de passageiros', { tipo: 'number', obrigatorio: true, min: 1, max: 50, placeholder: 'Ex.: 2' })}
+          {campo('passageiros', 'Quantidade de passageiros', { tipo: 'number', obrigatorio: true, min: 1, max: modo === 'editar' ? 2147483647 : 50, placeholder: 'Ex.: 2' })}
           {campo('finalidade', 'Finalidade da solicitação', { obrigatorio: true, inteiro: true, placeholder: 'Ex.: transporte de equipe técnica para reunião' })}
         </div>
       </section>
@@ -144,7 +155,7 @@ export function SolicitacaoForm({ modo, valoresIniciais, ticket, rotuloEnviar, a
         <button type="button" className="btn btn--secundario" onClick={aoCancelar}>
           Cancelar
         </button>
-        <button type="submit" className="btn btn--primario">
+        <button type="submit" className="btn btn--primario" disabled={desabilitado}>
           {rotuloEnviar}
         </button>
       </div>
