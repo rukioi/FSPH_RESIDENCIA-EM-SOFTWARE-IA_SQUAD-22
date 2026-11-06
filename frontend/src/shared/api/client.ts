@@ -2,6 +2,7 @@ import { fetchAutenticada } from '../services/auth.service';
 import { ApiError, apiError } from './errors';
 import { apiOperations } from './generated/operations';
 import type { ApiOperations } from './generated/schema';
+import { notifyDataChanged } from './dataChanges';
 
 /** Transporte comum: auth/401 via adaptador existente, cancelamento, 204, JSON e correlação do servidor. */
 export async function requestApi<T = unknown>(path: string, init: RequestInit = {}, parse?: (value:unknown)=>T, autenticada = true): Promise<T> {
@@ -13,7 +14,8 @@ export async function requestApi<T = unknown>(path: string, init: RequestInit = 
   }
   if (init.signal?.aborted) throw new DOMException('Solicitação cancelada.','AbortError');
   const requestId = response.headers.get('X-Request-Id') ?? undefined;
-  if (response.status === 204) return undefined as T;
+  const changed = () => { if (!['GET', 'HEAD', 'OPTIONS'].includes((init.method ?? 'GET').toUpperCase())) notifyDataChanged(); };
+  if (response.status === 204) { changed(); return undefined as T; }
   let body: unknown;
   try { body = await response.json(); }
   catch {
@@ -23,7 +25,7 @@ export async function requestApi<T = unknown>(path: string, init: RequestInit = 
   }
   if (!response.ok) throw apiError(response.status,body,requestId);
   if (init.signal?.aborted) throw new DOMException('Solicitação cancelada.','AbortError');
-  try { return parse ? parse(body) : body as T; }
+  try { const result = parse ? parse(body) : body as T; changed(); return result; }
   catch (error) {
     throw new ApiError(response.status,'RESPOSTA_INVALIDA',error instanceof ApiError ? error.message : 'A resposta do servidor é inválida. Tente novamente.',undefined,requestId);
   }
