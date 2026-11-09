@@ -4,6 +4,7 @@ import type { ApiSchemas } from '../api/generated/schema'
 import { ApiError } from '../api/errors'
 import { requestApi } from '../api/client'
 import { authSchemas } from '../../../../backend/src/modules/auth/auth.schemas'
+import { notifyDataChanged } from '../api/dataChanges'
 
 export type Credenciais = ApiSchemas['Credenciais']
 
@@ -39,6 +40,10 @@ export function destinoDoPerfil(perfil: string): string {
       return ROTAS.dashboardGestor
     case 'ATENDENTE_SVO':
       return '/svo'
+    case 'MOTORISTA':
+      return ROTAS.notificacoes
+    case 'SOLICITANTE_INTERNO':
+      return ROTAS.minhasSolicitacoes
     default:
       throw new Error('Este perfil não possui uma página inicial disponível.')
   }
@@ -124,4 +129,5 @@ export function obterToken(): string | null {
 
 export function sair(): void {
   sessionStorage.removeItem(TOKEN_CHAVE)
+  notifyDataChanged()
 }

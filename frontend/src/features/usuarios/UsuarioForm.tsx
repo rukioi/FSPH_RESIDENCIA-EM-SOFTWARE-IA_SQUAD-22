@@ -1,3 +1,4 @@
+import { Select } from '../../shared/components/Select';
 // Campos e validação compartilhados pelos modais de Novo e Editar usuário.
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
@@ -141,7 +142,7 @@ export function UsuarioFormModal(props: Props) {
 
           <div className={classe('perfil')}>
             <label htmlFor="usr-perfil">Perfil</label>
-            <select
+            <Select
               id="usr-perfil"
               value={valores.perfil}
               onChange={(e) => mudar('perfil', e.target.value as Perfil)}
@@ -154,7 +155,7 @@ export function UsuarioFormModal(props: Props) {
                   {p}
                 </option>
               ))}
-            </select>
+            </Select>
             {erro('perfil')}
           </div>
 

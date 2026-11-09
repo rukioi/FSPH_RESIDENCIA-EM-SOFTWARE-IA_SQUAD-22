@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { buscarVeiculos, cadastrarVeiculo } from './veiculos.service';
+import { buscarVeiculos, cadastrarVeiculo, atualizarVeiculo } from './veiculos.service';
 vi.mock('./auth.service',()=>({fetchAutenticada:(...args:Parameters<typeof fetch>)=>fetch(...args)}));
 afterEach(()=>vi.unstubAllGlobals());
 const row = {id:'9007199254740993',placa:'T32DTO',modelo:'Fixture',marca:'Fixture',ano:2026,tipo:'PASSEIO',capacidade_obitos:0,
@@ -22,4 +22,14 @@ test('cadastro serializa o binding e só retorna DTO validado após confirmaçã
   expect(await cadastrarVeiculo(input)).toEqual(row);
   expect(mock.mock.calls[0][1].method).toBe('POST');
   expect(JSON.parse(mock.mock.calls[0][1].body)).toEqual(input);
+});
+
+test('edi??o valida entrada e resposta antes de retornar o ve?culo', async () => {
+  const mock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: row })));
+  vi.stubGlobal('fetch', mock);
+  await expect(atualizarVeiculo(row.id, { placa: 'T32DTO' })).resolves.toEqual(row);
+  expect(mock.mock.calls[0][1].method).toBe('PATCH');
+  await expect(atualizarVeiculo(row.id, { vinculo: 'LOCADO' })).rejects.toMatchObject({ code: 'FORNECEDOR_OBRIGATORIO' });
+  mock.mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: 1 } })));
+  await expect(atualizarVeiculo(row.id, { placa: 'T32DTO' })).rejects.toMatchObject({ code: 'RESPOSTA_INVALIDA' });
 });

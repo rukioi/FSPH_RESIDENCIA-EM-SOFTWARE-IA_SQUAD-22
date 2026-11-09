@@ -164,3 +164,12 @@
 @media (prefers-reduced-motion: reduce) {
   .auth-skeleton__bloco { animation: none; }
 }
+.auth-skeleton__transicao {
+  display: grid;
+  gap: 20px;
+  max-width: 900px;
+  padding-top: 8px;
+}
+.auth-skeleton__transicao .auth-skeleton__bloco:first-child { width: 35%; height: 32px; }
+.auth-skeleton__transicao .auth-skeleton__bloco:nth-child(2) { width: 65%; }
+.auth-skeleton__transicao .auth-skeleton__bloco:last-child { height: 180px; }

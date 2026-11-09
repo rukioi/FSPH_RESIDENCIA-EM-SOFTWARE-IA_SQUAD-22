@@ -1,235 +1,86 @@
-.cal {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  align-items: start;
-  gap: 24px;
-}
+﻿.cal { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 16px; align-items: start; }
+.cal__principal { min-width: 0; overflow: hidden; }
+.cal__topo { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 20px; padding: 12px 16px; border-bottom: 1px solid var(--borda); }
+.cal__navegacao, .cal__controles { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.cal__navegacao h2 { margin: 0 0 0 8px; font-size: 18px; font-weight: 700; }
+.cal__hoje, .cal__seta, .cal__visao button { min-height: 40px; border: 1px solid var(--borda); background: var(--branco); color: var(--texto); cursor: pointer; }
+.cal__hoje { padding: 0 14px; border-radius: 6px; font-weight: 600; }
+.cal__seta { display: grid; place-items: center; width: 40px; border-color: transparent; border-radius: 50%; }
+.cal__seta--anterior svg { transform: rotate(90deg); }
+.cal__seta--proxima svg { transform: rotate(-90deg); }
+.cal__seta:hover, .cal__hoje:hover, .cal__visao button:hover { background: var(--fundo); }
+.cal__visao { display: flex; margin-right: 8px; }
+.cal__visao button { min-width: 58px; padding: 0 10px; margin-left: -1px; }
+.cal__visao button:first-child { border-radius: 6px 0 0 6px; }
+.cal__visao button:last-child { border-radius: 0 6px 6px 0; }
+.cal__visao button[aria-pressed='true'] { position: relative; border-color: var(--azul); background: var(--azul); color: white; font-weight: 700; }
+.cal__fins-semana { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 4px; font-size: 13px; color: var(--texto); cursor: pointer; }
+.cal__fins-semana input { width: 18px; height: 18px; accent-color: var(--azul); }
+.cal__grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cal__grade--uteis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.cal__dia-semana { padding: 10px 0; text-align: center; font-size: 12px; font-weight: 700; color: var(--texto-suave); text-transform: uppercase; }
+.cal__dia, .cal__grade > span[aria-hidden] { min-width: 0; min-height: 92px; border: 0; border-top: 1px solid var(--borda); border-right: 1px solid var(--borda); background: var(--branco); }
+.cal__dia { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 3px; padding: 4px; color: var(--texto); text-align: left; cursor: pointer; }
+.cal__grade--semana .cal__dia { min-height: 180px; }
+.cal__dia:hover { background: var(--fundo); }
+.cal__dia > span:first-child { display: grid; place-items: center; align-self: center; width: 30px; height: 30px; border-radius: 50%; font-size: 13px; }
+.cal__dia--hoje > span:first-child { background: var(--azul); color: white; font-weight: 700; }
+.cal__dia--selecionado:not(.cal__dia--hoje) > span:first-child { outline: 2px solid var(--azul); font-weight: 700; }
+.cal__evento { display: flex; gap: 4px; min-width: 0; overflow: hidden; padding: 3px 5px; border-radius: 4px; background: var(--azul); color: white; font-size: 12px; line-height: 1.3; white-space: nowrap; }
+.cal__evento span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.cal__mais { padding: 2px 4px; font-size: 12px; font-weight: 700; color: var(--texto-suave); }
+.cal__painel { min-width: 0; overflow: hidden; }
+.cal__painel-topo { padding: 16px; border-bottom: 1px solid var(--borda); }
+.cal__painel-legenda { color: var(--texto-suave); font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.cal__painel-topo h2 { margin-top: 6px; font-size: 17px; font-weight: 700; }
+.cal__painel-topo h2::first-letter { text-transform: uppercase; }
+.cal__painel-data, .cal__painel-topo p { color: var(--texto-suave); font-size: 13px; }
+.cal__painel-topo p { margin-top: 8px; }
+.cal__vazio { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 24px 16px; }
+.cal__vazio-icone { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--borda); border-radius: 10px; color: var(--azul); }
+.cal__vazio strong { font-size: 14px; }
+.cal__vazio p { margin: 0; color: var(--texto-suave); font-size: 13px; line-height: 1.5; }
+.cal__lista { margin: 0; padding: 0; list-style: none; }
+.cal__lista li + li { border-top: 1px solid var(--borda); }
+.cal__item { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 14px 16px; border: 0; background: var(--branco); color: var(--texto); text-align: left; cursor: pointer; }
+.cal__item:hover { background: var(--fundo); }
+.cal__item-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.cal__rota { overflow-wrap: anywhere; }
+.cal__finalidade { color: var(--texto-suave); font-size: 13px; overflow-wrap: anywhere; }
+.cal__recursos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-size: 13px; overflow-wrap: anywhere; }
+.cal__recursos small { display: block; color: var(--texto-suave); }
+.cal--dia { grid-template-columns: minmax(0, 1fr); }
+.cal--dia .cal__painel { max-width: none; }
+.cal--dia .cal__item { padding: 14px 20px; }
+.cal--dia .cal__recursos { max-width: 520px; }
+.cal :is(button, input):focus-visible { outline: 3px solid var(--azul); outline-offset: -3px; }
 
-/* ---------- Calendário ---------- */
-.cal__topo {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--borda);
-}
-.cal__topo h2 {
-  font-size: 17px;
-  font-weight: 900;
-}
-.cal__controles {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.cal__visao {
-  display: flex;
-  padding: 4px;
-  border: 1px solid var(--borda);
-  border-radius: 10px;
-  background: var(--fundo);
-}
-.cal__visao button {
-  height: 34px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--texto-suave);
-}
-.cal__visao button[aria-pressed='true'] {
-  background: var(--branco);
-  color: var(--texto);
-  font-weight: 700;
-  box-shadow: var(--sombra);
-}
-.cal__seta {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--borda);
-  border-radius: 10px;
-  background: var(--branco);
-  color: var(--texto-suave);
-}
-.cal__seta:hover {
-  background: var(--fundo);
-  color: var(--texto);
-}
-.cal__seta--anterior svg {
-  transform: rotate(90deg);
-}
-.cal__seta--proxima svg {
-  transform: rotate(-90deg);
-}
-
-.cal__grade {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
-  padding: 20px 24px 24px;
-}
-.cal__dia-semana {
-  padding-bottom: 6px;
-  font-size: 14px;
-  font-weight: 700;
-  text-align: center;
-  text-transform: uppercase;
-  color: var(--texto-suave);
-}
-.cal__dia {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: 76px;
-  border: 1px solid var(--borda);
-  border-radius: 10px;
-  background: var(--branco);
-  color: var(--texto);
-}
-.cal__grade--semana .cal__dia {
-  min-height: 140px;
-}
-.cal__dia:hover {
-  border-color: var(--azul);
-}
-.cal__dia small {
-  padding: 1px 8px;
-  white-space: nowrap;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  background: var(--branco);
-  color: var(--azul);
-}
-.cal__dia--com-itens {
-  border-color: #c9d8ff;
-  background: #eef3ff;
-}
-.cal__dia--hoje span {
-  font-weight: 900;
-  text-decoration: underline;
-}
-.cal__dia--selecionado {
-  border-color: var(--azul);
-  background: var(--azul);
-  color: #fff;
-}
-.cal__dia--selecionado small {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-/* ---------- Painel do dia ---------- */
-.cal__painel {
-  position: sticky;
-  top: calc(var(--altura-cabecalho) + 20px);
-  max-height: calc(100vh - var(--altura-cabecalho) - 40px);
-  overflow-y: auto;
-}
-.cal__painel-topo {
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--borda);
-}
-.cal__painel-topo h2 {
-  font-size: 17px;
-  font-weight: 900;
-}
-.cal__painel-topo p {
-  margin-top: 2px;
-  font-size: 14px;
-  color: var(--texto-suave);
-}
-.cal__lista {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.cal__lista li + li {
-  border-top: 1px solid var(--borda);
-}
-.cal__item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-  padding: 18px 24px;
-  border: 0;
-  background: var(--branco);
-  text-align: left;
-}
-.cal__item:hover {
-  background: var(--fundo);
-}
-.cal__item > small {
-  font-size: 13px;
-  color: var(--texto-suave);
-}
-.cal__item-topo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.cal__rota {
-  margin-top: 4px;
-}
-.cal__recursos {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 6px;
-  font-size: 14px;
-}
-.cal__recursos small {
-  display: block;
-  font-size: 13px;
-  color: var(--texto-suave);
-}
-
-@media (max-width: 1200px) {
-  .cal {
-    grid-template-columns: minmax(0, 1fr);
+@media (prefers-reduced-motion: no-preference) {
+  .cal__hoje, .cal__seta, .cal__visao button, .cal__dia, .cal__item {
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
   }
-  .cal__painel {
-    position: static;
-    max-height: none;
+  .cal__dia > span:first-child {
+    transition: background-color 180ms ease, color 180ms ease, outline-color 180ms ease;
+  }
+  .cal__grade, .cal__painel {
+    animation: cal-entrada 200ms ease-out both;
+  }
+  @keyframes cal-entrada {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
+@media (max-width: 1100px) { .cal { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 640px) {
-  .cal__topo,
-  .cal__grade {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-  .cal__grade {
-    gap: 4px;
-  }
-  .cal__dia,
-  .cal__grade--semana .cal__dia {
-    min-height: 48px;
-  }
-  .cal__dia small {
-    padding: 0;
-    width: 8px;
-    height: 8px;
-    overflow: hidden;
-    font-size: 0;
-    background: var(--azul);
-  }
-  .cal__dia--selecionado small {
-    background: #fff;
-  }
-  .cal__dia-semana {
-    font-size: 12px;
-  }
-  .cal__item,
-  .cal__painel-topo {
-    padding: 16px;
-  }
+  .cal__topo { padding: 12px; }
+  .cal__navegacao h2 { flex-basis: 100%; margin: 4px 0 0; font-size: 17px; }
+  .cal__controles { gap: 4px; }
+  .cal__visao { margin-right: 4px; }
+  .cal__visao button { min-width: 50px; padding: 0 8px; }
+  .cal__dia, .cal__grade > span[aria-hidden] { min-height: 68px; padding: 2px; }
+  .cal__grade--semana .cal__dia { min-height: 100px; }
+  .cal__dia > span:first-child { width: 28px; height: 28px; }
+  .cal__evento { display: block; padding: 3px; font-size: 10px; }
+  .cal__evento strong, .cal__evento span { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .cal__mais { padding: 0; text-align: center; font-size: 10px; }
 }

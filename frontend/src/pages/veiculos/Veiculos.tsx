@@ -1,70 +1,15 @@
+import { Select } from '../../shared/components/Select';
+import { IconeGestor } from '../../shared/components/IconeGestor'
 import { useRemoteData } from '../../shared/api/useRemoteData';
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { buscarVeiculos, cadastrarVeiculo as salvarVeiculo } from "../../shared/services/veiculos.service";
 import type { VeiculoDto } from "../../shared/services/veiculos.service";
+import { VehicleDetails } from "./VehicleDetails";
+import { VehicleImage, VehicleStatusBadge, vehicleTitle, vehicleTypeLabel, formatarQuilometragem } from "./VehiclePresentation";
 import "./Veiculos.css";
 
-type RegistroAbastecimento = {
-  data?: string;
-  quilometragem?: number | string;
-  litros?: number | string;
-  valor?: number | string;
-  comprovante?: string;
-};
-
-type RegistroManutencao = {
-  servico?: string;
-  tipo?: string;
-  entrada?: string;
-  previsao?: string;
-  conclusao?: string;
-  custo?: number | string;
-  status?: string;
-};
-
-type RegistroQuilometragem = {
-  data?: string;
-  viagem?: string;
-  motorista?: string;
-  km_inicial?: number | string;
-  km_final?: number | string;
-  percorrido?: number | string;
-};
-
-type RegistroMulta = {
-  data?: string;
-  descricao?: string;
-  valor?: number | string;
-  orgao?: string;
-  situacao?: string;
-};
-
-type RegistroOperacional = {
-  ticket?: string;
-  data?: string;
-  origem?: string;
-  destino?: string;
-  motorista?: string;
-  status?: string;
-};
-
-// Campos de apresentação dos painéis ainda sem API; não constituem DTO de transporte.
-type Veiculo = VeiculoDto & {
-  propriedade?: string;
-  seguro_vencimento?: string;
-  documentacao_regular?: boolean;
-
-  origem?: string;
-  utilizacao?: string;
-  ultima_utilizacao?: string;
-
-  abastecimentos?: RegistroAbastecimento[];
-  historico_manutencao?: RegistroManutencao[];
-  historico_quilometragem?: RegistroQuilometragem[];
-  multas?: RegistroMulta[];
-  historico_operacional?: RegistroOperacional[];
-};
+type Veiculo = VeiculoDto;
 
 type FormularioVeiculo = {
   placa: string;
@@ -90,13 +35,6 @@ const formularioInicial: FormularioVeiculo = {
   is_svo: false,
 };
 
-const nomesStatus: Record<string, string> = {
-  DISPONIVEL: "Disponível",
-  EM_VIAGEM: "Em viagem",
-  EM_MANUTENCAO: "Em manutenção",
-  INDISPONIVEL: "Indisponível",
-};
-
 function normalizarStatus(status?: string | null) {
   return (status ?? "")
     .trim()
@@ -106,341 +44,7 @@ function normalizarStatus(status?: string | null) {
     .replace(/[ -]/g, "_");
 }
 
-function formatarStatus(status?: string | null) {
-  const chave = normalizarStatus(status);
-  return nomesStatus[chave] ?? status ?? "Não informado";
-}
-
-function classeStatus(status?: string | null) {
-  return normalizarStatus(status).toLowerCase().replace(/_/g, "-");
-}
-
-function formatarQuilometragem(valor?: number | string | null) {
-  if (valor === undefined || valor === null || valor === "") {
-    return "Não informada";
-  }
-
-  const numero = Number(valor);
-
-  if (Number.isNaN(numero)) {
-    return `${valor} km`;
-  }
-
-  return `${new Intl.NumberFormat("pt-BR").format(numero)} km`;
-}
-
-function exibirCampo(valor?: string | number | null) {
-  if (valor === undefined || valor === null || valor === "") {
-    return "Não informado";
-  }
-
-  return String(valor);
-}
-
-function DetalheTabela({
-  titulo,
-  cabecalhos,
-  linhas,
-}: {
-  titulo: string;
-  cabecalhos: string[];
-  linhas: (string | number | undefined)[][];
-}) {
-  return (
-    <article className="veiculo-detalhe__painel">
-      <header className="veiculo-detalhe__secao-cabecalho">
-        <h2>{titulo}</h2>
-      </header>
-
-      <div className="veiculo-detalhe__tabela-wrap">
-        <table>
-          <thead>
-            <tr>
-              {cabecalhos.map((cabecalho) => (
-                <th key={cabecalho}>{cabecalho}</th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {linhas.map((linha, indice) => (
-              <tr key={`${titulo}-${indice}`}>
-                {linha.map((valor, coluna) => (
-                  <td key={`${titulo}-${indice}-${coluna}`}>
-                    {exibirCampo(valor)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {!linhas.length && (
-          <p className="veiculo-detalhe__vazio">
-            Integração deste histórico indisponível nesta tela.
-          </p>
-        )}
-      </div>
-    </article>
-  );
-}
-
-function DetalhesVeiculo({
-  veiculo,
-  aoVoltar,
-}: {
-  veiculo: Veiculo;
-  aoVoltar: () => void;
-}) {
-  const abastecimentos = veiculo.abastecimentos ?? [];
-  const manutencoes = veiculo.historico_manutencao ?? [];
-  const quilometragens = veiculo.historico_quilometragem ?? [];
-  const multas = veiculo.multas ?? [];
-  const operacoes = veiculo.historico_operacional ?? [];
-
-  const categoria = veiculo.is_svo ? "SVO" : "Administrativo";
-
-  const documentacao =
-    veiculo.documentacao_regular === undefined
-      ? "Não informada"
-      : veiculo.documentacao_regular
-        ? "Regular"
-        : "Pendente";
-
-  const campos: [string, string][] = [
-    ["Placa", exibirCampo(veiculo.placa)],
-    ["Modelo", exibirCampo(veiculo.modelo)],
-    [
-      "Marca / ano",
-      `${exibirCampo(veiculo.marca)} · ${exibirCampo(veiculo.ano)}`,
-    ],
-    ["Fornecedor de locação", exibirCampo(veiculo.fornecedor_locacao)],
-    ["Origem", exibirCampo(veiculo.origem ?? veiculo.propriedade)],
-    ["Utilização", exibirCampo(veiculo.utilizacao ?? categoria)],
-    ["Capacidade", exibirCampo(veiculo.capacidade_obitos)],
-    ["Situação atual", formatarStatus(veiculo.status)],
-    [
-      "Quilometragem atual",
-      formatarQuilometragem(veiculo.quilometragem_atual),
-    ],
-    ["Última utilização", exibirCampo(veiculo.ultima_utilizacao)],
-    ["Documentação", documentacao],
-  ];
-
-  return (
-    <section className="veiculo-detalhe">
-      <button
-        className="veiculo-detalhe__voltar"
-        type="button"
-        onClick={aoVoltar}
-      >
-        ‹ Veículos
-      </button>
-
-      <article className="veiculo-detalhe__painel">
-        <header className="veiculo-detalhe__cabecalho">
-          <div>
-            <h1>
-              {exibirCampo(veiculo.placa)} · {categoria}
-            </h1>
-            <p>
-              {exibirCampo(veiculo.modelo)} ·{" "}
-              {exibirCampo(veiculo.propriedade ?? veiculo.origem)} · {categoria}
-            </p>
-          </div>
-
-          <div className="veiculo-detalhe__acoes">
-            <span
-              className={`veiculo-status veiculo-status--${classeStatus(
-                veiculo.status,
-              )}`}
-            >
-              {formatarStatus(veiculo.status)}
-            </span>
-
-            <button
-              type="button"
-              disabled
-              title="Edição não configurada nesta tela"
-            >
-              Editar veículo
-            </button>
-          </div>
-        </header>
-
-        <div className="veiculo-detalhe__campos">
-          {campos.map(([rotulo, valor]) => (
-            <div className="veiculo-detalhe__campo" key={rotulo}>
-              <span>{rotulo}</span>
-              <strong>{valor}</strong>
-            </div>
-          ))}
-        </div>
-      </article>
-
-      <div className="veiculo-detalhe__duas-colunas">
-        <article className="veiculo-detalhe__painel">
-          <header className="veiculo-detalhe__secao-cabecalho">
-            <h2>Manutenção</h2>
-            <button type="button" disabled title="Ação não configurada">
-              Enviar para manutenção
-            </button>
-          </header>
-
-          <p className="veiculo-detalhe__vazio">
-            {manutencoes.length
-              ? `${manutencoes.length} registro(s) de manutenção. Consulte o histórico abaixo.`
-              : "Nenhuma manutenção registrada pela API para este veículo."}
-          </p>
-        </article>
-
-        <article className="veiculo-detalhe__painel">
-          <header className="veiculo-detalhe__secao-cabecalho">
-            <div>
-              <h2>Abastecimento</h2>
-              <small>{abastecimentos.length} registro(s)</small>
-            </div>
-
-            <button type="button" disabled title="Ação não configurada">
-              Registrar abastecimento
-            </button>
-          </header>
-
-          <div className="veiculo-detalhe__tabela-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Quilometragem</th>
-                  <th>Litros</th>
-                  <th>Valor</th>
-                  <th>Comprovante</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {abastecimentos.map((item, indice) => (
-                  <tr key={`${item.data ?? "abastecimento"}-${indice}`}>
-                    <td>{exibirCampo(item.data)}</td>
-                    <td>{formatarQuilometragem(item.quilometragem)}</td>
-                    <td>{exibirCampo(item.litros)}</td>
-                    <td>{exibirCampo(item.valor)}</td>
-                    <td>{exibirCampo(item.comprovante)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {!abastecimentos.length && (
-              <p className="veiculo-detalhe__vazio">
-                Nenhum abastecimento retornado pela API.
-              </p>
-            )}
-          </div>
-        </article>
-      </div>
-
-      <DetalheTabela
-        titulo="Histórico de manutenção"
-        cabecalhos={[
-          "Serviço",
-          "Tipo",
-          "Entrada",
-          "Previsão",
-          "Conclusão",
-          "Custo",
-          "Status",
-        ]}
-        linhas={manutencoes.map((item) => [
-          item.servico,
-          item.tipo,
-          item.entrada,
-          item.previsao,
-          item.conclusao,
-          item.custo,
-          item.status,
-        ])}
-      />
-
-      <DetalheTabela
-        titulo="Histórico de quilometragem"
-        cabecalhos={[
-          "Data",
-          "Viagem",
-          "Motorista",
-          "KM inicial",
-          "KM final",
-          "Percorrido",
-        ]}
-        linhas={quilometragens.map((item) => [
-          item.data,
-          item.viagem,
-          item.motorista,
-          item.km_inicial,
-          item.km_final,
-          item.percorrido,
-        ])}
-      />
-
-      <DetalheTabela
-        titulo="Multas e infrações"
-        cabecalhos={["Data", "Descrição", "Valor", "Órgão", "Situação"]}
-        linhas={multas.map((item) => [
-          item.data,
-          item.descricao,
-          item.valor,
-          item.orgao,
-          item.situacao,
-        ])}
-      />
-
-      <article className="veiculo-detalhe__painel">
-        <header className="veiculo-detalhe__secao-cabecalho">
-          <div>
-            <h2>Histórico operacional</h2>
-            <small>Chamados e rotas realizados por este veículo.</small>
-          </div>
-        </header>
-
-        <div className="veiculo-detalhe__tabela-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Ticket</th>
-                <th>Data</th>
-                <th>Origem</th>
-                <th>Destino</th>
-                <th>Motorista</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {operacoes.map((item, indice) => (
-                <tr key={`${item.ticket ?? "operacao"}-${indice}`}>
-                  <td>{exibirCampo(item.ticket)}</td>
-                  <td>{exibirCampo(item.data)}</td>
-                  <td>{exibirCampo(item.origem)}</td>
-                  <td>{exibirCampo(item.destino)}</td>
-                  <td>{exibirCampo(item.motorista)}</td>
-                  <td>{exibirCampo(item.status)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {!operacoes.length && (
-            <p className="veiculo-detalhe__vazio">
-              Histórico operacional indisponível nesta tela.
-            </p>
-          )}
-        </div>
-      </article>
-    </section>
-  );
-}
-
-/** Mantém filtros/formulário locais e atualiza a frota somente após resposta validada. */
+/** Apresenta a frota e confirma alteracoes somente apos resposta validada. */
 export function Veiculos() {
   const {data:veiculos,setData:setVeiculos,loading:carregando,error:erro,retry} = useRemoteData<Veiculo[]>(buscarVeiculos, []);
   const [erroFormulario, setErro] = useState('');
@@ -452,6 +56,12 @@ export function Veiculos() {
   const [veiculoSelecionado, setVeiculoSelecionado] =
     useState<Veiculo | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
+  const cadastroDialog = useRef<HTMLDialogElement>(null);
+  const cadastroTrigger = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (modalAberto) cadastroDialog.current?.showModal();
+    else cadastroTrigger.current?.focus();
+  }, [modalAberto]);
   const [salvando, setSalvando] = useState(false);
   const [formulario, setFormulario] =
     useState<FormularioVeiculo>(formularioInicial);
@@ -559,9 +169,13 @@ export function Veiculos() {
 
   if (veiculoSelecionado) {
     return (
-      <DetalhesVeiculo
+      <VehicleDetails
         veiculo={veiculoSelecionado}
         aoVoltar={() => setVeiculoSelecionado(null)}
+        aoAtualizar={(atualizado) => {
+          setVeiculos((atuais) => atuais.map((item) => item.id === atualizado.id ? atualizado : item));
+          setVeiculoSelecionado(atualizado);
+        }}
       />
     );
   }
@@ -576,6 +190,7 @@ export function Veiculos() {
 
         <button
           className="veiculos-botao-cadastrar"
+          ref={cadastroTrigger}
           type="button"
           onClick={() => {
             setErro("");
@@ -592,44 +207,44 @@ export function Veiculos() {
           <div className="veiculos-indicador__topo">
             <span>Total</span>
             <span className="veiculos-indicador__icone veiculos-indicador__icone--azul">
-              ▣
+              <IconeGestor nome="veiculos" tamanho={18} />
             </span>
           </div>
-          <strong>{veiculos.length}</strong>
-          <small>{totalIndisponiveis} indisponíveis</small>
+          <strong>{carregando || erro ? "—" : veiculos.length}</strong>
+          <small>{!carregando && !erro ? `${totalIndisponiveis} indisponíveis` : "Atualizando frota"}</small>
         </article>
 
         <article className="veiculos-indicador">
           <div className="veiculos-indicador__topo">
             <span>Disponíveis</span>
             <span className="veiculos-indicador__icone veiculos-indicador__icone--verde">
-              ✓
+              <IconeGestor nome="confirmado" tamanho={18} />
             </span>
           </div>
-          <strong>{totalDisponiveis}</strong>
-          <small>Prontos para atendimento</small>
+          <strong>{carregando || erro ? "—" : totalDisponiveis}</strong>
+          
         </article>
 
         <article className="veiculos-indicador">
           <div className="veiculos-indicador__topo">
             <span>Em viagem</span>
             <span className="veiculos-indicador__icone veiculos-indicador__icone--azul">
-              ⇄
+              <IconeGestor nome="rota" tamanho={18} />
             </span>
           </div>
-          <strong>{totalEmViagem}</strong>
-          <small>Em atendimento agora</small>
+          <strong>{carregando || erro ? "—" : totalEmViagem}</strong>
+          
         </article>
 
         <article className="veiculos-indicador">
           <div className="veiculos-indicador__topo">
             <span>Em manutenção</span>
             <span className="veiculos-indicador__icone veiculos-indicador__icone--amarelo">
-              🔧
+              <IconeGestor nome="manutencao" tamanho={18} />
             </span>
           </div>
-          <strong>{totalEmManutencao}</strong>
-          <small>Fora de operação temporária</small>
+          <strong>{carregando || erro ? "—" : totalEmManutencao}</strong>
+          
         </article>
       </section>
 
@@ -638,7 +253,7 @@ export function Veiculos() {
           <span className="veiculos-somente-leitor">
             Buscar por placa ou modelo
           </span>
-          <span aria-hidden="true">⌕</span>
+          <span aria-hidden="true"><IconeGestor nome="busca" tamanho={18} /></span>
           <input
             type="search"
             value={busca}
@@ -651,7 +266,7 @@ export function Veiculos() {
           <span className="veiculos-somente-leitor">
             Filtrar por status
           </span>
-          <select
+          <Select
             value={filtroStatus}
             onChange={(evento) => setFiltroStatus(evento.target.value)}
           >
@@ -660,36 +275,36 @@ export function Veiculos() {
             <option value="EM_VIAGEM">Em viagem</option>
             <option value="EM_MANUTENCAO">Em manutenção</option>
             <option value="INDISPONIVEL">Indisponível</option>
-          </select>
+          </Select>
         </label>
 
         <label>
           <span className="veiculos-somente-leitor">Filtrar por tipo</span>
-          <select
+          <Select
             value={filtroTipo}
             onChange={(evento) => setFiltroTipo(evento.target.value)}
           >
             <option value="TODOS">Todos os tipos</option>
             {tiposVeiculo.map((tipo) => (
               <option key={tipo} value={tipo}>
-                {tipo}
+                {vehicleTypeLabel(tipo)}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label>
           <span className="veiculos-somente-leitor">
             Filtrar por categoria
           </span>
-          <select
+          <Select
             value={filtroSvo}
             onChange={(evento) => setFiltroSvo(evento.target.value)}
           >
             <option value="TODOS">Todas as categorias</option>
             <option value="ADMINISTRATIVO">Administrativo</option>
             <option value="SVO">SVO</option>
-          </select>
+          </Select>
         </label>
 
         <span className="veiculos-resultado">
@@ -710,11 +325,13 @@ export function Veiculos() {
 
       {!carregando && !erro && veiculosFiltrados.length === 0 && (
         <div className="veiculos-vazio">
-          Nenhum veículo encontrado para os filtros selecionados.
+          <h2>{veiculos.length ? "Nenhum resultado encontrado" : "Nenhum veículo cadastrado"}</h2>
+          <p>{veiculos.length ? "Ajuste a busca ou os filtros para encontrar um veículo." : "Cadastre um veículo para começar a organizar a frota."}</p>
+          {(busca || filtroStatus !== "TODOS" || filtroTipo !== "TODOS" || filtroSvo !== "TODOS") && <button type="button" className="veiculos-botao-secundario" onClick={() => { setBusca(""); setFiltroStatus("TODOS"); setFiltroTipo("TODOS"); setFiltroSvo("TODOS"); }}>Limpar filtros</button>}
         </div>
       )}
 
-      {!carregando && veiculosFiltrados.length > 0 && (
+      {!carregando && !erro && veiculosFiltrados.length > 0 && (
         <div className="veiculos-grade">
           {veiculosFiltrados.map((veiculo, indice) => {
             const chave =
@@ -722,108 +339,22 @@ export function Veiculos() {
 
             return (
               <article className="veiculo-card" key={chave}>
-                <div className="veiculo-card__topo">
-                  <span className="veiculo-card__icone" aria-hidden="true">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M5 11.5 6.5 7a2 2 0 0 1 1.9-1.4h7.2A2 2 0 0 1 17.5 7l1.5 4.5 1.2.4a1.2 1.2 0 0 1 .8 1.1V17h-2.2" />
-                      <path d="M5.2 17H3v-4a1.2 1.2 0 0 1 .8-1.1l1.2-.4M5 11.5h14M8 17h8" />
-                      <circle cx="6.5" cy="16.5" r="1.8" />
-                      <circle cx="17.5" cy="16.5" r="1.8" />
-                    </svg>
-                  </span>
-
-                  <span
-                    className={`veiculo-status veiculo-status--${classeStatus(
-                      veiculo.status,
-                    )}`}
-                    title={`Status: ${formatarStatus(veiculo.status)}`}
-                  >
-                    {formatarStatus(veiculo.status)}
-                  </span>
+                <div className="veiculo-card__midia">
+                  <VehicleImage tipo={veiculo.tipo} />
+                  <VehicleStatusBadge status={veiculo.status} />
                 </div>
-
-                <h2>
-                  {[veiculo.marca, veiculo.modelo]
-                    .filter(Boolean)
-                    .join(" ") || "Veículo"}
-                </h2>
-
-                <p className="veiculo-card__placa">
-                  {veiculo.placa || "Placa não informada"}
-                </p>
-
-                <div className="veiculo-card__marcadores">
-                  {veiculo.propriedade && (
-                    <span className="veiculo-tag">
-                      {veiculo.propriedade}
-                    </span>
-                  )}
-
-                  {veiculo.tipo && (
-                    <span className="veiculo-tag veiculo-tag--azul">
-                      {veiculo.tipo}
-                    </span>
-                  )}
-
-                  {veiculo.is_svo && (
-                    <span className="veiculo-tag veiculo-tag--azul">SVO</span>
-                  )}
-
-                  {veiculo.ano && (
-                    <span className="veiculo-card__ano">{veiculo.ano}</span>
-                  )}
+                <div className="veiculo-card__conteudo">
+                  <h2 title={vehicleTitle(veiculo.marca, veiculo.modelo)}>{vehicleTitle(veiculo.marca, veiculo.modelo)}</h2>
+                  <p className="veiculo-card__utilizacao">{veiculo.is_svo ? "SVO" : "Administrativo"} · {veiculo.vinculo === "LOCADO" ? "Locado" : "Próprio"}</p>
+                  <p className="veiculo-card__placa"><span>Placa</span> <strong>{veiculo.placa || "Não informada"}</strong></p>
+                  <dl className="veiculo-card__dados">
+                    <div><dt>Ano</dt><dd>{veiculo.ano ?? "Não informado"}</dd></div>
+                    <div><dt>Tipo</dt><dd>{vehicleTypeLabel(veiculo.tipo)}</dd></div>
+                    <div><dt>Quilometragem</dt><dd>{formatarQuilometragem(veiculo.quilometragem_atual)}</dd></div>
+                  </dl>
                 </div>
-
-                <div className="veiculo-card__dados">
-                  <div className="veiculo-card__linha">
-                    <span>Quilometragem</span>
-                    <strong>
-                      {formatarQuilometragem(veiculo.quilometragem_atual)}
-                    </strong>
-                  </div>
-
-                  <div className="veiculo-card__linha veiculo-card__linha--coluna">
-                    <span>Fornecedor de locação</span>
-                    <strong>
-                      {exibirCampo(veiculo.fornecedor_locacao)}
-                    </strong>
-                  </div>
-
-                  {veiculo.seguro_vencimento && (
-                    <p className="veiculo-card__alerta">
-                      ⚠ Seguro próximo do vencimento
-                    </p>
-                  )}
-
-                  {veiculo.documentacao_regular !== undefined && (
-                    <p
-                      className={
-                        veiculo.documentacao_regular
-                          ? "veiculo-card__documento"
-                          : "veiculo-card__alerta"
-                      }
-                    >
-                      {veiculo.documentacao_regular
-                        ? "✓ Documentação regular"
-                        : "⚠ Documentação pendente"}
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  className="veiculo-card__detalhes-botao"
-                  type="button"
-                  onClick={() => setVeiculoSelecionado(veiculo)}
-                >
-                  Ver detalhes
-                  <span aria-hidden="true">→</span>
+                <button className="veiculo-card__detalhes-botao" type="button" onClick={() => setVeiculoSelecionado(veiculo)}>
+                  Ver detalhes<span aria-hidden="true">→</span>
                 </button>
               </article>
             );
@@ -833,7 +364,9 @@ export function Veiculos() {
 
       {modalAberto && (
         <div className="veiculos-modal-fundo">
-          <section
+          <dialog
+            ref={cadastroDialog}
+            onCancel={(event) => { if (salvando) event.preventDefault(); else setModalAberto(false); }}
             className="veiculos-modal"
             role="dialog"
             aria-modal="true"
@@ -849,6 +382,7 @@ export function Veiculos() {
                 type="button"
                 className="veiculos-modal__fechar"
                 aria-label="Fechar"
+                disabled={salvando}
                 onClick={() => setModalAberto(false)}
               >
                 ×
@@ -908,12 +442,12 @@ export function Veiculos() {
 
               <label>
                 Tipo
-                <input
-                  value={formulario.tipo}
-                  onChange={(evento) =>
-                    atualizarCampo("tipo", evento.target.value)
-                  }
-                />
+                <Select value={formulario.tipo} onChange={(evento) => atualizarCampo("tipo", evento.target.value)}>
+                  <option value="PASSEIO">Passeio</option>
+                  <option value="VAN">Van</option>
+                  <option value="AMBULANCIA">Ambulância</option>
+                  <option value="RABECÃO_SVO">Rabecão SVO</option>
+                </Select>
               </label>
 
               <label>
@@ -942,7 +476,7 @@ export function Veiculos() {
 
               <label>
                 Status
-                <select
+                <Select
                   value={formulario.status}
                   onChange={(evento) =>
                     atualizarCampo("status", evento.target.value)
@@ -952,7 +486,7 @@ export function Veiculos() {
                   <option value="EM_VIAGEM">Em viagem</option>
                   <option value="EM_MANUTENCAO">Em manutenção</option>
                   <option value="INDISPONIVEL">Indisponível</option>
-                </select>
+                </Select>
               </label>
 
               <label className="veiculos-formulario__checkbox">
@@ -977,6 +511,7 @@ export function Veiculos() {
                 <button
                   type="button"
                   className="veiculos-botao-secundario"
+                  disabled={salvando}
                   onClick={() => setModalAberto(false)}
                 >
                   Cancelar
@@ -991,7 +526,7 @@ export function Veiculos() {
                 </button>
               </div>
             </form>
-          </section>
+          </dialog>
         </div>
       )}
     </section>

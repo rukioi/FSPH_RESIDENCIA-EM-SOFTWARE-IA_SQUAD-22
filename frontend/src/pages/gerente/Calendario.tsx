@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { navegar } from '../../app/routes/router'
 import { ROTAS, rotaSolicitacao } from '../../app/routes/rotas'
-import { Icone } from '../../shared/components/Icone'
+import { IconeGestor as Icone } from '../../shared/components/IconeGestor'
 import { buscarAgenda } from '../../shared/services/solicitacoes.service'
 import { formatarData } from '../../features/solicitacoes/regras'
 import type { Solicitacao } from '../../features/solicitacoes/regras'
@@ -29,12 +29,14 @@ const somarDias = (d: Date, n: number) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
 
 type ItemAgenda = Awaited<ReturnType<typeof buscarAgenda>>['data'][number]
+type Compromisso = Solicitacao & { codigoExibicao: string }
 
-function mapearAgendamento(item: ItemAgenda): Solicitacao {
+function mapearAgendamento(item: ItemAgenda): Compromisso {
   const dataSaida = new Date(item.dataHoraSaida)
 
   return {
     id: String(item.id),
+    codigoExibicao: item.codigoExibicao,
     solicitante: '—',
     instituicao: '—',
     data: iso(dataSaida),
@@ -59,18 +61,27 @@ function mapearAgendamento(item: ItemAgenda): Solicitacao {
 }
 
 export function Calendario() {
-  const [todas, setTodas] = useState<Solicitacao[]>([])
+  const [todas, setTodas] = useState<Compromisso[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
+  const [tentativa, setTentativa] = useState(0)
 
   const [selecionado, setSelecionado] = useState(() => iso(new Date()))
-  const [visao, setVisao] = useState<'mes' | 'semana'>('mes')
+  const [visao, setVisao] = useState<'mes' | 'semana' | 'dia'>('mes')
+  const [mostrarFinsDeSemana, setMostrarFinsDeSemana] = useState(true)
 
   const ref = deIso(selecionado)
 
   // Define o intervalo que será consultado na API.
   const intervalo = useMemo(() => {
     const referencia = deIso(selecionado)
+
+    if (visao === 'dia') {
+      return {
+        inicio: `${iso(referencia)}T00:00:00-03:00`,
+        fim: `${iso(somarDias(referencia, 1))}T00:00:00-03:00`,
+      }
+    }
 
     if (visao === 'semana') {
       const inicio = somarDias(referencia, -referencia.getDay())
@@ -162,10 +173,10 @@ export function Calendario() {
     return () => {
       ativo = false
     }
-  }, [intervalo])
+  }, [intervalo.inicio, intervalo.fim, tentativa])
 
   const porDia = useMemo(() => {
-    const mapa = new Map<string, Solicitacao[]>()
+    const mapa = new Map<string, Compromisso[]>()
 
     todas.forEach((solicitacao) => {
       mapa.set(solicitacao.data, [
@@ -206,7 +217,7 @@ export function Calendario() {
       0,
     ).getDate()
 
-    return [
+    const grade = [
       ...Array.from({ length: primeiro.getDay() }, () => null),
       ...Array.from(
         { length: total },
@@ -218,14 +229,30 @@ export function Calendario() {
           ),
       ),
     ]
+    while (grade.length % 7 !== 0) grade.push(null)
+    return grade
   }, [visao, selecionado])
 
+  const diasVisiveis = mostrarFinsDeSemana
+    ? dias
+    : dias.filter((_, indice) => indice % 7 !== 0 && indice % 7 !== 6)
+
+  function ajustarFimDeSemana(data: Date, direcao: 1 | -1) {
+    let resultado = data
+    while (!mostrarFinsDeSemana && (resultado.getDay() === 0 || resultado.getDay() === 6)) {
+      resultado = somarDias(resultado, direcao)
+    }
+    return resultado
+  }
+
   function mover(direcao: 1 | -1) {
-    if (visao === 'semana') {
+    if (visao === 'dia') {
+      setSelecionado(iso(ajustarFimDeSemana(somarDias(ref, direcao), direcao)))
+    } else if (visao === 'semana') {
       setSelecionado(iso(somarDias(ref, 7 * direcao)))
     } else {
       setSelecionado(
-        iso(new Date(ref.getFullYear(), ref.getMonth() + direcao, 1)),
+        iso(ajustarFimDeSemana(new Date(ref.getFullYear(), ref.getMonth() + direcao, 1), 1)),
       )
     }
   }
@@ -233,7 +260,9 @@ export function Calendario() {
   const titulo =
     visao === 'mes'
       ? `${MESES[ref.getMonth()]} ${ref.getFullYear()}`
-      : `${formatarData(iso(dias[0] as Date))} – ${formatarData(iso(dias[6] as Date))}`
+      : visao === 'dia'
+        ? formatarData(selecionado)
+        : `${formatarData(iso(diasVisiveis[0] as Date))} – ${formatarData(iso(diasVisiveis[diasVisiveis.length - 1] as Date))}`
 
   const itensDoDia = porDia.get(selecionado) ?? []
   const hoje = iso(new Date())
@@ -249,13 +278,18 @@ export function Calendario() {
         </div>
       </div>
 
-      <div className="cal">
+      <div className={`cal${visao === 'dia' ? ' cal--dia' : ''}`}>
         <section
           className="cartao cal__principal"
           aria-label="Calendário de solicitações"
         >
           <div className="cal__topo">
-            <h2 aria-live="polite">{titulo}</h2>
+            <div className="cal__navegacao">
+              <button type="button" className="cal__hoje" onClick={() => { setMostrarFinsDeSemana(true); setSelecionado(iso(new Date())) }}>Hoje</button>
+              <button type="button" className="cal__seta cal__seta--anterior" aria-label={visao === 'mes' ? 'Mês anterior' : visao === 'semana' ? 'Semana anterior' : 'Dia anterior'} onClick={() => mover(-1)}><Icone nome="seta" tamanho={18} /></button>
+              <button type="button" className="cal__seta cal__seta--proxima" aria-label={visao === 'mes' ? 'Próximo mês' : visao === 'semana' ? 'Próxima semana' : 'Próximo dia'} onClick={() => mover(1)}><Icone nome="seta" tamanho={18} /></button>
+              <h2 aria-live="polite">{titulo}</h2>
+            </div>
 
             <div className="cal__controles">
               <div
@@ -278,48 +312,42 @@ export function Calendario() {
                 >
                   Semana
                 </button>
+                <button type="button" aria-pressed={visao === 'dia'} onClick={() => setVisao('dia')}>
+                  Dia
+                </button>
               </div>
-
-              <button
-                type="button"
-                className="cal__seta cal__seta--anterior"
-                aria-label={visao === 'mes' ? 'Mês anterior' : 'Semana anterior'}
-                onClick={() => mover(-1)}
-              >
-                <Icone nome="seta" tamanho={18} />
-              </button>
-
-              <button
-                type="button"
-                className="cal__seta cal__seta--proxima"
-                aria-label={visao === 'mes' ? 'Próximo mês' : 'Próxima semana'}
-                onClick={() => mover(1)}
-              >
-                <Icone nome="seta" tamanho={18} />
-              </button>
+              <label className="cal__fins-semana">
+                <input type="checkbox" checked={mostrarFinsDeSemana} onChange={(event) => {
+                  const mostrar = event.target.checked
+                  setMostrarFinsDeSemana(mostrar)
+                  if (!mostrar && (ref.getDay() === 0 || ref.getDay() === 6)) {
+                    setSelecionado(iso(somarDias(ref, ref.getDay() === 6 ? 2 : 1)))
+                  }
+                }} />
+                <span>Fins de semana</span>
+              </label>
             </div>
           </div>
 
+          {visao !== 'dia' && (
           <div
-            className={
-              visao === 'semana'
-                ? 'cal__grade cal__grade--semana'
-                : 'cal__grade'
-            }
+            key={`${visao}-${mostrarFinsDeSemana}-${intervalo.inicio}`}
+            className={`cal__grade${visao === 'semana' ? ' cal__grade--semana' : ''}${mostrarFinsDeSemana ? '' : ' cal__grade--uteis'}`}
           >
-            {DIAS_SEMANA.map((dia) => (
+            {DIAS_SEMANA.filter((_, indice) => mostrarFinsDeSemana || (indice !== 0 && indice !== 6)).map((dia) => (
               <span key={dia} className="cal__dia-semana">
                 {dia}
               </span>
             ))}
 
-            {dias.map((dia, i) => {
+            {diasVisiveis.map((dia, i) => {
               if (!dia) {
                 return <span key={`v${i}`} aria-hidden="true" />
               }
 
               const chave = iso(dia)
-              const quantidade = porDia.get(chave)?.length ?? 0
+              const eventos = carregando || erro ? [] : (porDia.get(chave) ?? [])
+              const quantidade = eventos.length
               const classes = ['cal__dia']
 
               if (chave === selecionado) {
@@ -347,50 +375,54 @@ export function Calendario() {
                 >
                   <span>{dia.getDate()}</span>
 
-                  {quantidade > 0 && (
-                    <small>
-                      {quantidade === 1
-                        ? '1 item'
-                        : `${quantidade} itens`}
-                    </small>
-                  )}
+                  {eventos.slice(0, 3).map((evento) => (
+                    <span className="cal__evento" key={evento.id}>
+                      <strong>{evento.horario}</strong><span>{evento.destino}</span>
+                    </span>
+                  ))}
+                  {quantidade > 3 && <span className="cal__mais">+{quantidade - 3} mais</span>}
+
                 </button>
               )
             })}
           </div>
+          )}
         </section>
 
         <aside
+          key={`${visao === 'dia' ? 'dia' : 'periodo'}-${selecionado}`}
           className="cartao cal__painel"
           aria-labelledby="cal-dia"
         >
           <div className="cal__painel-topo">
-            <h2 id="cal-dia">{formatarData(selecionado)}</h2>
+            <span className="cal__painel-legenda">PROGRAMAÇÃO DO DIA</span>
+            <h2 id="cal-dia">{ref.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
+            <span className="cal__painel-data">{formatarData(selecionado)}</span>
 
             <p>
               {carregando
                 ? 'Carregando agendamentos...'
-                : `${itensDoDia.length} ${
-                    itensDoDia.length === 1
-                      ? 'chamado/viagem'
-                      : 'chamados/viagens'
+                : erro ? 'Programação indisponível' : `${itensDoDia.length} ${
+                    itensDoDia.length === 1 ? 'compromisso agendado' : 'compromissos agendados'
                   }`}
             </p>
           </div>
 
           {erro ? (
-            <div className="vazio">
+            <div className="vazio" role="alert">
               <strong>Não foi possível carregar os agendamentos</strong>
               <p>{erro}</p>
+              <button type="button" className="cal__hoje" onClick={() => setTentativa((n) => n + 1)}>Tentar novamente</button>
             </div>
           ) : carregando ? (
-            <div className="vazio">
+            <div className="vazio" role="status">
               <p>Buscando os agendamentos do período...</p>
             </div>
           ) : itensDoDia.length === 0 ? (
-            <div className="vazio">
-              <strong>Sem registros neste dia</strong>
-              <p>Selecione um dia destacado no calendário.</p>
+            <div className="cal__vazio">
+              <span className="cal__vazio-icone" aria-hidden="true"><Icone nome="calendario" tamanho={22} /></span>
+              <strong>Nenhum compromisso agendado</strong>
+              <p>Quando houver viagens agendadas para esta data, elas aparecerão aqui.</p>
             </div>
           ) : (
             <ul className="cal__lista">
@@ -410,17 +442,16 @@ export function Calendario() {
                   >
                     <span className="cal__item-topo">
                       <strong>
-                        {solicitacao.horario} · #{solicitacao.id}
+                        {solicitacao.horario} · {solicitacao.codigoExibicao}
                       </strong>
 
                       <StatusSolicitacao status={solicitacao.status} />
                     </span>
 
-                    <small>{solicitacao.instituicao}</small>
-
                     <span className="cal__rota">
                       {solicitacao.origem} → {solicitacao.destino}
                     </span>
+                    {solicitacao.finalidade && <span className="cal__finalidade">{solicitacao.finalidade}</span>}
 
                     <span className="cal__recursos">
                       <span>

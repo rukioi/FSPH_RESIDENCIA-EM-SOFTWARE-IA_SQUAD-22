@@ -1,3 +1,4 @@
+import { Sininho } from '../../features/notificacoes/Sininho'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { navegar, useCaminho } from '../../app/routes/router'
@@ -11,10 +12,9 @@ import '../gestor/GestorLayout.css'
 const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
   { nome: 'Nova Solicitação', icone: 'mais', rota: ROTAS.novaSolicitacao },
   { nome: 'Minhas Solicitações', icone: 'solicitacoes', rota: ROTAS.minhasSolicitacoes },
-  { nome: 'Notificações', icone: 'notificacoes' },
+  { nome: 'Notificações', icone: 'notificacoes', rota: ROTAS.notificacoes },
 ]
 
-const totalNotificacoes = 1
 
 function iniciais(nome: string): string {
   return nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('').toUpperCase()
@@ -90,14 +90,7 @@ export function SolicitanteLayout({ children, usuario: sessao }: { children: Rea
           </p>
 
           <div className="cabecalho__direita">
-            <button
-              type="button"
-              className="botao-icone"
-              aria-label={`Notificações: ${totalNotificacoes} não lida`}
-            >
-              <Icone nome="notificacoes" />
-              <span className="selo">{totalNotificacoes}</span>
-            </button>
+            <Sininho />
 
             <button type="button" className="cabecalho__usuario">
               <span className="avatar">{usuario.iniciais}</span>

@@ -9,6 +9,7 @@ const COR: Record<Status, string> = {
   'Em andamento': 'badge--marinho',
   Concluída: 'badge--verde',
   Cancelada: 'badge--cinza',
+  'Não informado': 'badge--cinza',
 }
 
 export function StatusSolicitacao({ status }: { status: Status }) {

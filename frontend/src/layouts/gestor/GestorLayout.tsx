@@ -1,49 +1,13 @@
-import { useState } from 'react'
+import { Sininho } from '../../features/notificacoes/Sininho'
+import { useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { navegar, useCaminho } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
 import { sair } from '../../shared/services/auth.service'
 import type { UsuarioSessao } from '../../shared/services/auth.service'
+import { Perfil } from '../../pages/gerente/Perfil'
 import './GestorLayout.css'
-
-const icones = {
-  dashboard: 'M3 3h7v9H3z M14 3h7v5h-7z M14 12h7v9h-7z M3 16h7v5H3z',
-  solicitacoes:
-    'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2 M9 3h6v4H9z M9 12h6 M9 16h6',
-  calendario:
-    'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M16 2v4 M8 2v4 M3 10h18',
-  veiculos: 'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12H4z M4 12h16 M7 21v-3 M17 21v-3',
-  motoristas:
-    'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 21v-2a4 4 0 0 0-3-3.9 M16 3.1a4 4 0 0 1 0 7.8',
-  documentos: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z M14 3v5h5 M9 13h6 M9 17h6',
-  abastecimentos:
-    'M3 22V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17 M3 22h12 M15 11h2a2 2 0 0 1 2 2v3a2 2 0 0 0 4 0V9l-3-3 M6 8h6',
-  relatorios: 'M3 3v18h18 M8 17v-5 M13 17V8 M18 17v-8',
-  notificacoes: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9 M10.3 21a2 2 0 0 0 3.4 0',
-  menu: 'M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 3v18',
-  seta: 'm6 9 6 6 6-6',
-  sair: 'M10 17l5-5-5-5 M15 12H3 M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6',
-}
-
-type NomeIcone = keyof typeof icones
-
-function Icone({ nome, tamanho = 20 }: { nome: NomeIcone; tamanho?: number }) {
-  return (
-    <svg
-      width={tamanho}
-      height={tamanho}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={icones[nome]} />
-    </svg>
-  )
-}
+import { IconeGestor as Icone, type NomeIcone } from '../../shared/components/IconeGestor'
 
 // rota: tela já desenvolvida (os demais itens ainda não navegam)
 const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
@@ -53,12 +17,10 @@ const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
   { nome: 'Veículos', icone: 'veiculos', rota: ROTAS.veiculosGestor },
   { nome: 'Motoristas', icone: 'motoristas', rota: ROTAS.motoristasGestor },
   { nome: 'Documentos', icone: 'documentos' },
-  { nome: 'Abastecimentos', icone: 'abastecimentos' },
+  { nome: 'Abastecimentos', icone: 'abastecimentos', rota: ROTAS.abastecimentosGestor },
   { nome: 'Relatórios', icone: 'relatorios' },
-  { nome: 'Notificações', icone: 'notificacoes' },
+  { nome: 'Notificações', icone: 'notificacoes', rota: ROTAS.notificacoes },
 ]
-
-const totalNotificacoes = 3
 
 function iniciais(nome: string): string {
   return nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('').toUpperCase()
@@ -66,10 +28,11 @@ function iniciais(nome: string): string {
 
 /* ---------- Layout ---------- */
 export function GestorLayout({ children, usuario: sessao }: { children: ReactNode; usuario: UsuarioSessao }) {
+  const perfilRef = useRef<HTMLDialogElement>(null)
   const nome = sessao.nome ?? sessao.email ?? 'Usuário'
   const usuario = {
     nome,
-    cargo: sessao.perfil === 'ADM' ? 'Administrador' : 'Gestor de Frota',
+    cargo: sessao.perfil === 'ADM' ? 'Administrador' : sessao.perfil === 'MOTORISTA' ? 'Motorista' : sessao.perfil === 'ATENDENTE_SVO' ? 'Atendente SVO' : 'Gestor de Frota',
     iniciais: iniciais(nome),
   }
   // Menu aberto por padrão no computador e fechado no celular
@@ -78,16 +41,17 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
   const caminho = useCaminho()
   const [itemClicado, setItemClicado] = useState('Dashboard')
   const itemAtivo =
+    caminho === '/svo' ? 'SVO' :
     itensMenu.find((item) => item.rota && (caminho === item.rota || caminho.startsWith(item.rota + '/')))?.nome ??
     itemClicado
 
   return (
     <div className={menuAberto ? 'shell shell--aberto' : 'shell'}>
       {/* ===== Menu lateral ===== */}
-      <aside className="menu">
+      <aside id="menu-gestor" className="menu" inert={!menuAberto && window.innerWidth <= 900}>
         <div className="menu__marca">
           <span className="menu__logo">
-            <Icone nome="veiculos" tamanho={22} />
+            <Icone nome="frota" tamanho={26} />
           </span>
           <div>
             <strong>Gestão de Frotas</strong>
@@ -98,10 +62,15 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
         <nav className="menu__nav">
   <p className="menu__grupo">Operação</p>
 
-  {itensMenu.map((item) => (
+  {sessao.perfil === 'ATENDENTE_SVO' && <button type="button"
+    className={caminho === '/svo' ? 'menu__item menu__item--ativo' : 'menu__item'}
+    onClick={()=>navegar('/svo')}><Icone nome="svo" /> SVO</button>}
+
+  {itensMenu.filter(item => sessao.perfil === 'MOTORISTA' || sessao.perfil === 'ATENDENTE_SVO' ? item.rota === ROTAS.notificacoes : true).map((item) => (
     <button
       key={item.nome}
       type="button"
+      title={item.nome}
       className={
         item.nome === itemAtivo
           ? 'menu__item menu__item--ativo'
@@ -110,10 +79,11 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
       onClick={() => {
         setItemClicado(item.nome)
         if (item.rota) navegar(item.rota)
+        if (item.rota && window.innerWidth <= 900) setMenuAberto(false)
       }}
     >
       <Icone nome={item.icone} />
-      {item.nome}
+      <span className="menu__rotulo">{item.nome}</span>
     </button>
   ))}
 </nav>
@@ -136,7 +106,9 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
           <button
             type="button"
             className="botao-icone"
-            aria-label="Abrir ou fechar menu"
+            aria-label={menuAberto ? 'Retrair menu' : 'Expandir menu'}
+            aria-expanded={menuAberto}
+            aria-controls="menu-gestor"
             onClick={() => setMenuAberto(!menuAberto)}
           >
             <Icone nome="menu" />
@@ -147,16 +119,9 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
           </p>
 
           <div className="cabecalho__direita">
-            <button
-              type="button"
-              className="botao-icone"
-              aria-label={`Notificações: ${totalNotificacoes} não lidas`}
-            >
-              <Icone nome="notificacoes" />
-              <span className="selo">{totalNotificacoes}</span>
-            </button>
+            <Sininho />
 
-            <button type="button" className="cabecalho__usuario">
+            <button type="button" className="cabecalho__usuario" aria-label="Meu perfil" onClick={() => perfilRef.current?.showModal()} disabled={!['ADM', 'GESTOR_FROTA'].includes(sessao.perfil)}>
               <span className="avatar">{usuario.iniciais}</span>
               <span className="cabecalho__usuario-texto">
                 <strong>{usuario.nome}</strong>
@@ -183,6 +148,10 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
 
         <main className="conteudo">{children}</main>
       </div>
+      <dialog ref={perfilRef} className="perfil-modal" aria-labelledby="perfil-titulo">
+        <Perfil usuario={sessao} />
+        <button type="button" className="perfil-modal__fechar" onClick={() => perfilRef.current?.close()}>Fechar</button>
+      </dialog>
     </div>
   )
 }
