@@ -9,7 +9,14 @@ viagens programadas soma os estados AGENDADA e PRONTA_PARA_INICIAR da distribui�
 completa, sem usar o tamanho da lista limitada de próximas viagens e sem afirmar
 execução. Gráfico e legenda preservam todos os estados retornados.
 
-Atualização manual e retorno do foco à janela recarregam as consultas. Links de
+Atualização silenciosa a cada 30 segundos, retorno do foco à janela e escritas
+confirmadas pelo cliente comum recarregam as consultas. O cache em memória dura
+até 30 segundos, é separado por período e sessão, limitado a 12 entradas e
+invalidado após escritas bem-sucedidas/validadas e logout. Leituras iniciadas antes
+da invalidação não repovoam o cache. Não há persistência operacional em storage.
+O painel mantém o conteúdo durante a atualização em segundo plano e exibe erro
+acionável se a consulta falhar. Mudanças de outros usuários são percebidas na
+próxima consulta periódica; não há assinatura realtime do banco. Links de
 análise, atividade e viagens abrem o detalhe existente da solicitação; decisões
 e edições continuam nesse fluxo autorizado. Motoristas indeterminados exibem o
 motivo do servidor. A consulta documental legada usa 30 dias e a tela identifica

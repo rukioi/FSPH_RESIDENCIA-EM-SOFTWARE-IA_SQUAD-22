@@ -1,5 +1,27 @@
 import { expect, test } from '@playwright/test'
 
+test('falhas persistentes mostram um aviso discreto somente depois das tentativas automáticas', async ({ page }, info) => {
+  await page.setViewportSize({ width: 390, height: 900 })
+  await page.addInitScript(() => sessionStorage.setItem('token', 'fixture-dashboard-retry'))
+  await page.route('**/api/auth/sessao', route => route.fulfill({ json: { data: { id: '42', nome: 'Gestora', email: 'gestora@example.invalid', perfil: 'GESTOR_FROTA' } } }))
+  let chamadas = 0
+  await page.route('**/api/dashboard/gestor?*', route => {
+    chamadas++
+    return route.fulfill({ status: 500, json: { error: { code: 'ERRO_INTERNO', message: 'Erro inesperado ao processar os dados do dashboard.' } } })
+  })
+  await page.route('**/api/dashboard/pendencias', route => route.fulfill({ json: { data: { motoristas: [], documentos: [] } } }))
+  await page.goto('/gestor/dashboard')
+  await expect.poll(() => chamadas).toBeGreaterThan(0)
+  await expect(page.getByRole('button', { name: 'Recarregar' })).toHaveCount(0)
+  const recarregar = page.getByRole('button', { name: 'Recarregar' })
+  await expect(recarregar).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText('Erro inesperado ao processar os dados do dashboard.')).toHaveCount(0)
+  await page.screenshot({ path: info.outputPath('aviso-recarregar-390.png'), fullPage: true })
+  const antes = chamadas
+  await recarregar.click()
+  await expect.poll(() => chamadas).toBeGreaterThan(antes)
+})
+
 for (const width of [390, 768, 1280]) {
   test(`dashboard do gestor consulta e navega em ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 900 })

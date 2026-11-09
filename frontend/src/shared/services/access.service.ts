@@ -16,7 +16,7 @@ const perfisPorRota: Record<string, string[]> = {
   '/svo': ['ATENDENTE_SVO'],
 }
 
-/** Autoriza as telas conhecidas e os detalhes/edi??o de solicita??es do Gestor. */
+/** Autoriza as telas conhecidas e os detalhes e edição de solicitações do Gestor. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
   const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
   if (solicitacao && /^[0-9]+$/.test(solicitacao.id)) {

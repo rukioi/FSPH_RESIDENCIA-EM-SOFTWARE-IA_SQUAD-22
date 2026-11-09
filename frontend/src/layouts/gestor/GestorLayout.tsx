@@ -22,6 +22,8 @@ const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
   { nome: 'Notificações', icone: 'notificacoes', rota: ROTAS.notificacoes },
 ]
 
+
+
 function iniciais(nome: string): string {
   return nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('').toUpperCase()
 }

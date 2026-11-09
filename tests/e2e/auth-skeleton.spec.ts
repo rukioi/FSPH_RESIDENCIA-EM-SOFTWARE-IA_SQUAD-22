@@ -95,6 +95,8 @@ for (const falha of ['401', 'rede']) {
 test('sessão sem permissão redireciona sem revelar a página solicitada', async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem('token', 'fixture-skeleton-token'));
   await page.route('**/api/auth/sessao', route => route.fulfill({ json: { data: { ...usuario, perfil: 'GESTOR_FROTA' } } }));
+  // Este cenário verifica a guarda de rota; o token fictício não autentica consultas operacionais.
+  await page.route('**/api/dashboard/**', route => route.fulfill({ status: 503, json: { error: { code: 'INDISPONIVEL', message: 'Fixture de isolamento da guarda.' } } }));
   await page.goto('/admin/auditoria');
   await expect(page).toHaveURL(/\/gestor\/dashboard$/);
   await expect(page.getByRole('heading', { name: 'Auditoria', exact: true })).toHaveCount(0);
