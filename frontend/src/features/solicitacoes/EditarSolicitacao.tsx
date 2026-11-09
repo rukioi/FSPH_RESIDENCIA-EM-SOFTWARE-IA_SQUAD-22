@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { navegar } from '../../app/routes/router'
 import { rotaSolicitacao } from '../../app/routes/rotas'
 import { Icone } from '../../shared/components/Icone'
@@ -38,23 +38,12 @@ function converterStatus(status: string | null): Status {
     case 'CONCLUIDA':
       return 'Concluída'
     default:
-      return 'Pendente'
+      return 'Não informado'
   }
 }
 
 function formatarDataHora(dataHora: string) {
-  const data = new Date(dataHora)
-
-  const ano = data.getFullYear()
-  const mes = String(data.getMonth() + 1).padStart(2, '0')
-  const dia = String(data.getDate()).padStart(2, '0')
-  const horario = String(data.getHours()).padStart(2, '0')
-  const minuto = String(data.getMinutes()).padStart(2, '0')
-
-  return {
-    data: `${ano}-${mes}-${dia}`,
-    horario: `${horario}:${minuto}`,
-  }
+  return { data: dataHora.slice(0, 10), horario: dataHora.slice(11, 16) }
 }
 
 function montarValores(dados: DadosDetalhe): ValoresFormulario {
@@ -81,29 +70,33 @@ export function EditarSolicitacao({ id, perfil, base }: Props) {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
   const [salvo, setSalvo] = useState(false)
+  const geracao = useRef(0)
 
   const rotaDetalhe = rotaSolicitacao(base, id)
 
   const carregar = useCallback(async () => {
+    const consulta = ++geracao.current
     setCarregando(true)
     setErro('')
 
     try {
       const resultado = await buscarDetalheSolicitacao(id)
-      setDados(resultado)
+      if (consulta === geracao.current) setDados(resultado)
     } catch (erroApi) {
+      if (consulta !== geracao.current) return
       setErro(
         erroApi instanceof Error
           ? erroApi.message
           : 'Não foi possível carregar a solicitação.',
       )
     } finally {
-      setCarregando(false)
+      if (consulta === geracao.current) setCarregando(false)
     }
   }, [id])
 
   useEffect(() => {
     void carregar()
+    return () => { geracao.current += 1 }
   }, [carregar])
 
   async function salvar(valores: ValoresFormulario) {
@@ -114,25 +107,23 @@ export function EditarSolicitacao({ id, perfil, base }: Props) {
     setSalvo(false)
 
     try {
-      const dataHoraSaida = new Date(
-        `${valores.data}T${valores.horario}:00`,
-      ).toISOString()
-
-      const alteracoes: DadosEdicaoSolicitacao = {
-        origem: valores.origem.trim(),
-        destino: valores.destino.trim(),
-        finalidade: valores.finalidade.trim(),
-        dataHoraSaida,
-        qtdPassageiros: Number(valores.passageiros),
+      const originais = montarValores(dados)
+      const alteracoes: DadosEdicaoSolicitacao = {}
+      if (valores.origem.trim() !== originais.origem) alteracoes.origem = valores.origem.trim()
+      if (valores.destino.trim() !== originais.destino) alteracoes.destino = valores.destino.trim()
+      if (valores.finalidade.trim() !== originais.finalidade) alteracoes.finalidade = valores.finalidade.trim()
+      if (valores.passageiros !== originais.passageiros) alteracoes.qtdPassageiros = Number(valores.passageiros)
+      if (valores.data !== originais.data || valores.horario !== originais.horario) {
+        alteracoes.dataHoraSaida = `${valores.data}T${valores.horario}:00-03:00`
+      }
+      if (Object.keys(alteracoes).length === 0) {
+        setErro('Nenhuma alteração foi informada.')
+        return
       }
 
-      await editarSolicitacao(id, alteracoes)
-
+      const atualizado = await editarSolicitacao(id, alteracoes)
+      setDados((anterior) => anterior ? { ...anterior, ...atualizado } : anterior)
       setSalvo(true)
-
-      // Atualiza os dados com o resultado persistido no backend.
-      const atualizado = await buscarDetalheSolicitacao(id)
-      setDados(atualizado)
 
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (erroApi) {
@@ -157,8 +148,11 @@ export function EditarSolicitacao({ id, perfil, base }: Props) {
   if (!dados) {
     return (
       <div className="cartao vazio">
-        <strong>Solicitação não encontrada</strong>
+        <strong>Não foi possível carregar a solicitação</strong>
         <p>{erro || `O chamado #${id} não existe ou foi removido.`}</p>
+        <button type="button" className="btn btn--secundario" onClick={() => void carregar()}>
+          Tentar novamente
+        </button>
         <button
           type="button"
           className="btn btn--secundario"
@@ -182,7 +176,7 @@ export function EditarSolicitacao({ id, perfil, base }: Props) {
         onClick={() => navegar(rotaDetalhe)}
       >
         <Icone nome="seta" tamanho={18} />
-        Chamado #{dados.codigoExibicao || dados.codigo}
+        Chamado #{(dados.codigoExibicao || dados.codigo).replace(/^#/, '')}
       </button>
 
       <div className="pagina__topo">
@@ -209,14 +203,15 @@ export function EditarSolicitacao({ id, perfil, base }: Props) {
           {salvo && (
             <p className="sol-aviso" role="status">
               <Icone nome="check" tamanho={18} />
-              Alterações salvas com sucesso!
+              Alterações salvas com sucesso! {status === 'Pendente' && 'A solicitação está pendente de análise.'}
             </p>
           )}
 
           <SolicitacaoForm
             modo="editar"
-            ticket={dados.codigoExibicao || dados.codigo}
+            ticket={(dados.codigoExibicao || dados.codigo).replace(/^#/, '')}
             valoresIniciais={montarValores(dados)}
+            desabilitado={salvando}
             rotuloEnviar={salvando ? 'Salvando...' : 'Salvar alterações'}
             aoCancelar={() => navegar(rotaDetalhe)}
             aoEnviar={salvar}
