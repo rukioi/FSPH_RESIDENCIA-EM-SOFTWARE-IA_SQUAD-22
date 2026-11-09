@@ -21,7 +21,7 @@ const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
   { nome: 'Notificações', icone: 'notificacoes' },
 ]
 
-const totalNotificacoes = 3
+
 
 function iniciais(nome: string): string {
   return nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('').toUpperCase()
@@ -114,10 +114,10 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
             <button
               type="button"
               className="botao-icone"
-              aria-label={`Notificações: ${totalNotificacoes} não lidas`}
+              aria-label="Notificações indisponíveis" title="Notificações ainda não disponíveis" disabled
             >
               <Icone nome="notificacoes" />
-              <span className="selo">{totalNotificacoes}</span>
+
             </button>
 
             <button type="button" className="cabecalho__usuario" aria-label="Meu perfil" onClick={() => perfilRef.current?.showModal()} disabled={!['ADM', 'GESTOR_FROTA'].includes(sessao.perfil)}>
