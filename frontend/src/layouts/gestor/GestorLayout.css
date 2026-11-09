@@ -310,3 +310,26 @@ button:focus-visible {
     display: none;
   }
 }
+
+/* Barra compacta apenas no layout do gestor. */
+@media (min-width: 901px) {
+  .shell--gestor:not(.shell--aberto) { grid-template-columns: 76px minmax(0, 1fr); }
+  .shell--gestor:not(.shell--aberto) .menu { width: 76px; transform: none; }
+  .shell--gestor:not(.shell--aberto) .menu__marca { padding: 0 17px; }
+  .shell--gestor:not(.shell--aberto) .menu__marca > div,
+  .shell--gestor:not(.shell--aberto) .menu__usuario > div,
+  .shell--gestor:not(.shell--aberto) .menu__grupo,
+  .shell--gestor:not(.shell--aberto) .menu__rotulo {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  .shell--gestor:not(.shell--aberto) .menu__usuario { padding-inline: 18px; }
+  .shell--gestor:not(.shell--aberto) .menu__item { justify-content: center; padding: 0; }
+}
+@media (max-width: 900px) {
+  .shell--gestor .cabecalho__caminho { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .shell--gestor .cabecalho__direita { flex-shrink: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell--gestor, .shell--gestor .menu { transition: none; }
+}
