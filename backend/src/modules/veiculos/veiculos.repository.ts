@@ -1,4 +1,7 @@
 import { sql } from '../../config/db.js';
+import { inserirNotificacao } from '../notificacoes/notificacoes.repository.js';
+import { randomUUID } from 'node:crypto';
+import type { TransactionSql } from 'postgres';
 import type { z } from 'zod';
 import type { criarVeiculoSchema, editarVeiculoSchema, veiculo } from './veiculos.schemas.js';
 
@@ -30,9 +33,10 @@ export async function inserirVeiculo(dados: Entrada) {
       status, is_svo, criado_em, capacidade_passageiros, vinculo, fornecedor_locacao`;
   return row;
 }
-/** PUT/PATCH conservam atualização parcial e COALESCE de fornecedor; campos não editáveis não entram no SQL. */
+/** Preserva edição parcial; mudança para manutenção e avisos confirmam na mesma transação. */
 export async function alterarVeiculo(id: string, dados: Edicao) {
-  const [row] = await sql<Linha[]>`UPDATE veiculo SET
+  const atualizar = async (tx: typeof sql | TransactionSql) => {
+    const [row] = await tx<Linha[]>`UPDATE veiculo SET
     placa=COALESCE(${dados.placa ?? null},placa), marca=COALESCE(${dados.marca ?? null},marca),
     modelo=COALESCE(${dados.modelo ?? null},modelo), status=COALESCE(${dados.status ?? null},status),
     capacidade_passageiros=COALESCE(${dados.capacidade_passageiros ?? null},capacidade_passageiros),
@@ -42,7 +46,18 @@ export async function alterarVeiculo(id: string, dados: Edicao) {
     WHERE id=${id}
     RETURNING id, placa, modelo, marca, ano, tipo, capacidade_obitos, quilometragem_atual,
       status, is_svo, criado_em, capacidade_passageiros, vinculo, fornecedor_locacao`;
-  return row;
+    return row;
+  };
+  if (dados.status !== 'EM_MANUTENCAO') return atualizar(sql);
+  return sql.begin(async tx => {
+    const [antes] = await tx`SELECT status FROM veiculo WHERE id=${id} FOR UPDATE`;
+    const row = await atualizar(tx);
+    if (row && antes?.status !== 'EM_MANUTENCAO') {
+      const usuarios = await tx`SELECT id::text FROM public.usuario WHERE ativo=true AND perfil IN ('ADM','GESTOR_FROTA')`;
+      await inserirNotificacao(tx,usuarios.map(u=>String(u.id)),randomUUID(),`Veículo ${row.placa} em manutenção`,row.modelo,'atencao');
+    }
+    return row;
+  });
 }
 /** Remove pelo ID preservando constraints e o resultado de ausência existente. */
 export async function removerVeiculo(id: string) {

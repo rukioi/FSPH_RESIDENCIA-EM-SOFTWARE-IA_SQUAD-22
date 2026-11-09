@@ -15,6 +15,9 @@ export function openapi() {
     if (operation.path.includes('{id}')) parameters.push({name:'id',in:'path',required:true,schema:{type:'string',pattern:'^[0-9]+$'},description:'Identificador no caminho atual; limites numéricos variam por módulo.'});
     const response = (name: string, description: string) => ({ description, headers: {'X-Request-Id':{description:'UUID gerado pelo servidor; IDs recebidos não são confiados.',schema:{type:'string',format:'uuid'}}}, content:{'application/json':{schema:ref(name)}} });
     const responses: Record<string, unknown> = { [operation.status]: response(operation.response,'Sucesso no formato atual') };
+    if (operation.response === 'ComprovanteAbastecimento') {
+      (responses[operation.status] as {content: unknown}).content = { 'image/jpeg': {schema:{type:'string',format:'binary'}}, 'image/png': {schema:{type:'string',format:'binary'}} };
+    }
     for (const status of operation.errors) {
       responses[status] = response('Erro','Falha atual HTTP ' + status);
     }

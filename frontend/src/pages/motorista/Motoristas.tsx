@@ -1,3 +1,5 @@
+import { DatePicker } from '../../shared/components/DatePicker';
+import { Select } from '../../shared/components/Select';
 import { IconeGestor } from '../../shared/components/IconeGestor'
 import { useRemoteData } from '../../shared/api/useRemoteData';
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -634,7 +636,7 @@ export function Motoristas() {
 
                 <label>
                   Categoria da CNH
-                  <select
+                  <Select
                     required
                     value={novoMotorista.categoria_cnh}
                     onChange={(evento) =>
@@ -651,12 +653,12 @@ export function Motoristas() {
                         </option>
                       ),
                     )}
-                  </select>
+                  </Select>
                 </label>
 
                 <label>
                   Validade da CNH
-                  <input
+                  <DatePicker
                     type="date"
                     required
                     value={novoMotorista.validade_cnh}
@@ -671,7 +673,7 @@ export function Motoristas() {
 
                 <label>
                   Status
-                  <select
+                  <Select
                     value={novoMotorista.status}
                     onChange={(evento) =>
                       setNovoMotorista({
@@ -684,7 +686,7 @@ export function Motoristas() {
                     <option value="EM_VIAGEM">Em viagem</option>
                     <option value="INDISPONIVEL">Indisponível</option>
                     <option value="AFASTADO">Afastado</option>
-                  </select>
+                  </Select>
                 </label>
               </div>
 
@@ -797,7 +799,7 @@ export function Motoristas() {
           <span className="motoristas-somente-leitor">
             Filtrar disponibilidade
           </span>
-          <select
+          <Select
             value={filtroDisponibilidade}
             onChange={(evento) =>
               setFiltroDisponibilidade(evento.target.value)
@@ -808,14 +810,14 @@ export function Motoristas() {
             <option value="EM_VIAGEM">Em viagem</option>
             <option value="INDISPONIVEL">Indisponível</option>
             <option value="AFASTADO">Afastado</option>
-          </select>
+          </Select>
         </label>
 
         <label>
           <span className="motoristas-somente-leitor">
             Filtrar categoria CNH
           </span>
-          <select
+          <Select
             value={filtroCnh}
             onChange={(evento) => setFiltroCnh(evento.target.value)}
           >
@@ -825,7 +827,7 @@ export function Motoristas() {
                 {categoria}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <span className="motoristas-resultado">

@@ -29,6 +29,11 @@ menos 32 bytes, diferente da senha do banco.
 Depois de alterar o `.env`, encerre o processo com Ctrl+C e execute `npm run dev`
 novamente para o backend carregar os novos valores.
 
+Para aplicar migrations ao projeto Supabase vinculado, use `npm run db:migrate`.
+Para conferir as migrations pendentes antes da aplicação, use
+`npm run db:migrate -- --dry-run`. A CLI usa o histórico de migrations do
+Supabase; o fluxo `db:test:prepare` continua destinado ao banco de testes.
+
 ## Organização atual
 
 | Caminho | Responsabilidade |
@@ -142,4 +147,4 @@ A iniciativa #22 usa excepcionalmente uma branch sequencial e o
 [Plano/mapa de commits](./docs/reorganization/plan.md),
 [validação](./docs/reorganization/validation.md) e
 [rollback separado de código/banco](./docs/reorganization/rollback.md) registram a entrega.
-Sem merge/deploy ou escrita no Supabase compartilhado por agentes nesta iniciativa.
+Sem merge ou deploy por agentes nesta iniciativa.

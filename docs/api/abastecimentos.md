@@ -11,6 +11,7 @@ Autenticação: Bearer JWT. Perfis: ADM/GESTOR_FROTA.
 | --- | --- | --- |
 | GET /api/abastecimentos | não | {data: array}, id DESC |
 | POST /api/abastecimentos | JSON | {data: registro}, 201 |
+| GET /api/abastecimentos/{id}/comprovante | não | imagem binária JPEG/PNG, 200 |
 
 Campos existentes: veiculo_id, motorista_id, posto, litragem, valor_total,
 quilometragem e data_abastecimento. Corpo precisa ser objeto JSON. IDs aceitam
@@ -130,7 +131,7 @@ Authorization: Bearer <token>
 
 ## O que a entrega não faz
 
-Não muda permissões, estados, schema, regras operacionais ou paginação. Não resolve
+Não muda permissões, estados, regras operacionais ou paginação. Não resolve
 a divergência RF40 nem muda nomes de DTOs. Limites, request ID e erros técnicos seguem
 [infraestrutura comum](./README.md#infraestrutura-http--28).
 
@@ -142,3 +143,21 @@ Conta inativa/inexistente ou token inválido: 401 NAO_AUTENTICADO. Perfil efetiv
 fora da lista existente: 403 ACESSO_NEGADO. Falha de consulta não usa claims como
 fallback e recebe 500 do tratamento comum. As listas de permissão e operações
 permanecem as documentadas acima. Ver [identidade compartilhada](./README.md#identidade-e-usuários--29).
+
+
+## Tanque completo e comprovante
+
+O POST aceita `tanque_completo` booleano opcional (padrão `false`) e
+`comprovante` opcional ou nulo: `{"nome":"foto.png","tipo":"image/png","dadosBase64":"..."}`.
+São aceitos JPEG e PNG com assinatura correspondente e até 1 MiB de bytes; o
+JSON completo é limitado a 1500 KiB. Nome deve ter até 255 caracteres e não
+pode conter separadores de caminho ou caracteres de controle. Entrada inválida
+recebe 400; corpo acima do limite recebe 413. O registro e a imagem são gravados
+na mesma transação. Cadastro legado continua válido.
+
+A lista e o cadastro retornam `tanque_completo` e `comprovante_nome` (null
+quando ausente), sem retornar a imagem. O GET de comprovante exige a mesma
+sessão e os mesmos perfis ADM/GESTOR_FROTA, retorna bytes com Content-Type da
+imagem, ou 404 quando ausente. A imagem fica em tabela separada com RLS ativada
+sem grants aos papéis públicos; confirme o papel de execução do backend e a
+segurança da Data API antes de aplicar em ambiente remoto.

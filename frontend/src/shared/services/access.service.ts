@@ -1,12 +1,14 @@
 import { ROTAS, lerRotaSolicitacao } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
+  [ROTAS.notificacoes]: ['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],
   [ROTAS.dashboard]: ['ADM'],
   [ROTAS.configuracoes]: ['ADM'],
   [ROTAS.auditoria]: ['ADM'],
   [ROTAS.dashboardGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.veiculosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.motoristasGestor]: ['ADM', 'GESTOR_FROTA'],
+  [ROTAS.abastecimentosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.solicitacoesGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.calendarioGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],

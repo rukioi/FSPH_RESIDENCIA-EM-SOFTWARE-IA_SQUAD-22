@@ -146,3 +146,7 @@
   .gestor-dashboard .periodo { width: 100%; }
   .gestor-dashboard .periodo__botao { padding: 0 10px; flex: 1; font-size: 12px; }
 }
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.gestor-dashboard) { scroll-behavior: smooth; }
+}
+.gestor-dashboard [id] { scroll-margin-top: 90px; }

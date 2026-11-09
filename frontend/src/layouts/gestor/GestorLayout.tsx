@@ -1,3 +1,4 @@
+import { Sininho } from '../../features/notificacoes/Sininho'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { navegar, useCaminho } from '../../app/routes/router'
@@ -16,9 +17,9 @@ const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
   { nome: 'Veículos', icone: 'veiculos', rota: ROTAS.veiculosGestor },
   { nome: 'Motoristas', icone: 'motoristas', rota: ROTAS.motoristasGestor },
   { nome: 'Documentos', icone: 'documentos' },
-  { nome: 'Abastecimentos', icone: 'abastecimentos' },
+  { nome: 'Abastecimentos', icone: 'abastecimentos', rota: ROTAS.abastecimentosGestor },
   { nome: 'Relatórios', icone: 'relatorios' },
-  { nome: 'Notificações', icone: 'notificacoes' },
+  { nome: 'Notificações', icone: 'notificacoes', rota: ROTAS.notificacoes },
 ]
 
 
@@ -33,7 +34,7 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
   const nome = sessao.nome ?? sessao.email ?? 'Usuário'
   const usuario = {
     nome,
-    cargo: sessao.perfil === 'ADM' ? 'Administrador' : 'Gestor de Frota',
+    cargo: sessao.perfil === 'ADM' ? 'Administrador' : sessao.perfil === 'MOTORISTA' ? 'Motorista' : sessao.perfil === 'ATENDENTE_SVO' ? 'Atendente SVO' : 'Gestor de Frota',
     iniciais: iniciais(nome),
   }
   // Menu aberto por padrão no computador e fechado no celular
@@ -49,6 +50,7 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
   const caminho = useCaminho()
   const [itemClicado, setItemClicado] = useState('Dashboard')
   const itemAtivo =
+    caminho === '/svo' ? 'SVO' :
     itensMenu.find((item) => item.rota && (caminho === item.rota || caminho.startsWith(item.rota + '/')))?.nome ??
     itemClicado
 
@@ -69,7 +71,11 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
         <nav className="menu__nav">
   <p className="menu__grupo">Operação</p>
 
-  {itensMenu.map((item) => (
+  {sessao.perfil === 'ATENDENTE_SVO' && <button type="button"
+    className={caminho === '/svo' ? 'menu__item menu__item--ativo' : 'menu__item'}
+    onClick={()=>navegar('/svo')}><Icone nome="svo" /> SVO</button>}
+
+  {itensMenu.filter(item => sessao.perfil === 'MOTORISTA' || sessao.perfil === 'ATENDENTE_SVO' ? item.rota === ROTAS.notificacoes : true).map((item) => (
     <button
       key={item.nome}
       title={item.nome}
@@ -124,14 +130,7 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
           </p>
 
           <div className="cabecalho__direita">
-            <button
-              type="button"
-              className="botao-icone"
-              aria-label="Notificações indisponíveis" title="Notificações ainda não disponíveis" disabled
-            >
-              <Icone nome="notificacoes" />
-
-            </button>
+            <Sininho />
 
             <button type="button" className="cabecalho__usuario" aria-label="Meu perfil" onClick={() => perfilRef.current?.showModal()} disabled={!['ADM', 'GESTOR_FROTA'].includes(sessao.perfil)}>
               <span className="avatar">{usuario.iniciais}</span>

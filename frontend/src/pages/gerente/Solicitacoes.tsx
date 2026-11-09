@@ -1,3 +1,5 @@
+import { DatePicker } from '../../shared/components/DatePicker';
+import { Select } from '../../shared/components/Select';
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { navegar } from '../../app/routes/router'
@@ -251,7 +253,7 @@ export function Solicitacoes() {
 
           <div className="campo">
             <label htmlFor="g-data">Data</label>
-            <input
+            <DatePicker
               id="g-data"
               type="date"
               value={data}
@@ -261,7 +263,7 @@ export function Solicitacoes() {
 
           <div className="campo">
             <label htmlFor="g-status">Status</label>
-            <select
+            <Select
               id="g-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -270,7 +272,7 @@ export function Solicitacoes() {
               {STATUS.map((st) => (
                 <option key={st}>{st}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <p className="sol-total" style={{ padding: 0, alignSelf: 'center' }}>

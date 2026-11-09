@@ -1,3 +1,4 @@
+import { Select } from '../../shared/components/Select';
 import { useState } from "react";
 import type {
   MotoristaApi,
@@ -84,7 +85,7 @@ export function PrepararDespachoModal({
           <div>
             <label htmlFor="veiculo">Veículo</label>
 
-            <select
+            <Select
               id="veiculo"
               value={veiculoId}
               onChange={(event) =>
@@ -104,13 +105,13 @@ export function PrepararDespachoModal({
                   {veiculo.modelo} - {veiculo.placa}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label htmlFor="motorista">Motorista</label>
 
-            <select
+            <Select
               id="motorista"
               value={motoristaId}
               onChange={(event) =>
@@ -130,7 +131,7 @@ export function PrepararDespachoModal({
                   {motorista.nome}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {erro && (

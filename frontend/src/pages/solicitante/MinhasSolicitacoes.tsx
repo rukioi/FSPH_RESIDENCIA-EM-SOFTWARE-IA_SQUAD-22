@@ -1,3 +1,5 @@
+import { DatePicker } from '../../shared/components/DatePicker';
+import { Select } from '../../shared/components/Select';
 
 import { useEffect, useMemo, useState } from 'react'
 import { navegar } from '../../app/routes/router'
@@ -215,7 +217,7 @@ export function MinhasSolicitacoes({ usuario }: { usuario: UsuarioSessao }) {
 
           <div className="campo">
             <label htmlFor="f-status">Status</label>
-            <select
+            <Select
               id="f-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -224,12 +226,12 @@ export function MinhasSolicitacoes({ usuario }: { usuario: UsuarioSessao }) {
               {STATUS.map((st) => (
                 <option key={st}>{st}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="campo">
             <label htmlFor="f-periodo">Período</label>
-            <select
+            <Select
               id="f-periodo"
               value={periodo}
               onChange={(e) => setPeriodo(e.target.value as Periodo)}
@@ -237,12 +239,12 @@ export function MinhasSolicitacoes({ usuario }: { usuario: UsuarioSessao }) {
               <option value="todos">Todo o período</option>
               <option value="futuras">Próximas viagens</option>
               <option value="passadas">Viagens passadas</option>
-            </select>
+            </Select>
           </div>
 
           <div className="campo">
             <label htmlFor="f-data">Data</label>
-            <input
+            <DatePicker
               id="f-data"
               type="date"
               value={data}

@@ -39,6 +39,7 @@
     {"method":"PUT","path":"/api/motoristas/{id}","reason":"PUT parcial snake_case; erro FK permanece 500."},
     {"method":"PATCH","path":"/api/motoristas/{id}","reason":"PATCH igual a PUT; sem nova regra de disponibilidade."},
     {"method":"DELETE","path":"/api/motoristas/{id}","reason":"200 data.success, não 204; erro FK permanece 500."},
+    {"method":"GET","path":"/api/abastecimentos/{id}/comprovante","reason":"Resposta binaria; identidade e identificador conferidos no modulo."},
     {"method":"GET","path":"/api/abastecimentos","reason":"Lista completa snake_case; NUMERIC como string; joins placa/nome."},
     {"method":"POST","path":"/api/abastecimentos","reason":"Valida somente truthiness; tipos de entrada não uniformes. Motorista/km ausentes falham NOT NULL com 500. Schema descreve formato usual, não todas coerções PostgreSQL."},
     {"method":"GET","path":"/api/documentos","reason":"Lista combinada de documentos/CNH; datas serializadas pelo driver."},

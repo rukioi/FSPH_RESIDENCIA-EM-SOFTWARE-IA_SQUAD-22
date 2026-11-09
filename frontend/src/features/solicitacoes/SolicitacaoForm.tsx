@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DatePicker } from '../../shared/components/DatePicker'
 import type { ChangeEvent, FormEvent } from 'react'
 import { Icone } from '../../shared/components/Icone'
 import { validarSolicitacao } from './regras'
@@ -71,6 +72,17 @@ export function SolicitacaoForm({ modo, valoresIniciais, ticket, rotuloEnviar, d
             value={valores[nome]}
             onChange={alterar}
             placeholder={opcoes.placeholder}
+            aria-required={opcoes.obrigatorio}
+            aria-invalid={!!erro}
+            aria-describedby={erro ? `${id}-erro` : undefined}
+          />
+        ) : opcoes.tipo === 'date' ? (
+          <DatePicker
+            id={id}
+            name={nome}
+            value={valores[nome]}
+            onChange={alterar}
+            required={opcoes.obrigatorio}
             aria-required={opcoes.obrigatorio}
             aria-invalid={!!erro}
             aria-describedby={erro ? `${id}-erro` : undefined}

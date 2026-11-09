@@ -1,3 +1,4 @@
+import { Select } from '../../shared/components/Select';
 import { useRemoteData } from '../../shared/api/useRemoteData';
 import { useMemo, useState } from 'react'
 import { Icone } from '../../shared/components/Icone'
@@ -122,7 +123,7 @@ export function UsuariosTabela() {
         </label>
         <label className="usuarios__filtro">
           <span className="sr-only">Filtrar por perfil</span>
-          <select
+          <Select
             value={perfil}
             onChange={(e) => {
               setPerfil(e.target.value as Perfil | '')
@@ -135,7 +136,7 @@ export function UsuariosTabela() {
                 {p}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
 
