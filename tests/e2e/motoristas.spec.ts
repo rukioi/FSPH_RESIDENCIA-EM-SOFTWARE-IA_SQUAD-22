@@ -1,3 +1,4 @@
+import { selecionarOpcao } from './fixtures/controls';
 import { expect, test } from '@playwright/test';
 import { verifiedSql } from '../../backend/src/database/scripts/verify-test-db.js';
 
@@ -24,7 +25,7 @@ for(const width of [390,768,1280]) {
     const name=`Fixture T30 E2E ${width}`;
     await dialog.getByLabel('Nome completo').fill(name);
     await dialog.getByLabel('Número da CNH').fill(`3000000${String(width).padStart(4,'0')}`);
-    await dialog.getByLabel('Categoria da CNH').selectOption('B');
+    await selecionarOpcao(dialog.getByLabel('Categoria da CNH'), 'B');
     await dialog.getByLabel('Validade da CNH').fill('2099-01-01');
     await page.screenshot({path:info.outputPath(`motorista-cadastro-${width}.png`),fullPage:true});
     let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve;});
@@ -83,7 +84,7 @@ test('consulta anterior não apaga um cadastro já confirmado',async({page})=>{
   const dialog=page.getByRole('dialog');
   await dialog.getByLabel('Nome completo').fill('Fixture T30 E2E confirmação');
   await dialog.getByLabel('Número da CNH').fill('30000009999');
-  await dialog.getByLabel('Categoria da CNH').selectOption('B');
+  await selecionarOpcao(dialog.getByLabel('Categoria da CNH'), 'B');
   await dialog.getByLabel('Validade da CNH').fill('2099-01-01');
   try {
     await dialog.getByRole('button',{name:'Cadastrar motorista',exact:true}).click();

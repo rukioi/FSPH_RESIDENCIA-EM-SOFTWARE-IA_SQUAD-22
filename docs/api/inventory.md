@@ -1,9 +1,13 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 60 operações.
+Gerado por api:generate; não editar manualmente. 65 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| GET | /api/notificacoes | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 ListaNotificacoes | 400, 401, 500, 405 | validado | Caixa individual por sessão atual; ordem criadoEm DESC,id DESC. Query estrita. GET não materializa alertas. |
+| POST | /api/notificacoes/ler-todas | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 NotificacoesAtualizadas | 400, 401, 404, 500, 405 | validado | Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas. |
+| POST | /api/notificacoes/{id}/ler | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 NotificacoesAtualizadas | 400, 401, 404, 500, 405 | validado | Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas. |
+| POST | /api/notificacoes/sincronizar | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 NotificacoesAtualizadas | 400, 401, 404, 500, 405 | validado | Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas. |
 | GET | /api/solicitacoes-viagem/{id} | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO | sem corpo | 200 RespostaDetalheSolicitacaoViagem | 400, 401, 403, 404, 500, 405 | validado | Solicitante acessa somente pedido próprio; ausente/inacessível recebe o mesmo 404. Dados mínimos, finalidade/retorno/recursos legados podem ser null. |
 | GET | /api/solicitacoes-viagem/{id}/historico | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO | sem corpo | 200 RespostaHistoricoSolicitacaoViagem | 400, 401, 403, 404, 500, 405 | validado | Vínculo estruturado log_atividade.solicitacao_viagem_id; sem busca textual ou backfill. data_hora ASC NULLS LAST, id ASC. page=1,limit=20 máximo100. Solicitante não recebe responsável interno. Auditoria sem fuso, sem inferência de offset histórico. |
 | GET | /api/solicitacoes-viagem/agenda | ADM, GESTOR_FROTA | sem corpo | 200 RespostaAgendaViagem | 400, 401, 403, 500, 405 | validado | Período inicio/fim ISO com offset, até 31 dias. Só AGENDADA intersectando [inicio,fim). page=1, limit=20 (máximo 100). Dados mínimos e recursos; retorno legado ausente é null, sem fim presumido. |
@@ -59,6 +63,7 @@ Gerado por api:generate; não editar manualmente. 60 operações.
 | PUT | /api/motoristas/{id} | ADM, GESTOR_FROTA | EditarMotorista | 200 RespostaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | PATCH | /api/motoristas/{id} | ADM, GESTOR_FROTA | EditarMotorista | 200 RespostaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | DELETE | /api/motoristas/{id} | ADM, GESTOR_FROTA | sem corpo | 200 Exclusao | 401, 403, 404, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| GET | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | sem corpo | 200 ComprovanteAbastecimento | 401, 403, 404, 500, 405 | legado | Imagem JPEG ou PNG como bytes; acesso autenticado. |
 | GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 Abastecimentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | POST | /api/abastecimentos | ADM, GESTOR_FROTA | CriarAbastecimento | 201 RespostaAbastecimento | 400, 401, 403, 404, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/documentos | ADM, GESTOR_FROTA | sem corpo | 200 Documentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |

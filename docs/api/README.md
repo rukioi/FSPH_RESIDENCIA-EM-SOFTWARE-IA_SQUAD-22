@@ -1,5 +1,9 @@
 # Convenções mínimas da API
 
+O módulo de [notificações internas](./notificacoes.md) acrescenta caixa individual,
+filtros paginados, leitura e sincronização de vencimentos, com contratos puros no
+registro global. Aplicação da migration e pré-condições de rollout estão no documento do módulo.
+
 O contrato global executável da API existente está em [openapi.yaml](./openapi.yaml),
 com cobertura por operação em [inventory.md](./inventory.md). A fonte é o registro
 code-first em `backend/src/shared/contract/registry.ts`, com contribuições puras dos

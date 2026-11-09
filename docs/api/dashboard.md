@@ -1,5 +1,24 @@
 # API — Dashboard institucional (SCRUM-164)
 
+## Integração visual do gestor
+
+O painel `/gestor/dashboard` consulta `/gestor` e `/pendencias` pelo cliente
+autenticado comum, com validação dos schemas e cancelamento de leituras antigas.
+Hoje/7/30 dias e intervalo personalizado usam o filtro do servidor. O cartão de
+viagens programadas soma os estados AGENDADA e PRONTA_PARA_INICIAR da distribuição
+completa, sem usar o tamanho da lista limitada de próximas viagens e sem afirmar
+execução. Gráfico e legenda preservam todos os estados retornados.
+
+Atualização manual e retorno do foco à janela recarregam as consultas. Links de
+análise, atividade e viagens abrem o detalhe existente da solicitação; decisões
+e edições continuam nesse fluxo autorizado. Motoristas indeterminados exibem o
+motivo do servidor. A consulta documental legada usa 30 dias e a tela identifica
+essa janela como provisória, sem declará-la regra validada.
+
+O cabeçalho do gestor não exibe mais a contagem fictícia de notificações. Os
+testes visuais usam fixtures exclusivamente no Playwright; não há fallback de
+dados demonstrativos na página do gestor.
+
 ## Acesso e rotas
 
 JWT/sessão atual e perfis ADM ou GESTOR_FROTA em todos os GETs existentes:

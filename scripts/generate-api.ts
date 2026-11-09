@@ -100,6 +100,30 @@ export function checkCompatibility(previous: Document, current: Document) {
     const candidate = structuredClone(current.components.schemas[name as keyof typeof current.components.schemas]);
     // A forma legada permanece; apenas a descrição da correção autorizada muda.
     if (name === 'CriarAbastecimento' && candidate) candidate.description = schema.description;
+    // Extens?o aditiva autorizada para combust?vel; os campos anteriores permanecem id?nticos.
+    if (candidate && !JSON.stringify(schema).includes('"tanque_completo"') && ['CriarAbastecimento','Abastecimento','RespostaAbastecimento','Abastecimentos'].includes(name)) {
+      const fields = { tanque_completo: z.boolean(), comprovante_nome: z.string().nullable(),
+        comprovante: z.object({nome:z.string().min(1).max(255),tipo:z.enum(['image/jpeg','image/png']),dadosBase64:z.string().max(1398104)}).nullish() };
+      const strip = (value: unknown): void => {
+        if (!value || typeof value !== 'object') return;
+        if (Array.isArray(value)) { value.forEach(strip); return; }
+        const obj = value as Record<string, unknown>;
+        if (obj.properties && typeof obj.properties === 'object') {
+          const props = obj.properties as Record<string, unknown>;
+          for (const [key, validator] of Object.entries(fields)) {
+            if (!(key in props)) continue;
+            const {$schema, ...expected} = z.toJSONSchema(validator, {io:'input'}); void $schema;
+            if (JSON.stringify(props[key]) !== JSON.stringify(expected)) throw new Error('Campo novo de abastecimento incompat?vel: '+key);
+            const required = Array.isArray(obj.required) && obj.required.includes(key);
+            if (required !== (name !== 'CriarAbastecimento')) throw new Error('Obrigatoriedade de abastecimento incompat?vel: '+key);
+            delete props[key];
+          }
+        }
+        if (Array.isArray(obj.required)) obj.required = obj.required.filter(x => x !== 'tanque_completo' && x !== 'comprovante_nome');
+        Object.values(obj).forEach(strip);
+      };
+      strip(candidate);
+    }
     if (JSON.stringify(schema) !== JSON.stringify(candidate)) throw new Error('Componente existente alterado: '+name);
   }
 }
