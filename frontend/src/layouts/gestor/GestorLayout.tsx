@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { navegar, useCaminho } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
@@ -38,6 +38,13 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
   }
   // Menu aberto por padrão no computador e fechado no celular
   const [menuAberto, setMenuAberto] = useState(window.innerWidth > 900)
+  const [menuMovel, setMenuMovel] = useState(window.innerWidth <= 900)
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 900px)')
+    const atualizar = () => setMenuMovel(media.matches)
+    media.addEventListener('change', atualizar)
+    return () => media.removeEventListener('change', atualizar)
+  }, [])
   // Item ativo segue a rota atual (inclusive detalhe/edição: /gestor/solicitacoes/...)
   const caminho = useCaminho()
   const [itemClicado, setItemClicado] = useState('Dashboard')
@@ -46,9 +53,9 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
     itemClicado
 
   return (
-    <div className={menuAberto ? 'shell shell--aberto' : 'shell'}>
+    <div className={menuAberto ? 'shell shell--gestor shell--aberto' : 'shell shell--gestor'}>
       {/* ===== Menu lateral ===== */}
-      <aside className="menu">
+      <aside id="menu-gestor" className="menu" inert={menuMovel && !menuAberto}>
         <div className="menu__marca">
           <span className="menu__logo">
             <Icone nome="frota" tamanho={26} />
@@ -65,6 +72,7 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
   {itensMenu.map((item) => (
     <button
       key={item.nome}
+      title={item.nome}
       type="button"
       className={
         item.nome === itemAtivo
@@ -73,11 +81,14 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
       }
       onClick={() => {
         setItemClicado(item.nome)
-        if (item.rota) navegar(item.rota)
+        if (item.rota) {
+          navegar(item.rota)
+          if (menuMovel) setMenuAberto(false)
+        }
       }}
     >
       <Icone nome={item.icone} />
-      {item.nome}
+      <span className="menu__rotulo">{item.nome}</span>
     </button>
   ))}
 </nav>
@@ -100,7 +111,9 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
           <button
             type="button"
             className="botao-icone"
-            aria-label="Abrir ou fechar menu"
+            aria-label={menuAberto ? 'Retrair menu' : 'Expandir menu'}
+            aria-expanded={menuAberto}
+            aria-controls="menu-gestor"
             onClick={() => setMenuAberto(!menuAberto)}
           >
             <Icone nome="menu" />
