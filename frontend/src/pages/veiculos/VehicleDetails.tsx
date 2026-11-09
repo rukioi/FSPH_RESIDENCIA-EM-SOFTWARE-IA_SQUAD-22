@@ -112,4 +112,3 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
     </article>
   </section>;
 }
-

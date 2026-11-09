@@ -222,7 +222,7 @@ export function Veiculos() {
             </span>
           </div>
           <strong>{carregando || erro ? "—" : totalDisponiveis}</strong>
-          
+
         </article>
 
         <article className="veiculos-indicador">
@@ -233,7 +233,7 @@ export function Veiculos() {
             </span>
           </div>
           <strong>{carregando || erro ? "—" : totalEmViagem}</strong>
-          
+
         </article>
 
         <article className="veiculos-indicador">
@@ -244,7 +244,7 @@ export function Veiculos() {
             </span>
           </div>
           <strong>{carregando || erro ? "—" : totalEmManutencao}</strong>
-          
+
         </article>
       </section>
 
@@ -532,4 +532,3 @@ export function Veiculos() {
     </section>
   );
 }
-

@@ -32,4 +32,3 @@ function Fixture() {
 }
 
 createRoot(document.getElementById('root')!).render(<Fixture />);
-
