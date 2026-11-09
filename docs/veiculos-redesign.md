@@ -54,3 +54,11 @@ npx playwright test --config tests/ui-controls/veiculos-redesign.config.ts
 Capturas e resultados ficam em test-results/veiculos-redesign, fora do Git.
 A suíte isolada usa fixtures HTTP explicitamente em testes, sem mocks na aplicação de produção.
 Build emite aviso de bundle acima de 500 kB; divisão global de código está fora deste redesign.
+
+## Reconcilia??o com a main ? 09/11/2026
+
+A compara??o normalizou quebras de linha e preservou corre??es posteriores da main em sidebar, dashboard, instru??es e testes. Os ajustes finais da interface e os cen?rios de edi??o e imagens foram incorporados.
+
+No checkout isolado do PR passaram lint, typecheck, build, api:check, client:check, 86 testes frontend e os sete cen?rios Playwright isolados em 390/768/1280/1440 px. O build manteve o aviso de bundle acima de 500 kB.
+
+A su?te completa exigiu identidade do banco isolado. O provisionamento foi recusado porque j? existe uma inst?ncia ou volume sem comprovante deste checkout. O E2E com backend n?o iniciou porque a porta 5173 estava ocupada. Nenhum processo ou banco preexistente foi alterado.

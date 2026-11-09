@@ -58,9 +58,10 @@ export function Veiculos() {
   const [modalAberto, setModalAberto] = useState(false);
   const cadastroDialog = useRef<HTMLDialogElement>(null);
   const cadastroTrigger = useRef<HTMLButtonElement>(null);
+  const cadastroVisitado = useRef(false);
   useEffect(() => {
-    if (modalAberto) cadastroDialog.current?.showModal();
-    else cadastroTrigger.current?.focus();
+    if (modalAberto) { cadastroDialog.current?.showModal(); cadastroVisitado.current = true; }
+    else if (cadastroVisitado.current) cadastroTrigger.current?.focus();
   }, [modalAberto]);
   const [salvando, setSalvando] = useState(false);
   const [formulario, setFormulario] =
@@ -345,7 +346,7 @@ export function Veiculos() {
                 </div>
                 <div className="veiculo-card__conteudo">
                   <h2 title={vehicleTitle(veiculo.marca, veiculo.modelo)}>{vehicleTitle(veiculo.marca, veiculo.modelo)}</h2>
-                  <p className="veiculo-card__utilizacao">{veiculo.is_svo ? "SVO" : "Administrativo"} · {veiculo.vinculo === "LOCADO" ? "Locado" : "Próprio"}</p>
+                  <p className="veiculo-card__utilizacao">{veiculo.is_svo === null ? "Utilização não informada" : veiculo.is_svo ? "SVO" : "Administrativo"} · {veiculo.vinculo === "LOCADO" ? "Locado" : "Próprio"}</p>
                   <p className="veiculo-card__placa"><span>Placa</span> <strong>{veiculo.placa || "Não informada"}</strong></p>
                   <dl className="veiculo-card__dados">
                     <div><dt>Ano</dt><dd>{veiculo.ano ?? "Não informado"}</dd></div>
@@ -353,7 +354,7 @@ export function Veiculos() {
                     <div><dt>Quilometragem</dt><dd>{formatarQuilometragem(veiculo.quilometragem_atual)}</dd></div>
                   </dl>
                 </div>
-                <button className="veiculo-card__detalhes-botao" type="button" onClick={() => setVeiculoSelecionado(veiculo)}>
+                <button className="veiculo-card__detalhes-botao" aria-label={`Ver detalhes de ${veiculo.placa}`} type="button" onClick={() => setVeiculoSelecionado(veiculo)}>
                   Ver detalhes<span aria-hidden="true">→</span>
                 </button>
               </article>

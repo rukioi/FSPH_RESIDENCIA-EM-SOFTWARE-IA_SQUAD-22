@@ -76,8 +76,8 @@ function VehicleIllustration({ tipo }: { tipo?: string | null }) {
 
 function VehicleImageContent({ tipo, src, alt, eager }: ImageProps) {
   const [failed, setFailed] = useState(false);
-  return <span className="vehicle-image" {...(!src || failed ? { role: 'img', 'aria-label': `Ilustra??o de ve?culo: ${vehicleTypeLabel(tipo)}` } : {})}>
-    {src && !failed ? <img className="vehicle-image__photo" src={src} alt={alt ?? 'Fotografia do ve?culo'} loading={eager ? 'eager' : 'lazy'} onError={() => setFailed(true)} /> : <VehicleIllustration tipo={tipo} />}
+  return <span className="vehicle-image" {...(!src || failed ? { role: 'img', 'aria-label': `Ilustração de veículo: ${vehicleTypeLabel(tipo)}` } : {})}>
+    {src && !failed ? <img className="vehicle-image__photo" src={src} alt={alt ?? 'Fotografia do veículo'} loading={eager ? 'eager' : 'lazy'} onError={() => setFailed(true)} /> : <VehicleIllustration tipo={tipo} />}
   </span>;
 }
 

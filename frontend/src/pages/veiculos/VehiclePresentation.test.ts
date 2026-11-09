@@ -29,7 +29,7 @@ describe('apresentação de veículos', () => {
     const images = types.map(tipo => renderToStaticMarkup(createElement(VehicleImage, { tipo })));
     expect(new Set(images).size).toBe(types.length);
     expect(images.every(image => image.includes('vehicle-image__illustration'))).toBe(true);
-    expect(images[0]).toContain('aria-label="Ilustra??o de ve?culo: Passeio"');
+    expect(images[0]).toContain('aria-label="Ilustração de veículo: Passeio"');
     const photo = renderToStaticMarkup(createElement(VehicleImage, { src: '/foto.jpg', alt: 'Veículo' }));
     expect(photo).toContain('loading="lazy"');
     expect(photo).toContain('alt="Veículo"');
