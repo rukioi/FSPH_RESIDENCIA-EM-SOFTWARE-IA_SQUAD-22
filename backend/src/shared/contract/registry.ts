@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { notificacoesSchemas } from '../../modules/notificacoes/notificacoes.schemas.js';
 import {parametrosPeriodoDashboard,notasDashboardPeriodo} from '../../modules/dashboard/dashboard.indicadores.schemas.js';
 import { erro, erroString, erroSvo, sucessoExclusao, gestor, consultaFrota } from './schemas.js';
 import { veiculosSchemas } from '../../modules/veiculos/veiculos.schemas.js';
@@ -16,12 +17,12 @@ import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas
 import { solicitacoesSchemas, statusSolicitacao } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
-export const schemas = { Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
+export const schemas = { ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
   ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
-export type Modulo = 'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
+export type Modulo = 'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
   id: string; modulo: Modulo; method: 'get'|'post'|'put'|'patch'|'delete'; path: string;
   perfis: string[]; response: SchemaName; status: number; body?: SchemaName;
@@ -35,6 +36,13 @@ const op = (modulo: Modulo, method: Operacao['method'], path: string, response: 
   notes: 'Formato atual preservado; query params não declarados são ignorados.', ...options,
 });
 export const operations: Operacao[] = [
+  op('notificacoes','get','/api/notificacoes','ListaNotificacoes',['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],{
+    runtimeValidation:true,errors:[400,401,500],notes:'Caixa individual por sessão atual; ordem criadoEm DESC,id DESC. Query estrita. GET não materializa alertas.',
+    query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+      {name:'filtro',required:false,schema:z.enum(['todas','nao-lidas','lidas'])}]}),
+  ...(['/api/notificacoes/ler-todas','/api/notificacoes/{id}/ler','/api/notificacoes/sincronizar'] as const).map(path=>
+    op('notificacoes','post',path,'NotificacoesAtualizadas',['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],{
+      runtimeValidation:true,status:200,errors:[400,401,404,500],notes:'Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas.'})),
   op('solicitacoes','get','/api/solicitacoes-viagem/{id}','RespostaDetalheSolicitacaoViagem',['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO'],{
     errors:[400,401,403,404,500],notes:'Solicitante acessa somente pedido próprio; ausente/inacessível recebe o mesmo 404. Dados mínimos, finalidade/retorno/recursos legados podem ser null.'}),
   op('solicitacoes','get','/api/solicitacoes-viagem/{id}/historico','RespostaHistoricoSolicitacaoViagem',['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO'],{
@@ -157,6 +165,7 @@ export const operations: Operacao[] = [
   op('motoristas','post','/api/motoristas','RespostaMotorista',gestor,{body:'CriarMotorista',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('motoristas',method,'/api/motoristas/{id}','RespostaMotorista',gestor,{body:'EditarMotorista',errors:[400,401,403,404,409,413,415,500]})),
   op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,500]}),
+  op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
   op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
   op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,413,415,500]}),
   op('documentos','get','/api/documentos','Documentos',gestor),

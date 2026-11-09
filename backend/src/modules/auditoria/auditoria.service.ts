@@ -1,5 +1,6 @@
 
 import type postgres from 'postgres';
+import { notificarAtividades } from '../notificacoes/notificacoes.service.js';
 import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from './auditoria.repository.js';
 
 export type EventoAtividade =
@@ -88,6 +89,7 @@ export async function registrarAtividades(tx: postgres.TransactionSql, usuarioId
       solicitacoes.some(id => id !== null) ? solicitacoes : undefined
     );
   }
+  await notificarAtividades(tx,eventos);
   return descricoes;
 }
 
