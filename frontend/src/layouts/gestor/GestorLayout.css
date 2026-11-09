@@ -49,7 +49,7 @@ button:focus-visible {
 /* ===== Estrutura ===== */
 .shell {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-columns: 0 minmax(0, 1fr);
   min-height: 100vh;
   transition: grid-template-columns 0.2s ease;
 }
@@ -68,13 +68,14 @@ button:focus-visible {
   position: sticky;
   top: 0;
   height: 100vh;
-  width: 100%;
+  width: var(--largura-menu);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: linear-gradient(180deg, var(--azul-escuro), #082649);
   color: #b8c9e3;
-  transition: width 0.2s ease;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
 }
 .shell--aberto .menu {
   transform: none;
@@ -95,22 +96,6 @@ button:focus-visible {
   height: var(--altura-cabecalho);
   padding: 0 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-@media (min-width: 901px) {
-  .shell:not(.shell--aberto) .menu__marca { padding: 0 17px; }
-  .shell:not(.shell--aberto) .menu__marca > div,
-  .shell:not(.shell--aberto) .menu__usuario > div,
-  .shell:not(.shell--aberto) .menu__grupo,
-  .shell:not(.shell--aberto) .menu__rotulo {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-  .shell:not(.shell--aberto) .menu__usuario { padding-inline: 18px; }
-  .shell:not(.shell--aberto) .menu__item { justify-content: center; padding: 0; }
 }
 .menu__marca strong {
   font-size: 17px;
@@ -302,7 +287,6 @@ button:focus-visible {
     left: 0;
     z-index: 30;
     max-width: 86vw;
-    width: var(--largura-menu);
     transform: translateX(-100%);
     transition: transform 0.2s ease;
   }
@@ -322,20 +306,30 @@ button:focus-visible {
   .cabecalho {
     padding: 0 12px;
   }
-  .cabecalho__caminho {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .cabecalho__direita {
-    flex-shrink: 0;
-  }
   .cabecalho__usuario-texto {
     display: none;
   }
 }
 
+/* Barra compacta apenas no layout do gestor. */
+@media (min-width: 901px) {
+  .shell--gestor:not(.shell--aberto) { grid-template-columns: 76px minmax(0, 1fr); }
+  .shell--gestor:not(.shell--aberto) .menu { width: 76px; transform: none; }
+  .shell--gestor:not(.shell--aberto) .menu__marca { padding: 0 17px; }
+  .shell--gestor:not(.shell--aberto) .menu__marca > div,
+  .shell--gestor:not(.shell--aberto) .menu__usuario > div,
+  .shell--gestor:not(.shell--aberto) .menu__grupo,
+  .shell--gestor:not(.shell--aberto) .menu__rotulo {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  .shell--gestor:not(.shell--aberto) .menu__usuario { padding-inline: 18px; }
+  .shell--gestor:not(.shell--aberto) .menu__item { justify-content: center; padding: 0; }
+}
+@media (max-width: 900px) {
+  .shell--gestor .cabecalho__caminho { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .shell--gestor .cabecalho__direita { flex-shrink: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .shell, .menu { transition: none; }
+  .shell--gestor, .shell--gestor .menu { transition: none; }
 }

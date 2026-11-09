@@ -1,5 +1,5 @@
 import { Sininho } from '../../features/notificacoes/Sininho'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { navegar, useCaminho } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
@@ -39,6 +39,13 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
   }
   // Menu aberto por padrão no computador e fechado no celular
   const [menuAberto, setMenuAberto] = useState(window.innerWidth > 900)
+  const [menuMovel, setMenuMovel] = useState(window.innerWidth <= 900)
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 900px)')
+    const atualizar = () => setMenuMovel(media.matches)
+    media.addEventListener('change', atualizar)
+    return () => media.removeEventListener('change', atualizar)
+  }, [])
   // Item ativo segue a rota atual (inclusive detalhe/edição: /gestor/solicitacoes/...)
   const caminho = useCaminho()
   const [itemClicado, setItemClicado] = useState('Dashboard')
@@ -48,9 +55,9 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
     itemClicado
 
   return (
-    <div className={menuAberto ? 'shell shell--aberto' : 'shell'}>
+    <div className={menuAberto ? 'shell shell--gestor shell--aberto' : 'shell shell--gestor'}>
       {/* ===== Menu lateral ===== */}
-      <aside id="menu-gestor" className="menu" inert={!menuAberto && window.innerWidth <= 900}>
+      <aside id="menu-gestor" className="menu" inert={menuMovel && !menuAberto}>
         <div className="menu__marca">
           <span className="menu__logo">
             <Icone nome="frota" tamanho={26} />
@@ -71,8 +78,8 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
   {itensMenu.filter(item => sessao.perfil === 'MOTORISTA' || sessao.perfil === 'ATENDENTE_SVO' ? item.rota === ROTAS.notificacoes : true).map((item) => (
     <button
       key={item.nome}
-      type="button"
       title={item.nome}
+      type="button"
       className={
         item.nome === itemAtivo
           ? 'menu__item menu__item--ativo'
@@ -80,8 +87,10 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
       }
       onClick={() => {
         setItemClicado(item.nome)
-        if (item.rota) navegar(item.rota)
-        if (item.rota && window.innerWidth <= 900) setMenuAberto(false)
+        if (item.rota) {
+          navegar(item.rota)
+          if (menuMovel) setMenuAberto(false)
+        }
       }}
     >
       <Icone nome={item.icone} />
