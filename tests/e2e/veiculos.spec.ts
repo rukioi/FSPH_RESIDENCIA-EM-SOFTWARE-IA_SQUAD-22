@@ -69,7 +69,7 @@ for (const width of [390,768,1280]) {
       {id: '2', tipo: 'DOCUMENTO_VEICULO', descricao: 'Documento de outro veiculo', relacionado_id: '999999', data_validade: '2030-01-15T00:00:00.000Z', status: 'REGULAR'},
       {id: '3', tipo: 'CNH_MOTORISTA', descricao: 'CNH teste', relacionado_id: vehicle.id, data_validade: null, status: 'SEM_VALIDADE'},
     ]})}));
-    await card.getByRole('button',{name:'Ver detalhes'}).click();
+    await card.getByRole('button',{name:/Ver detalhes/}).click();
     await expect(page.getByText('Licenciamento teste')).toBeVisible();
     await expect(page.getByText('Documento de outro veiculo')).toHaveCount(0);
     await expect(page.getByText('CNH teste')).toHaveCount(0);

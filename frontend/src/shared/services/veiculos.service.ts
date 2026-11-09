@@ -19,7 +19,7 @@ export async function cadastrarVeiculo(body: unknown): Promise<VeiculoDto> {
   return (await executeApi('veiculos_post__api_veiculos',{body:entrada,parse:value=>parseResponse(respostaVeiculo,value)})).data;
 }
 
-/** Valida a altera??o parcial e retorna somente o ve?culo confirmado pelo servidor. */
+/** Valida a alteração parcial e retorna somente o veículo confirmado pelo servidor. */
 export async function atualizarVeiculo(id: string, body: unknown): Promise<VeiculoDto> {
   const result = editarVeiculoSchema.safeParse(body);
   if (!result.success) { const error = erroValidacaoVeiculo(result.error, false, body); throw new ApiError(400, error.code, error.message); }

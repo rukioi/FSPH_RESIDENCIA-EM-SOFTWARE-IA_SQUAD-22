@@ -23,6 +23,11 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
   aoVoltar: () => void;
   aoAtualizar?: (veiculo: VeiculoDto) => void;
 }) {
+  const tituloRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    tituloRef.current?.focus({ preventScroll: true });
+  }, []);
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
@@ -30,7 +35,7 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
   const [form, setForm] = useState({ placa: veiculo.placa, marca: veiculo.marca, modelo: veiculo.modelo, status: veiculo.status ?? '', capacidade_passageiros: veiculo.capacidade_passageiros?.toString() ?? '', vinculo: veiculo.vinculo, fornecedor_locacao: veiculo.fornecedor_locacao ?? '' });
   const dialogo = useRef<HTMLDialogElement>(null);
   const botaoEditar = useRef<HTMLButtonElement>(null);
-  function fecharEdicao() { setEditando(false); requestAnimationFrame(() => botaoEditar.current?.focus()); }
+  function fecharEdicao() { dialogo.current?.close(); setEditando(false); requestAnimationFrame(() => botaoEditar.current?.focus()); }
   useEffect(() => { if (editando) dialogo.current?.showModal(); }, [editando]);
   async function salvar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault(); setErro(''); setSalvando(true);
@@ -47,7 +52,7 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
   const campos = [
     ['Placa', campo(veiculo.placa)], ['Marca', campo(veiculo.marca)],
     ['Modelo', campo(veiculo.modelo)], ['Ano', campo(veiculo.ano)],
-    ['Tipo', vehicleTypeLabel(veiculo.tipo)], ['Categoria', veiculo.is_svo ? 'SVO' : 'Administrativo'],
+    ['Tipo', vehicleTypeLabel(veiculo.tipo)], ['Categoria', veiculo.is_svo === null ? 'Não informada' : veiculo.is_svo ? 'SVO' : 'Administrativo'],
     ['Vínculo', veiculo.vinculo === 'LOCADO' ? 'Locado' : 'Próprio'],
     ['Fornecedor de locação', campo(veiculo.fornecedor_locacao)],
     ['Capacidade de passageiros', campo(veiculo.capacidade_passageiros)],
@@ -55,21 +60,27 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
     ['Quilometragem atual', formatarQuilometragem(veiculo.quilometragem_atual)],
     ['Cadastrado em', data(veiculo.criado_em)],
   ];
+  const grupos: { titulo: string; itens: string[][] }[] = [
+    { titulo: 'Identificação', itens: campos.slice(0, 4) },
+    { titulo: 'Características', itens: [...campos.slice(4, 6), ...campos.slice(8, 11)] },
+    { titulo: 'Vínculo e situação', itens: [...campos.slice(6, 8), campos[11]] },
+  ];
   const statusDocumento = { SEM_VALIDADE: 'Sem validade', VENCIDA: 'Vencida', PROXIMA_DO_VENCIMENTO: 'Próxima do vencimento', REGULAR: 'Regular' };
 
   return <section className="vehicle-details">
     <button className="vehicle-details__back" type="button" onClick={aoVoltar}>‹ Voltar para veículos</button>
     <header className="vehicle-details__hero">
-      <div className="vehicle-details__image"><VehicleImage tipo={veiculo.tipo} alt={vehicleTitle(veiculo.marca, veiculo.modelo)} /></div>
+      <div className="vehicle-details__image"><VehicleImage tipo={veiculo.tipo} eager /></div>
       <div className="vehicle-details__identity">
         <p className="vehicle-details__eyebrow">Frota / Detalhes do veículo</p>
-        <h1>{vehicleTitle(veiculo.marca, veiculo.modelo)}</h1>
+        <h1 ref={tituloRef} tabIndex={-1}>{vehicleTitle(veiculo.marca, veiculo.modelo)}</h1>
         <p className="vehicle-details__plate">{campo(veiculo.placa)}</p>
-        <div className="vehicle-details__tags"><VehicleStatusBadge status={veiculo.status} /><span>{vehicleTypeLabel(veiculo.tipo)}</span><span>{veiculo.is_svo ? 'SVO' : 'Administrativo'}</span></div>
+        <div className="vehicle-details__tags"><VehicleStatusBadge status={veiculo.status} /><span>{vehicleTypeLabel(veiculo.tipo)}</span><span>{veiculo.is_svo === null ? 'Não informada' : veiculo.is_svo ? 'SVO' : 'Administrativo'}</span></div>
+    {aoAtualizar && <button ref={botaoEditar} type="button" className="vehicle-details__edit" onClick={() => { setForm({ placa: veiculo.placa, marca: veiculo.marca, modelo: veiculo.modelo, status: veiculo.status ?? '', capacidade_passageiros: veiculo.capacidade_passageiros?.toString() ?? '', vinculo: veiculo.vinculo, fornecedor_locacao: veiculo.fornecedor_locacao ?? '' }); setErro(''); setEditando(true); }}>Editar veículo</button>}
       </div>
       <div className="vehicle-details__summary"><span>Quilometragem atual</span><strong>{formatarQuilometragem(veiculo.quilometragem_atual)}</strong><small>Ano {campo(veiculo.ano)}</small></div>
     </header>
-    {aoAtualizar && <button ref={botaoEditar} type="button" className="vehicle-details__edit" onClick={() => { setForm({ placa: veiculo.placa, marca: veiculo.marca, modelo: veiculo.modelo, status: veiculo.status ?? '', capacidade_passageiros: veiculo.capacidade_passageiros?.toString() ?? '', vinculo: veiculo.vinculo, fornecedor_locacao: veiculo.fornecedor_locacao ?? '' }); setErro(''); setEditando(true); }}>Editar veículo</button>}
+
     {aviso && <p role="status">{aviso}</p>}
     {editando && <dialog ref={dialogo} className="vehicle-details__dialog" aria-labelledby="vehicle-edit-title" onCancel={evento => { if (salvando) evento.preventDefault(); else fecharEdicao(); }}>
       <form onSubmit={salvar}><h2 id="vehicle-edit-title">Editar veículo</h2><div className="vehicle-details__form">
@@ -83,7 +94,10 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
 
     <article className="vehicle-details__panel">
       <div className="vehicle-details__heading"><div><h2>Dados cadastrais</h2><p>Informações registradas para este veículo.</p></div></div>
-      {[["Identificação", campos.slice(0, 4)], ["Características", [...campos.slice(4, 6), ...campos.slice(8, 11)]], ["Vínculo e situação", [...campos.slice(6, 8), campos[11]]]].map(([titulo, itens]) => <section className="vehicle-details__group" key={titulo as string}><h3>{titulo as string}</h3><dl className="vehicle-details__fields">{(itens as string[][]).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>)}
+      {grupos.map(({ titulo, itens }) => <section className="vehicle-details__group" key={titulo}>
+        <h3>{titulo}</h3>
+        <dl className="vehicle-details__fields">{itens.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+      </section>)}
     </article>
 
     <div className="vehicle-details__columns">
@@ -95,7 +109,7 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
         <div className="vehicle-details__heading"><div><h2><IconeGestor nome="abastecimentos" tamanho={18} /> Abastecimentos</h2><p>Registros associados a este veículo</p></div><a href={ROTAS.abastecimentosGestor}>Abrir abastecimentos →</a></div>
         {abastecimentos.loading && <p role="status">Carregando abastecimentos...</p>}
         {abastecimentos.error && <p role="alert">{abastecimentos.error} <button type="button" onClick={abastecimentos.retry}>Tentar novamente</button></p>}
-        {!abastecimentos.loading && !abastecimentos.error && (registros.length === 0 ? <p className="vehicle-details__empty">Nenhum abastecimento registrado para este veículo.</p> : <div className="vehicle-details__table"><table><thead><tr><th>Data</th><th>Quilometragem</th><th>Litros</th><th>Valor</th><th>Posto</th></tr></thead><tbody>{registros.map(item => <tr key={item.id}><td>{data(item.data_abastecimento)}</td><td>{formatarQuilometragem(item.quilometragem)}</td><td>{campo(item.litragem)}</td><td>{campo(item.valor_total)}</td><td>{campo(item.posto)}</td></tr>)}</tbody></table></div>)}
+        {!abastecimentos.loading && !abastecimentos.error && (registros.length === 0 ? <p className="vehicle-details__empty">Nenhum abastecimento registrado para este veículo.</p> : <div className="vehicle-details__table"><table><thead><tr><th>Data</th><th>Quilometragem</th><th className="vehicle-details__number">Litros</th><th className="vehicle-details__number">Valor</th><th>Posto</th></tr></thead><tbody>{registros.map(item => <tr key={item.id}><td>{data(item.data_abastecimento)}</td><td>{formatarQuilometragem(item.quilometragem)}</td><td className="vehicle-details__number">{new Intl.NumberFormat("pt-BR").format(Number(item.litragem))}</td><td className="vehicle-details__number">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(item.valor_total))}</td><td>{campo(item.posto)}</td></tr>)}</tbody></table></div>)}
       </article>
     </div>
 
@@ -103,7 +117,7 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
       <div className="vehicle-details__heading"><div><h2><IconeGestor nome="documentos" tamanho={18} /> Documentos do veículo</h2><p>Documentos associados ao cadastro</p></div></div>
       {documentos.loading && <p role="status">Carregando documentos...</p>}
       {documentos.error && <p role="alert">{documentos.error} <button type="button" onClick={documentos.retry}>Tentar novamente</button></p>}
-      {!documentos.loading && !documentos.error && (arquivos.length === 0 ? <p className="vehicle-details__empty">Nenhum documento encontrado para este veículo.</p> : <div className="vehicle-details__table"><table><thead><tr><th>Documento</th><th>Validade</th><th>Situação</th></tr></thead><tbody>{arquivos.map(item => <tr key={item.id}><td>{item.descricao}</td><td>{data(item.data_validade)}</td><td>{statusDocumento[item.status]}</td></tr>)}</tbody></table></div>)}
+      {!documentos.loading && !documentos.error && (arquivos.length === 0 ? <p className="vehicle-details__empty">Nenhum documento encontrado para este veículo.</p> : <div className="vehicle-details__table"><table><thead><tr><th>Documento</th><th>Validade</th><th>Situação</th></tr></thead><tbody>{arquivos.map(item => <tr key={item.id}><td>{item.descricao}</td><td>{data(item.data_validade)}</td><td><span className={`vehicle-document-status vehicle-document-status--${item.status.toLowerCase()}`}>{statusDocumento[item.status]}</span></td></tr>)}</tbody></table></div>)}
       <p className="vehicle-details__note">O download de documentos não está disponível.</p>
     </article>
 

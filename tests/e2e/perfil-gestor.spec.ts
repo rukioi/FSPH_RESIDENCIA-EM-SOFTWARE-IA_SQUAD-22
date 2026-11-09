@@ -14,7 +14,7 @@ for (const width of [390, 768, 1280]) {
     }] } }))
     await page.goto('/gestor/veiculos')
     await expect(page.locator('.veiculo-card')).toBeVisible()
-    await expect(page.locator('.veiculo-card__icone svg')).toHaveAttribute('aria-hidden', 'true')
+    await expect(page.locator('.veiculo-card .vehicle-image__illustration')).toHaveAttribute('aria-hidden', 'true')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: info.outputPath(`veiculos-icones-${width}.png`), fullPage: true })
   })

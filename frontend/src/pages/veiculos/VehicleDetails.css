@@ -50,3 +50,18 @@
 .vehicle-details__group + .vehicle-details__group { border-top: 1px solid var(--borda); margin-top: 20px; padding-top: 20px; }
 .vehicle-details__group h3 { font-size: .9rem; margin: 0 0 16px; }
 .vehicle-details__heading h2 { display: flex; align-items: center; gap: 8px; }
+
+.vehicle-details__table .vehicle-details__number { text-align: right; font-variant-numeric: tabular-nums; }
+.vehicle-document-status { display: inline-flex; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; background: #eef2f7; color: var(--texto-suave); }
+.vehicle-document-status--regular { color: #17633a; background: #e1f3e8; }
+.vehicle-document-status--proxima_do_vencimento { color: #785609; background: #fff5cf; }
+.vehicle-document-status--vencida { color: #a1272c; background: #fdebed; }
+
+.vehicle-details__edit, .vehicle-details__actions button, .vehicle-details [role="alert"] button { min-height: 42px; padding: 9px 14px; border: 1px solid var(--borda); border-radius: 7px; background: var(--branco); color: var(--azul-medio); font-weight: 700; }
+.vehicle-details__edit { margin-top: 14px; }
+.vehicle-details__edit:hover, .vehicle-details__actions button:hover { background: var(--fundo); }
+.vehicle-details__actions button[type="submit"] { background: var(--azul-medio); color: var(--branco); border-color: var(--azul-medio); }
+.vehicle-details__actions button:disabled { opacity: .65; cursor: wait; }
+.vehicle-details__dialog h2 { margin-bottom: 20px; }
+.vehicle-details__dialog .select-personalizado { font-weight: 400; }
+.vehicle-details__columns { align-items: start; }

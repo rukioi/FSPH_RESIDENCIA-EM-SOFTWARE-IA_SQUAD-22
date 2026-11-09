@@ -24,7 +24,7 @@ test('cadastro serializa o binding e só retorna DTO validado após confirmaçã
   expect(JSON.parse(mock.mock.calls[0][1].body)).toEqual(input);
 });
 
-test('edi??o valida entrada e resposta antes de retornar o ve?culo', async () => {
+test('edição valida entrada e resposta antes de retornar o veículo', async () => {
   const mock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: row })));
   vi.stubGlobal('fetch', mock);
   await expect(atualizarVeiculo(row.id, { placa: 'T32DTO' })).resolves.toEqual(row);
