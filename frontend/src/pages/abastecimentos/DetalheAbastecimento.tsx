@@ -1,8 +1,11 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "../../app/routes/router";
 import { ROTAS } from "../../app/routes/rotas";
 import { useRemoteData } from "../../shared/api/useRemoteData";
+import { errorMessage } from "../../shared/api/errors";
 import {
   buscarAbastecimentos,
+  baixarComprovanteAbastecimento,
   type AbastecimentoDto,
 } from "../../shared/services/abastecimentos.service";
 import "./Abastecimentos.css";
@@ -23,7 +26,66 @@ const moeda = new Intl.NumberFormat("pt-BR", {
 export function DetalheAbastecimento({ id }: Props) {
   const remoto = useRemoteData(buscarAbastecimentos, [] as AbastecimentoDto[]);
 
+  const [baixando, setBaixando] = useState(false);
+  const [erroDownload, setErroDownload] = useState("");
+
+  const downloadController = useRef<AbortController | null>(null);
+
   const registro = remoto.data.find((item) => item.id === id);
+
+  // Cancela o download caso o usuário saia da página.
+  useEffect(() => {
+    return () => {
+      downloadController.current?.abort();
+    };
+  }, []);
+
+  async function baixarComprovante() {
+    if (!registro?.comprovante_nome || downloadController.current) {
+      return;
+    }
+
+    const controller = new AbortController();
+    downloadController.current = controller;
+
+    setBaixando(true);
+    setErroDownload("");
+
+    try {
+      const blob = await baixarComprovanteAbastecimento(
+        registro.id,
+        controller.signal,
+      );
+
+      if (controller.signal.aborted) return;
+
+      // Cria um endereço temporário, sem expor uma URL pública.
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = registro.comprovante_nome;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // Libera o endereço temporário após iniciar o download.
+      window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (falha) {
+      if (!controller.signal.aborted) {
+        setErroDownload(errorMessage(falha));
+      }
+    } finally {
+      if (downloadController.current === controller) {
+        downloadController.current = null;
+      }
+
+      if (!controller.signal.aborted) {
+        setBaixando(false);
+      }
+    }
+  }
 
   return (
     <section className="abastecimentos">
@@ -43,6 +105,7 @@ export function DetalheAbastecimento({ id }: Props) {
       ) : remoto.error ? (
         <div role="alert" className="abastecimentos__aviso">
           <p>{remoto.error}</p>
+
           <button type="button" onClick={remoto.retry}>
             Tentar novamente
           </button>
@@ -104,13 +167,30 @@ export function DetalheAbastecimento({ id }: Props) {
 
             <div>
               <dt>Comprovante</dt>
+
               <dd>
-                {registro.comprovante_nome
-                  ? "Comprovante anexado"
-                  : "Não anexado"}
+                {registro.comprovante_nome ? (
+                  <button
+                    type="button"
+                    className="abastecimentos__download"
+                    onClick={() => void baixarComprovante()}
+                    disabled={baixando}
+                    aria-label={`Baixar comprovante do abastecimento ${registro.id}`}
+                  >
+                    {baixando ? "Baixando..." : "Baixar comprovante"}
+                  </button>
+                ) : (
+                  "Não anexado"
+                )}
               </dd>
             </div>
           </dl>
+
+          {erroDownload && (
+            <p role="alert" className="abastecimentos__aviso">
+              {erroDownload}
+            </p>
+          )}
         </div>
       )}
     </section>
