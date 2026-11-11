@@ -12,6 +12,7 @@ export const ROTAS = {
   veiculosGestor: "/gestor/veiculos",
   motoristasGestor: "/gestor/motoristas",
   abastecimentosGestor: "/gestor/abastecimentos",
+  indicadoresAbastecimentosGestor: "/gestor/abastecimentos/indicadores",
   solicitacoesGestor: "/gestor/solicitacoes",
   calendarioGestor: "/gestor/calendario",
 

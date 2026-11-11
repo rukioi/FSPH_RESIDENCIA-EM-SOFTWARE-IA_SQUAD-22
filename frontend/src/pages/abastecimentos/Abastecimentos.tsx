@@ -14,6 +14,7 @@ import { IconeGestor } from "../../shared/components/IconeGestor";
 import "./Abastecimentos.css";
 import { Link } from "../../app/routes/router";
 import {
+  ROTAS,
   rotaDetalheAbastecimento,
   rotaHistoricoAbastecimentosVeiculo,
 } from "../../app/routes/rotas";
@@ -182,6 +183,12 @@ export function Abastecimentos() {
           <h1>Abastecimentos</h1>
           <p>Registre e acompanhe os abastecimentos da frota.</p>
         </div>
+        <Link
+          para={ROTAS.indicadoresAbastecimentosGestor}
+          className="abastecimentos__download"
+        >
+          Ver indicadores
+        </Link>
         <button
           ref={abrir}
           className="abastecimentos__primario"

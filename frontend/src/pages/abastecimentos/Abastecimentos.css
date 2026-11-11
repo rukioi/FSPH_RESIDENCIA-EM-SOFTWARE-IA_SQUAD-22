@@ -343,3 +343,30 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Indicadores de abastecimento */
+
+.abastecimentos__indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.abastecimentos__indicadores h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.abastecimentos__indicador-valor {
+  font-size: 30px;
+  font-weight: 700;
+  color: #17365d;
+  margin: 12px 0;
+}
+
+.abastecimentos__indicadores small {
+  display: block;
+  margin-top: 12px;
+  color: #667085;
+}
