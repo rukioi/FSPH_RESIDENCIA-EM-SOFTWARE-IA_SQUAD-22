@@ -2,6 +2,7 @@ import {
   ROTAS,
   lerRotaSolicitacao,
   lerRotaDetalheAbastecimento,
+  lerRotaHistoricoAbastecimentosVeiculo,
 } from "../../app/routes/rotas";
 
 const perfisPorRota: Record<string, string[]> = {
@@ -37,6 +38,12 @@ export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
 
   if (abastecimentoId !== null) {
     return perfisPorRota[ROTAS.abastecimentosGestor].includes(perfil);
+  }
+
+  const historicoVeiculoId = lerRotaHistoricoAbastecimentosVeiculo(caminho);
+
+  if (historicoVeiculoId !== null) {
+    return perfisPorRota[ROTAS.veiculosGestor].includes(perfil);
   }
 
   return perfisPorRota[caminho]?.includes(perfil) ?? false;

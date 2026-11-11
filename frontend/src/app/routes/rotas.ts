@@ -63,3 +63,22 @@ export function lerRotaDetalheAbastecimento(caminho: string) {
 
   return /^[1-9]\d*$/.test(id) ? id : null;
 }
+
+export function rotaHistoricoAbastecimentosVeiculo(id: string) {
+  if (!/^[1-9]\d*$/.test(id)) {
+    throw new Error("ID de veículo inválido");
+  }
+
+  return `${ROTAS.veiculosGestor}/${id}/abastecimentos`;
+}
+
+export function lerRotaHistoricoAbastecimentosVeiculo(caminho: string) {
+  const prefixo = `${ROTAS.veiculosGestor}/`;
+
+  if (!caminho.startsWith(prefixo)) return null;
+
+  const restante = caminho.slice(prefixo.length);
+  const resultado = /^([1-9]\d*)\/abastecimentos$/.exec(restante);
+
+  return resultado ? resultado[1] : null;
+}

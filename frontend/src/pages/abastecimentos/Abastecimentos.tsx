@@ -13,7 +13,10 @@ import { buscarMotoristas } from "../../shared/services/motoristas.service";
 import { IconeGestor } from "../../shared/components/IconeGestor";
 import "./Abastecimentos.css";
 import { Link } from "../../app/routes/router";
-import { rotaDetalheAbastecimento } from "../../app/routes/rotas";
+import {
+  rotaDetalheAbastecimento,
+  rotaHistoricoAbastecimentosVeiculo,
+} from "../../app/routes/rotas";
 
 const carregar = async (signal: AbortSignal) => {
   const [registros, veiculos, motoristas] = await Promise.all([
@@ -323,7 +326,13 @@ export function Abastecimentos() {
                       <tr key={item.id}>
                         <td>
                           <strong>
-                            {item.veiculo_placa ?? "Placa não informada"}
+                            <Link
+                              para={rotaHistoricoAbastecimentosVeiculo(
+                                String(item.veiculo_id),
+                              )}
+                            >
+                              {item.veiculo_placa ?? "Placa não informada"}
+                            </Link>
                           </strong>
                           <small>
                             {veic

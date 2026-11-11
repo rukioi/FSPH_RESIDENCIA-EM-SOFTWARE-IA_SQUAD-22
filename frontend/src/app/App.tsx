@@ -6,7 +6,7 @@ import type { ComponentType } from 'react'
 import '../shared/styles/tema.css'
 
 import { navegar, useCaminho } from './routes/router'
-import { ROTAS, lerRotaSolicitacao, lerRotaDetalheAbastecimento } from './routes/rotas'
+import { ROTAS, lerRotaSolicitacao, lerRotaDetalheAbastecimento,lerRotaHistoricoAbastecimentosVeiculo } from './routes/rotas'
 import { AuthSkeleton } from './AuthSkeleton'
 
 import { AdminLayout } from '../layouts/administrador/AdminLayout'
@@ -23,6 +23,8 @@ import { Veiculos } from "../pages/veiculos/Veiculos";
 import { Motoristas } from "../pages/motorista/Motoristas";
 import { Abastecimentos } from "../pages/abastecimentos/Abastecimentos";
 import { DetalheAbastecimento } from "../pages/abastecimentos/DetalheAbastecimento";
+import { HistoricoAbastecimentos } from "../pages/abastecimentos/HistoricoAbastecimentos";
+
 
 import { Svo } from '../features/svo/Svo';
 import { Solicitacoes } from '../pages/gerente/Solicitacoes'
@@ -141,6 +143,20 @@ function AppContent() {
       </GestorLayout>
     )
   }
+const historicoVeiculoId =
+  lerRotaHistoricoAbastecimentosVeiculo(caminho);
+
+if (historicoVeiculoId !== null) {
+  return (
+    <GestorLayout usuario={sessao}>
+      <HistoricoAbastecimentos
+        key={historicoVeiculoId}
+        veiculoId={historicoVeiculoId}
+      />
+    </GestorLayout>
+  );
+}
+
 
   if (caminho === ROTAS.motoristasGestor) {
     return (
