@@ -44,7 +44,13 @@ export async function prepararFixtureSvo(senhaDeTeste?: string) {
     throw error;
   }
 
-  async function limpar() {
+  let limpeza: Promise<void> | undefined;
+  return { sql, limpar: () => limpeza ??= limparFixtureSvo(sql) };
+}
+
+/** Limpa somente os IDs oficiais S7 no alvo já verificado; também permite concluir teardown interrompido. */
+export async function limparFixtureSvo(conexao?: Awaited<ReturnType<typeof verifiedSql>>) {
+  const sql = conexao ?? await verifiedSql();
     try {
       await sql.begin(async tx => {
         await tx`DELETE FROM public.log_atividade WHERE usuario_id IN (38100,38101,38102,38103,38104)`;
@@ -58,6 +64,3 @@ export async function prepararFixtureSvo(senhaDeTeste?: string) {
       await sql.end();
     }
   }
-
-  return { sql, limpar };
-}

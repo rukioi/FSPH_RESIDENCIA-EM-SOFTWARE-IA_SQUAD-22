@@ -1,5 +1,7 @@
 // App do perfil Administrador e Gestor de Frota.
 import { useEffect, useState } from 'react'
+import { NotificacoesProvider } from '../features/notificacoes/NotificacoesContext'
+import { Notificacoes } from '../features/notificacoes/Notificacoes'
 import type { ComponentType } from 'react'
 import '../shared/styles/tema.css'
 
@@ -19,6 +21,7 @@ import { Auditoria } from '../pages/administrador/Auditoria'
 import { Dashboard } from '../pages/gerente/DashboardGestor'
 import { Veiculos } from "../pages/veiculos/Veiculos";
 import { Motoristas } from "../pages/motorista/Motoristas";
+import { Abastecimentos } from "../pages/abastecimentos/Abastecimentos";
 
 import { SolicitanteLayout } from '../layouts/solicitante/SolicitanteLayout'
 import { Solicitacoes } from '../pages/gerente/Solicitacoes'
@@ -49,6 +52,11 @@ const paginas: Record<string, ComponentType> = {
 
 /** Confirma a sessão da rota atual antes de montar qualquer página protegida. */
 export function App() {
+  useCaminho()
+  return <NotificacoesProvider key={obterToken() ?? 'sem-sessao'}><AppContent /></NotificacoesProvider>
+}
+
+function AppContent() {
   const caminho = useCaminho()
   const [sessao, setSessao] = useState<UsuarioSessao | null>(null)
   const [caminhoVerificado, setCaminhoVerificado] = useState<string | null>(null)
@@ -129,7 +137,15 @@ export function App() {
       <Link className="svo-atalho" para={destinoDoPerfil(sessao.perfil)}>Voltar ao início</Link></SvoLayout>
   }
   if (caminhoVerificado !== caminho || !sessao || !perfilPodeAcessar(caminho, sessao.perfil)) {
+    if (sessao && perfilPodeAcessar(caminho, sessao.perfil) && caminho.startsWith('/gestor/')) {
+      return <GestorLayout usuario={sessao}><AuthSkeleton caminho={caminho} somenteConteudo /></GestorLayout>
+    }
     return <AuthSkeleton caminho={caminho} />
+  }
+
+  if (caminho === ROTAS.notificacoes) {
+    const Layout = sessao.perfil === 'ADM' ? AdminLayout : sessao.perfil === 'SOLICITANTE_INTERNO' ? SolicitanteLayout : GestorLayout
+    return <Layout usuario={sessao}><Notificacoes /></Layout>
   }
 
   // Tela do Gestor de Frota
@@ -159,6 +175,14 @@ export function App() {
   }
 
   // ===== Solicitações e Calendário do Gestor de Frota =====
+  if (caminho === ROTAS.abastecimentosGestor) {
+    return (
+      <GestorLayout usuario={sessao}>
+        <Abastecimentos />
+      </GestorLayout>
+    )
+  }
+
   if (caminho === ROTAS.solicitacoesGestor) {
     return (
       <GestorLayout usuario={sessao}>

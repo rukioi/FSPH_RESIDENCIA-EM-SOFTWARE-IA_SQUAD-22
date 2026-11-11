@@ -17,7 +17,7 @@ const cards=[
 ] as const
 
 /** Consulta três fontes independentes; falha nunca é convertida em contagem zero. */
-export function ResumoDashboardSvo({revisao}:{revisao:number}) {
+export function ResumoDashboardSvo({revisao, atualizar}:{revisao:number; atualizar:()=>void}) {
   const [periodo,setPeriodo]=useState<PeriodoDashboardSvo>(()=>{
     const valor=typeof window==='undefined' ? null : new URLSearchParams(window.location.search).get('periodo')
     return valor && Object.hasOwn(periodos,valor) ? valor as PeriodoDashboardSvo : 'hoje'
@@ -38,7 +38,7 @@ export function ResumoDashboardSvo({revisao}:{revisao:number}) {
   return <>
     <div className="svo-acoes svo-dashboard__periodos" role="group" aria-label="Período dos indicadores">
       {Object.entries(periodos).map(([valor,nome])=><button key={valor} aria-pressed={periodo===valor} onClick={()=>selecionar(valor as PeriodoDashboardSvo)}>{nome}</button>)}
-      <button onClick={()=>{indicadores.retry();filas.retry();atividades.retry()}}>Atualizar dashboard</button>
+      <button onClick={atualizar}>Atualizar dashboard</button>
     </div>
     <p className="svo-dashboard__periodo-descricao">{dados ? `Período: ${dataCivilSvo(dados.inicio)} a ${dataCivilSvo(dados.fim)}.` : 'Aguardando indicadores do servidor.'} As filas atuais não são limitadas pelo período.</p>
     {indicadores.loading && <p role="status">Carregando indicadores…</p>}

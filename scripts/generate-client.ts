@@ -21,10 +21,12 @@ export async function generateClient(check = false) {
     const operation = definition as {operationId:string;requestBody?:{content:Record<string,{schema:{$ref:string}}>};responses:Record<string,{content:Record<string,{schema:{$ref:string}}>}>};
     const name = operation.operationId;
     const success = Object.keys(operation.responses).find(s=>s.startsWith('2'))!;
-    const response = operation.responses[success].content['application/json'].schema.$ref.split('/').at(-1);
+    const jsonResponse = operation.responses[success].content['application/json'];
+    const response = jsonResponse?.schema.$ref.split('/').at(-1);
+    const responseType = response ? `ApiSchemas['${response}']` : 'Blob';
     const body = operation.requestBody?.content['application/json'].schema.$ref.split('/').at(-1);
     bindings[name] = {method:method.toUpperCase(),path};
-    operationTypes += `  '${name}': { body: ${body ? `ApiSchemas['${body}']` : 'undefined'}; response: ApiSchemas['${response}'] };\n`;
+    operationTypes += `  '${name}': { body: ${body ? `ApiSchemas['${body}']` : 'undefined'}; response: ${responseType} };\n`;
   }
   operationTypes += '}\n';
   const files = [['frontend/src/shared/api/generated/schema.d.ts',types+operationTypes],

@@ -1,3 +1,4 @@
+import { responderNotificacoesVazias } from './fixtures/svo-ui';
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
@@ -20,6 +21,7 @@ async function preparar(page: Page) {
   let aguardar: Promise<void> | null = null
   await page.route('https://fonts.googleapis.com/**', r => r.fulfill({contentType:'text/css',body:''}))
   await page.route(url => url.pathname.startsWith('/api/'), async route => {
+    if (await responderNotificacoesVazias(route)) return;
     const req=route.request(), url=new URL(req.url()), path=url.pathname, metodo=req.method()
     const body=req.postData() ? req.postDataJSON() : undefined
     chamadas.push({metodo,path: url.pathname+url.search,body})
@@ -30,6 +32,7 @@ async function preparar(page: Page) {
       return route.fulfill({json:{data,meta:{page:Number(url.searchParams.get('page')),limit:20,total:data.length}}})
     }
     if (metodo==='GET' && path==='/api/svo/solicitacoes/71') {
+      if([403,404].includes(falha)) return route.fulfill({status:falha,json:{erro:`Erro ${falha}: consulta recusada no teste.`}})
       if(!cadastrado) return route.fulfill({status:404,json:{erro:'Solicitação não encontrada.'}})
       return route.fulfill({json:{id:'71',codigo:'#SVO-71',statusTriagem:status,criadoEm:'2026-11-05T12:00:00.000000',triagemObservacoes:observacoes,
         triadoPorId:status==='AGUARDANDO_TRIAGEM'?null:'42',triadoEm:status==='AGUARDANDO_TRIAGEM'?null:'2026-11-05T13:00:00.000000',
@@ -163,10 +166,16 @@ for(const status of [400,401,403,404,409]) test(`triagem trata HTTP ${status} se
   await page.getByRole('button',{name:'Encaminhar IML',exact:true}).click()
   if(status===401) { await expect(page).toHaveURL(/\/login$/); return }
   await expect(page.getByRole('alert')).toContainText(`Erro ${status}`)
-  await expect(page.getByLabel('Observações da triagem')).toHaveValue('Texto preservado')
+  if([403,404].includes(status)) {
+    await expect(page.getByLabel('Observações da triagem')).toHaveCount(0)
+    await expect(page.getByRole('button',{name:'Concluir triagem'})).toHaveCount(0)
+    await expect(page.getByRole('button',{name:'Tentar novamente'})).toBeVisible()
+  } else {
+    await expect(page.getByLabel('Observações da triagem')).toHaveValue('Texto preservado')
+    if(status===400) await expect(page.getByRole('button',{name:'Concluir triagem'})).toBeEnabled()
+    else await expect(page.getByRole('button',{name:'Concluir triagem'})).toBeDisabled()
+  }
   await expect(page.getByText('Nenhuma ordem de coleta SVO foi criada.',{exact:true})).toHaveCount(0)
-  if(status===400) await expect(page.getByRole('button',{name:'Concluir triagem'})).toBeEnabled()
-  else await expect(page.getByRole('button',{name:'Concluir triagem'})).toBeDisabled()
   expect(controle.inesperadas).toEqual([])
   expect(controle.erros).toEqual([])
 })
@@ -186,8 +195,10 @@ test('consulta distingue falha, vazio e detalhe inexistente com 404',async({page
   await expect(page.getByText('Nenhum registro encontrado',{exact:false})).toBeVisible()
   await page.goto('/svo/solicitacoes/71/triagem')
   await expect(page.getByRole('alert')).toContainText('Solicitação não encontrada')
-  await expect(page.getByRole('button',{name:'Salvar andamento'})).toBeDisabled()
-  await expect(page.getByRole('button',{name:'Concluir triagem'})).toBeDisabled()
+  await expect(page.getByRole('button',{name:'Salvar andamento'})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Concluir triagem'})).toHaveCount(0)
+  await expect(page.getByLabel('Observações da triagem')).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Tentar novamente'})).toBeVisible()
   await page.goto('/svo/ordens')
   await expect(page.getByText('Nenhuma ordem encontrada para o filtro desta página.')).toBeVisible()
   expect(controle.inesperadas).toEqual([]);expect(controle.erros).toEqual([])

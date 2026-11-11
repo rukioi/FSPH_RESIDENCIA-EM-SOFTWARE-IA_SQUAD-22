@@ -1,15 +1,27 @@
-import { expect, test, type Page, type Response } from '@playwright/test';
+import { selecionarRecurso } from './fixtures/svo-ui';
+import { expect, test as base, type Page, type Response } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { emailAtendente, motoristas, ordens, prepararFixtureSvo, veiculo } from '../../backend/tests/integration/svo-operacional.fixture.js';
 import { verifiedSql } from '../../backend/src/database/scripts/verify-test-db.js';
 
 const senhaFixture = 'T1-fixture-2026!';
+const test = base.extend<{ cenario: Awaited<ReturnType<typeof prepararFixtureSvo>> }>({
+  cenario: [async ({ baseURL }, use) => {
+    expect(new URL(baseURL!).hostname).toBe('127.0.0.1');
+    const fixture = await prepararFixtureSvo(senhaFixture);
+    try { await use(fixture); } finally { await fixture.limpar(); }
+  }, { timeout: 30_000 }],
+});
 const recursos = '/api/svo/recursos-disponiveis';
 const ocupacao = `/api/svo/veiculos/${veiculo}/ocupacao`;
 const botaoConfirmar = { name: 'Confirmar despacho', exact: true };
 
-function resposta(page: Page, caminho: string, metodo = 'GET') {
-  return page.waitForResponse(r => new URL(r.url()).pathname === caminho && r.request().method() === metodo);
+async function resposta(page: Page, caminho: string, metodo = 'GET') {
+  // Um GET cancelado não é a resposta que a interface efetivamente recebeu.
+  const request = await page.waitForEvent('requestfinished', r => new URL(r.url()).pathname === caminho && r.method() === metodo);
+  const response = await request.response();
+  if (!response) throw new Error('Requisição finalizada sem resposta HTTP.');
+  return response;
 }
 
 async function login(page: Page, email: string = emailAtendente) {
@@ -23,7 +35,8 @@ async function login(page: Page, email: string = emailAtendente) {
   expect(autenticacao.status()).toBe(200);
   const atendimento = email === emailAtendente;
   expect((await sessao.json()).data.perfil).toBe(atendimento ? 'ATENDENTE_SVO' : 'MOTORISTA');
-  await expect(page).toHaveURL(atendimento ? /\/svo\/dashboard$/ : /\/svo\/equipe\/minhas-ordens$/);
+  await expect(page).toHaveURL(atendimento ? /\/svo\/dashboard$/ : /\/notificacoes$/);
+  if (!atendimento) await page.goto('/svo/equipe/minhas-ordens');
 }
 
 async function preparar(page: Page, ordemId: number, motoristaId: number, uso: number) {
@@ -41,12 +54,12 @@ async function preparar(page: Page, ordemId: number, motoristaId: number, uso: n
   expect(dados.veiculos).toContainEqual(expect.objectContaining({ id: String(veiculo), ocupacao: uso, capacidade: 4, disponivel: true }));
   const modal = page.getByRole('dialog', { name: 'Preparar despacho' });
   const [capacidade] = await Promise.all([
-    resposta(page, ocupacao), modal.getByLabel('Veículo', { exact: true }).selectOption(String(veiculo)),
+    resposta(page, ocupacao), selecionarRecurso(modal, 'Veículo', String(veiculo)),
   ]);
   expect(capacidade.status()).toBe(200);
   expect(await capacidade.json()).toMatchObject({ id: String(veiculo), ocupacao: uso, capacidade: 4 });
   await expect(modal.getByText(`Ocupação atual: ${uso}/4`, { exact: true })).toBeVisible();
-  await modal.getByLabel('Motorista', { exact: true }).selectOption(String(motoristaId));
+  await selecionarRecurso(modal, 'Motorista', String(motoristaId));
   await expect(modal.getByRole('button', botaoConfirmar)).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   return modal;
@@ -69,10 +82,9 @@ async function despachar(page: Page, ordemId: number, motoristaId: number, usoFi
   return ordem;
 }
 
-test('SCRUM-136 despacha pela interface, persiste após reload e recusa a quinta vaga', async ({ page, context, baseURL }, info) => {
+test('SCRUM-136 despacha pela interface, persiste após reload e recusa a quinta vaga', async ({ page, context, baseURL, cenario: fixture }, info) => {
   test.setTimeout(60_000);
   expect(new URL(baseURL!).hostname).toBe('127.0.0.1');
-  const fixture = await prepararFixtureSvo(senhaFixture);
   const http: object[] = [];
   const erros: string[] = [];
   function observar(p: Page) {
@@ -185,10 +197,9 @@ async function confirmarComando(page: Page, id: string | number, acao: string, s
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 
-for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equipes, execução e histórico em ' + width + ' px', async ({ page, context, request, baseURL }, info) => {
+for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equipes, execução e histórico em ' + width + ' px', async ({ page, context, request, baseURL, cenario: fixture }, info) => {
   test.setTimeout(120_000);
   expect(new URL(baseURL!).hostname).toBe('127.0.0.1');
-  const fixture = await prepararFixtureSvo(senhaFixture);
   const { sql } = fixture;
   const http: object[] = [];
   const erros: string[] = [];
@@ -197,6 +208,7 @@ for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equi
   const falhasHttp: string[] = [];
   const falhasDeRede: string[] = [];
   const cancelamentosDeLeitura: string[] = [];
+  const cancelamentosNotificacoes: string[] = [];
   const externos = new Set<string>();
   const avisosReact: string[] = [];
   const etapas: object[] = [];
@@ -232,6 +244,11 @@ for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equi
       const erro = req.failure()?.errorText;
       if (url.origin !== baseURL) { externos.add(url.hostname + ' ' + erro); return; }
       if (req.method() === 'GET' && erro === 'net::ERR_ABORTED') { cancelamentosDeLeitura.push(url.pathname); return; }
+      // O provider da main cancela a sincronização idempotente ao trocar de rota.
+      // Registre separadamente: nenhuma escrita SVO pode ser descartada por esta exceção.
+      if (req.method() === 'POST' && url.pathname === '/api/notificacoes/sincronizar' && erro === 'net::ERR_ABORTED') {
+        cancelamentosNotificacoes.push(url.pathname); return;
+      }
       if (offline && req.method() === 'GET' && url.pathname === apiOrdens + '/minhas' && erro === 'net::ERR_INTERNET_DISCONNECTED') return;
       falhasDeRede.push(req.method() + ' ' + url.pathname + ' ' + erro);
     });
@@ -342,9 +359,9 @@ for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equi
     await expect(page.locator('nav [aria-current=page]')).toHaveText('Ordens de Coleta');
     await page.getByRole('button', { name: 'Preparar despacho' }).press('Enter');
     const modal = page.getByRole('dialog', { name: 'Preparar despacho' });
-    await modal.getByLabel('Veículo', { exact: true }).selectOption(String(veiculo));
+    await selecionarRecurso(modal, 'Veículo', String(veiculo));
     await expect(modal.getByText('Ocupação atual: 0/4')).toBeVisible();
-    await modal.getByLabel('Motorista', { exact: true }).selectOption(String(motoristas[0]));
+    await selecionarRecurso(modal, 'Motorista', String(motoristas[0]));
     await capturar(page, 'despacho');
     await despachar(page, Number(id), motoristas[0], 3);
     await page.reload();
@@ -367,6 +384,8 @@ for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equi
       await p.goto('/svo/ordens/' + propria);
       await expect(p.getByRole('heading', { name: 'Acesso negado' })).toBeVisible();
       await p.getByRole('link', { name: 'Voltar ao início' }).press('Enter');
+      await expect(p).toHaveURL(/\/notificacoes$/);
+      await p.goto('/svo/equipe/minhas-ordens');
     }
     await capturar(motoristaA, 'minhas-ordens');
     {
@@ -397,11 +416,11 @@ for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equi
       await p.getByLabel('Quilometragem inicial').fill('100');
       await abrirComando(p, 'Iniciar execução');
     }
-    const [listaAposInicio, detalheAposInicio] = await Promise.all([
-      resposta(motoristaA, apiOrdens + '/minhas'), resposta(motoristaA, apiOrdens + '/minhas/' + id),
+    const [detalheAposInicio] = await Promise.all([
+      resposta(motoristaA, apiOrdens + '/minhas/' + id),
       confirmarComando(motoristaA, id, 'iniciar'),
     ]);
-    expect(listaAposInicio.status()).toBe(200);
+    await expect(motoristaA.getByRole('button', {name:'Iniciar transporte',exact:true})).toBeVisible();
     expect((await detalheAposInicio.json()).kmInicial).toBe(100);
     await confirmarComando(antiga, id, 'iniciar', 409);
     await expect(antiga.getByRole('alert')).toContainText('409');
@@ -516,6 +535,6 @@ for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equi
     expect(falhasDeRede).toEqual([]);
   } finally {
     await fixture.limpar();
-    await writeFile(info.outputPath('fluxo-real.json'), JSON.stringify({...evidencia, capturas, falhasHttp, falhasDeRede, cancelamentosDeLeitura, externos:[...externos], avisosReact}, null, 2));
+    await writeFile(info.outputPath('fluxo-real.json'), JSON.stringify({...evidencia, capturas, falhasHttp, falhasDeRede, cancelamentosDeLeitura, cancelamentosNotificacoes, externos:[...externos], avisosReact}, null, 2));
   }
 });

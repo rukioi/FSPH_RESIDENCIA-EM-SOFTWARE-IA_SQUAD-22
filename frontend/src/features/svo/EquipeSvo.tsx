@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from '../../app/routes/router';
 import { ROTAS, rotaExecucaoOrdemSvo } from '../../app/routes/rotas';
 import { useRemoteData } from '../../shared/api/useRemoteData';
@@ -52,21 +52,9 @@ export function ExecucaoSvo({ id, motorista }: { id: string; motorista: string }
   const load = useCallback((signal: AbortSignal) => minhaOrdem(id, signal), [id]);
   const remoto = useRemoteData(load, null);
   const [aviso, setAviso] = useState({ mensagem: '', erro: false });
-  const [revisao, setRevisao] = useState(0);
-  const [erroLista, setErroLista] = useState(false);
-  useEffect(() => {
-    if (!revisao) return;
-    const controller = new AbortController();
-    setErroLista(false);
-    void minhasOrdens(controller.signal).catch(() => {
-      if (!controller.signal.aborted) setErroLista(true);
-    });
-    return () => controller.abort();
-  }, [revisao]);
   function atualizar(mensagem: string, erro: boolean) {
     setAviso({ mensagem, erro });
     remoto.retry();
-    setRevisao((valor) => valor + 1);
   }
   return (
     <Pagina
@@ -77,9 +65,6 @@ export function ExecucaoSvo({ id, motorista }: { id: string; motorista: string }
         </Link>
       }
     >
-      {erroLista && (
-        <p role="alert">Não foi possível atualizar a lista. Abra Minhas Ordens para consultar novamente.</p>
-      )}
       {aviso.mensagem && <p role={aviso.erro ? 'alert' : 'status'}>{aviso.mensagem}</p>}
       <Consulta remoto={remoto}>
         {(o) => {

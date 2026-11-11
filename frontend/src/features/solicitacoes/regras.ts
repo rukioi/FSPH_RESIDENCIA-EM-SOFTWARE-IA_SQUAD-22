@@ -8,6 +8,7 @@ export type StatusSolicitacao =
   | 'Em andamento'
   | 'Concluída'
   | 'Cancelada'
+  | 'Não informado'
 
 export const STATUS: StatusSolicitacao[] = [
   'Pendente',

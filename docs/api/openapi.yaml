@@ -4,6 +4,385 @@ info:
   version: 0.1.0
   description: "Contrato global #32. Legados delimitados no manifesto; não define funcionalidades futuras."
 paths:
+  /api/notificacoes:
+    get:
+      operationId: notificacoes_get__api_notificacoes
+      tags:
+        - notificacoes
+      description: Caixa individual por sessão atual; ordem criadoEm DESC,id DESC. Query estrita. GET não materializa alertas.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+        - GESTOR_FROTA
+        - SOLICITANTE_INTERNO
+        - MOTORISTA
+        - ATENDENTE_SVO
+      x-runtime-validation: true
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: filtro
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - todas
+              - nao-lidas
+              - lidas
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaNotificacoes"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/notificacoes/ler-todas:
+    post:
+      operationId: notificacoes_post__api_notificacoes_ler_todas
+      tags:
+        - notificacoes
+      description: Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+        - GESTOR_FROTA
+        - SOLICITANTE_INTERNO
+        - MOTORISTA
+        - ATENDENTE_SVO
+      x-runtime-validation: true
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificacoesAtualizadas"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/notificacoes/{id}/ler:
+    post:
+      operationId: notificacoes_post__api_notificacoes_id_ler
+      tags:
+        - notificacoes
+      description: Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+        - GESTOR_FROTA
+        - SOLICITANTE_INTERNO
+        - MOTORISTA
+        - ATENDENTE_SVO
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificacoesAtualizadas"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/notificacoes/sincronizar:
+    post:
+      operationId: notificacoes_post__api_notificacoes_sincronizar
+      tags:
+        - notificacoes
+      description: Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+        - GESTOR_FROTA
+        - SOLICITANTE_INTERNO
+        - MOTORISTA
+        - ATENDENTE_SVO
+      x-runtime-validation: true
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificacoesAtualizadas"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
   /api/solicitacoes-viagem/{id}:
     get:
       operationId: solicitacoes_get__api_solicitacoes_viagem_id_
@@ -6377,6 +6756,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
+  /api/abastecimentos/{id}/comprovante:
+    get:
+      operationId: abastecimentos_get__api_abastecimentos_id_comprovante
+      tags:
+        - abastecimentos
+      description: Imagem JPEG ou PNG como bytes; acesso autenticado.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
   /api/abastecimentos:
     get:
       operationId: abastecimentos_get__api_abastecimentos
@@ -6854,6 +7330,86 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    ListaNotificacoes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^\d+$
+              titulo:
+                type: string
+              descricao:
+                type: string
+              categoria:
+                type: string
+                enum:
+                  - informacao
+                  - atencao
+                  - urgente
+                  - sucesso
+              criadoEm:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              lidaEm:
+                anyOf:
+                  - type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  - type: "null"
+            required:
+              - id
+              - titulo
+              - descricao
+              - categoria
+              - criadoEm
+              - lidaEm
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            naoLidas:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+            - naoLidas
+      required:
+        - data
+        - meta
+    NotificacoesAtualizadas:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            atualizadas:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - atualizadas
+      required:
+        - data
     Erro:
       type: object
       properties:
@@ -7983,6 +8539,8 @@ components:
           type:
             - string
             - "null"
+    ComprovanteAbastecimento:
+      type: string
     Abastecimento:
       type: object
       properties:
@@ -8020,6 +8578,12 @@ components:
           type:
             - string
             - "null"
+        tanque_completo:
+          type: boolean
+        comprovante_nome:
+          type:
+            - string
+            - "null"
       required:
         - id
         - veiculo_id
@@ -8030,6 +8594,8 @@ components:
         - data_abastecimento
         - criado_em
         - posto
+        - tanque_completo
+        - comprovante_nome
     RespostaAbastecimento:
       type: object
       properties:
@@ -8070,6 +8636,12 @@ components:
               type:
                 - string
                 - "null"
+            tanque_completo:
+              type: boolean
+            comprovante_nome:
+              type:
+                - string
+                - "null"
           required:
             - id
             - veiculo_id
@@ -8080,6 +8652,8 @@ components:
             - data_abastecimento
             - criado_em
             - posto
+            - tanque_completo
+            - comprovante_nome
       required:
         - data
     Abastecimentos:
@@ -8124,6 +8698,12 @@ components:
                 type:
                   - string
                   - "null"
+              tanque_completo:
+                type: boolean
+              comprovante_nome:
+                type:
+                  - string
+                  - "null"
               veiculo_placa:
                 type:
                   - string
@@ -8142,6 +8722,8 @@ components:
               - data_abastecimento
               - criado_em
               - posto
+              - tanque_completo
+              - comprovante_nome
               - veiculo_placa
               - motorista_nome
       required:
@@ -8176,12 +8758,35 @@ components:
             - "null"
         data_abastecimento:
           type: string
+        tanque_completo:
+          type: boolean
+        comprovante:
+          anyOf:
+            - type: object
+              properties:
+                nome:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                tipo:
+                  type: string
+                  enum:
+                    - image/jpeg
+                    - image/png
+                dadosBase64:
+                  type: string
+                  maxLength: 1398104
+              required:
+                - nome
+                - tipo
+                - dadosBase64
+            - type: "null"
       required:
         - veiculo_id
         - litragem
         - valor_total
         - data_abastecimento
-      description: "Forma usual de transporte. #30 classifica JSON/tipo/campo incompatível com o schema atual como 400 e FK inexistente como 404. Motorista/km omitidos ou nulos recebem 400 pelo NOT NULL atual; RF40 permanece adiado, sem migration. Validação técnica de calendário e tipos ocorre no controller."
+      description: "Forma usual de transporte. #30 classifica JSON/tipo/campo incompatível com o schema atual como 400 e FK inexistente como 404. Motorista/km omitidos ou nulos recebem 400 pelo NOT NULL atual; RF40 permanece adiado, sem migration para alterar obrigatoriedade. Validação técnica de calendário e tipos ocorre no controller."
     Documentos:
       type: object
       properties:

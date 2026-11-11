@@ -1,3 +1,4 @@
+import { responderNotificacoesVazias } from './fixtures/svo-ui';
 import { expect, test } from '@playwright/test'
 
 // Fixtures exclusivas deste teste; nenhum servidor ou banco recebe as requisições.
@@ -14,6 +15,7 @@ for (const width of [390, 768, 1280]) {
     let corpo: unknown
     let envios = 0
     await page.route(url => url.pathname.startsWith('/api/'), async route => {
+    if (await responderNotificacoesVazias(route)) return;
       const path = new URL(route.request().url()).pathname
       const method = route.request().method()
       if (method === 'GET' && path === '/api/auth/sessao') return route.fulfill({ json: { data: {
@@ -72,6 +74,7 @@ for (const width of [390, 768, 1280]) {
     let falhar = true
     let falharRecursos = false
     await page.route(url => url.pathname.startsWith('/api/'), async route => {
+    if (await responderNotificacoesVazias(route)) return;
       const path = new URL(route.request().url()).pathname
       if (route.request().method() !== 'GET') {
         inesperadas.push(path)

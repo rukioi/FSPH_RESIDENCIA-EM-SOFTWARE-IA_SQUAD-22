@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { App } from './app/App'
 import { telaPreviewSvo } from './features/svo/preview'
 import './shared/styles/tema.css'
 
@@ -23,8 +24,6 @@ async function iniciar() {
 
     return
   }
-
-  const { App } = await import('./app/App')
 
   reactRoot.render(
     <StrictMode>

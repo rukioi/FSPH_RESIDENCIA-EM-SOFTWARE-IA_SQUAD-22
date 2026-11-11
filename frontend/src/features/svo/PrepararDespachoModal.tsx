@@ -4,6 +4,7 @@ import { useRemoteData } from '../../shared/api/useRemoteData';
 import { ApiError } from '../../shared/api/errors';
 import { consultarOcupacaoSvo, consultarOrdemSvo } from '../../shared/services/svo.service';
 import { estadosOrdem, nomeStatusSvo } from './apresentacaoSvo';
+import { Select } from '../../shared/components/Select';
 import "./PrepararDespachoModal.css";
 
 type PrepararDespachoModalProps = {
@@ -39,7 +40,8 @@ export function PrepararDespachoModal({
   const [erro, setErro] = useState("");
   const envio = useRef(false);
   const ativa = useRef(false);
-  const modal = useRef<HTMLDivElement>(null);
+  const modal = useRef<HTMLDialogElement>(null);
+  const titulo = useRef<HTMLHeadingElement>(null);
   const carregarOrdem = useCallback((signal:AbortSignal)=>consultarOrdemSvo(ordemApiId,signal),[ordemApiId]);
   const ordem = useRemoteData<DetalheOrdemSvo | null>(carregarOrdem,null);
   const carregarOcupacao = useCallback((signal:AbortSignal)=>veiculoId ? consultarOcupacaoSvo(veiculoId,signal) : Promise.resolve(null),[veiculoId]);
@@ -57,8 +59,17 @@ export function PrepararDespachoModal({
   useEffect(()=>{
     ativa.current=true;
     const anterior=document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    modal.current?.focus();
-    return ()=>{ativa.current=false;anterior?.focus();};
+    const elemento = modal.current;
+    elemento?.showModal();
+    titulo.current?.focus();
+    return ()=>{
+      ativa.current=false;
+      elemento?.close();
+      requestAnimationFrame(()=>{
+        if(anterior?.isConnected && !anterior.matches(':disabled')) anterior.focus();
+        else document.querySelector<HTMLElement>('main')?.focus();
+      });
+    };
   },[]);
 
   function atualizar() {
@@ -71,6 +82,8 @@ export function PrepararDespachoModal({
     }
 
     envio.current=true;
+    // O controle acionado será desabilitado; preserve o foco dentro do diálogo nativo.
+    titulo.current?.focus();
     setErro("");
     setEnviando(true);
 
@@ -96,28 +109,26 @@ export function PrepararDespachoModal({
   }
 
   return (
-    <div className="svo-modal__fundo">
+    <dialog ref={modal} className="svo-modal__fundo" aria-labelledby="svo-modal-titulo"
+      onCancel={event=>{event.preventDefault();if(!envio.current)onFechar();}}
+      onKeyDown={event=>{
+        if(event.key!=='Tab') return;
+        if(envio.current){event.preventDefault();titulo.current?.focus();return;}
+        const itens=Array.from(modal.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') ?? [])
+          .filter(item=>item.getClientRects().length>0);
+        const primeiro=itens[0], ultimo=itens.at(-1);
+        if(event.shiftKey && (document.activeElement===primeiro || document.activeElement===titulo.current)) {
+          event.preventDefault();ultimo?.focus();
+        } else if(!event.shiftKey && document.activeElement===ultimo) {
+          event.preventDefault();primeiro?.focus();
+        }
+      }}>
       <div
-        ref={modal}
-        tabIndex={-1}
         className="svo-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="svo-modal-titulo"
-        onKeyDown={event=>{
-          if(event.key==='Escape'){event.preventDefault();if(!envio.current)onFechar();}
-          if(event.key==='Tab'){
-            const itens=Array.from(modal.current?.querySelectorAll<HTMLElement>('button:not(:disabled), select:not(:disabled), a[href]') ?? []);
-            const primeiro=itens[0],ultimo=itens.at(-1);
-            if(!primeiro){event.preventDefault();return;}
-            if(event.shiftKey && (document.activeElement===primeiro || document.activeElement===modal.current)){event.preventDefault();ultimo?.focus();}
-            else if(!event.shiftKey && document.activeElement===ultimo){event.preventDefault();primeiro.focus();}
-          }
-        }}
       >
         <header className="svo-modal__cabecalho">
           <div>
-            <h2 id="svo-modal-titulo">
+            <h2 id="svo-modal-titulo" ref={titulo} tabIndex={-1}>
               Preparar despacho
             </h2>
             <p>Ordem de coleta #{ordemId}</p>
@@ -151,7 +162,7 @@ export function PrepararDespachoModal({
           <div>
             <label htmlFor="veiculo">Veículo</label>
 
-            <select
+            <Select
               id="veiculo"
               value={veiculoId}
               onChange={(event) =>
@@ -172,7 +183,7 @@ export function PrepararDespachoModal({
                   {veiculo.modelo} - {veiculo.placa} · {veiculo.ocupacao}/{veiculo.capacidade}{!veiculo.disponivel ? ' · Indisponível' : ''}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {veiculoId && ocupacao.loading && <p role="status">Consultando ocupação…</p>}
@@ -184,7 +195,7 @@ export function PrepararDespachoModal({
           <div>
             <label htmlFor="motorista">Motorista</label>
 
-            <select
+            <Select
               id="motorista"
               value={motoristaId}
               onChange={(event) =>
@@ -204,7 +215,7 @@ export function PrepararDespachoModal({
                   {motorista.nome}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <p>O servidor revalida recursos e capacidade ao confirmar o despacho.</p>
           <button type="button" disabled={enviando} onClick={atualizar}>Atualizar disponibilidade</button>
@@ -239,6 +250,6 @@ export function PrepararDespachoModal({
           </button>
         </footer>
       </div>
-    </div>
+    </dialog>
   );
 }

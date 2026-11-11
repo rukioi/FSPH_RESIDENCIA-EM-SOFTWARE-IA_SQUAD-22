@@ -1,3 +1,4 @@
+import { Select } from '../../shared/components/Select';
 import { useEffect, useMemo, useState } from 'react'
 import { Icone } from '../../shared/components/Icone'
 import { TabelaAuditoria } from '../../features/auditoria/TabelaAuditoria'
@@ -178,7 +179,7 @@ export function Auditoria() {
 
         <div className="campo">
           <label htmlFor="aud-periodo">Período</label>
-          <select
+          <Select
             id="aud-periodo"
             value={f.periodo}
             onChange={(e) => mudar('periodo', e.target.value)}
@@ -188,12 +189,12 @@ export function Auditoria() {
                 {p.rotulo}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="campo">
           <label htmlFor="aud-usuario">Usuário</label>
-          <select
+          <Select
             id="aud-usuario"
             value={f.usuario}
             onChange={(e) => mudar('usuario', e.target.value)}
@@ -204,7 +205,7 @@ export function Auditoria() {
                 {usuario}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         {filtrosAtivos && (

@@ -1,3 +1,5 @@
+import { responderNotificacoesVazias } from './fixtures/svo-ui';
+import { selecionarRecurso } from './fixtures/svo-ui';
 import {expect,test,type Page} from '@playwright/test'
 
 // Respostas controladas somente para regressão do frontend; não comprovam persistência.
@@ -5,6 +7,7 @@ async function preparar(page:Page, conflito=false) {
   const state={ocupacao:0,recursos:0,consultasOcupacao:0,envios:0,legadas:0,despachada:false,quantidade:1,falhaOcupacao:false}
   await page.addInitScript(()=>sessionStorage.setItem('token','fixture-despacho'))
   await page.route(url=>url.pathname.startsWith('/api/'),async route=>{
+    if (await responderNotificacoesVazias(route)) return;
     const path=new URL(route.request().url()).pathname
     if(path==='/api/auth/sessao')return route.fulfill({json:{data:{id:'42',nome:'Fixture',email:'fixture@example.invalid',perfil:'ATENDENTE_SVO'}}})
     if(path==='/api/svo/dashboard')return route.fulfill({json:{periodo:'hoje',inicio:'2026-11-05',fim:'2026-11-05',indicadores:{aguardandoTriagem:0,confirmadasSvo:2,ordensColeta:2,encaminhadasIml:0},visaoGeral:{aguardandoTriagem:0,confirmadasSvo:2,encaminhadasIml:0,semClassificacao:0}}})
@@ -58,9 +61,9 @@ for(const width of [390,768,1280])test(`despacho usa capacidade real e mantém S
   const modal=await abrir(page)
   await expect(modal.locator('option[value="3"]')).toBeDisabled()
   await expect(modal.locator('option[value="4"]')).toBeDisabled()
-  await modal.getByLabel('Veículo',{exact:true}).selectOption('2')
+  await selecionarRecurso(modal, 'Veículo', '2')
   await expect(modal.getByText('Ocupação atual: 0/4',{exact:false})).toBeVisible()
-  await modal.getByLabel('Motorista',{exact:true}).selectOption('5')
+  await selecionarRecurso(modal, 'Motorista', '5')
   const confirmar=modal.getByRole('button',{name:'Confirmar despacho',exact:true})
   await expect(confirmar).toBeEnabled()
   await confirmar.focus();await page.keyboard.press('Tab')
@@ -73,7 +76,7 @@ for(const width of [390,768,1280])test(`despacho usa capacidade real e mantém S
   const reopened=await abrir(page,'8')
   await expect(reopened.locator('option[value="2"]')).toBeEnabled()
   await expect(reopened.locator('option[value="2"]')).toContainText('1/4')
-  await reopened.getByLabel('Veículo',{exact:true}).selectOption('2')
+  await selecionarRecurso(reopened, 'Veículo', '2')
   await expect(reopened.getByText('Ocupação atual: 1/4',{exact:false})).toBeVisible()
   await page.keyboard.press('Escape');await expect(reopened).toHaveCount(0)
   await page.reload()
@@ -84,8 +87,8 @@ for(const width of [390,768,1280])test(`despacho usa capacidade real e mantém S
 })
 test('409 mantém modal sem sucesso e reconsulta recursos e ocupação',async({page})=>{
   const state=await preparar(page,true);const modal=await abrir(page)
-  await modal.getByLabel('Veículo',{exact:true}).selectOption('2')
-  await modal.getByLabel('Motorista',{exact:true}).selectOption('5')
+  await selecionarRecurso(modal, 'Veículo', '2')
+  await selecionarRecurso(modal, 'Motorista', '5')
   const before=state.recursos,occupation=state.consultasOcupacao
   await modal.getByRole('button',{name:'Confirmar despacho',exact:true}).click()
   await expect(modal.getByRole('alert').filter({hasText:'409'})).toBeVisible()
@@ -103,8 +106,8 @@ test('ocupação sem espaço suficiente ou consulta falha não autoriza despacho
   await page.keyboard.press('Escape')
   state.quantidade=1;state.ocupacao=0;state.falhaOcupacao=true
   const next=await abrir(page)
-  await next.getByLabel('Veículo',{exact:true}).selectOption('2')
-  await next.getByLabel('Motorista',{exact:true}).selectOption('5')
+  await selecionarRecurso(next, 'Veículo', '2')
+  await selecionarRecurso(next, 'Motorista', '5')
   await expect(next.getByRole('alert').filter({hasText:'Consulta indisponível'})).toBeVisible()
   await expect(next.getByRole('button',{name:'Confirmar despacho',exact:true})).toBeDisabled()
   expect(state.envios).toBe(0)

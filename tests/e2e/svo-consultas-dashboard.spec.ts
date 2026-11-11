@@ -1,3 +1,4 @@
+import { responderNotificacoesVazias } from './fixtures/svo-ui';
 import { expect, test, type Page } from '@playwright/test'
 
 // Fixtures exclusivamente de teste. Não constituem persistência real ou prints de apresentação.
@@ -11,6 +12,7 @@ async function preparar(page:Page) {
   let esperar:Promise<void>|null=null
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:'',contentType:'text/css'}))
   await page.route(url=>url.pathname.startsWith('/api/'),async r=>{
+    if (await responderNotificacoesVazias(r)) return;
     const url=new URL(r.request().url()), path=url.pathname
     urls.push(path+url.search)
     if(r.request().method()!=='GET') {inesperadas.push(r.request().method()+' '+path);return r.abort()}

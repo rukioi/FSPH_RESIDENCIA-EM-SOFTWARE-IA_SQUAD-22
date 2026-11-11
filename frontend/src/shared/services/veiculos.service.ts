@@ -1,4 +1,4 @@
-import { listaVeiculos, respostaVeiculo, criarVeiculoSchema, erroValidacaoVeiculo } from '../../../../backend/src/modules/veiculos/veiculos.schemas';
+import { listaVeiculos, respostaVeiculo, criarVeiculoSchema, editarVeiculoSchema, erroValidacaoVeiculo } from '../../../../backend/src/modules/veiculos/veiculos.schemas';
 import type { ApiSchemas } from '../api/generated/schema';
 import { executeApi } from '../api/client';
 import { ApiError } from '../api/errors';
@@ -17,4 +17,11 @@ export async function cadastrarVeiculo(body: unknown): Promise<VeiculoDto> {
   if (!result.success) { const error = erroValidacaoVeiculo(result.error,true,body); throw new ApiError(400,error.code,error.message); }
   const entrada: CriarVeiculoDto = result.data;
   return (await executeApi('veiculos_post__api_veiculos',{body:entrada,parse:value=>parseResponse(respostaVeiculo,value)})).data;
+}
+
+/** Valida a alteração parcial e retorna somente o veículo confirmado pelo servidor. */
+export async function atualizarVeiculo(id: string, body: unknown): Promise<VeiculoDto> {
+  const result = editarVeiculoSchema.safeParse(body);
+  if (!result.success) { const error = erroValidacaoVeiculo(result.error, false, body); throw new ApiError(400, error.code, error.message); }
+  return (await executeApi('veiculos_patch__api_veiculos_id_', { id, body: result.data, parse: value => parseResponse(respostaVeiculo, value) })).data;
 }

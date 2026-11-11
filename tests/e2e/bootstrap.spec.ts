@@ -88,14 +88,15 @@ test('o proxy de desenvolvimento alcança o backend', async ({ request }) => {
 });
 
 for(const width of [390,768,1280]) {
-  test(`demonstrações e indisponibilidade explícitas em ${width}px`,async({page},info)=>{
+  test(`dashboard integrado e limites dos demais painéis em ${width}px`,async({page},info)=>{
     await page.setViewportSize({width,height:900});
     await page.goto('/login'); await page.evaluate(t=>sessionStorage.setItem('token',t),admToken);
     let kpis=0;page.on('request',req=>{if(req.url().includes('/api/dashboard/kpis'))kpis++;});
     await page.goto('/gestor/dashboard');
-    await expect(page.getByRole('status')).toContainText('Indicadores por período indisponíveis');
+    await expect(page.locator('.card-kpi strong')).toHaveCount(4);
+    await expect(page.locator('.card-kpi strong').first()).toHaveText(/^\d+$/);
     for(const period of ['7 dias','30 dias','Personalizado','Hoje']) await page.getByRole('button',{name:period,exact:true}).click();
-    await expect(page.locator('.card-kpi strong')).toHaveText(['—','—','—','—']);
+    await expect(page.locator('.card-kpi strong')).toHaveCount(4);
     expect(kpis).toBe(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`dashboard-${width}.png`),fullPage:true});

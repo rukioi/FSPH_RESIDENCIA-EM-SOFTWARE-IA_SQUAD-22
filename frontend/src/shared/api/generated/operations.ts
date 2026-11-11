@@ -1,5 +1,21 @@
 /* Gerado por client:generate. Não editar. */
 export const apiOperations = {
+  "notificacoes_get__api_notificacoes": {
+    "method": "GET",
+    "path": "/api/notificacoes"
+  },
+  "notificacoes_post__api_notificacoes_ler_todas": {
+    "method": "POST",
+    "path": "/api/notificacoes/ler-todas"
+  },
+  "notificacoes_post__api_notificacoes_id_ler": {
+    "method": "POST",
+    "path": "/api/notificacoes/{id}/ler"
+  },
+  "notificacoes_post__api_notificacoes_sincronizar": {
+    "method": "POST",
+    "path": "/api/notificacoes/sincronizar"
+  },
   "solicitacoes_get__api_solicitacoes_viagem_id_": {
     "method": "GET",
     "path": "/api/solicitacoes-viagem/{id}"
@@ -219,6 +235,10 @@ export const apiOperations = {
   "motoristas_delete__api_motoristas_id_": {
     "method": "DELETE",
     "path": "/api/motoristas/{id}"
+  },
+  "abastecimentos_get__api_abastecimentos_id_comprovante": {
+    "method": "GET",
+    "path": "/api/abastecimentos/{id}/comprovante"
   },
   "abastecimentos_get__api_abastecimentos": {
     "method": "GET",

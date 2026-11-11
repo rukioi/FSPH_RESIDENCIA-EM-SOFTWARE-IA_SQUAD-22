@@ -13,14 +13,15 @@ test('reconstrói o snapshot completo auditado, incluindo ACL/RLS e tipos exatos
   const [row] = await sql.unsafe(metadataQuery);
   const metadata = canonical(row.metadata as Metadata);
   expect(metadata).toEqual(expected);
-  expect(metadata.tables).toHaveLength(10);
+  expect(metadata.tables).toHaveLength(expected.tables.length);
   expect(metadata.columns).toHaveLength(expected.columns.length);
   expect(metadata.enums).toHaveLength(8);
   expect(metadata.indexes).toHaveLength(expected.indexes.length);
   expect(metadata.constraints).toHaveLength(expected.constraints.length);
   expect(metadata.triggers).toEqual([]);
   expect(metadata.policies).toEqual([]);
-  expect(metadata.tables.every(t => !t.rls && !t.forceRls)).toBe(true);
+  expect(metadata.tables.filter(t=>t.name!=='notificacao').every(t => !t.rls && !t.forceRls)).toBe(true);
+  expect(metadata.tables.find(t=>t.name==='notificacao')).toMatchObject({rls:true,forceRls:false});
   expect(metadata.constraints.find(c => c.name === 'veiculo_vinculo_check')?.validated).toBe(true);
   expect(metadata.constraints.filter(c => c.table === 'log_atividade' && c.type === 'f').map(c => c.onDelete).sort())
     .toEqual(expected.constraints.filter(c => c.table === 'log_atividade' && c.type === 'f').map(c => c.onDelete).sort());

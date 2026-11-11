@@ -1,0 +1,34 @@
+.perfil-modal { position: fixed; inset: 0; width: min(680px, calc(100% - 32px)); max-width: none; max-height: calc(100dvh - 32px); margin: auto; padding: 28px; overflow-y: auto; border: 1px solid var(--borda); border-radius: 16px; color: var(--texto); background: var(--branco); box-shadow: 0 20px 60px rgb(8 38 73 / 24%); }
+.perfil-modal::backdrop { background: rgba(8, 38, 73, 0.5); }
+.perfil-modal__fechar { min-height: 44px; margin-top: 24px; padding: 0 24px; border: 0; border-radius: 10px; color: var(--branco); background: var(--azul-medio); font-weight: 700; }
+.perfil-modal__fechar:hover { background: var(--azul-escuro); }
+.perfil-gestor__titulo { margin-bottom: 24px; }
+.perfil-gestor__titulo h2 { margin: 0; font-size: 22px; }
+.perfil-gestor__titulo p { margin-top: 6px; color: var(--texto-suave); }
+.perfil-gestor .cartao-identidade__principal h3 { margin: 0; font-size: 19px; line-height: 1.3; }
+.perfil-gestor__dados {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+}
+.perfil-gestor__dados dt { color: var(--texto-suave); font-size: 13px; font-weight: 700; }
+.perfil-gestor__dados dd { margin: 5px 0 0; overflow-wrap: anywhere; font-weight: 700; }
+@media (max-width: 600px) {
+  .perfil-modal { padding: 20px; }
+  .perfil-gestor__titulo { margin-bottom: 18px; }
+  .perfil-modal__fechar { width: 100%; }
+}
+
+.perfil-modal { padding: 0; border-radius: 20px; }
+.perfil-gestor__titulo { padding: 24px 28px 20px; margin: 0; border-bottom: 1px solid var(--borda); }
+.perfil-gestor > .cartao-identidade { padding: 24px 28px; }
+.perfil-gestor .cartao-identidade__principal { background: linear-gradient(145deg, #e4efff, #f2f5fa); border: 1px solid #dbe6f6; }
+.perfil-gestor .perfil-gestor__cargo { color: #0f4585; font-weight: 700; font-size: 13px; }
+.perfil-gestor__dados > div + div { border-top: 1px solid var(--borda); padding-top: 14px; }
+.perfil-modal__fechar { display: block; margin: 0 28px 24px auto; }
+@media (max-width: 600px) {
+  .perfil-gestor__titulo { padding: 20px; }
+  .perfil-gestor > .cartao-identidade { padding: 20px; }
+  .perfil-modal__fechar { width: calc(100% - 40px); margin: 0 20px 20px; }
+}

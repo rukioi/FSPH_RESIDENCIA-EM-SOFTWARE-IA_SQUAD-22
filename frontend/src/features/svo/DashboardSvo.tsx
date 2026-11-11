@@ -85,7 +85,7 @@ export function DashboardSvo({
       </header>
 
 
-      <ResumoDashboardSvo revisao={revisao}/>
+      <ResumoDashboardSvo revisao={revisao} atualizar={()=>{setRevisao(valor=>valor+1);onTentarNovamente();}}/>
 
       {carregando && <p role="status">Carregando ordens...</p>}
       {erroOrdens && <p role="alert">{erroOrdens}</p>}

@@ -68,6 +68,8 @@ export function ListaSolicitacoesIntegrada() {
   })
   const load=useCallback((signal:AbortSignal)=>consultarSolicitacoesSvo(filtros,signal),[filtros])
   const remoto=useRemoteData<ListaSolicitacoesSvo|null>(load,null)
+  const [inicio, setInicio] = useState(filtros.inicio ?? '')
+  const [fim, setFim] = useState(filtros.fim ?? '')
   function aplicar(proximo:FiltrosSolicitacoesSvo) {setFiltros(proximo);atualizarUrl(proximo)}
   return <Pagina titulo="Solicitações" descricao="Consulte os protocolos registrados e o estado atual da triagem."
     acao={<Link className="svo-atalho svo-atalho--primario" para={ROTAS.svoNovaSolicitacao}>Nova Solicitação</Link>}>
@@ -75,14 +77,14 @@ export function ListaSolicitacoesIntegrada() {
       <div className="svo-filtros"><label>Status<select value={filtros.status||''} onChange={e=>aplicar({...filtros,page:1,status:e.target.value as StatusTriagemSvo||undefined})}>
         <option value="">Todos os status</option>{Object.entries(estadosTriagem).map(([codigo,nome])=><option key={codigo} value={codigo}>{nome}</option>)}
       </select></label></div>
-      <form key={`${filtros.inicio}-${filtros.fim}`} className="svo-filtros" onSubmit={e=>{
+      <form className="svo-filtros" onSubmit={e=>{
         e.preventDefault(); const dados=new FormData(e.currentTarget)
         aplicar({...filtros,page:1,inicio:String(dados.get('inicio')||'')||undefined,fim:String(dados.get('fim')||'')||undefined})
       }}>
-        <label>Recebidas desde<input type="date" name="inicio" defaultValue={filtros.inicio}/></label>
-        <label>Recebidas até<input type="date" name="fim" defaultValue={filtros.fim}/></label>
+        <label>Recebidas desde<input type="date" name="inicio" value={inicio} onChange={e=>setInicio(e.target.value)}/></label>
+        <label>Recebidas até<input type="date" name="fim" value={fim} onChange={e=>setFim(e.target.value)}/></label>
         <div className="svo-acoes"><button type="submit">Aplicar período</button>
-          <button type="button" onClick={()=>aplicar({page:1})}>Limpar filtros</button>
+          <button type="button" onClick={()=>{setInicio('');setFim('');aplicar({page:1})}}>Limpar filtros</button>
           <button type="button" onClick={remoto.retry}>Atualizar lista</button></div>
       </form>
       <p>Período aplicado ao recebimento: {filtros.inicio ? dataCivilSvo(filtros.inicio) : 'sem início'} até {filtros.fim ? dataCivilSvo(filtros.fim) : 'sem fim'}. Filtro por canal ainda indisponível.</p>
@@ -123,9 +125,6 @@ export function ListaOrdensIntegrada() {
 
 /** Recupera a triagem persistida; somente PATCH/POST explícitos alteram o atendimento. */
 export function TriagemSvo({ id }: { id: string }) {
-  const load = useCallback((signal: AbortSignal) => consultarSolicitacaoSvo(id, signal), [id])
-  const remoto = useRemoteData<DetalheSolicitacaoSvo | null>(load, null)
-  const item = remoto.data
   const [destino, setDestino] = useState<'' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML'>('')
   const [observacoes, setObservacoes] = useState('')
   const [quantidade, setQuantidade] = useState('')
@@ -138,14 +137,41 @@ export function TriagemSvo({ id }: { id: string }) {
   const envio = useRef(false)
   const ativa = useRef(true)
   const dialog = useRef<HTMLDialogElement>(null)
+  const [erroAcesso, setErroAcesso] = useState('')
+  const [formularioPronto, setFormularioPronto] = useState(false)
+  const limparOcorrencia = useCallback(() => {
+    setObservacoes(''); setDestino(''); setQuantidade(''); setResultado(null)
+    setFeedback(''); setErro(''); editada.current = false
+    setFormularioPronto(false)
+  }, [])
+  const load = useCallback(async (signal: AbortSignal) => {
+    try {
+      const registro = await consultarSolicitacaoSvo(id, signal)
+      if (!signal.aborted) setErroAcesso('')
+      return registro
+    } catch (error) {
+      if (!signal.aborted && error instanceof ApiError && [403, 404].includes(error.status)) {
+        limparOcorrencia()
+        setErroAcesso(`Erro ${error.status}: ${error.message}`)
+        // Resolve sem registro para descartar também os dados remotos anteriormente autorizados.
+        return null
+      }
+      throw error
+    }
+  }, [id, limparOcorrencia])
+  const remoto = useRemoteData<DetalheSolicitacaoSvo | null>(load, null)
+  const item = remoto.loading || remoto.error || erroAcesso ? null : remoto.data
   useEffect(() => { ativa.current = true; return () => { ativa.current = false } }, [])
   useEffect(()=>{
-    if(!item || (editada.current && item.statusTriagem==='AGUARDANDO_TRIAGEM')) return
-    setObservacoes(item.triagemObservacoes ?? '')
-    setDestino(item.statusTriagem==='CONFIRMADA_SVO'||item.statusTriagem==='ENCAMINHADA_IML' ? item.statusTriagem : '')
-    setQuantidade(item.ordemColeta?.quantidadeCorpos?.toString() ?? '')
+    if(!item) return
+    if(!(editada.current && item.statusTriagem==='AGUARDANDO_TRIAGEM')) {
+      setObservacoes(item.triagemObservacoes ?? '')
+      setDestino(item.statusTriagem==='CONFIRMADA_SVO'||item.statusTriagem==='ENCAMINHADA_IML' ? item.statusTriagem : '')
+      setQuantidade(item.ordemColeta?.quantidadeCorpos?.toString() ?? '')
+    }
+    setFormularioPronto(true)
   },[item])
-  const bloqueada = enviando || bloqueio || remoto.loading || !!remoto.error || !item || item.statusTriagem !== 'AGUARDANDO_TRIAGEM' || !!resultado
+  const bloqueada = enviando || bloqueio || !formularioPronto || remoto.loading || !!remoto.error || !!erroAcesso || !item || item.statusTriagem !== 'AGUARDANDO_TRIAGEM' || !!resultado
   const notasValidas = observacoes.trim().length > 0 && observacoes.trim().length <= 2000
   const quantidadeValida = Number.isInteger(Number(quantidade)) && Number(quantidade) >= 1 && Number(quantidade) <= 4
   async function salvar(final: boolean) {
@@ -170,6 +196,11 @@ export function TriagemSvo({ id }: { id: string }) {
     } catch (error) {
       if (!ativa.current) return
       const status = error instanceof ApiError ? error.status : 0
+      if ([403,404].includes(status)) {
+        limparOcorrencia()
+        setErroAcesso(`Erro ${status}: ${error instanceof Error ? error.message : 'Consulta não autorizada.'}`)
+        remoto.setData(null)
+      }
       setErro(`${status ? `Erro ${status}: ` : ''}${error instanceof Error ? error.message : 'Não foi possível salvar a triagem.'}`)
       if ([403,404,409].includes(status)) { setBloqueio(true); remoto.retry() }
     } finally {
@@ -177,6 +208,10 @@ export function TriagemSvo({ id }: { id: string }) {
       if (ativa.current) { setEnviando(false); dialog.current?.close() }
     }
   }
+  if (erroAcesso) return <Pagina titulo="Triagem">
+    <p role="alert">{erroAcesso}</p>
+    <button type="button" disabled={remoto.loading} onClick={()=>{setBloqueio(false);remoto.retry()}}>Tentar novamente</button>
+  </Pagina>
   return <Pagina titulo="Triagem" descricao="Decisão SVO/IML vinculada ao protocolo consultado."
     acao={<Link className="svo-atalho" para={ROTAS.svoSolicitacoes}>Voltar às solicitações</Link>}>
     <p className="svo-aviso">Salvar andamento mantém a solicitação aguardando triagem. A decisão final é confirmada separadamente e somente SVO gera ordem de coleta.</p>

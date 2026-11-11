@@ -1,3 +1,4 @@
+import { selecionarOpcao } from './fixtures/controls';
 import { expect, test } from '@playwright/test';
 import { verifiedSql } from '../../backend/src/database/scripts/verify-test-db.js';
 
@@ -53,7 +54,7 @@ for (const width of [390,768,1280]) {
     await dialog.getByLabel('Nome completo').fill(nome);
     await dialog.getByLabel('E-mail',{exact:true}).fill(email);
     await dialog.getByLabel('Senha',{exact:true}).fill('T29-fixture-2026!');
-    await dialog.getByLabel('Perfil',{exact:true}).selectOption('Solicitante');
+    await selecionarOpcao(dialog.getByLabel('Perfil',{exact:true}), 'Solicitante');
     await page.screenshot({path:info.outputPath(`novo-usuario-${width}.png`),fullPage:true});
     const created=page.waitForResponse(r=>r.url().endsWith('/api/admin/usuarios')&&r.request().method()==='POST');
     await dialog.getByRole('button',{name:'Salvar',exact:true}).click();
@@ -65,7 +66,7 @@ for (const width of [390,768,1280]) {
     await page.getByRole('searchbox').fill(email);
     const row=page.getByRole('row').filter({hasText:email});
     await row.getByRole('button',{name:`Editar ${nome}`,exact:true}).click();
-    await dialog.getByLabel('Perfil',{exact:true}).selectOption('Gestor da Frota');
+    await selecionarOpcao(dialog.getByLabel('Perfil',{exact:true}), 'Gestor da Frota');
     const edited=page.waitForResponse(r=>r.request().method()==='PUT'&&r.url().endsWith(`/usuarios/${usuario.id}`));
     await dialog.getByRole('button',{name:'Salvar alterações'}).click();
     expect((await edited).status()).toBe(200);

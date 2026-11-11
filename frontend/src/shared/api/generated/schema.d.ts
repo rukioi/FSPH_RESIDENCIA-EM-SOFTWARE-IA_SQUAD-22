@@ -119,6 +119,11 @@ export type Auditoria =
     };
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ComprovanteAbastecimento".
+ */
+export type ComprovanteAbastecimento = string;
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "StatusTriagem".
  */
 export type StatusTriagem = 'AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML';
@@ -166,6 +171,8 @@ export type FinalizarTriagemSvo =
     };
 
 export interface ApiSchemas {
+  ListaNotificacoes: ListaNotificacoes;
+  NotificacoesAtualizadas: NotificacoesAtualizadas;
   Erro: Erro;
   ErroString: ErroString;
   ErroSvo: ErroSvo;
@@ -194,6 +201,7 @@ export interface ApiSchemas {
   RespostaMotorista: RespostaMotorista;
   CriarMotorista: CriarMotorista;
   EditarMotorista: EditarMotorista;
+  ComprovanteAbastecimento: ComprovanteAbastecimento;
   Abastecimento: Abastecimento;
   RespostaAbastecimento: RespostaAbastecimento;
   Abastecimentos: Abastecimentos;
@@ -251,6 +259,35 @@ export interface ApiSchemas {
   ReagendarSolicitacaoViagem: ReagendarSolicitacaoViagem;
   RespostaAgendaViagem: RespostaAgendaViagem;
   RespostaDisponibilidadeViagem: RespostaDisponibilidadeViagem;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaNotificacoes".
+ */
+export interface ListaNotificacoes {
+  data: {
+    id: string;
+    titulo: string;
+    descricao: string;
+    categoria: 'informacao' | 'atencao' | 'urgente' | 'sucesso';
+    criadoEm: string;
+    lidaEm: string | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    naoLidas: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "NotificacoesAtualizadas".
+ */
+export interface NotificacoesAtualizadas {
+  data: {
+    atualizadas: number;
+  };
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -623,6 +660,8 @@ export interface Abastecimento {
   data_abastecimento: string;
   criado_em: string | null;
   posto: string | null;
+  tanque_completo: boolean;
+  comprovante_nome: string | null;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -657,6 +696,8 @@ export interface RespostaAbastecimento {
     data_abastecimento: string;
     criado_em: string | null;
     posto: string | null;
+    tanque_completo: boolean;
+    comprovante_nome: string | null;
   };
 }
 /**
@@ -692,12 +733,14 @@ export interface Abastecimentos {
     data_abastecimento: string;
     criado_em: string | null;
     posto: string | null;
+    tanque_completo: boolean;
+    comprovante_nome: string | null;
     veiculo_placa: string | null;
     motorista_nome: string | null;
   }[];
 }
 /**
- * Forma usual de transporte. #30 classifica JSON/tipo/campo incompatível com o schema atual como 400 e FK inexistente como 404. Motorista/km omitidos ou nulos recebem 400 pelo NOT NULL atual; RF40 permanece adiado, sem migration. Validação técnica de calendário e tipos ocorre no controller.
+ * Forma usual de transporte. #30 classifica JSON/tipo/campo incompatível com o schema atual como 400 e FK inexistente como 404. Motorista/km omitidos ou nulos recebem 400 pelo NOT NULL atual; RF40 permanece adiado, sem migration para alterar obrigatoriedade. Validação técnica de calendário e tipos ocorre no controller.
  *
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "CriarAbastecimento".
@@ -710,6 +753,12 @@ export interface CriarAbastecimento {
   valor_total: number | string;
   quilometragem?: number | null;
   data_abastecimento: string;
+  tanque_completo?: boolean;
+  comprovante?: {
+    nome: string;
+    tipo: 'image/jpeg' | 'image/png';
+    dadosBase64: string;
+  } | null;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -1791,6 +1840,10 @@ export interface RespostaDisponibilidadeViagem {
 }
 
 export interface ApiOperations {
+  'notificacoes_get__api_notificacoes': { body: undefined; response: ApiSchemas['ListaNotificacoes'] };
+  'notificacoes_post__api_notificacoes_ler_todas': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };
+  'notificacoes_post__api_notificacoes_id_ler': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };
+  'notificacoes_post__api_notificacoes_sincronizar': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };
   'solicitacoes_get__api_solicitacoes_viagem_id_': { body: undefined; response: ApiSchemas['RespostaDetalheSolicitacaoViagem'] };
   'solicitacoes_patch__api_solicitacoes_viagem_id_': { body: ApiSchemas['EditarSolicitacaoViagem']; response: ApiSchemas['RespostaSolicitacaoViagem'] };
   'solicitacoes_get__api_solicitacoes_viagem_id_historico': { body: undefined; response: ApiSchemas['RespostaHistoricoSolicitacaoViagem'] };
@@ -1846,6 +1899,7 @@ export interface ApiOperations {
   'motoristas_put__api_motoristas_id_': { body: ApiSchemas['EditarMotorista']; response: ApiSchemas['RespostaMotorista'] };
   'motoristas_patch__api_motoristas_id_': { body: ApiSchemas['EditarMotorista']; response: ApiSchemas['RespostaMotorista'] };
   'motoristas_delete__api_motoristas_id_': { body: undefined; response: ApiSchemas['Exclusao'] };
+  'abastecimentos_get__api_abastecimentos_id_comprovante': { body: undefined; response: Blob };
   'abastecimentos_get__api_abastecimentos': { body: undefined; response: ApiSchemas['Abastecimentos'] };
   'abastecimentos_post__api_abastecimentos': { body: ApiSchemas['CriarAbastecimento']; response: ApiSchemas['RespostaAbastecimento'] };
   'documentos_get__api_documentos': { body: undefined; response: ApiSchemas['Documentos'] };

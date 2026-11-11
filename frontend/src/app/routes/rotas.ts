@@ -1,4 +1,5 @@
 export const ROTAS = {
+  notificacoes: '/notificacoes',
   login: '/login',
 
   // Administrador
@@ -10,7 +11,7 @@ export const ROTAS = {
   dashboardGestor: '/gestor/dashboard',
   veiculosGestor: '/gestor/veiculos',
   motoristasGestor: '/gestor/motoristas',
-
+  abastecimentosGestor: '/gestor/abastecimentos',
   solicitacoesGestor: '/gestor/solicitacoes',
   calendarioGestor: '/gestor/calendario',
 

@@ -1,3 +1,4 @@
+import { Sininho } from '../../features/notificacoes/Sininho'
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
 import { Icone } from '../../shared/components/Icone'
@@ -22,7 +23,7 @@ const itensMenu: ItemMenu[] = [
   { nome: 'Abastecimentos', icone: 'abastecimentos' },
   { nome: 'Relatórios', icone: 'relatorios' },
   { nome: 'Auditoria', icone: 'auditoria', rota: ROTAS.auditoria },
-  { nome: 'Notificações', icone: 'notificacoes' },
+  { nome: 'Notificações', icone: 'notificacoes', rota: ROTAS.notificacoes },
 ]
 const itemConfiguracoes: ItemMenu = {
   nome: 'Configurações',
@@ -30,7 +31,6 @@ const itemConfiguracoes: ItemMenu = {
   rota: ROTAS.configuracoes,
 }
 
-const totalNotificacoes = 3
 const LIMITE_ARRASTE = 70
 
 function iniciais(nome: string): string {
@@ -177,14 +177,7 @@ export function AdminLayout({ children, usuario: sessao }: { children: ReactNode
           </p>
 
           <div className="cabecalho__direita">
-            <button
-              type="button"
-              className="botao-icone"
-              aria-label={`Notificações: ${totalNotificacoes} não lidas`}
-            >
-              <Icone nome="notificacoes" />
-              <span className="selo">{totalNotificacoes}</span>
-            </button>
+            <Sininho />
 
             <div className="cabecalho__usuario">
               <span className="avatar">{usuario.iniciais}</span>

@@ -123,18 +123,23 @@ function DespachoDoDetalhe({
   codigo,
   fechar,
   confirmado,
+  reconsultarOrdem,
 }: {
   id: string;
   codigo: string;
   fechar: () => void;
   confirmado: (mensagem: string) => void;
+  reconsultarOrdem: () => void;
 }) {
   const recursos = useRemoteData(consultarRecursosDisponiveisSvo, null);
   async function despachar(motorista: number, veiculo: number) {
     try {
       await despacharOrdemSvo(id, motorista, veiculo);
     } catch (erro) {
-      if (erro instanceof ApiError && [404, 409].includes(erro.status)) recursos.retry();
+      if (erro instanceof ApiError && [404, 409].includes(erro.status)) {
+        recursos.retry();
+        reconsultarOrdem();
+      }
       throw erro;
     }
     let mensagem = 'Despacho confirmado pelo servidor.';
@@ -215,17 +220,18 @@ export function DetalheOrdem({ id }: { id: string }) {
               </div>
             </Painel>
             <Historico tipo="ordem" id={id} />
-            {despacho && (
-              <DespachoDoDetalhe
-                id={id}
-                codigo={o.codigo}
-                fechar={() => setDespacho(false)}
-                confirmado={(mensagem) => atualizar(mensagem, false)}
-              />
-            )}
           </>
         )}
       </Consulta>
+      {despacho && remoto.data && (
+        <DespachoDoDetalhe
+          id={id}
+          codigo={remoto.data.codigo}
+          fechar={() => setDespacho(false)}
+          confirmado={(mensagem) => atualizar(mensagem, false)}
+          reconsultarOrdem={remoto.retry}
+        />
+      )}
     </Pagina>
   );
 }

@@ -32,15 +32,15 @@ test('migração #30 permite somente 404 comum de abastecimento e sua descriçã
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
-test('inventário fechado mantém 60 operações e limites de pathname compatíveis',()=>{
-  expect(operations).toHaveLength(60);
+test('inventário fechado mantém 65 operações e limites de pathname compatíveis',()=>{
+  expect(operations).toHaveLength(65);
   for (const method of ['patch','post'] as const) {
     expect(operations.filter(o => o.method === method && o.path === '/api/svo/solicitacoes/{id}/triagem')).toHaveLength(1);
   }
 });
 
-test('inventário mantém as 49 operações fora de solicitações e as onze de solicitações',()=>{
-  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(49);
+test('inventário mantém as 54 operações fora de solicitações e as onze de solicitações',()=>{
+  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(54);
   expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
@@ -100,4 +100,9 @@ test('SCRUM-164 permite apenas a evolução aprovada do dashboard e mantém prot
 
 test('dashboard evoluído aplica schemas e deixa de ser exceção legada',()=>{
   for(const path of ['/api/dashboard/gestor','/api/dashboard/graficos'])expect(openapi().paths[path].get).toHaveProperty('x-runtime-validation',true);
+});
+
+
+test('gate exige formato aprovado dos campos novos de abastecimento',()=>{
+  expect(independent("import {execFileSync} from 'node:child_process';import {parse} from 'yaml';import {openapi} from './backend/src/shared/contract/openapi.ts';import {checkCompatibility} from './scripts/generate-api.ts';const previous=parse(execFileSync('git',['show','HEAD:docs/api/openapi.yaml'],{encoding:'utf8'}));checkCompatibility(previous,openapi());for(const mutate of [d=>d.components.schemas.Abastecimento.properties.tanque_completo={type:'string'},d=>d.components.schemas.CriarAbastecimento.properties.comprovante={type:'string'},d=>d.components.schemas.RespostaAbastecimento.properties.data.properties.comprovante_nome={type:'number'}]){const current=openapi();mutate(current);try{checkCompatibility(previous,current);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });

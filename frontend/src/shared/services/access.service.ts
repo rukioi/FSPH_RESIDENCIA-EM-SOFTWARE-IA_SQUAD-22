@@ -1,6 +1,7 @@
-import { ROTAS, lerDetalheSvo } from '../../app/routes/rotas'
+import { ROTAS, lerDetalheSvo, lerRotaSolicitacao } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
+  [ROTAS.notificacoes]: ['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],
   [ROTAS.dashboard]: ['ADM'],
   [ROTAS.configuracoes]: ['ADM'],
   [ROTAS.auditoria]: ['ADM'],
@@ -8,7 +9,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.dashboardGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.veiculosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.motoristasGestor]: ['ADM', 'GESTOR_FROTA'],
-
+  [ROTAS.abastecimentosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.solicitacoesGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.calendarioGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],
@@ -23,16 +24,14 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.svoOrdens]: ['ATENDENTE_SVO'],
 }
 
-export function perfilPodeAcessar(
-  caminho: string,
-  perfil: string,
-): boolean {
-  const perfisExatos = perfisPorRota[caminho]
-
-  if (perfisExatos) {
-    return perfisExatos.includes(perfil)
+/** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
+export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
+  const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
+  if (solicitacao && /^[0-9]+$/.test(solicitacao.id)) {
+    return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil)
   }
-
+  const perfisExatos = perfisPorRota[caminho]
+  if (perfisExatos) return perfisExatos.includes(perfil)
   const detalhe = lerDetalheSvo(caminho)
   return !!detalhe && perfil === (detalhe.tela === 'execucao' ? 'MOTORISTA' : 'ATENDENTE_SVO')
 }

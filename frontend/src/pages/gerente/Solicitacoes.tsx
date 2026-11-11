@@ -1,8 +1,10 @@
+import { DatePicker } from '../../shared/components/DatePicker';
+import { Select } from '../../shared/components/Select';
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { navegar } from '../../app/routes/router'
 import { ROTAS, rotaSolicitacao } from '../../app/routes/rotas'
-import { Icone } from '../../shared/components/Icone'
+import { IconeGestor as Icone } from '../../shared/components/IconeGestor'
 import { Paginacao, usePaginacao } from '../../shared/components/Paginacao'
 import {
   listarSolicitacoes,
@@ -44,27 +46,12 @@ function converterStatus(status: string | null): Status {
     case 'CONCLUIDA':
       return 'Concluída'
     default:
-      return 'Pendente'
+      return 'Não informado'
   }
 }
 
 function converterDataHora(dataHora: string) {
-  const data = new Date(dataHora)
-
-  if (Number.isNaN(data.getTime())) {
-    return { data: '', horario: '' }
-  }
-
-  const ano = data.getFullYear()
-  const mes = String(data.getMonth() + 1).padStart(2, '0')
-  const dia = String(data.getDate()).padStart(2, '0')
-  const hora = String(data.getHours()).padStart(2, '0')
-  const minuto = String(data.getMinutes()).padStart(2, '0')
-
-  return {
-    data: `${ano}-${mes}-${dia}`,
-    horario: `${hora}:${minuto}`,
-  }
+  return { data: dataHora.slice(0, 10), horario: dataHora.slice(11, 16) }
 }
 
 export function Solicitacoes() {
@@ -77,16 +64,17 @@ export function Solicitacoes() {
   const [status, setStatus] = useState('')
   const [aviso, setAviso] = useState('')
   const [atualizacao, setAtualizacao] = useState(0)
+  const geracao = useRef(0)
 
   // Busca todas as páginas disponibilizadas pelo backend.
   useEffect(() => {
     let ativo = true
+    const consulta = ++geracao.current
 
     async function carregar() {
       try {
         setCarregando(true)
         setErro('')
-        setAviso('')
 
         const primeiraPagina = await listarSolicitacoes({
           page: 1,
@@ -113,7 +101,7 @@ export function Solicitacoes() {
 
           return {
             id: String(item.id),
-            codigo: item.codigoExibicao || item.codigo,
+            codigo: (item.codigoExibicao || item.codigo).replace(/^#/, ''),
             solicitante: item.solicitante?.nome ?? 'Não informado',
             instituicao: '—',
             data,
@@ -124,11 +112,11 @@ export function Solicitacoes() {
           }
         })
 
-        if (ativo) {
+        if (ativo && consulta === geracao.current) {
           setLista(convertidas)
         }
       } catch (erroApi) {
-        if (ativo) {
+        if (ativo && consulta === geracao.current) {
           setErro(
             erroApi instanceof Error
               ? erroApi.message
@@ -136,7 +124,7 @@ export function Solicitacoes() {
           )
         }
       } finally {
-        if (ativo) {
+        if (ativo && consulta === geracao.current) {
           setCarregando(false)
         }
       }
@@ -187,6 +175,8 @@ export function Solicitacoes() {
       }
     }
 
+    if (processandoId) return
+    geracao.current += 1
     try {
       setProcessandoId(id)
       setErro('')
@@ -200,9 +190,13 @@ export function Solicitacoes() {
         setAviso(`Solicitação #${id} rejeitada com sucesso.`)
       }
 
+      setLista((atual) => atual.map((item) => item.id === id
+        ? { ...item, status: novoStatus === 'aprovar' ? 'Aprovada' : 'Recusada' }
+        : item))
       // Atualiza a lista com o estado confirmado pelo backend.
       setAtualizacao((valor) => valor + 1)
     } catch (erroApi) {
+      setCarregando(false)
       setErro(
         erroApi instanceof Error
           ? erroApi.message
@@ -259,7 +253,7 @@ export function Solicitacoes() {
 
           <div className="campo">
             <label htmlFor="g-data">Data</label>
-            <input
+            <DatePicker
               id="g-data"
               type="date"
               value={data}
@@ -269,7 +263,7 @@ export function Solicitacoes() {
 
           <div className="campo">
             <label htmlFor="g-status">Status</label>
-            <select
+            <Select
               id="g-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -278,7 +272,7 @@ export function Solicitacoes() {
               {STATUS.map((st) => (
                 <option key={st}>{st}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <p className="sol-total" style={{ padding: 0, alignSelf: 'center' }}>
@@ -299,7 +293,7 @@ export function Solicitacoes() {
             <span />
             <span />
           </div>
-        ) : filtradas.length === 0 ? (
+        ) : erro && lista.length === 0 ? null : filtradas.length === 0 ? (
           <div className="vazio">
             <strong>
               {lista.length === 0
@@ -364,7 +358,7 @@ export function Solicitacoes() {
                                 className="sol-acao sol-acao--aprovar"
                                 aria-label={`Aprovar #${s.codigo}`}
                                 title="Aprovar"
-                                disabled={processandoId === s.id}
+                                disabled={Boolean(processandoId)}
                                 onClick={() => void analisar(s.id, 'aprovar')}
                               >
                                 <Icone nome="check" tamanho={18} />
@@ -375,7 +369,7 @@ export function Solicitacoes() {
                                 className="sol-acao sol-acao--recusar"
                                 aria-label={`Rejeitar #${s.codigo}`}
                                 title="Rejeitar"
-                                disabled={processandoId === s.id}
+                                disabled={Boolean(processandoId)}
                                 onClick={() => void analisar(s.id, 'rejeitar')}
                               >
                                 <Icone nome="fechar" tamanho={18} />
