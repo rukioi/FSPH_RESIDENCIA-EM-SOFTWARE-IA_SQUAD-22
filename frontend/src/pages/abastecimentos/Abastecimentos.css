@@ -370,3 +370,65 @@
   margin-top: 12px;
   color: #667085;
 }
+
+/* Filtros dos indicadores */
+
+.abastecimentos__indicadores-filtros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.abastecimentos__indicadores-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.abastecimentos__indicadores-campo label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.abastecimentos__indicadores-campo input,
+.abastecimentos__indicadores-campo select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.abastecimentos__indicadores-campo select:disabled {
+  background: #f2f4f7;
+  color: #667085;
+  cursor: not-allowed;
+}
+
+.abastecimentos__indicadores-acoes {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.abastecimentos__indicadores-acoes button {
+  padding: 10px 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.abastecimentos__indicadores-acoes button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .abastecimentos__indicadores-filtros {
+    grid-template-columns: 1fr;
+  }
+}
