@@ -13,6 +13,24 @@ test('rotas administrativas e SVO exigem seus perfis', () => {
   expect(perfilPodeAcessar('/svo', 'GESTOR_FROTA')).toBe(false)
   expect(perfilPodeAcessar('/svo', 'ATENDENTE_SVO')).toBe(true)
 })
+test.each([
+  ['/svo/solicitacoes/12', 'ATENDENTE_SVO'],
+  ['/svo/solicitacoes/12/historico', 'ATENDENTE_SVO'],
+  ['/svo/solicitacoes/12/triagem', 'ATENDENTE_SVO'],
+  ['/svo/ordens/9007199254740993', 'ATENDENTE_SVO'],
+  [ROTAS.svoMinhasOrdens, 'MOTORISTA'],
+  ['/svo/equipe/ordens/12/execucao', 'MOTORISTA'],
+])('reserva %s ao perfil operacional correto', (rota, permitido) => {
+  for (const perfil of ['ADM', 'GESTOR_FROTA', 'SOLICITANTE_INTERNO', 'ATENDENTE_SVO', 'MOTORISTA']) {
+    expect(perfilPodeAcessar(rota, perfil)).toBe(perfil === permitido)
+  }
+})
+
+test.each(['/svo/ordens/0', '/svo/ordens/-1', '/svo/ordens/1/extra', '/svo/equipe/ordens/exemplo/execucao'])(
+  'recusa rota de detalhe inválida %s', rota => {
+    expect(perfilPodeAcessar(rota, 'ATENDENTE_SVO')).toBe(false)
+    expect(perfilPodeAcessar(rota, 'MOTORISTA')).toBe(false)
+  })
 
 test('abastecimentos permite somente os perfis operacionais autorizados', () => {
   for (const perfil of ['ADM', 'GESTOR_FROTA']) {

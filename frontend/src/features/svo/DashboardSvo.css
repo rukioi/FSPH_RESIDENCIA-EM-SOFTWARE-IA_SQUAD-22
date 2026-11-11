@@ -2,6 +2,17 @@
   margin-bottom: 28px;
 }
 
+.svo-dashboard__tentar-novamente {
+  min-height: 40px;
+  margin: 12px 0;
+  padding: 8px 16px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  color: var(--azul);
+  background: var(--branco);
+  cursor: pointer;
+}
+
 .svo-dashboard__cabecalho h1 {
   font-size: 30px;
   font-weight: 900;
@@ -180,3 +191,14 @@
   background: #dcf8e5;
   color: #239251;
 }
+
+.svo-dashboard__periodos { margin-bottom:12px; }
+.svo-dashboard__periodos [aria-pressed=true] { background:var(--azul); color:white; }
+.svo-dashboard__periodo-descricao { margin-bottom:20px; color:var(--texto-suave); }
+.svo-dashboard__card a { color:inherit; min-height:40px; display:flex; align-items:center; }
+.svo-dashboard__filas { border:1px solid var(--borda); border-radius:12px; padding:20px; background:white; margin-bottom:28px; }
+.svo-dashboard__filas h2,.svo-dashboard__filas h3 { margin-bottom:12px; }
+.svo-dashboard__filas ul { list-style:none; padding:0; display:grid; gap:10px; margin-bottom:16px; }
+.svo-dashboard__filas p { margin:12px 0; }
+.svo-dashboard :focus-visible { outline:3px solid #2869aa; outline-offset:2px; }
+.svo-campos dd { overflow-wrap:anywhere; }

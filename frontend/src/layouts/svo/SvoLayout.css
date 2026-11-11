@@ -1,0 +1,242 @@
+.svo-shell {
+  --svo-menu: #102746;
+  --svo-menu-ativo: #203f6c;
+  --svo-fundo: #f3f6f9;
+  --svo-borda: #d9e0e8;
+  --svo-texto: #142033;
+  --svo-suave: #68758a;
+
+  min-height: 100vh;
+  background: var(--svo-fundo);
+  color: var(--svo-texto);
+}
+
+.svo-menu {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  display: flex;
+  width: 232px;
+  flex-direction: column;
+  background: var(--svo-menu);
+  color: #dce7f5;
+  transition: transform 180ms ease;
+}
+
+.svo-menu__marca {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  padding: 0 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.svo-menu__marca strong,
+.svo-menu__marca small {
+  display: block;
+}
+
+.svo-menu__marca strong {
+  color: #fff;
+  font-size: 14px;
+}
+
+.svo-menu__marca small {
+  margin-top: 2px;
+  color: #b7c6da;
+  font-size: 11px;
+}
+
+.svo-menu__nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  padding: 28px 8px;
+}
+
+.svo-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: #c4d0e0;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.svo-menu__item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.svo-menu__item--ativo {
+  color: #fff;
+  background: var(--svo-menu-ativo);
+  font-weight: 700;
+}
+
+.svo-menu__item--indisponivel {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.svo-menu__rodape {
+  padding: 14px 12px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.svo-menu__usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.svo-menu__usuario strong,
+.svo-menu__usuario small {
+  display: block;
+}
+
+.svo-menu__usuario strong {
+  color: #fff;
+  font-size: 13px;
+}
+
+.svo-menu__usuario small {
+  color: #b7c6da;
+  font-size: 11px;
+}
+
+.svo-avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: #1d72df;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.svo-menu__sair {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  border: 0;
+  color: #c4d0e0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.svo-shell__principal {
+  min-height: 100vh;
+  margin-left: 232px;
+}
+
+.svo-cabecalho {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--svo-borda);
+  background: #fff;
+}
+
+.svo-cabecalho__esquerda,
+.svo-cabecalho__direita {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.svo-cabecalho__direita strong,
+.svo-cabecalho__direita small {
+  display: block;
+}
+
+.svo-cabecalho__direita small {
+  color: var(--svo-suave);
+  font-size: 11px;
+}
+
+.svo-botao-icone {
+  display: none;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: #56657b;
+  background: transparent;
+  cursor: pointer;
+}
+
+.svo-conteudo {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 26px 30px 40px;
+}
+
+.svo-shell__fundo {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .svo-botao-icone {
+    display: grid;
+  }
+
+  .svo-menu {
+    visibility: hidden;
+    transform: translateX(-100%);
+  }
+
+  .svo-shell--aberto .svo-menu {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .svo-shell__principal {
+    margin-left: 0;
+  }
+
+  .svo-shell--aberto .svo-shell__fundo {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    display: block;
+    border: 0;
+    background: rgba(10, 24, 44, 0.46);
+  }
+
+  .svo-cabecalho {
+    padding: 0 16px;
+  }
+
+  .svo-conteudo {
+    padding: 22px 18px 32px;
+  }
+}
+
+@media (max-width: 600px) {
+  .svo-cabecalho__direita > div {
+    display: none;
+  }
+
+  .svo-conteudo {
+    padding-inline: 14px;
+  }
+}
+
+.svo-menu { overflow-y:auto; }
+.svo-menu__fechar { align-self:flex-end; min-height:40px; margin:8px 12px 0; padding:0 12px; border:1px solid #758aa5; background:transparent; color:white; border-radius:6px; }
+.svo-shell :is(.svo-menu__item,.svo-menu__fechar):focus-visible { outline:2px solid white; outline-offset:-3px; }

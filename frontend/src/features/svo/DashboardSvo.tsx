@@ -3,31 +3,25 @@ import {
   AguardandoDespacho,
   type OrdemColeta,
 } from "./AguardandoDespacho";
-import type { OrdemPronta } from "./ProntasParaIniciar";
-import { OrdensColetaRecentes } from "./OrdensColetaRecentes";
+import { OrdensColetaRecentes, type ConsultaRecentes } from "./OrdensColetaRecentes";
 import { PrepararDespachoModal } from "./PrepararDespachoModal";
-import { GraficoAtendimentos } from "./GraficoAtendimentos";
-import {
-  AtividadeRecente,
-  type AtividadeSvo,
-} from "./AtividadeRecente";
-import type {
-  MotoristaApi,
-  VeiculoApi,
-} from "../../shared/types/svo";
+import { ResumoDashboardSvo } from './ResumoDashboardSvo';
+import type { RecursosDisponiveisSvo } from "../../shared/types/svo";
 import "./DashboardSvo.css";
+import { navegar } from '../../app/routes/router';
+import { ROTAS } from '../../app/routes/rotas';
 
 type DashboardSvoProps = {
-  solicitacoesRegistradas: number;
   ordensAguardando: OrdemColeta[];
-  ordensProntas: OrdemPronta[];
-  atividades: AtividadeSvo[];
+  recentes: ConsultaRecentes;
   erroOrdens: string;
+  erroRecursos: string;
+  carregandoRecursos: boolean;
+  onAtualizarRecursos: () => void;
   carregando: boolean;
   onTentarNovamente: () => void;
-  motoristas: MotoristaApi[];
-  veiculos: VeiculoApi[];
-  onNovaSolicitacao?: () => void;
+  motoristas: RecursosDisponiveisSvo['motoristas'];
+  veiculos: RecursosDisponiveisSvo['veiculos'];
   onConfirmarDespacho: (
     ordem: OrdemColeta,
     motoristaId: number,
@@ -35,27 +29,23 @@ type DashboardSvoProps = {
   ) => void | Promise<void>;
 };
 
-/** Apresenta ordens consultadas e delimita contadores/atividades ao recorte desta sessão. */
+/** Mantém o despacho existente e apresenta agregações oficiais da SCRUM-149. */
 export function DashboardSvo({
-  solicitacoesRegistradas,
   ordensAguardando,
-  ordensProntas,
-  atividades,
+  recentes,
   erroOrdens,
+  erroRecursos,
+  carregandoRecursos,
+  onAtualizarRecursos,
   carregando,
   onTentarNovamente,
   motoristas,
   veiculos,
-  onNovaSolicitacao,
   onConfirmarDespacho,
 }: DashboardSvoProps) {
   const [ordemSelecionada, setOrdemSelecionada] =
     useState<OrdemColeta | null>(null);
-
-  const aguardandoDespacho = ordensAguardando.length;
-  const prontasParaIniciar = ordensProntas.length;
-  const ordensColeta =
-    ordensAguardando.length + ordensProntas.length;
+  const [revisao, setRevisao] = useState(0);
 
   async function confirmarDespacho(
     motoristaId: number,
@@ -72,6 +62,7 @@ export function DashboardSvo({
     );
 
     setOrdemSelecionada(null);
+    setRevisao(valor => valor + 1);
   }
 
   return (
@@ -80,105 +71,43 @@ export function DashboardSvo({
         <div>
           <h1>Dashboard SVO</h1>
           <p>
-            Resumo desta sessão — contadores e atividades locais não representam o histórico completo.
+            Atendimento, filas atuais e indicadores retornados pelo servidor.
           </p>
         </div>
 
         <button
           type="button"
           className="svo-dashboard__nova-solicitacao"
-          onClick={onNovaSolicitacao}
+          onClick={() => navegar(ROTAS.svoNovaSolicitacao)}
         >
           + Nova Solicitação
         </button>
       </header>
 
-      <div className="svo-dashboard__kpis">
-        <article className="svo-dashboard__card">
-          <div className="svo-dashboard__card-topo">
-            <span>Solicitações registradas</span>
-            <span
-              className="svo-dashboard__icone svo-dashboard__icone--verde"
-              aria-hidden="true"
-            >
-              ✓
-            </span>
-          </div>
 
-          <strong>{solicitacoesRegistradas}</strong>
-          <small>Registros nesta sessão</small>
-        </article>
-
-        <article className="svo-dashboard__card">
-          <div className="svo-dashboard__card-topo">
-            <span>Aguardando despacho</span>
-            <span
-              className="svo-dashboard__icone svo-dashboard__icone--amarelo"
-              aria-hidden="true"
-            >
-              ⏳
-            </span>
-          </div>
-
-          <strong>{aguardandoDespacho}</strong>
-          <small>Ordens aguardando preparação</small>
-        </article>
-
-        <article className="svo-dashboard__card">
-          <div className="svo-dashboard__card-topo">
-            <span>Ordens de coleta</span>
-            <span
-              className="svo-dashboard__icone svo-dashboard__icone--azul"
-              aria-hidden="true"
-            >
-              ↔
-            </span>
-          </div>
-
-          <strong>{ordensColeta}</strong>
-          <small>Ordens carregadas e despachadas nesta sessão</small>
-        </article>
-
-        <article className="svo-dashboard__card">
-          <div className="svo-dashboard__card-topo">
-            <span>Em andamento</span>
-            <span
-              className="svo-dashboard__icone svo-dashboard__icone--verde"
-              aria-hidden="true"
-            >
-              ▶
-            </span>
-          </div>
-
-          <strong>{prontasParaIniciar}</strong>
-          <small>Despachadas nesta sessão</small>
-        </article>
-      </div>
-
-      <div className="svo-dashboard__resumo">
-        <GraficoAtendimentos />
-        <AtividadeRecente atividades={atividades} />
-      </div>
+      <ResumoDashboardSvo revisao={revisao} atualizar={()=>{setRevisao(valor=>valor+1);onTentarNovamente();}}/>
 
       {carregando && <p role="status">Carregando ordens...</p>}
-      {erroOrdens && <button type="button" onClick={onTentarNovamente}>Tentar novamente</button>}
-      <AguardandoDespacho
+      {erroOrdens && <p role="alert">{erroOrdens}</p>}
+      {erroRecursos && <p role="alert">{erroRecursos}</p>}
+      {(erroOrdens || erroRecursos) && <button type="button" className="svo-dashboard__tentar-novamente" onClick={onTentarNovamente}>Tentar novamente</button>}
+      {!carregando && !erroOrdens && <AguardandoDespacho
         ordens={ordensAguardando}
         erro={erroOrdens}
-        onPrepararDespacho={setOrdemSelecionada}
-      />
+        onPrepararDespacho={ordem => {setOrdemSelecionada(ordem); onAtualizarRecursos();}}
+      />}
 
-      <OrdensColetaRecentes
-        aguardando={ordensAguardando}
-        prontas={ordensProntas}
-        onPrepararDespacho={setOrdemSelecionada}
-      />
+      <OrdensColetaRecentes {...recentes} />
 
       {ordemSelecionada && (
         <PrepararDespachoModal
           ordemId={ordemSelecionada.id}
+          ordemApiId={ordemSelecionada.apiId}
           motoristas={motoristas}
           veiculos={veiculos}
+          carregandoRecursos={carregandoRecursos}
+          erroRecursos={erroRecursos}
+          onAtualizarRecursos={onAtualizarRecursos}
           onFechar={() => setOrdemSelecionada(null)}
           onConfirmar={confirmarDespacho}
         />
