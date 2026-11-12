@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 65 operações.
+Gerado por api:generate; não editar manualmente. 67 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -53,6 +53,8 @@ Gerado por api:generate; não editar manualmente. 65 operações.
 | GET | /api/svo/dashboard | ATENDENTE_SVO | sem corpo | 200 DashboardOperacionalSvo | 400, 401, 403, 500, 405 | legado | SCRUM-149: IND-10..14 com fila atual independente do período, decisões por triado_em e distribuição por criado_em. |
 | GET | /api/svo/dashboard/filas | ATENDENTE_SVO | sem corpo | 200 FilasOperacionaisSvo | 400, 401, 403, 500, 405 | legado | SCRUM-149: saldo real atual de triagem e despacho, mais 10 itens mínimos por fila. |
 | GET | /api/svo/dashboard/atividades | ATENDENTE_SVO | sem corpo | 200 AtividadesRecentesSvo | 400, 401, 403, 500, 405 | legado | SCRUM-149 IND-07: eventos SVO reais, sem dados pessoais; limite 1..50. |
+| GET | /api/veiculos/{id}/foto | ADM, GESTOR_FROTA, ATENDENTE_SVO | sem corpo | 200 FotoVeiculoResposta | 401, 403, 404, 500, 503, 405 | piloto | Foto privada JPEG ou PNG, ou null quando ausente. |
+| PUT | /api/veiculos/{id}/foto | ADM, GESTOR_FROTA | FotoVeiculoEntrada | 200 FotoVeiculoResposta | 400, 401, 403, 404, 413, 415, 500, 503, 405 | piloto | Substitui foto privada; máximo 1 MiB. |
 | GET | /api/veiculos | ADM, GESTOR_FROTA, ATENDENTE_SVO | sem corpo | 200 ListaVeiculos | 401, 403, 500, 405 | piloto | Lista completa id DESC, sem paginação. Piloto validado em runtime. |
 | POST | /api/veiculos | ADM, GESTOR_FROTA | CriarVeiculo | 201 RespostaVeiculo | 400, 401, 403, 409, 413, 415, 500, 405 | piloto | Formato atual preservado; query params não declarados são ignorados. |
 | PUT | /api/veiculos/{id} | ADM, GESTOR_FROTA | EditarVeiculo | 200 RespostaVeiculo | 400, 401, 403, 404, 409, 413, 415, 500, 405 | piloto | Alteração parcial; campos não suportados ignorados. Sem mudança de estados/disponibilidade. |

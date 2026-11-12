@@ -156,6 +156,8 @@ export const operations: Operacao[] = [
   op('svo','get','/api/svo/dashboard/atividades','AtividadesRecentesSvo',['ATENDENTE_SVO'],{
     errors:[400,401,403,500],notes:'SCRUM-149 IND-07: eventos SVO reais, sem dados pessoais; limite 1..50.',
     query:[{name:'limite',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('veiculos','get','/api/veiculos/{id}/foto','FotoVeiculoResposta',consultaFrota,{errors:[401,403,404,500,503],notes:'Foto privada JPEG ou PNG, ou null quando ausente.'}),
+  op('veiculos','put','/api/veiculos/{id}/foto','FotoVeiculoResposta',gestor,{body:'FotoVeiculoEntrada',errors:[400,401,403,404,413,415,500,503],notes:'Substitui foto privada; máximo 1 MiB.'}),
   op('veiculos','get','/api/veiculos','ListaVeiculos',consultaFrota,{notes:'Lista completa id DESC, sem paginação. Piloto validado em runtime.'}),
   op('veiculos','post','/api/veiculos','RespostaVeiculo',gestor,{body:'CriarVeiculo',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('veiculos',method,'/api/veiculos/{id}','RespostaVeiculo',gestor,

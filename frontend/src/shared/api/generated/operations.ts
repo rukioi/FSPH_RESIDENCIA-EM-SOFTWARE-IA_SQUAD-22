@@ -196,6 +196,14 @@ export const apiOperations = {
     "method": "GET",
     "path": "/api/svo/dashboard/atividades"
   },
+  "veiculos_get__api_veiculos_id_foto": {
+    "method": "GET",
+    "path": "/api/veiculos/{id}/foto"
+  },
+  "veiculos_put__api_veiculos_id_foto": {
+    "method": "PUT",
+    "path": "/api/veiculos/{id}/foto"
+  },
   "veiculos_get__api_veiculos": {
     "method": "GET",
     "path": "/api/veiculos"

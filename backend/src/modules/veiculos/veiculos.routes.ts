@@ -1,3 +1,4 @@
+import { consultarFoto, salvarFoto } from './veiculos.foto.controller.js';
 import { enviarErro } from '../../shared/http/json.js';
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -26,9 +27,11 @@ export async function veiculosRoute(
   const pathname = url.pathname;
   const method = req.method;
 
+  const matchFoto = pathname.match(/^\/api\/veiculos\/([0-9]+)\/foto$/);
   const matchId = pathname.match(/^\/api\/veiculos\/([0-9]+)$/);
 
   const rotaConhecida =
+    (matchFoto !== null && (method === 'GET' || method === 'PUT')) ||
     (pathname === '/api/veiculos' &&
       (method === 'GET' || method === 'POST')) ||
     (matchId !== null &&
@@ -57,6 +60,12 @@ export async function veiculosRoute(
     : ['ADM', 'GESTOR_FROTA'];
 
   if (!autorizarPerfis(usuario, perfisPermitidos, res)) {
+    return;
+  }
+
+  if (matchFoto) {
+    if (method === 'GET') await consultarFoto(res, matchFoto[1]);
+    else await salvarFoto(req, res, matchFoto[1]);
     return;
   }
 

@@ -179,6 +179,8 @@ export interface ApiSchemas {
   ErroUsuario: ErroUsuario;
   ErroOperacionalSvo: ErroOperacionalSvo;
   Exclusao: Exclusao;
+  FotoVeiculoEntrada: FotoVeiculoEntrada;
+  FotoVeiculoResposta: FotoVeiculoResposta;
   Veiculo: Veiculo;
   CriarVeiculo: CriarVeiculo;
   EditarVeiculo: EditarVeiculo;
@@ -323,6 +325,26 @@ export interface ErroSvo {
 export interface Exclusao {
   data: {
     success: true;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "FotoVeiculoEntrada".
+ */
+export interface FotoVeiculoEntrada {
+  tipo: 'image/jpeg' | 'image/png';
+  dadosBase64: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "FotoVeiculoResposta".
+ */
+export interface FotoVeiculoResposta {
+  data: {
+    foto: {
+      tipo: 'image/jpeg' | 'image/png';
+      dadosBase64: string;
+    } | null;
   };
 }
 /**
@@ -1889,6 +1911,8 @@ export interface ApiOperations {
   'svo_get__api_svo_dashboard': { body: undefined; response: ApiSchemas['DashboardOperacionalSvo'] };
   'svo_get__api_svo_dashboard_filas': { body: undefined; response: ApiSchemas['FilasOperacionaisSvo'] };
   'svo_get__api_svo_dashboard_atividades': { body: undefined; response: ApiSchemas['AtividadesRecentesSvo'] };
+  'veiculos_get__api_veiculos_id_foto': { body: undefined; response: ApiSchemas['FotoVeiculoResposta'] };
+  'veiculos_put__api_veiculos_id_foto': { body: ApiSchemas['FotoVeiculoEntrada']; response: ApiSchemas['FotoVeiculoResposta'] };
   'veiculos_get__api_veiculos': { body: undefined; response: ApiSchemas['ListaVeiculos'] };
   'veiculos_post__api_veiculos': { body: ApiSchemas['CriarVeiculo']; response: ApiSchemas['RespostaVeiculo'] };
   'veiculos_put__api_veiculos_id_': { body: ApiSchemas['EditarVeiculo']; response: ApiSchemas['RespostaVeiculo'] };

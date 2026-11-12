@@ -35,7 +35,9 @@ export const criarVeiculoSchema = baseCriacao.superRefine(exigirFornecedor).meta
 export const editarVeiculoSchema = baseEdicao.superRefine(exigirFornecedor).meta(condicaoFornecedor);
 export const respostaVeiculo = dados(veiculo);
 export const listaVeiculos = dados(z.array(veiculo));
-export const veiculosSchemas = { Veiculo: veiculo, CriarVeiculo: criarVeiculoSchema, EditarVeiculo: editarVeiculoSchema,
+export const fotoVeiculoEntrada = z.object({ tipo: z.enum(['image/jpeg','image/png']), dadosBase64: z.string().min(1).max(1398104) });
+export const fotoVeiculoResposta = dados(z.object({ foto: fotoVeiculoEntrada.nullable() }));
+export const veiculosSchemas = { FotoVeiculoEntrada: fotoVeiculoEntrada, FotoVeiculoResposta: fotoVeiculoResposta, Veiculo: veiculo, CriarVeiculo: criarVeiculoSchema, EditarVeiculo: editarVeiculoSchema,
   RespostaVeiculo: respostaVeiculo, ListaVeiculos: listaVeiculos, ExclusaoVeiculo: sucessoExclusao };
 
 /** Converte somente falhas conhecidas de validação, sem expor entrada ou detalhes internos. */

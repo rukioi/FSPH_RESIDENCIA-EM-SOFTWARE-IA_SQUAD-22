@@ -5591,6 +5591,258 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
+  /api/veiculos/{id}/foto:
+    get:
+      operationId: veiculos_get__api_veiculos_id_foto
+      tags:
+        - veiculos
+      description: Foto privada JPEG ou PNG, ou null quando ausente.
+      security:
+        - bearerAuth: []
+      x-perfis: &a2
+        - ADM
+        - GESTOR_FROTA
+        - ATENDENTE_SVO
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FotoVeiculoResposta"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "503":
+          description: Falha atual HTTP 503
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    put:
+      operationId: veiculos_put__api_veiculos_id_foto
+      tags:
+        - veiculos
+      description: Substitui foto privada; máximo 1 MiB.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FotoVeiculoEntrada"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FotoVeiculoResposta"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "503":
+          description: Falha atual HTTP 503
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
   /api/veiculos:
     get:
       operationId: veiculos_get__api_veiculos
@@ -5599,10 +5851,7 @@ paths:
       description: Lista completa id DESC, sem paginação. Piloto validado em runtime.
       security:
         - bearerAuth: []
-      x-perfis: &a2
-        - ADM
-        - GESTOR_FROTA
-        - ATENDENTE_SVO
+      x-perfis: *a2
       x-runtime-validation: true
       parameters: []
       responses:
@@ -7512,6 +7761,48 @@ components:
               const: true
           required:
             - success
+      required:
+        - data
+    FotoVeiculoEntrada:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+        dadosBase64:
+          type: string
+          minLength: 1
+          maxLength: 1398104
+      required:
+        - tipo
+        - dadosBase64
+    FotoVeiculoResposta:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            foto:
+              anyOf:
+                - type: object
+                  properties:
+                    tipo:
+                      type: string
+                      enum:
+                        - image/jpeg
+                        - image/png
+                    dadosBase64:
+                      type: string
+                      minLength: 1
+                      maxLength: 1398104
+                  required:
+                    - tipo
+                    - dadosBase64
+                - type: "null"
+          required:
+            - foto
       required:
         - data
     Veiculo:
