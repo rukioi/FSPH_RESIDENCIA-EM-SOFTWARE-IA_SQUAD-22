@@ -1,81 +1,58 @@
-import type { OrdemColeta } from "./AguardandoDespacho";
-import type { OrdemPronta } from "./ProntasParaIniciar";
-import "./OrdensColetaRecentes.css";
+import type { ListaOrdensSvo } from '../../shared/types/svo';
+import { Link } from '../../app/routes/router';
+import { ROTAS, rotaOrdemSvo } from '../../app/routes/rotas';
+import { estadosOrdem, nomeStatusSvo } from './apresentacaoSvo';
+import './OrdensColetaRecentes.css';
 
-type OrdensColetaRecentesProps = {
-  aguardando: OrdemColeta[];
-  prontas: OrdemPronta[];
-  onPrepararDespacho: (ordem: OrdemColeta) => void;
+export type ConsultaRecentes = {
+  data: ListaOrdensSvo | null;
+  loading: boolean;
+  error: string;
+  retry: () => void;
 };
 
-/** Ordena o recorte carregado por BIGINT sem reduzir a precisão dos identificadores. */
-export function OrdensColetaRecentes({
-  aguardando,
-  prontas,
-  onPrepararDespacho,
-}: OrdensColetaRecentesProps) {
-  const recentes = [
-    ...aguardando.map((ordem) => ({
-      ...ordem,
-      status: "Aguardando despacho" as const,
-    })),
-    ...prontas.map((ordem) => ({
-      ...ordem,
-      status: "Em andamento" as const,
-    })),
-  ]
-    .sort((a, b) => BigInt(a.apiId) === BigInt(b.apiId) ? 0 : BigInt(a.apiId) > BigInt(b.apiId) ? -1 : 1)
-    .slice(0, 3);
-
+/** A primeira página da API já vem ordenada por ID decrescente e inclui todos os estados. */
+export function OrdensColetaRecentes({ data, loading, error, retry }: ConsultaRecentes) {
   return (
     <section className="svo-recentes">
       <header className="svo-recentes__cabecalho">
         <h2>Ordens de coleta recentes</h2>
 
-        <button type="button" className="svo-recentes__ver-todas">
+        <Link para={ROTAS.svoOrdens} className="svo-recentes__ver-todas">
           Ver todas
-        </button>
+        </Link>
       </header>
 
-      <div className="svo-recentes__lista">
-        {recentes.map((ordem) => (
+      {loading && <p role="status">Consultando ordens recentes…</p>}
+      {error && <div className="svo-acoes"><p role="alert">{error}</p><button onClick={retry}>Tentar consultar ordens recentes</button></div>}
+      {!loading && !error && data && <div className="svo-recentes__lista">
+        {!data.data.length && <p>Nenhuma ordem de coleta registrada.</p>}
+        {data.data.slice(0, 3).map((ordem) => (
           <article key={ordem.id} className="svo-recentes__item">
             <div>
               <div className="svo-recentes__linha">
-                <strong>#{ordem.id}</strong>
+                <strong>{ordem.codigo}</strong>
 
                 <span
                   className={
-                    ordem.status === "Aguardando despacho"
+                    ordem.status === "PENDENTE_ALOCACAO"
                       ? "svo-recentes__status svo-recentes__status--aguardando"
                       : "svo-recentes__status svo-recentes__status--pronta"
                   }
                 >
-                  ● {ordem.status}
+                  ● {nomeStatusSvo(ordem.status, estadosOrdem)}
                 </span>
               </div>
 
               <p>
-                Solicitação {ordem.solicitacaoCodigo ?? "—"} · {ordem.endereco} ·
-                Gerada {ordem.horario}
+                Solicitação {ordem.solicitacaoCodigo} · Quantidade de corpos: {ordem.quantidadeCorpos ?? "não informada"}
               </p>
             </div>
 
-            <button
-              type="button"
-              className="svo-recentes__acao"
-              onClick={() =>
-                ordem.status === "Aguardando despacho"
-                  ? onPrepararDespacho(ordem)
-                  : undefined
-              }
-              disabled={ordem.status !== "Aguardando despacho"}
-            >
-              Ver ordem
-            </button>
+            {/^[1-9]\d*$/.test(ordem.id) && <Link para={rotaOrdemSvo(ordem.id)} className="svo-recentes__acao">Ver ordem</Link>}
           </article>
         ))}
-      </div>
+      </div>}
     </section>
   );
 }

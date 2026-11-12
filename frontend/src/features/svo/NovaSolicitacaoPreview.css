@@ -1,0 +1,259 @@
+.nova-svo {
+  width: 100%;
+}
+
+.nova-svo * {
+  box-sizing: border-box;
+}
+
+.nova-svo__cabecalho {
+  margin-bottom: 24px;
+}
+
+.nova-svo__cabecalho h1 {
+  margin: 0;
+  color: #142033;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.nova-svo__cabecalho p {
+  margin: 6px 0 0;
+  color: #59697d;
+  font-size: 14px;
+}
+
+.nova-svo__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 32.8%);
+  gap: 24px;
+  align-items: start;
+}
+
+.nova-svo__form {
+  display: grid;
+  gap: 24px;
+}
+
+.nova-svo__card {
+  overflow: hidden;
+  border: 1px solid #dce3eb;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(18, 37, 63, 0.05);
+}
+
+.nova-svo__titulo-secao {
+  min-height: 51px;
+  padding: 17px 24px;
+  border-bottom: 1px solid #e4e9ef;
+}
+
+.nova-svo__titulo-secao h2 {
+  margin: 0;
+  color: #18263c;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.nova-svo__titulo-secao p {
+  margin: 2px 0 0;
+  color: #59697d;
+  font-size: 11px;
+}
+
+.nova-svo__grid,
+.nova-svo__card > label {
+  margin: 0;
+}
+
+.nova-svo__grid {
+  display: grid;
+  gap: 17px 14px;
+  padding: 24px;
+}
+
+.nova-svo__grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nova-svo__campo--largo {
+  grid-column: 1 / -1;
+}
+
+.nova-svo__card > label {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+}
+
+.nova-svo label {
+  display: grid;
+  gap: 7px;
+  color: #26364d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nova-svo input,
+.nova-svo select,
+.nova-svo textarea {
+  width: 100%;
+  border: 1px solid #d3dce6;
+  border-radius: 6px;
+  outline: none;
+  color: #26364d;
+  background: #fff;
+  font: inherit;
+  font-weight: 400;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.nova-svo input,
+.nova-svo select {
+  height: 40px;
+  padding: 0 11px;
+}
+
+.nova-svo textarea {
+  min-height: 90px;
+  padding: 11px;
+  resize: vertical;
+}
+
+.nova-svo input::placeholder,
+.nova-svo textarea::placeholder {
+  color: #59697d;
+}
+
+.nova-svo input:focus,
+.nova-svo select:focus,
+.nova-svo textarea:focus {
+  border-color: #3476bf;
+  box-shadow: 0 0 0 3px rgba(52, 118, 191, 0.12);
+}
+
+.nova-svo input:disabled {
+  color: #8a95a5;
+  background: #f7f8fa;
+  cursor: not-allowed;
+}
+
+.nova-svo__lateral {
+  position: sticky;
+  top: 88px;
+}
+
+.nova-svo__info {
+  padding: 19px 20px;
+  border: 1px solid #cbdaf0;
+  border-radius: 8px;
+  color: #183559;
+  background: #edf2fa;
+}
+
+.nova-svo__info-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  color: #195aa2;
+}
+
+.nova-svo__info-titulo span {
+  font-size: 17px;
+}
+
+.nova-svo__info h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.nova-svo__info ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.nova-svo__info li {
+  padding-left: 1px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.nova-svo__info li + li {
+  margin-top: 7px;
+}
+
+.nova-svo__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 1px 0 12px;
+}
+
+.nova-svo__botao {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nova-svo__botao--secundario {
+  border: 1px solid #cfd7e2;
+  color: #34445a;
+  background: #fff;
+  cursor: pointer;
+}
+
+.nova-svo__botao--primario {
+  border: 1px solid #1468c7;
+  color: #fff;
+  background: #1468c7;
+}
+
+.nova-svo__botao--primario:disabled {
+  border-color: #aebdce;
+  background: #aebdce;
+  cursor: not-allowed;
+}
+
+@media (max-width: 980px) {
+  .nova-svo__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .nova-svo__lateral {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .nova-svo__grid--2 {
+    grid-template-columns: 1fr;
+  }
+
+  .nova-svo__campo--largo {
+    grid-column: auto;
+  }
+
+  .nova-svo__acoes {
+    flex-direction: column-reverse;
+  }
+
+  .nova-svo__botao {
+    width: 100%;
+  }
+}
+
+.nova-svo__nota { color:#52647b; font-size:14px; text-align:right; }
+.nova-svo__pendencia { padding:0 24px 20px; color:#52647b; font-size:13px; line-height:1.5; }
+.nova-svo__grid label { min-width:0; }
+.nova-svo input:focus-visible, .nova-svo select:focus-visible, .nova-svo textarea:focus-visible {
+  outline:2px solid #2869aa;
+  outline-offset:1px;
+}
+
+.nova-svo__campos { display:grid; gap:24px; min-width:0; border:0; padding:0; margin:0; }

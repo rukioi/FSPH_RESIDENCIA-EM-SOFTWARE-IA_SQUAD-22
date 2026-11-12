@@ -34,3 +34,21 @@ A transação responsável confirma/reverte alteração e atividade juntas. A co
 ordena data_hora DESC NULLS LAST, id DESC; a paginação usa snapshot consistente.
 Serialização HTTP mantém a interpretação legada do driver; não determina fuso de
 origem nem converte timestamps históricos. Ver [contrato](../api/auditoria.md).
+
+## Sprint 8 — DB-S8-01 (SCRUM-166)
+
+Evolução aditiva de viagem operacional, quilometragem, evidências, validação,
+correção e avisos ao motorista. Regras e provas em
+[sprint8-viagem-execucao](./sprint8-viagem-execucao.md). Comprovantes e
+notificações de 09/11 passaram a constar do snapshot regenerado.
+
+| Tabela | Estrutura comprovada |
+| --- | --- |
+| viagem (colunas novas) | criado_em timestamptz anulável, com default clock_timestamp() só para linhas novas; validada_por_id BIGINT com FK usuario; validada_em timestamptz. Seis CHECKs NOT VALID: dados obrigatórios, km inicial ≥ 0, km final ≥ inicial, período, dados exigidos por status e validação coerente. Índices por motorista/status/início e status/início. |
+| viagem_evidencia | Foto do odômetro INICIAL/FINAL por versão (UNIQUE viagem, momento, versão); bytea de 1 B a 1 MiB, image/jpeg ou image/png; autor e criado_em obrigatórios. RLS ligada, sem grants para anon/authenticated; UPDATE/DELETE/TRUNCATE revogados dos papéis de aplicação. |
+| viagem_correcao | Correção/justificativa versionada (UNIQUE viagem, versão) com km anteriores e resultantes, justificativa de 1 a 2000 caracteres, autor e criado_em obrigatórios. Mesma proteção da evidência. |
+| abastecimento_comprovante | Imagem do abastecimento (PK/FK abastecimento_id, ON DELETE CASCADE), bytea de 1 B a 1 MiB, image/jpeg ou image/png; RLS ligada, sem grants públicos (migration 20261109000000). |
+| notificacao | Caixa individual (migration 20261109100000) com chave única por usuário, categoria, criado_em e lida_em timestamptz. DB-S8-01 acrescenta tipo (ATRIBUICAO/LEMBRETE) e viagem_id com FK; aviso tipado exige demanda e chave viagem:id:tipo:sufixo. |
+
+Os timestamptz novos registram instantes do servidor. As colunas antigas de
+viagem continuam timestamp sem fuso (D4), sem conversão do histórico.

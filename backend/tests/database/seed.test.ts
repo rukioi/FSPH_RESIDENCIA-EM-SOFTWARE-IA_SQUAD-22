@@ -8,15 +8,22 @@ let sql: Awaited<ReturnType<typeof verifiedSql>>;
 beforeAll(async () => { sql = await verifiedSql(); });
 afterAll(async () => { await sql?.end(); });
 
+// Tabelas protegidas sem fixtures no seed: seus dados só nascem nos testes (rollback/limpeza).
+// A reversão de DB-S8-01 exige evidência/correção vazias, então não recebem fixture.
+const semFixtures = ['abastecimento_comprovante', 'notificacao', 'viagem_correcao', 'viagem_evidencia'];
+
 test('duas preparações não duplicam nem modificam fixtures, sequências ou migrations', async () => {
   async function snapshot() {
     const [row] = await sql.unsafe(metadataQuery);
     const metadata = row.metadata as Metadata;
+    expect(metadata.tables.map(t => t.name)).toEqual(expect.arrayContaining(semFixtures));
     const records: Record<string, unknown> = {};
     for (const table of metadata.tables) {
+      // Nem toda tabela usa "id" como PK (abastecimento_comprovante usa abastecimento_id).
+      const [pk] = metadata.constraints.find(c => c.table === table.name && c.type === 'p')!.columns;
       records[table.name] = await sql`select to_jsonb(t) as row from ${sql(table.name)} t
-        where id between -27099 and -27001 order by id`;
-      expect((records[table.name] as unknown[]).length).toBeGreaterThan(0);
+        where ${sql(pk)} between -27099 and -27001 order by ${sql(pk)}`;
+      if (!semFixtures.includes(table.name)) expect((records[table.name] as unknown[]).length).toBeGreaterThan(0);
     }
     records.migrations = await sql`select * from fsph_test_harness.migrations order by name`;
     for (const sequence of metadata.sequences) {

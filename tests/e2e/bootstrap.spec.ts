@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { verifiedSql } from '../../backend/src/database/scripts/verify-test-db.js';
+import { svoDashboardSchemas } from '../../backend/src/modules/svo/svo.dashboard.schemas.js';
 
 let admToken:string;
 let svoToken:string;
@@ -103,13 +104,43 @@ for(const width of [390,768,1280]) {
     await expect(page.locator('.pagina__descricao')).toContainText('Demonstração');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`auditoria-${width}.png`),fullPage:true});
-    await page.evaluate(t=>sessionStorage.setItem('token',t),svoToken);
-    await page.goto('/svo');
-    await expect(page.getByRole('heading',{name:'Dashboard SVO'})).toBeVisible();
+  });
+
+  test(`Dashboard SVO usa indicadores da API em ${width}px`, async ({ page, context, request }, info) => {
+    const cards = page.locator('.svo-dashboard__kpis strong');
+    async function conferirIndicadores(navegar: () => Promise<unknown>) {
+      const [consulta] = await Promise.all([
+        page.waitForEvent('requestfinished', req => new URL(req.url()).pathname === '/api/svo/dashboard'),
+        navegar(),
+      ]);
+      expect((await consulta.response())?.status()).toBe(200);
+      // A leitura independente usa o mesmo período e atendente, inclusive após reload.
+      const resposta = await request.get(consulta.url(), { headers: { Authorization: `Bearer ${svoToken}` } });
+      expect(resposta.status()).toBe(200);
+      const { indicadores } = svoDashboardSchemas.DashboardOperacionalSvo.parse(await resposta.json());
+      await expect(cards).toHaveText([
+        String(indicadores.aguardandoTriagem), String(indicadores.confirmadasSvo),
+        String(indicadores.encaminhadasIml), String(indicadores.ordensColeta),
+      ]);
+    }
+
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/login');
+    await expect(page.getByRole('heading', { name: 'Acesse sua conta' })).toBeVisible();
+    await page.evaluate(token => sessionStorage.setItem('token', token), svoToken);
+    await conferirIndicadores(() => page.goto('/svo'));
+    await expect(page.getByRole('heading', { name: 'Dashboard SVO', exact: true })).toBeVisible();
     await expect(page.getByText('Carregando ordens...')).toHaveCount(0);
-    await expect(page.getByText(/Resumo desta sessão/)).toBeVisible();
-    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-    await page.screenshot({path:info.outputPath(`svo-${width}.png`),fullPage:true});
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: info.outputPath(`svo-${width}.png`), fullPage: true });
+
+    await context.setOffline(true);
+    await page.getByRole('button', { name: 'Atualizar dashboard' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'Indicadores indisponíveis' })).toBeVisible();
+    await expect(cards).toHaveText(['—', '—', '—', '—']);
+
+    await context.setOffline(false);
+    await conferirIndicadores(() => page.reload());
   });
 }
 

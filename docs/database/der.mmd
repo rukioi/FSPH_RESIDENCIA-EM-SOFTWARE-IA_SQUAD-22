@@ -10,6 +10,13 @@ erDiagram
     date data_abastecimento "NOT NULL"
     timestamp_without_time_zone criado_em "nullable"
     character_varying_255_ posto "nullable"
+    boolean tanque_completo "NOT NULL"
+  }
+  abastecimento_comprovante {
+    bigint abastecimento_id FK,PK "NOT NULL"
+    text nome "NOT NULL"
+    text tipo "NOT NULL"
+    bytea dados "NOT NULL"
   }
   documento_veiculo {
     bigint id PK "NOT NULL"
@@ -39,6 +46,18 @@ erDiagram
     timestamp_without_time_zone criado_em "nullable"
     character_varying_14_ cpf UK "nullable"
     character_varying_20_ telefone "nullable"
+  }
+  notificacao {
+    bigint id PK "NOT NULL"
+    bigint usuario_id UK,FK "NOT NULL"
+    text chave UK "NOT NULL"
+    character_varying_200_ titulo "NOT NULL"
+    text descricao "NOT NULL"
+    text categoria "NOT NULL"
+    timestamp_with_time_zone criado_em "NOT NULL"
+    timestamp_with_time_zone lida_em "nullable"
+    text tipo "nullable"
+    bigint viagem_id FK "nullable"
   }
   ordem_coleta {
     bigint id PK "NOT NULL"
@@ -128,14 +147,43 @@ erDiagram
     timestamp_without_time_zone data_fim "nullable"
     boolean validada_por_gestor "nullable"
     status_viagem status "nullable"
+    timestamp_with_time_zone criado_em "nullable"
+    bigint validada_por_id FK "nullable"
+    timestamp_with_time_zone validada_em "nullable"
+  }
+  viagem_correcao {
+    bigint id PK "NOT NULL"
+    bigint viagem_id UK,FK "NOT NULL"
+    integer versao UK "NOT NULL"
+    integer km_inicial_anterior "nullable"
+    integer km_final_anterior "nullable"
+    integer km_inicial "nullable"
+    integer km_final "nullable"
+    text justificativa "NOT NULL"
+    bigint autor_id FK "NOT NULL"
+    timestamp_with_time_zone criado_em "NOT NULL"
+  }
+  viagem_evidencia {
+    bigint id PK "NOT NULL"
+    bigint viagem_id UK,FK "NOT NULL"
+    text momento UK "NOT NULL"
+    integer versao UK "NOT NULL"
+    text nome "NOT NULL"
+    text tipo "NOT NULL"
+    bytea dados "NOT NULL"
+    bigint enviado_por_id FK "NOT NULL"
+    timestamp_with_time_zone criado_em "NOT NULL"
   }
   motorista ||--o{ abastecimento : "abastecimento_motorista_id_fkey DELETE NO ACTION"
   veiculo ||--o{ abastecimento : "abastecimento_veiculo_id_fkey DELETE NO ACTION"
+  abastecimento ||--o| abastecimento_comprovante : "abastecimento_comprovante_abastecimento_id_fkey DELETE CASCADE"
   veiculo |o--o{ documento_veiculo : "documento_veiculo_veiculo_id_fkey DELETE NO ACTION"
   usuario |o--o{ log_atividade : "fk_log_atividade_usuario DELETE SET NULL"
   solicitacao_viagem |o--o{ log_atividade : "log_atividade_solicitacao_viagem_id_fkey DELETE NO ACTION"
   usuario |o--o{ log_atividade : "log_atividade_usuario_id_fkey DELETE NO ACTION"
   usuario |o--o| motorista : "motorista_usuario_id_fkey DELETE CASCADE"
+  usuario ||--o{ notificacao : "notificacao_usuario_id_fkey DELETE CASCADE"
+  viagem |o--o{ notificacao : "notificacao_viagem_fk DELETE NO ACTION"
   motorista |o--o{ ordem_coleta : "ordem_coleta_motorista_id_fkey DELETE NO ACTION"
   solicitacao_obito |o--o| ordem_coleta : "ordem_coleta_solicitacao_obito_id_fkey DELETE NO ACTION"
   veiculo |o--o{ ordem_coleta : "ordem_coleta_veiculo_id_fkey DELETE NO ACTION"
@@ -146,4 +194,9 @@ erDiagram
   usuario |o--o{ solicitacao_viagem : "solicitacao_viagem_solicitante_id_fkey DELETE NO ACTION"
   motorista |o--o{ viagem : "viagem_motorista_id_fkey DELETE NO ACTION"
   solicitacao_viagem |o--o| viagem : "viagem_solicitacao_id_fkey DELETE NO ACTION"
+  usuario |o--o{ viagem : "viagem_validada_por_fk DELETE NO ACTION"
   veiculo |o--o{ viagem : "viagem_veiculo_id_fkey DELETE NO ACTION"
+  usuario ||--o{ viagem_correcao : "viagem_correcao_autor_fk DELETE NO ACTION"
+  viagem ||--o{ viagem_correcao : "viagem_correcao_viagem_fk DELETE NO ACTION"
+  usuario ||--o{ viagem_evidencia : "viagem_evidencia_autor_fk DELETE NO ACTION"
+  viagem ||--o{ viagem_evidencia : "viagem_evidencia_viagem_fk DELETE NO ACTION"

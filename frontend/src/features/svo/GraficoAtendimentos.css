@@ -47,13 +47,7 @@
   width: 165px;
   height: 165px;
   border-radius: 50%;
-  background: conic-gradient(
-    #c98800 0deg 80deg,
-    #67b987 80deg 160deg,
-    #239251 160deg 240deg,
-    #69a6e8 240deg 320deg,
-    #2f6fc7 320deg 360deg
-  );
+  background: #e6ebef;
 }
 
 .svo-grafico__donut::after {
@@ -165,3 +159,5 @@
   color: var(--texto-suave);
   font-size: 12px;
 }
+
+.svo-grafico__nota { padding:0 22px 20px; color:var(--texto-suave); font-size:13px; }

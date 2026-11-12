@@ -5,19 +5,14 @@ import { Notificacoes } from "../features/notificacoes/Notificacoes";
 import type { ComponentType } from "react";
 import "../shared/styles/tema.css";
 
-import { navegar, useCaminho } from "./routes/router";
-import {
-  ROTAS,
-  lerRotaSolicitacao,
-  lerRotaDetalheAbastecimento,
-  lerRotaHistoricoAbastecimentosVeiculo,
-} from "./routes/rotas";
-import { AuthSkeleton } from "./AuthSkeleton";
+import { Link, navegar, useCaminho } from './routes/router'
+import { ROTAS, lerDetalheSvo, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo, lerRotaSolicitacao } from './routes/rotas'
+import { AuthSkeleton } from './AuthSkeleton'
 
-import { AdminLayout } from "../layouts/administrador/AdminLayout";
-import { perfilPodeAcessar } from "../shared/services/access.service";
-import { GestorLayout } from "../layouts/gestor/GestorLayout";
-import { SolicitanteLayout } from "../layouts/solicitante/SolicitanteLayout";
+import { AdminLayout } from '../layouts/administrador/AdminLayout'
+import { perfilPodeAcessar } from '../shared/services/access.service'
+import { GestorLayout } from '../layouts/gestor/GestorLayout'
+import { SvoLayout } from '../layouts/svo/SvoLayout'
 
 import { Login } from "../pages/login/Login";
 import { DashboardAdmin } from "../pages/administrador/DashboardAdm";
@@ -31,13 +26,19 @@ import { DetalheAbastecimento } from "../pages/abastecimentos/DetalheAbastecimen
 import { HistoricoAbastecimentos } from "../pages/abastecimentos/HistoricoAbastecimentos";
 import { IndicadoresAbastecimentos } from "../pages/abastecimentos/IndicadoresAbastecimentos";
 
-import { Svo } from "../features/svo/Svo";
-import { Solicitacoes } from "../pages/gerente/Solicitacoes";
-import { Calendario } from "../pages/gerente/Calendario";
-import { NovaSolicitacao } from "../pages/solicitante/NovaSolicitacao";
-import { MinhasSolicitacoes } from "../pages/solicitante/MinhasSolicitacoes";
-import { DetalheSolicitacao } from "../features/solicitacoes/DetalheSolicitacao";
-import { EditarSolicitacao } from "../features/solicitacoes/EditarSolicitacao";
+import { SolicitanteLayout } from '../layouts/solicitante/SolicitanteLayout'
+import { Solicitacoes } from '../pages/gerente/Solicitacoes'
+import { Calendario } from '../pages/gerente/Calendario'
+import { NovaSolicitacao } from '../pages/solicitante/NovaSolicitacao'
+import { MinhasSolicitacoes } from '../pages/solicitante/MinhasSolicitacoes'
+import { DetalheSolicitacao } from '../features/solicitacoes/DetalheSolicitacao'
+import { EditarSolicitacao } from '../features/solicitacoes/EditarSolicitacao'
+
+import { telaPreviewSvo } from '../features/svo/preview'
+import { MinhasOrdensSvo, ExecucaoSvo } from '../features/svo/EquipeSvo'
+import { DetalheSolicitacao as DetalheSolicitacaoSvo, DetalheOrdem } from '../features/svo/DetalhesSvo'
+import { Svo } from '../features/svo/Svo';
+import { CadastroSolicitacaoSvo, ListaOrdensIntegrada, ListaSolicitacoesIntegrada, TriagemSvo } from '../features/svo/SvoOperacional'
 import {
   buscarSessao,
   destinoDoPerfil,
@@ -69,8 +70,16 @@ function AppContent() {
     null,
   );
 
+  const previewSvo = import.meta.env.DEV && telaPreviewSvo(caminho) !== null
+
   useEffect(() => {
     let ativa = true;
+
+    if (previewSvo) {
+      // Navegação interna: a entrada de desenvolvimento monta a mesma prévia do acesso direto.
+      window.location.reload()
+      return
+    }
 
     if (!obterToken()) {
       sair();
@@ -91,24 +100,34 @@ function AppContent() {
         setCaminhoVerificado(caminho);
 
         if (!usuario) {
-          sair();
-          if (caminho !== ROTAS.login) navegar(ROTAS.login, true);
-          return;
+          sair()
+          if (caminho !== ROTAS.login) navegar(ROTAS.login, true)
+          return
         }
 
-        if (
-          caminho === ROTAS.login ||
-          !perfilPodeAcessar(caminho, usuario.perfil)
-        ) {
+        if (caminho.startsWith('/svo/') && ['ATENDENTE_SVO','MOTORISTA'].includes(usuario.perfil)) return
+
+        if (caminho === ROTAS.login || !perfilPodeAcessar(caminho, usuario.perfil)) {
           try {
-            navegar(destinoDoPerfil(usuario.perfil), true);
+            navegar(destinoDoPerfil(usuario.perfil), true)
           } catch {
-            sair();
-            navegar(ROTAS.login, true);
+            sair()
+            navegar(ROTAS.login, true)
           }
-        }
-      })
-      .catch(() => {
+
+          if (
+            caminho === ROTAS.login ||
+            !perfilPodeAcessar(caminho, usuario.perfil)
+          ) {
+            try {
+              navegar(destinoDoPerfil(usuario.perfil), true);
+            } catch {
+              sair();
+              navegar(ROTAS.login, true);
+            }
+          }
+        }}
+      ).catch(() => {
         if (!ativa) return;
         sair();
         setSessao(null);
@@ -117,9 +136,11 @@ function AppContent() {
       });
 
     return () => {
-      ativa = false;
-    };
-  }, [caminho]);
+      ativa = false
+    }
+  }, [caminho, previewSvo])
+
+  if (previewSvo) return null
 
   // Tela de login
   if (caminho === ROTAS.login) {
@@ -130,21 +151,16 @@ function AppContent() {
     return <Login />;
   }
 
-  if (
-    caminhoVerificado !== caminho ||
-    !sessao ||
-    !perfilPodeAcessar(caminho, sessao.perfil)
-  ) {
-    if (
-      sessao &&
-      perfilPodeAcessar(caminho, sessao.perfil) &&
-      caminho.startsWith("/gestor/")
-    ) {
-      return (
-        <GestorLayout usuario={sessao}>
-          <AuthSkeleton caminho={caminho} somenteConteudo />
-        </GestorLayout>
-      );
+  if (caminhoVerificado === caminho && sessao && caminho.startsWith('/svo/') &&
+    ['ATENDENTE_SVO','MOTORISTA'].includes(sessao.perfil) && !perfilPodeAcessar(caminho, sessao.perfil)) {
+    const conhecida = Object.values(ROTAS).some(rota => rota === caminho) || lerDetalheSvo(caminho)
+    return <SvoLayout usuario={sessao}><h1>{conhecida ? 'Acesso negado' : 'Página não encontrada'}</h1>
+      <p role="alert">{conhecida ? 'Seu perfil não tem acesso a esta página.' : 'Confira o endereço da página.'}</p>
+      <Link className="svo-atalho" para={destinoDoPerfil(sessao.perfil)}>Voltar ao início</Link></SvoLayout>
+  }
+  if (caminhoVerificado !== caminho || !sessao || !perfilPodeAcessar(caminho, sessao.perfil)) {
+    if (sessao && perfilPodeAcessar(caminho, sessao.perfil) && caminho.startsWith('/gestor/')) {
+      return <GestorLayout usuario={sessao}><AuthSkeleton caminho={caminho} somenteConteudo /></GestorLayout>
     }
     return <AuthSkeleton caminho={caminho} />;
   }
@@ -319,12 +335,33 @@ function AppContent() {
   }
 
   // Tela do SVO
-  if (caminho === "/svo") {
+  const detalhe = lerDetalheSvo(caminho)
+  const paginasSvo: Record<string, ComponentType> = {
+    [ROTAS.svoNovaSolicitacao]: CadastroSolicitacaoSvo,
+    [ROTAS.svoSolicitacoes]: ListaSolicitacoesIntegrada,
+    [ROTAS.svoOrdens]: ListaOrdensIntegrada,
+    [ROTAS.svoMinhasOrdens]: MinhasOrdensSvo,
+  }
+  const PaginaSvo = paginasSvo[caminho]
+  if (PaginaSvo) return <SvoLayout usuario={sessao}><PaginaSvo key={caminho} /></SvoLayout>
+  if (detalhe) {
+    const { id, tela } = detalhe
+    return <SvoLayout usuario={sessao} key={caminho}>
+      {tela === 'solicitacao' && <DetalheSolicitacaoSvo id={id}/>}
+      {tela === 'triagem' && <TriagemSvo id={id}/>}
+      {tela === 'ordem' && <DetalheOrdem id={id}/>}
+      {tela === 'execucao' && <ExecucaoSvo id={id} motorista={sessao.nome ?? '#'+sessao.id}/>}
+    </SvoLayout>
+  }
+  if (
+    caminho === ROTAS.svoRaiz ||
+    caminho === ROTAS.svoDashboard
+  ) {
     return (
-      <GestorLayout usuario={sessao}>
+      <SvoLayout usuario={sessao}>
         <Svo />
-      </GestorLayout>
-    );
+      </SvoLayout>
+    )
   }
 
   // Telas do Administrador e fallback

@@ -7,7 +7,9 @@ function Bloco({ classe = '' }: { classe?: string }) {
 
 /** Reserva a estrutura da rota sem montar páginas, ações ou dados antes da autorização. */
 export function AuthSkeleton({ caminho, somenteConteudo = false }: { caminho: string; somenteConteudo?: boolean }) {
-  const dashboard = caminho === ROTAS.dashboard || caminho === ROTAS.dashboardGestor || caminho === '/svo'
+  const dashboard = caminho === ROTAS.dashboard ||
+    caminho === ROTAS.dashboardGestor ||
+    caminho.startsWith('/svo')
   const indicadores = dashboard || caminho === ROTAS.auditoria
 
   if (somenteConteudo) return <div className="auth-skeleton__transicao" role="status" aria-label="Carregando página" aria-busy="true"><Bloco /><Bloco /><Bloco /></div>
