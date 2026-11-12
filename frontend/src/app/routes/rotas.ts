@@ -27,6 +27,10 @@ export const ROTAS = {
   svoNovaSolicitacao: '/svo/solicitacoes/nova',
   svoOrdens: '/svo/ordens',
   svoMinhasOrdens: '/svo/equipe/minhas-ordens',
+
+  //Documentos e relatorios
+  // documentos: ''
+  // relatorios: ''
 } as const
 
 export function rotaTriagemSvo(id: string | number): string {
