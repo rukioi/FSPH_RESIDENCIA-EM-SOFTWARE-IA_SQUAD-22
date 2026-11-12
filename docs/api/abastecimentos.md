@@ -17,7 +17,8 @@ confiado ao React. Mantém autenticação/RBAC compartilhados e SQL parametrizad
 | GET /api/abastecimentos/{id} | 200 `{data: detalhe}` | Consulta persistida; ausente 404. |
 | GET /api/veiculos/{id}/abastecimentos | 200 `{data: [], meta}` | Histórico cronológico por data ASC, id ASC. |
 | GET /api/abastecimentos/indicadores | 200 `{data: indicadores}` | Agregado real sem inferência de consumo por distância. |
-| GET /api/abastecimentos/{id}/comprovante | 200 bytes JPEG/PNG | Download privado legado; ausente 404. |
+| POST /api/abastecimentos/{id}/comprovante | 201 `{data: MetadadosAnexo}` | Multipart compartilhado PDF/JPEG/PNG. |
+| GET /api/abastecimentos/{id}/comprovante | 200 bytes PDF/JPEG/PNG | Último comprovante privado; fallback legado; ausente 404. |
 
 `id` no caminho é inteiro positivo até BIGINT; campos de referência também aceitam
 IDs negativos reservados às fixtures. IDs e NUMERIC continuam strings nas respostas.
@@ -98,59 +99,52 @@ pertencem ao intervalo entre leituras, nem fórmula por tanque completo. Não ca
 km/L, L/100 km ou diferença de odômetro como consumo. A parte de consumo por distância
 da SCRUM-188 **não está concluída**. Nenhum cálculo fica a cargo do frontend.
 
-## Comprovante legado e bloqueio SCRUM-187
+## Comprovante compartilhado — SCRUM-187
 
-Preserva o JSON opcional `comprovante: {nome,tipo,dadosBase64}`, JPEG/PNG com assinatura
-correspondente, até 1 MiB; corpo completo até 1500 KiB. Nome com até 255 caracteres,
-sem separadores de caminho/controles; dados vazios, MIME/assinatura divergentes e
-base64 inválido são 400 `ARQUIVO_INVALIDO`. Bytes validados são gravados como Buffer
-em BYTEA e conferidos no download real. Nenhum backfill de arquivos antigos é feito.
+`POST /api/abastecimentos/{id}/comprovante` recebe multipart com somente `arquivo`,
+PDF/JPEG/PNG até 5 MiB. Reutiliza integralmente [SCRUM-194](./anexos.md): parser,
+assinatura, nome seguro, vínculo validado, storage privado e auditoria transacional.
+Retorna `201 {data: MetadadosAnexo}` com autor/instante do servidor. O ID do path
+fixa o abastecimento; o form não pode substituí-lo. Sem cadastro existente: 404.
 
-Download usa `Content-Disposition: attachment`, `nosniff` e `Cache-Control: private,
-no-store`, com a mesma sessão/RBAC. Tabela separada com FK e RLS, sem grants públicos.
-Permissões históricas dos demais objetos não foram alteradas: rollout remoto depende
-[das condições de segurança](../seguranca.md).
+GET no mesmo caminho devolve o último anexo confirmado, com streaming, `nosniff`,
+`attachment` e `private, no-store`. Lista/detalhe mantêm `comprovante_nome`, agora
+obtido do último anexo compartilhado (uma consulta SQL com LATERAL, sem N+1).
+Metadados completos/histórico de uploads: GET `/api/anexos?tipoRegistro=ABASTECIMENTO&registroId=…`.
+Nenhum byte/URL pública é incluído no JSON.
 
-SCRUM-194 está A fazer e o contrato compartilhado de anexos ainda não existe nesta
-main. Portanto **SCRUM-187 continua bloqueada** para PDF, API compartilhada, metadados
-de anexo/autoria e erros específicos 413/415 de upload. Não foi criado segundo storage,
-rota pública nem adaptação especulativa. O 415 atual é de Content-Type do corpo JSON,
-e não comprova o futuro upload da SCRUM-194.
+Reenvio cria outro anexo e preserva o anterior. Não há remoção, sobrescrita,
+retry automático ou idempotência inventada. Upload inválido, conexão interrompida
+antes de completar o corpo e falha de auditoria não substituem o comprovante
+anterior nem removem o abastecimento. Bytes/metadados/atividade são uma transação.
 
-### O que já é verificável sem a SCRUM-194
+- 400: formulário/nome/vínculo inválido.
+- 401/403: sessão/perfil atual; somente ADM/GESTOR_FROTA.
+- 404: abastecimento ou comprovante inexistente.
+- 413: arquivo/corpo/partes/campos excedentes.
+- 415: não multipart, MIME não permitido ou assinatura incompatível.
+- 500: falha técnica com rollback e mensagem genérica.
 
-- O comprovante é opcional no cadastro JSON, com **um arquivo por abastecimento**.
-  `abastecimento_comprovante.abastecimento_id` é simultaneamente PK e FK; impede
-  arquivo órfão ou dois arquivos no mesmo vínculo legado. A exclusão em cascata
-  não publica nem autoriza uma operação de exclusão na API.
-- Metadados existentes no banco: `abastecimento_id`, `nome` e `tipo`, além dos bytes.
-  Lista/detalhe expõem `comprovante_nome`; o download identifica o MIME em
-  `Content-Type`. A tabela não possui autor/instante próprios de upload. O
-  `criado_por_id` retornado pertence ao **cadastro do abastecimento**, não é um
-  novo metadado de anexo. Nenhum campo ou URL pública foi inventado.
-- GET repetido de detalhe/download recupera os dados persistidos. Sessão inválida
-  ou conta inativa: 401; perfil atual sem permissão: 403; registro/arquivo ausente:
-  404. O JWT antigo não prevalece sobre o perfil atual no banco.
-- Imagem com exatamente 1 MiB é aceita; acima disso, o legado retorna 400
-  `ARQUIVO_INVALIDO`. O 413 `CORPO_MUITO_GRANDE` é o limite de **1500 KiB do JSON**;
-  415 `TIPO_NAO_SUPORTADO` é Content-Type explícito diferente de application/json.
-  Ausência desse header mantém a tolerância do leitor compartilhado legado.
-- Falha na imagem/auditoria reverte a transação inteira. A prova inclui falha de
-  auditoria **após a inserção da imagem**, sem cadastro, arquivo ou atividade
-  remanescentes, tanto em erro 500 quanto em conflito transacional 409. Interrupção
-  durante a leitura do JSON não confirma cadastro parcial.
-- Validação legada verifica assinatura JPEG/PNG; isso não equivale a comprovar
-  decodificação integral de qualquer imagem ou suporte a PDF.
+### Compatibilidade legada
 
-### Ponto exato que impede concluir a SCRUM-187
+O JSON opcional do cadastro `comprovante: {nome,tipo,dadosBase64}` permanece
+JPEG/PNG até 1 MiB, com corpo até 1500 KiB e erros atuais. Sua tabela privada
+`abastecimento_comprovante` não foi removida nem copiada. Sem anexo novo, GET usa
+os bytes legados; seu autor/instante de upload não são inventados. Cadastro
+legado e respectivo comprovante continuam atômicos.
 
-É necessário publicar e integrar o contrato da **SCRUM-194**, dependente do modelo
-da SCRUM-192: forma de upload compartilhado, vínculo ao recurso, metadados/autoria,
-armazenamento privado e regras de autorização/download. Só então será possível
-implementar e validar PDF/JPEG/PNG no fluxo compartilhado, limites e erros 413/415
-específicos do arquivo, reenvio/substituição e compensação de falhas desse fluxo.
-As rotas propostas no Jira não são contratos entregues. Não se cria antecipadamente
-`POST /api/abastecimentos/{id}/comprovante`, novo storage ou DTO de anexo especulativo.
+O gate de compatibilidade autoriza somente adicionar PDF ao GET existente e
+atualizar sua descrição. JPEG/PNG, status, perfis, headers e contratos dos outros
+endpoints permanecem protegidos. O POST é uma operação nova.
+
+A prova em `abastecimentos-anexos-s9.test.ts` usa HTTP → API → PostgreSQL real:
+formatos, vínculo, SQL dos bytes, reconsulta, reenvio, 401/403/404/413/415,
+falha real de auditoria e interrupção de conexão. Os testes legados permanecem.
+O frontend do PR #61 foi incorporado ao fechamento integrado: download privado
+PDF/JPEG/PNG funciona pelo cliente comum. O formulário de cadastro preserva o
+comprovante legado JPEG/PNG até 1 MiB; ainda não há interface para upload multipart
+PDF/reenvio da SCRUM-194. A API desse upload foi validada separadamente, sem alegar
+que essa ação está disponível na tela.
 
 ### Cobertura independente da fórmula — SCRUM-188
 
@@ -206,11 +200,24 @@ Aplicar o token recebido pelo login real como Bearer, sem versioná-lo. Exemplos
 o formato dos cenários HTTP→API→PostgreSQL em `abastecimentos-s9.test.ts`, não mocks.
 Os testes removem seus próprios registros ao terminar; esses IDs não são dados de apresentação.
 
-## Handoff para Gustavo / SCRUM-189/191
+## Integração do frontend / PR #61 — SCRUM-189/191
 
-Tipos/registros foram gerados pelos comandos oficiais. Nenhuma tela foi alterada.
-A célula de km em `frontend/src/pages/abastecimentos/Abastecimentos.tsx` precisa
-tratar NULL como “Não informada”; `numero.format(null)` não pode produzir falso zero.
-Esse ajuste foi explicitamente reservado ao Gustavo. Usar os novos DTOs/endpoints
-para filtros/histórico/indicadores; não recalcular consumo no React nem tratar ausência
-como zero. O fluxo frontend completo só pode ser aceito após essa integração.
+A entrega `182c1dc` foi aplicada localmente sem merge/commit. Telas preservadas,
+com os ajustes de compatibilidade necessários: km NULL mostra “Não informada” no
+cadastro, lista, detalhe e histórico; zero permanece `0 km`. Motorista e km vazios
+são enviados como NULL, usando a validação RF40. Detalhe/histórico e indicadores
+consomem os endpoints publicados e validam os schemas; erro não vira soma zero.
+As rotas novas usam os mesmos perfis ADM/GESTOR_FROTA, com autorização efetiva no
+backend. IDs negativos reservados ao seed são exibidos na coleção sem tentar gerar
+links de detalhe positivo; o contrato dos caminhos não foi ampliado.
+
+A lista principal mantém a consulta completa legada e os filtros/paginação visuais
+do Gustavo. O histórico por veículo pagina/filtra no servidor. Indicadores exibem
+agregados reais, custo/litro e km observados; consumo por distância continua
+indisponível por regra pendente. O cadastro mantém o comprovante legado atômico,
+sem transformar upload posterior em parte de uma transação inexistente.
+
+Documentos, anexos genéricos, notas e Dashboard consolidado não possuem telas
+publicadas nesse PR. Seus testes HTTP/PostgreSQL não equivalem a E2E dessas telas.
+O registro da validação integrada e limites está em
+[fechamento Sprint 9](../database/sprint9-abastecimentos.md).

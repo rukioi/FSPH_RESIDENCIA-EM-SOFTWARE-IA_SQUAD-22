@@ -10,7 +10,8 @@ afterAll(async () => { await sql?.end(); });
 
 // Tabelas protegidas sem fixtures no seed: seus dados só nascem nos testes (rollback/limpeza).
 // A reversão de DB-S8-01 exige evidência/correção vazias, então não recebem fixture.
-const semFixtures = ['abastecimento_comprovante', 'notificacao', 'viagem_correcao', 'viagem_evidencia'];
+const semFixtures = ['abastecimento_comprovante', 'notificacao', 'viagem_correcao', 'viagem_evidencia',
+  'anexo', 'documento_historico', 'anotacao'];
 
 test('duas preparações não duplicam nem modificam fixtures, sequências ou migrations', async () => {
   async function snapshot() {

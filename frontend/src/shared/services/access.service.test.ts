@@ -2,6 +2,13 @@ import { expect, test } from 'vitest'
 import { ROTAS } from '../../app/routes/rotas'
 import { perfilPodeAcessar } from './access.service'
 
+test.each(['/gestor/abastecimentos/12', '/gestor/veiculos/12/abastecimentos', '/gestor/abastecimentos/indicadores'])(
+  'rotas Sprint 9 %s mantêm os mesmos perfis de abastecimentos', rota => {
+    for (const perfil of ['ADM', 'GESTOR_FROTA', 'ATENDENTE_SVO', 'MOTORISTA', 'SOLICITANTE_INTERNO']) {
+      expect(perfilPodeAcessar(rota, perfil)).toBe(['ADM', 'GESTOR_FROTA'].includes(perfil))
+    }
+  })
+
 test('gestor só acessa telas de gestor autorizadas', () => {
   expect(perfilPodeAcessar(ROTAS.dashboardGestor, 'GESTOR_FROTA')).toBe(true)
   expect(perfilPodeAcessar(ROTAS.configuracoes, 'GESTOR_FROTA')).toBe(false)

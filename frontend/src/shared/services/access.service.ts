@@ -1,4 +1,4 @@
-import { ROTAS, lerDetalheSvo, lerRotaSolicitacao } from '../../app/routes/rotas'
+import { ROTAS, lerDetalheSvo, lerRotaSolicitacao, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
   [ROTAS.notificacoes]: ['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],
@@ -10,6 +10,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.veiculosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.motoristasGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.abastecimentosGestor]: ['ADM', 'GESTOR_FROTA'],
+  [ROTAS.indicadoresAbastecimentosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.solicitacoesGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.calendarioGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],
@@ -26,9 +27,13 @@ const perfisPorRota: Record<string, string[]> = {
 
 /** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
-  const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
+  const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor);
   if (solicitacao && /^[0-9]+$/.test(solicitacao.id)) {
-    return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil)
+    return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil);
+  }
+
+  if (lerRotaDetalheAbastecimento(caminho) !== null || lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null) {
+    return perfisPorRota[ROTAS.abastecimentosGestor].includes(perfil);
   }
   const perfisExatos = perfisPorRota[caminho]
   if (perfisExatos) return perfisExatos.includes(perfil)

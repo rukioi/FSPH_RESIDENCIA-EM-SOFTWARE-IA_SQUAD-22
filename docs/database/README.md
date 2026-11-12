@@ -78,6 +78,10 @@ dos catálogos do PostgreSQL 17 Docker isolado; db:docs:check passou sem drift.
 O snapshot é atualizado pelos incrementos versionados; suas contagens atuais estão
 em schema-metadata.json. A [reconciliação RF40 da Sprint 9](./sprint9-abastecimentos.md)
 documenta os campos opcionais, autoria, checks, índices e rollback de abastecimento.
+O [início do modelo documental da SCRUM-192](./sprint9-documentos-evidencias.md)
+acrescenta anexos privados, versões documentais e notas com vínculos íntegros.
+APIs consumidoras e a decisão de calendário/fuso/deduplicação RF46 ainda estão
+pendentes; os alertas existentes são preservados.
 Os testes preservam a comparação integral de
 metadados; mocks não substituem a prova real de banco.
 

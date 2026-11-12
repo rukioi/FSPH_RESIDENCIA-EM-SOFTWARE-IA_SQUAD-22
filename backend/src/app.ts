@@ -1,4 +1,6 @@
 import { createServer, type ServerResponse } from 'node:http';
+import { anexosRoute } from './modules/anexos/anexos.routes.js';
+import { anotacoesRoute } from './modules/anotacoes/anotacoes.routes.js';
 import { notificacoesRoute } from './modules/notificacoes/notificacoes.routes.js';
 import { dashboardRoute } from './modules/dashboard/dashboard.routes.js';
 import { svoRoute } from './modules/svo/svo.routes.js';
@@ -22,7 +24,7 @@ export function isolarFalhaDaRequisicao(response: ServerResponse, operacao: Prom
   void operacao.catch((erro: unknown) => tratarErroTecnico(response, erro));
 }
 
-const handlers = { notificacoes: notificacoesRoute, auth: authRoute, usuarios: usuariosRoute, auditoria: auditoriaRoute,
+const handlers = { anotacoes: anotacoesRoute, anexos: anexosRoute, notificacoes: notificacoesRoute, auth: authRoute, usuarios: usuariosRoute, auditoria: auditoriaRoute,
   dashboard: dashboardRoute, svo: svoRoute, veiculos: veiculosRoute, motoristas: motoristasRoute,
   abastecimentos: abastecimentosRoute, documentos: documentosRoute, solicitacoes: solicitacoesRoute };
 const rotas = operations.map(operation => ({ path: routePattern(operation),

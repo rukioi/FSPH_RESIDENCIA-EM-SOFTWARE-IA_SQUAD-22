@@ -163,10 +163,14 @@ test('SCRUM-146/149: listas e dashboard validam HTTP, perfil efetivo e parâmetr
   }
 });
 
-test('consultas legadas reais correspondem aos schemas sem exigir migração de formato',async()=>{
+test('consultas reais correspondem aos schemas e respeitam vínculos obrigatórios dos contratos novos',async()=>{
+  const {data:registro}=await(await call('/api/veiculos','POST',{...input,placa:'T32ANEXO'})).json();
   for (const operation of operations.filter(o=>o.method==='get' && !o.path.includes('{id}') && !['veiculos','solicitacoes'].includes(o.modulo))) {
-    const path = operation.path+(operation.path==='/api/svo/ordens-coleta' ? '?status=AGUARDANDO_DESPACHO' : '');
-    const response = await call(path,'GET',undefined,operation.perfis.includes('MOTORISTA') ? negado : operation.modulo==='svo' ? svo : admin);
+    const porRegistro=['anexos','anotacoes'].includes(operation.modulo);
+    if(porRegistro)expect((await call(operation.path)).status).toBe(400);
+    const path = operation.path+(porRegistro ? `?tipoRegistro=VEICULO&registroId=${registro.id}`
+      : operation.path==='/api/svo/ordens-coleta' ? '?status=AGUARDANDO_DESPACHO' : '');
+    const response = await call(path,'GET',undefined,porRegistro ? admin : operation.perfis.includes('MOTORISTA') ? negado : operation.modulo==='svo' ? svo : admin);
     expect(response.status,operation.id).toBe(200);
     const body = await response.json();
     const result = schemas[operation.response].safeParse(body);

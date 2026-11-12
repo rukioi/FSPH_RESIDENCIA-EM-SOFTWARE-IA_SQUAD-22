@@ -3,15 +3,18 @@ import { openapi } from '../../src/shared/contract/openapi.js';
 import { abastecimentosSchemas } from '../../src/modules/abastecimentos/abastecimentos.schemas.js';
 import type { ApiSchemas } from '../../../frontend/src/shared/api/generated/schema.js';
 
-test('contrato do download legado publica bytes JPEG/PNG protegidos, sem prometer upload compartilhado', () => {
+test('contrato do comprovante publica upload compartilhado e amplia download preservando JPEG/PNG', () => {
   const doc = openapi();
   const path = doc.paths['/api/abastecimentos/{id}/comprovante'];
   expect(path.get).toMatchObject({ security: [{ bearerAuth: [] }], 'x-perfis': ['ADM', 'GESTOR_FROTA'],
     responses: { 200: { content: {
       'image/jpeg': { schema: { type: 'string', format: 'binary' } },
       'image/png': { schema: { type: 'string', format: 'binary' } },
+      'application/pdf': { schema: { type: 'string', format: 'binary' } },
     } }, 401: {}, 403: {}, 404: {}, 500: {} } });
-  expect(path).not.toHaveProperty('post');
+  expect(path.post).toMatchObject({ security:[{bearerAuth:[]}], 'x-perfis':['ADM','GESTOR_FROTA'],
+    requestBody:{content:{'multipart/form-data':{schema:{required:['arquivo'],additionalProperties:false}}}},
+    responses:{201:{},400:{},401:{},403:{},404:{},413:{},415:{},500:{}} });
   expect(doc.paths['/api/abastecimentos'].post).toMatchObject({
     requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/CriarAbastecimentoRF40' } } } },
     responses: { 201: {}, 400: {}, 401: {}, 403: {}, 404: {}, 409: {}, 413: {}, 415: {}, 500: {} },

@@ -9,6 +9,7 @@ import {z} from 'zod';
 import {parametrosPeriodoDashboard,notasDashboardPeriodo} from '../backend/src/modules/dashboard/dashboard.indicadores.schemas.js';
 import { parametrosAbastecimentos, notasListagemAbastecimentos, notasCadastroAbastecimentos } from '../backend/src/modules/abastecimentos/abastecimentos.schemas.js';
 import { id, meta } from '../backend/src/shared/contract/schemas.js';
+import { dashboardConsolidadoSchemas,notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 
 export const root = fileURLToPath(new URL('../',import.meta.url));
 /** Serializa o contrato em ordem estável, sem data de geração ou informação do ambiente. */
@@ -33,8 +34,26 @@ type Document = ReturnType<typeof openapi>;
 /** Gate conservador: qualquer alteração de contrato existente exige migração explícita; permite somente componentes e operações adicionais. */
 export function checkCompatibility(previous: Document, current: Document) {
   for (const [path,methods] of Object.entries(previous.paths)) for (const [method,definition] of Object.entries(methods)) {
-    const candidate = structuredClone(current.paths[path]?.[method]) as {responses?: Record<string,unknown>} | undefined;
+    let candidate = structuredClone(current.paths[path]?.[method]) as {responses?: Record<string,unknown>} | undefined;
     const old = definition as {responses?: Record<string,unknown>};
+    // SCRUM-195 autoriza somente substituir o painel vazio por estas visões tipadas.
+    if(path==='/api/dashboard'&&method==='get'&&candidate){
+      const previous=definition as {responses:Record<string,{content?:{'application/json'?:{schema?:{$ref?:string}}}}>};
+      if(previous.responses[200]?.content?.['application/json']?.schema?.$ref==='#/components/schemas/Dashboard'){
+        const expected={...structuredClone(definition as Record<string,unknown>),description:notaDashboardConsolidado,
+          'x-perfis':['ADM','GESTOR_FROTA','ATENDENTE_SVO'],'x-runtime-validation':true,
+          parameters:parametrosPeriodoDashboard.map(q=>({name:q.name,in:'query',required:q.required,schema:z.toJSONSchema(q.schema)})),
+          responses:structuredClone(previous.responses)};
+        expected.responses[200].content!['application/json']!.schema!.$ref='#/components/schemas/DashboardConsolidado';
+        expected.responses[400]={...expected.responses[500],description:'Falha atual HTTP 400'} as typeof expected.responses[string];
+        const {$schema:dialect,...shape}=z.toJSONSchema(dashboardConsolidadoSchemas.DashboardConsolidado,{io:'input'});void dialect;
+        if(JSON.stringify(current.components.schemas.DashboardConsolidado)!==JSON.stringify(shape))throw new Error('Dashboard consolidado fora do contrato aprovado.');
+        // Ordem de chaves não tem semântica contratual; preserve a ordem do documento derivado.
+        if(JSON.stringify({...candidate,responses:undefined})===JSON.stringify({...expected,responses:undefined})
+          &&Object.keys(expected.responses).length===Object.keys(candidate.responses??{}).length
+          &&Object.entries(expected.responses).every(([key,value])=>JSON.stringify(candidate!.responses?.[key])===JSON.stringify(value)))candidate=structuredClone(old);
+      }
+    }
     // Migração autorizada dos 4xx: somente a troca exata do envelope legado pelo comum.
     // Status, headers, descrições, sucessos e componentes continuam protegidos pelo gate.
     for (const [status, previousResponse] of Object.entries(old.responses ?? {})) {
@@ -52,6 +71,19 @@ export function checkCompatibility(previous: Document, current: Document) {
       if (JSON.stringify(candidate.responses[404]) === JSON.stringify(expected)) delete candidate.responses[404];
     }
     // SCRUM-185/186: evolução fechada da coleção/cadastro. Auth, sucesso, headers e erros legados seguem protegidos.
+    if (path === '/api/abastecimentos/{id}/comprovante' && method === 'get' && candidate) {
+      const before = definition as {description?:string;responses?:Record<string,{content?:Record<string,unknown>}>};
+      const after = candidate as typeof before;
+      if (before.description === 'Imagem JPEG ou PNG como bytes; acesso autenticado.'
+        && after.description === 'PDF/JPEG/PNG privados: último anexo compartilhado, com fallback do comprovante legado. Acesso autenticado.') {
+        after.description = before.description;
+      }
+      const content = after.responses?.[200]?.content;
+      if (!before.responses?.[200]?.content?.['application/pdf'] && content
+        && JSON.stringify(content['application/pdf']) === JSON.stringify({schema:{type:'string',format:'binary'}})) {
+        delete content['application/pdf'];
+      }
+    }
     if(path==='/api/abastecimentos' && ['get','post'].includes(method) && candidate) {
       type Operation = {description?:string;parameters?:unknown[];'x-runtime-validation'?:boolean;
         requestBody?:{content?:{'application/json'?:{schema?:{$ref?:string}}}};

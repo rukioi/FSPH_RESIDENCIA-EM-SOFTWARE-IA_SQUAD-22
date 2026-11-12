@@ -2,6 +2,7 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { SignJWT } from 'jose';
 import { createApp } from '../../src/app.js';
+import { dashboardConsolidadoSchemas } from '../../src/modules/dashboard/dashboard.consolidado.schemas.js';
 
 const server = createApp();
 const segredo = 'segredo-ficticio-exclusivo-para-testes';
@@ -72,7 +73,10 @@ test.each(['ADMINISTRADOR', 'GESTOR_FROTA'])(
     });
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ data: {} });
+    const body=dashboardConsolidadoSchemas.DashboardConsolidado.parse(await response.json());
+    expect(body.data.visao).toBe('GESTAO');
+    if(body.data.visao!=='GESTAO')throw new Error('Visão inesperada');
+    expect(body.data.documentos.alertas).toMatchObject({estado:'INDISPONIVEL',valor:null});
   }
 );
 

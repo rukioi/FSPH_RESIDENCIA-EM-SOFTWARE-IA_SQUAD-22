@@ -18,9 +18,11 @@ export interface LinhaAbastecimento {
 }
 const selecao=(tx:postgres.TransactionSql)=>tx`SELECT a.id,a.veiculo_id,a.motorista_id,a.litragem,a.valor_total,
   a.quilometragem,a.data_abastecimento,a.criado_em,a.posto,a.tanque_completo,a.criado_por_id,
-  c.nome AS comprovante_nome,v.placa AS veiculo_placa,m.nome AS motorista_nome
+  coalesce(compartilhado.nome,c.nome) AS comprovante_nome,v.placa AS veiculo_placa,m.nome AS motorista_nome
   FROM public.abastecimento a
   LEFT JOIN public.abastecimento_comprovante c ON c.abastecimento_id=a.id
+  LEFT JOIN LATERAL (SELECT nome FROM public.anexo WHERE abastecimento_id=a.id
+    ORDER BY criado_em DESC,id DESC LIMIT 1) compartilhado ON true
   JOIN public.veiculo v ON v.id=a.veiculo_id
   LEFT JOIN public.motorista m ON m.id=a.motorista_id`;
 const filtro=(tx:postgres.TransactionSql,q:ConsultaAbastecimentos)=>tx`

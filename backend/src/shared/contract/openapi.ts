@@ -16,7 +16,11 @@ export function openapi() {
     const response = (name: string, description: string) => ({ description, headers: {'X-Request-Id':{description:'UUID gerado pelo servidor; IDs recebidos não são confiados.',schema:{type:'string',format:'uuid'}}}, content:{'application/json':{schema:ref(name)}} });
     const responses: Record<string, unknown> = { [operation.status]: response(operation.response,'Sucesso no formato atual') };
     if (operation.response === 'ComprovanteAbastecimento') {
-      (responses[operation.status] as {content: unknown}).content = { 'image/jpeg': {schema:{type:'string',format:'binary'}}, 'image/png': {schema:{type:'string',format:'binary'}} };
+      (responses[operation.status] as {content: unknown}).content = { 'image/jpeg': {schema:{type:'string',format:'binary'}}, 'image/png': {schema:{type:'string',format:'binary'}}, 'application/pdf': {schema:{type:'string',format:'binary'}} };
+    }
+    if (operation.response === 'ArquivoAnexo') {
+      (responses[operation.status] as {content: unknown}).content = Object.fromEntries(
+        ['application/pdf','image/jpeg','image/png'].map(tipo=>[tipo,{schema:{type:'string',format:'binary'}}]));
     }
     for (const status of operation.errors) {
       responses[status] = response('Erro','Falha atual HTTP ' + status);
@@ -25,6 +29,12 @@ export function openapi() {
     if (operation.errors.includes(429)) (responses[429] as {headers: Record<string,unknown>}).headers['Retry-After'] = {schema:{type:'string'},description:'Segundos até nova tentativa.'};
     const content: Record<string,unknown> = operation.body ? {'application/json':{schema:ref(operation.body)}} : {};
     if (operation.modulo === 'documentos' && operation.body) content['multipart/form-data'] = {schema:{allOf:[ref(operation.body),{type:'object',properties:{arquivo:{type:'string',format:'binary'}},required:['arquivo']}]}};
+    if (operation.multipart && operation.body) {
+      delete content['application/json'];
+      content['multipart/form-data'] = {schema:{...components[operation.body],
+        properties:{...components[operation.body].properties,arquivo:{type:'string',format:'binary'}},
+        required:[...(components[operation.body].required??[]),'arquivo']}};
+    }
     (paths[operation.path] ??= {})[operation.method] = {
       operationId:operation.id,tags:[operation.modulo],description:operation.notes,
       security:operation.perfis.length ? [{bearerAuth:[]}] : [],'x-perfis':operation.perfis,

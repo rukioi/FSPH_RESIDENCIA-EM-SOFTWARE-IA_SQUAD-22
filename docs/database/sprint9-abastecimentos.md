@@ -307,3 +307,98 @@ Nenhuma regressão nova foi identificada nesta etapa. O trabalho validado de DB/
 está apto a **commit parcial com esses limites documentados**, sem equivaler à conclusão
 das duas subtasks ou à aprovação do build integrado. O ajuste de km nulo no frontend
 continua externo à entrega backend. Sem alterações no Jira, commit, push, PR ou merge.
+
+
+## Atualização de fechamento SCRUM-187 — 12/11/2026
+
+O bloqueio 194 descrito nas rodadas anteriores foi resolvido **nesta branch**.
+SCRUM-192/194/187 foram concluídas tecnicamente e atualizadas no Jira (comentários
+10050/10051/10052). O comprovante novo usa infraestrutura compartilhada privada
+PDF/JPEG/PNG; mantém fallback legado, reenvio preservando histórico e rollback.
+Contrato atual: [abastecimentos](../api/abastecimentos.md). Provas e limites finais:
+[fechamento documental S9](./sprint9-documentos-evidencias.md#fechamento-e-continuação--12112026).
+
+SCRUM-188 continua **não concluída**, sem regra de consumo por distância.
+SCRUM-180 não foi concluída. Não houve mudança de frontend manual, banco remoto,
+.env, commit, push ou PR nesta continuação.
+
+## Fechamento integrado com o PR #61 — 12/11/2026
+
+Referências consultadas novamente com `git fetch origin`: `origin/main=29ff645`
+já é ancestral da branch; frontend do Gustavo em
+`origin/feat/fe-s9-01-abastecimentos=182c1dc`, PR #61 ainda separado da main.
+Aplicados os nove arquivos frontend desse PR como alterações locais, sem merge,
+stash, commit ou push. Zero conflitos Git. A diferença de `package-lock.json`
+remove somente flags `peer`, sem dependências novas; não foi incorporada.
+Backup local e manifesto de hashes em `/tmp/fsph-s9-integracao-pr61/`.
+Os 50 arquivos anteriores de backend/testes backend/scripts e gerados foram
+conferidos por hash e preservados integralmente. Nenhuma migration/rollback,
+contrato do servidor, regra de consumo/alerta, `.env` ou banco remoto foi alterado.
+
+A revisão encontrou incompatibilidades reais da entrega frontend: detalhe com
+km nullable falhava no typecheck; zero era confundido com ausência; formulário
+exigia motorista/km; rotas detalhe/histórico/indicadores não eram autorizadas pela
+navegação; download comum recusava PDF/mais de 1 MiB; indicadores eram somente
+placeholder; links positivos lançavam exceção ao renderizar IDs negativos do seed.
+Os ajustes mantêm a composição do Gustavo, o contrato RF40 e o RBAC do backend.
+Detalhe/histórico/indicadores usam serviços comuns, schemas e bindings gerados;
+download permite somente PDF/JPEG/PNG até 5 MiB no consumidor de abastecimento,
+sem ampliar os defaults dos demais consumidores. Ausência/zero permanecem distintos.
+A duplicação acidental do redirecionamento em App.tsx do PR #61 foi removida,
+preservando a regra existente de login. Não foi criado fluxo frontend para o bloco
+SCRUM-184/197–200, cuja publicação não foi informada pelo responsável.
+
+### Validação consolidada do estado integrado
+
+| Verificação | Resultado |
+| --- | --- |
+| `db:test:start` / `db:test:prepare` | Banco já provisionado, identidade Docker/checkout/marcador confirmada; migrations/seed oficiais, sem mudança de esquema nesta rodada |
+| `npm run typecheck` | Frontend, backend, testes backend e scripts passaram |
+| `npm run lint` / `git diff --check` | Passaram |
+| `npm run build` | Frontend/backend passaram; aviso não bloqueante de chunk frontend acima de 500 kB |
+| `api:check` / `client:check` / `db:docs:check` | Passaram, sem drift |
+| `npm test` | **929/929**, nenhum skip/falha: DB 132, integração 302, contrato 37, unitários backend 304, frontend 145, demais 9 |
+| Bootstrap da porta 3000 | Fonte e build **2/2**, incluídos nos 929; usuário liberou 3000/5173 antes da execução |
+| E2E abastecimentos | **8/8** na soma das execuções finais: seis cenários reais + dois cenários de erro controlado |
+| E2E rotas compartilhadas | **4/4**: rota privada sem sessão e Dashboard SVO real/reload em 390/768/1280 |
+| Artefatos/segredos | Nenhum `.env`, log, build, evidência, vazio acidental, marcador de conflito ou padrão de chave encontrado nos arquivos candidatos |
+
+Os seis E2E reais de abastecimento não interceptam API: os três cenários antigos
+agora enviam o cadastro diretamente, com motorista/km e imagem; os três novos
+fazem login na interface, cadastram km NULL e zero, impedem submit duplicado,
+comparam SQL dos registros, abrem detalhe/histórico com reload, filtram períodos,
+conferem indicadores contra SQL e verificam ausência de overflow/erros JavaScript.
+PDF é preparado pelo POST multipart real e baixado pela interface autenticada;
+**não é prova de upload PDF pela tela**, que mantém JPEG/PNG legado. Download sem
+sessão recebe 401; cobertura real de 403/404/413/415 e rollback está na suíte API.
+Cada fixture remove seus próprios registros pelo harness ao terminar.
+
+Os dois testes com resposta controlada verificam erro de schema e 500 sem falso
+sucesso, separados da comprovação FE → API → PostgreSQL. O teste de schema antigo
+respondia inválido só na primeira consulta, abortada pelo StrictMode; agora mantém
+a falha até o usuário acionar nova tentativa. Seletores seguem o DatePicker atual
+e o nome acessível do campo opcional, e respeitam a paginação do PR #61.
+
+Capturas em `test-results/abastecimentos-s9-integrad-*/` e
+`test-results/abastecimentos-abastecimen-*/`; relatórios locais em
+`/tmp/fsph-s9-integracao-pr61/`. São evidências de teste com fixtures limpas ao final,
+**não prints de apresentação reproduzíveis por uma URL após a limpeza**.
+
+### Estado do Jira e limites para fechamento
+
+Consultado nesta rodada, sem alterar Jira:
+
+- SCRUM-179: Em andamento; SCRUM-180/182/183: A fazer.
+- SCRUM-187: Concluído; infraestrutura backend de comprovantes já validada.
+- SCRUM-188: A fazer; consumo por distância depende da regra aprovada de associação
+  de litros/leituras. Totais e observações reais estão disponíveis.
+- SCRUM-193: A fazer; automação RF46 depende de “1 mês”, fuso e repetição/deduplicação.
+- SCRUM-195: A fazer; composição parcial disponível, sem declarar concluídas as
+  métricas/alertas dependentes das decisões de 188/193.
+- SCRUM-196: A fazer no Jira; backend de notas possui prova real nesta suíte,
+  sem frontend publicado no PR #61.
+
+Abastecimentos está integrado no escopo publicado. Documentos, anexos genéricos,
+notas e Dashboard consolidado têm validação HTTP/PostgreSQL, não E2E de telas
+inexistentes. A branch é candidata a commit/PR **parcial e explicitamente delimitado**;
+isso não conclui toda a Sprint 9 nem remove os bloqueios de negócio e frontend acima.

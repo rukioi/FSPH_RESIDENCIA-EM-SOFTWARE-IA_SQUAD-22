@@ -1,3 +1,5 @@
+import { obterDashboardConsolidado } from './dashboard.consolidado.js';
+import { tratarErroTecnico } from '../../shared/http/errors.js';
 import { registrarFalha } from '../../shared/logging/logger.js';
 import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import type { ServerResponse } from 'node:http';
@@ -5,11 +7,10 @@ import {obterIndicadores} from './dashboard.service.js';
 import {responderErroHttp} from '../../shared/http/errors.js';
 import { buscarPendencias } from './dashboard.pendencias.js';
 
-/** Responde o painel base mantendo seu envelope atual. */
-export function dashboardController(response: ServerResponse): void {
-  jsonCompartilhado(response, 200, {
-      data: {},
-    });
+/** Responde indicadores persistidos pela visão autorizada; falha não vira dado vazio. */
+export async function dashboardController(response: ServerResponse,perfil:string,params:URLSearchParams): Promise<void> {
+  try { jsonCompartilhado(response,200,await obterDashboardConsolidado(perfil,params)); }
+  catch(error) { tratarErroTecnico(response,error); }
 }
 
 /** Consulta pendências existentes com falhas técnicas seguras. */

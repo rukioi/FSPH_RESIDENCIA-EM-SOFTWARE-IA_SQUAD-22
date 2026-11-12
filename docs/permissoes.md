@@ -26,6 +26,19 @@ As regras são aplicadas no backend; o guarda de rotas no frontend melhora a nav
 
 ## Ao entregar uma funcionalidade
 
+SCRUM-194: anexos reutilizam sessão atual e o escopo do registro. A matriz de
+upload/listagem/download está em [anexos](./api/anexos.md). Solicitação de outro
+solicitante ou viagem/ordem de outro motorista retorna 404; perfil sem acesso ao
+domínio retorna 403. Consulta da frota por SVO não concede acesso documental.
+Não há DELETE nem edição de CNH por motorista.
+
+SCRUM-196: notas usam o mesmo escopo por registro dos anexos, limitado a solicitações,
+viagens, ordens e veículos; autor/instante são do servidor, sem edição/exclusão.
+SCRUM-193: consulta/detalhe/edição versionada/histórico documental e CNH permanecem
+ADM/GESTOR_FROTA. Não concede CNH ao SVO nem edição ao motorista.
+SCRUM-195: somente o GET `/api/dashboard` passa a aceitar ATENDENTE_SVO com visão
+SVO isolada; os endpoints administrativos de dashboard continuam restritos à gestão.
+
 SCRUM-137: POST /api/solicitacoes-viagem é exclusivo de SOLICITANTE_INTERNO.
 GET permite SOLICITANTE_INTERNO somente nos próprios pedidos e ADM/GESTOR_FROTA
 em todos os pedidos, incluindo nome/ID do solicitante. ATENDENTE_SVO e MOTORISTA

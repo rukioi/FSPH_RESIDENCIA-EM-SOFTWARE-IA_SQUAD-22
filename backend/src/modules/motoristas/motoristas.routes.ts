@@ -66,7 +66,7 @@ export async function motoristasRoute(
 }
 
   if (method === 'POST') {
-    await criarMotorista(req, res);
+    await criarMotorista(req, res, usuario.id);
     return;
   }
 
@@ -74,7 +74,7 @@ export async function motoristasRoute(
     const id = matchId[1];
 
     if (method === 'PUT' || method === 'PATCH') {
-      await atualizarMotorista(req, res, id);
+      await atualizarMotorista(req, res, id, usuario.id);
       return;
     }
 

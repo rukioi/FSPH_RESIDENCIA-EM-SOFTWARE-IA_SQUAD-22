@@ -114,6 +114,27 @@
       "forceRls": false
     },
     {
+      "acl": "{postgres=arxtm/supabase_admin,service_role=arxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "anexo",
+      "owner": "supabase_admin",
+      "forceRls": false
+    },
+    {
+      "acl": "{postgres=arxtm/supabase_admin,service_role=arxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "anotacao",
+      "owner": "supabase_admin",
+      "forceRls": false
+    },
+    {
+      "acl": "{postgres=arxtm/supabase_admin,service_role=arxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "documento_historico",
+      "owner": "supabase_admin",
+      "forceRls": false
+    },
+    {
       "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
       "rls": false,
       "name": "documento_veiculo",
@@ -347,6 +368,386 @@
       "identity": "",
       "nullable": false,
       "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": "nextval('anexo_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "chave",
+      "type": "uuid",
+      "table": "anexo",
+      "default": "gen_random_uuid()",
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "tipo",
+      "type": "text",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "tamanho",
+      "type": "integer",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "sha256",
+      "type": "text",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "dados",
+      "type": "bytea",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "autor_id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp with time zone",
+      "table": "anexo",
+      "default": "clock_timestamp()",
+      "identity": "",
+      "nullable": false,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "solicitacao_viagem_id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "solicitacao_obito_id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "viagem_id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 12,
+      "generated": ""
+    },
+    {
+      "name": "ordem_coleta_id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 13,
+      "generated": ""
+    },
+    {
+      "name": "abastecimento_id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 14,
+      "generated": ""
+    },
+    {
+      "name": "veiculo_id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 15,
+      "generated": ""
+    },
+    {
+      "name": "motorista_id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 16,
+      "generated": ""
+    },
+    {
+      "name": "documento_veiculo_id",
+      "type": "bigint",
+      "table": "anexo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 17,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "anotacao",
+      "default": "nextval('anotacao_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "solicitacao_viagem_id",
+      "type": "bigint",
+      "table": "anotacao",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "solicitacao_obito_id",
+      "type": "bigint",
+      "table": "anotacao",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "viagem_id",
+      "type": "bigint",
+      "table": "anotacao",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "ordem_coleta_id",
+      "type": "bigint",
+      "table": "anotacao",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "veiculo_id",
+      "type": "bigint",
+      "table": "anotacao",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "texto",
+      "type": "text",
+      "table": "anotacao",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "autor_id",
+      "type": "bigint",
+      "table": "anotacao",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp with time zone",
+      "table": "anotacao",
+      "default": "clock_timestamp()",
+      "identity": "",
+      "nullable": false,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "documento_historico",
+      "default": "nextval('documento_historico_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "documento_veiculo_id",
+      "type": "bigint",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "motorista_id",
+      "type": "bigint",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "versao",
+      "type": "integer",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "tipo_documento",
+      "type": "character varying(50)",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "data_vencimento",
+      "type": "date",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "status_regular",
+      "type": "boolean",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "numero_cnh",
+      "type": "character varying(20)",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "categoria_cnh",
+      "type": "character varying(5)",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "anexo_id",
+      "type": "bigint",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "autor_id",
+      "type": "bigint",
+      "table": "documento_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp with time zone",
+      "table": "documento_historico",
+      "default": "clock_timestamp()",
+      "identity": "",
+      "nullable": false,
+      "position": 12,
       "generated": ""
     },
     {
@@ -1692,9 +2093,124 @@
       "definition": "CREATE UNIQUE INDEX abastecimento_comprovante_pkey ON public.abastecimento_comprovante USING btree (abastecimento_id)"
     },
     {
+      "name": "anexo_abastecimento_idx",
+      "table": "anexo",
+      "definition": "CREATE INDEX anexo_abastecimento_idx ON public.anexo USING btree (abastecimento_id, criado_em DESC, id DESC) WHERE (abastecimento_id IS NOT NULL)"
+    },
+    {
+      "name": "anexo_chave_key",
+      "table": "anexo",
+      "definition": "CREATE UNIQUE INDEX anexo_chave_key ON public.anexo USING btree (chave)"
+    },
+    {
+      "name": "anexo_documento_idx",
+      "table": "anexo",
+      "definition": "CREATE INDEX anexo_documento_idx ON public.anexo USING btree (documento_veiculo_id, criado_em DESC, id DESC) WHERE (documento_veiculo_id IS NOT NULL)"
+    },
+    {
+      "name": "anexo_documento_key",
+      "table": "anexo",
+      "definition": "CREATE UNIQUE INDEX anexo_documento_key ON public.anexo USING btree (id, documento_veiculo_id)"
+    },
+    {
+      "name": "anexo_motorista_idx",
+      "table": "anexo",
+      "definition": "CREATE INDEX anexo_motorista_idx ON public.anexo USING btree (motorista_id, criado_em DESC, id DESC) WHERE (motorista_id IS NOT NULL)"
+    },
+    {
+      "name": "anexo_motorista_key",
+      "table": "anexo",
+      "definition": "CREATE UNIQUE INDEX anexo_motorista_key ON public.anexo USING btree (id, motorista_id)"
+    },
+    {
+      "name": "anexo_ordem_idx",
+      "table": "anexo",
+      "definition": "CREATE INDEX anexo_ordem_idx ON public.anexo USING btree (ordem_coleta_id, criado_em DESC, id DESC) WHERE (ordem_coleta_id IS NOT NULL)"
+    },
+    {
+      "name": "anexo_pkey",
+      "table": "anexo",
+      "definition": "CREATE UNIQUE INDEX anexo_pkey ON public.anexo USING btree (id)"
+    },
+    {
+      "name": "anexo_solicitacao_obito_idx",
+      "table": "anexo",
+      "definition": "CREATE INDEX anexo_solicitacao_obito_idx ON public.anexo USING btree (solicitacao_obito_id, criado_em DESC, id DESC) WHERE (solicitacao_obito_id IS NOT NULL)"
+    },
+    {
+      "name": "anexo_solicitacao_viagem_idx",
+      "table": "anexo",
+      "definition": "CREATE INDEX anexo_solicitacao_viagem_idx ON public.anexo USING btree (solicitacao_viagem_id, criado_em DESC, id DESC) WHERE (solicitacao_viagem_id IS NOT NULL)"
+    },
+    {
+      "name": "anexo_veiculo_idx",
+      "table": "anexo",
+      "definition": "CREATE INDEX anexo_veiculo_idx ON public.anexo USING btree (veiculo_id, criado_em DESC, id DESC) WHERE (veiculo_id IS NOT NULL)"
+    },
+    {
+      "name": "anexo_viagem_idx",
+      "table": "anexo",
+      "definition": "CREATE INDEX anexo_viagem_idx ON public.anexo USING btree (viagem_id, criado_em DESC, id DESC) WHERE (viagem_id IS NOT NULL)"
+    },
+    {
+      "name": "anotacao_ordem_idx",
+      "table": "anotacao",
+      "definition": "CREATE INDEX anotacao_ordem_idx ON public.anotacao USING btree (ordem_coleta_id, criado_em DESC, id DESC) WHERE (ordem_coleta_id IS NOT NULL)"
+    },
+    {
+      "name": "anotacao_pkey",
+      "table": "anotacao",
+      "definition": "CREATE UNIQUE INDEX anotacao_pkey ON public.anotacao USING btree (id)"
+    },
+    {
+      "name": "anotacao_solicitacao_obito_idx",
+      "table": "anotacao",
+      "definition": "CREATE INDEX anotacao_solicitacao_obito_idx ON public.anotacao USING btree (solicitacao_obito_id, criado_em DESC, id DESC) WHERE (solicitacao_obito_id IS NOT NULL)"
+    },
+    {
+      "name": "anotacao_solicitacao_viagem_idx",
+      "table": "anotacao",
+      "definition": "CREATE INDEX anotacao_solicitacao_viagem_idx ON public.anotacao USING btree (solicitacao_viagem_id, criado_em DESC, id DESC) WHERE (solicitacao_viagem_id IS NOT NULL)"
+    },
+    {
+      "name": "anotacao_veiculo_idx",
+      "table": "anotacao",
+      "definition": "CREATE INDEX anotacao_veiculo_idx ON public.anotacao USING btree (veiculo_id, criado_em DESC, id DESC) WHERE (veiculo_id IS NOT NULL)"
+    },
+    {
+      "name": "anotacao_viagem_idx",
+      "table": "anotacao",
+      "definition": "CREATE INDEX anotacao_viagem_idx ON public.anotacao USING btree (viagem_id, criado_em DESC, id DESC) WHERE (viagem_id IS NOT NULL)"
+    },
+    {
+      "name": "documento_historico_documento_versao_key",
+      "table": "documento_historico",
+      "definition": "CREATE UNIQUE INDEX documento_historico_documento_versao_key ON public.documento_historico USING btree (documento_veiculo_id, versao)"
+    },
+    {
+      "name": "documento_historico_motorista_versao_key",
+      "table": "documento_historico",
+      "definition": "CREATE UNIQUE INDEX documento_historico_motorista_versao_key ON public.documento_historico USING btree (motorista_id, versao)"
+    },
+    {
+      "name": "documento_historico_pkey",
+      "table": "documento_historico",
+      "definition": "CREATE UNIQUE INDEX documento_historico_pkey ON public.documento_historico USING btree (id)"
+    },
+    {
+      "name": "documento_historico_vencimento_idx",
+      "table": "documento_historico",
+      "definition": "CREATE INDEX documento_historico_vencimento_idx ON public.documento_historico USING btree (data_vencimento, id)"
+    },
+    {
       "name": "documento_veiculo_pkey",
       "table": "documento_veiculo",
       "definition": "CREATE UNIQUE INDEX documento_veiculo_pkey ON public.documento_veiculo USING btree (id)"
+    },
+    {
+      "name": "documento_veiculo_vencimento_idx",
+      "table": "documento_veiculo",
+      "definition": "CREATE INDEX documento_veiculo_vencimento_idx ON public.documento_veiculo USING btree (data_vencimento, id)"
     },
     {
       "name": "idx_log_atividade_solicitacao_viagem_id",
@@ -1725,6 +2241,11 @@
       "name": "motorista_usuario_id_key",
       "table": "motorista",
       "definition": "CREATE UNIQUE INDEX motorista_usuario_id_key ON public.motorista USING btree (usuario_id)"
+    },
+    {
+      "name": "motorista_validade_cnh_idx",
+      "table": "motorista",
+      "definition": "CREATE INDEX motorista_validade_cnh_idx ON public.motorista USING btree (validade_cnh, id)"
     },
     {
       "name": "notificacao_caixa_idx",
@@ -1891,6 +2412,48 @@
       "owner": "postgres",
       "start": "1",
       "table": "abastecimento",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "anexo_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "supabase_admin",
+      "start": "1",
+      "table": "anexo",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "anotacao_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "supabase_admin",
+      "start": "1",
+      "table": "anotacao",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "documento_historico_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "supabase_admin",
+      "start": "1",
+      "table": "documento_historico",
       "column": "id",
       "increment": "1"
     },
@@ -2269,6 +2832,606 @@
       "onUpdate": " ",
       "validated": true,
       "definition": "CHECK (tipo = ANY (ARRAY['image/jpeg'::text, 'image/png'::text]))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_abastecimento_id_fkey",
+      "type": "f",
+      "table": "anexo",
+      "columns": [
+        "abastecimento_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (abastecimento_id) REFERENCES abastecimento(id)",
+      "references": "abastecimento",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anexo_assinatura_check",
+      "type": "c",
+      "table": "anexo",
+      "columns": [
+        "tipo",
+        "dados"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (tipo = 'application/pdf'::text AND SUBSTRING(dados FROM 1 FOR 5) = decode('255044462d'::text, 'hex'::text) OR tipo = 'image/png'::text AND SUBSTRING(dados FROM 1 FOR 8) = decode('89504e470d0a1a0a'::text, 'hex'::text) OR tipo = 'image/jpeg'::text AND SUBSTRING(dados FROM 1 FOR 3) = decode('ffd8ff'::text, 'hex'::text))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_autor_id_fkey",
+      "type": "f",
+      "table": "anexo",
+      "columns": [
+        "autor_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (autor_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anexo_chave_key",
+      "type": "u",
+      "table": "anexo",
+      "columns": [
+        "chave"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (chave)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_documento_key",
+      "type": "u",
+      "table": "anexo",
+      "columns": [
+        "id",
+        "documento_veiculo_id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (id, documento_veiculo_id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_documento_veiculo_id_fkey",
+      "type": "f",
+      "table": "anexo",
+      "columns": [
+        "documento_veiculo_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (documento_veiculo_id) REFERENCES documento_veiculo(id)",
+      "references": "documento_veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anexo_hash_check",
+      "type": "c",
+      "table": "anexo",
+      "columns": [
+        "sha256",
+        "dados"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (sha256 = encode(sha256(dados), 'hex'::text))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_motorista_id_fkey",
+      "type": "f",
+      "table": "anexo",
+      "columns": [
+        "motorista_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id) REFERENCES motorista(id)",
+      "references": "motorista",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anexo_motorista_key",
+      "type": "u",
+      "table": "anexo",
+      "columns": [
+        "id",
+        "motorista_id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (id, motorista_id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_nome_check",
+      "type": "c",
+      "table": "anexo",
+      "columns": [
+        "nome"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (char_length(btrim(nome)) >= 1 AND char_length(btrim(nome)) <= 255 AND nome !~ '[[:cntrl:]/]'::text AND POSITION((chr(92)) IN (nome)) = 0 AND (nome <> ALL (ARRAY['.'::text, '..'::text])))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_ordem_coleta_id_fkey",
+      "type": "f",
+      "table": "anexo",
+      "columns": [
+        "ordem_coleta_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (ordem_coleta_id) REFERENCES ordem_coleta(id)",
+      "references": "ordem_coleta",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anexo_pkey",
+      "type": "p",
+      "table": "anexo",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_registro_check",
+      "type": "c",
+      "table": "anexo",
+      "columns": [
+        "solicitacao_viagem_id",
+        "solicitacao_obito_id",
+        "viagem_id",
+        "ordem_coleta_id",
+        "abastecimento_id",
+        "veiculo_id",
+        "motorista_id",
+        "documento_veiculo_id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (num_nonnulls(solicitacao_viagem_id, solicitacao_obito_id, viagem_id, ordem_coleta_id, abastecimento_id, veiculo_id, motorista_id, documento_veiculo_id) = 1)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_solicitacao_obito_id_fkey",
+      "type": "f",
+      "table": "anexo",
+      "columns": [
+        "solicitacao_obito_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (solicitacao_obito_id) REFERENCES solicitacao_obito(id)",
+      "references": "solicitacao_obito",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anexo_solicitacao_viagem_id_fkey",
+      "type": "f",
+      "table": "anexo",
+      "columns": [
+        "solicitacao_viagem_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id)",
+      "references": "solicitacao_viagem",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anexo_tamanho_check",
+      "type": "c",
+      "table": "anexo",
+      "columns": [
+        "tamanho",
+        "dados"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (tamanho >= 1 AND tamanho <= 5242880 AND tamanho = octet_length(dados))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anexo_veiculo_id_fkey",
+      "type": "f",
+      "table": "anexo",
+      "columns": [
+        "veiculo_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (veiculo_id) REFERENCES veiculo(id)",
+      "references": "veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anexo_viagem_id_fkey",
+      "type": "f",
+      "table": "anexo",
+      "columns": [
+        "viagem_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (viagem_id) REFERENCES viagem(id)",
+      "references": "viagem",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anotacao_autor_id_fkey",
+      "type": "f",
+      "table": "anotacao",
+      "columns": [
+        "autor_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (autor_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anotacao_ordem_coleta_id_fkey",
+      "type": "f",
+      "table": "anotacao",
+      "columns": [
+        "ordem_coleta_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (ordem_coleta_id) REFERENCES ordem_coleta(id)",
+      "references": "ordem_coleta",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anotacao_pkey",
+      "type": "p",
+      "table": "anotacao",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anotacao_registro_check",
+      "type": "c",
+      "table": "anotacao",
+      "columns": [
+        "solicitacao_viagem_id",
+        "solicitacao_obito_id",
+        "viagem_id",
+        "ordem_coleta_id",
+        "veiculo_id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (num_nonnulls(solicitacao_viagem_id, solicitacao_obito_id, viagem_id, ordem_coleta_id, veiculo_id) = 1)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anotacao_solicitacao_obito_id_fkey",
+      "type": "f",
+      "table": "anotacao",
+      "columns": [
+        "solicitacao_obito_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (solicitacao_obito_id) REFERENCES solicitacao_obito(id)",
+      "references": "solicitacao_obito",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anotacao_solicitacao_viagem_id_fkey",
+      "type": "f",
+      "table": "anotacao",
+      "columns": [
+        "solicitacao_viagem_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id)",
+      "references": "solicitacao_viagem",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anotacao_texto_check",
+      "type": "c",
+      "table": "anotacao",
+      "columns": [
+        "texto"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (char_length(btrim(texto)) >= 1 AND char_length(btrim(texto)) <= 2000)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "anotacao_veiculo_id_fkey",
+      "type": "f",
+      "table": "anotacao",
+      "columns": [
+        "veiculo_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (veiculo_id) REFERENCES veiculo(id)",
+      "references": "veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "anotacao_viagem_id_fkey",
+      "type": "f",
+      "table": "anotacao",
+      "columns": [
+        "viagem_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (viagem_id) REFERENCES viagem(id)",
+      "references": "viagem",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "documento_historico_anexo_documento_fk",
+      "type": "f",
+      "table": "documento_historico",
+      "columns": [
+        "anexo_id",
+        "documento_veiculo_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (anexo_id, documento_veiculo_id) REFERENCES anexo(id, documento_veiculo_id)",
+      "references": "anexo",
+      "referencedColumns": [
+        "id",
+        "documento_veiculo_id"
+      ]
+    },
+    {
+      "name": "documento_historico_anexo_motorista_fk",
+      "type": "f",
+      "table": "documento_historico",
+      "columns": [
+        "anexo_id",
+        "motorista_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (anexo_id, motorista_id) REFERENCES anexo(id, motorista_id)",
+      "references": "anexo",
+      "referencedColumns": [
+        "id",
+        "motorista_id"
+      ]
+    },
+    {
+      "name": "documento_historico_autor_id_fkey",
+      "type": "f",
+      "table": "documento_historico",
+      "columns": [
+        "autor_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (autor_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "documento_historico_dados_check",
+      "type": "c",
+      "table": "documento_historico",
+      "columns": [
+        "documento_veiculo_id",
+        "tipo_documento",
+        "numero_cnh",
+        "categoria_cnh",
+        "motorista_id",
+        "status_regular"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (documento_veiculo_id IS NOT NULL AND tipo_documento IS NOT NULL AND btrim(tipo_documento::text) <> ''::text AND numero_cnh IS NULL AND categoria_cnh IS NULL OR motorista_id IS NOT NULL AND tipo_documento IS NULL AND status_regular IS NULL AND numero_cnh IS NOT NULL AND btrim(numero_cnh::text) <> ''::text AND categoria_cnh IS NOT NULL AND btrim(categoria_cnh::text) <> ''::text)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "documento_historico_documento_veiculo_id_fkey",
+      "type": "f",
+      "table": "documento_historico",
+      "columns": [
+        "documento_veiculo_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (documento_veiculo_id) REFERENCES documento_veiculo(id)",
+      "references": "documento_veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "documento_historico_documento_versao_key",
+      "type": "u",
+      "table": "documento_historico",
+      "columns": [
+        "documento_veiculo_id",
+        "versao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (documento_veiculo_id, versao)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "documento_historico_motorista_id_fkey",
+      "type": "f",
+      "table": "documento_historico",
+      "columns": [
+        "motorista_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id) REFERENCES motorista(id)",
+      "references": "motorista",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "documento_historico_motorista_versao_key",
+      "type": "u",
+      "table": "documento_historico",
+      "columns": [
+        "motorista_id",
+        "versao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (motorista_id, versao)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "documento_historico_pkey",
+      "type": "p",
+      "table": "documento_historico",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "documento_historico_registro_check",
+      "type": "c",
+      "table": "documento_historico",
+      "columns": [
+        "documento_veiculo_id",
+        "motorista_id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (num_nonnulls(documento_veiculo_id, motorista_id) = 1)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "documento_historico_versao_check",
+      "type": "c",
+      "table": "documento_historico",
+      "columns": [
+        "versao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (versao >= 1)",
       "references": null,
       "referencedColumns": null
     },

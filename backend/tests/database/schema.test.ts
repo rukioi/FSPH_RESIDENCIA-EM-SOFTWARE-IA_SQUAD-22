@@ -21,7 +21,8 @@ test('reconstrói o snapshot completo auditado, incluindo ACL/RLS e tipos exatos
   expect(metadata.triggers).toEqual([]);
   expect(metadata.policies).toEqual([]);
   // Tabelas novas acessadas só pelo backend: RLS ligada sem policies (20261109* e DB-S8-01).
-  const protegidas = ['abastecimento_comprovante','notificacao','viagem_correcao','viagem_evidencia'];
+  const protegidas = ['abastecimento_comprovante','notificacao','viagem_correcao','viagem_evidencia',
+    'anexo','documento_historico','anotacao'];
   expect(metadata.tables.filter(t=>!protegidas.includes(t.name)).every(t => !t.rls && !t.forceRls)).toBe(true);
   for (const nome of protegidas) expect(metadata.tables.find(t=>t.name===nome)).toMatchObject({rls:true,forceRls:false});
   expect(metadata.constraints.find(c => c.name === 'veiculo_vinculo_check')?.validated).toBe(true);

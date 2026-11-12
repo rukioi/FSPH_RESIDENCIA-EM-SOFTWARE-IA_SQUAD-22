@@ -66,6 +66,143 @@ Constraints:
 
 - `CREATE UNIQUE INDEX abastecimento_comprovante_pkey ON public.abastecimento_comprovante USING btree (abastecimento_id)`.
 
+## anexo
+
+RLS: habilitada; FORCE RLS: não.
+
+| Coluna | Tipo | Aceita NULL | Default |
+| --- | --- | --- | --- |
+| `id` | `bigint` | Não | `nextval('anexo_id_seq'::regclass)` |
+| `chave` | `uuid` | Não | `gen_random_uuid()` |
+| `nome` | `text` | Não | — |
+| `tipo` | `text` | Não | — |
+| `tamanho` | `integer` | Não | — |
+| `sha256` | `text` | Não | — |
+| `dados` | `bytea` | Não | — |
+| `autor_id` | `bigint` | Não | — |
+| `criado_em` | `timestamp with time zone` | Não | `clock_timestamp()` |
+| `solicitacao_viagem_id` | `bigint` | Sim | — |
+| `solicitacao_obito_id` | `bigint` | Sim | — |
+| `viagem_id` | `bigint` | Sim | — |
+| `ordem_coleta_id` | `bigint` | Sim | — |
+| `abastecimento_id` | `bigint` | Sim | — |
+| `veiculo_id` | `bigint` | Sim | — |
+| `motorista_id` | `bigint` | Sim | — |
+| `documento_veiculo_id` | `bigint` | Sim | — |
+
+Constraints:
+
+- `anexo_abastecimento_id_fkey`: `FOREIGN KEY (abastecimento_id) REFERENCES abastecimento(id)`; validada: sim.
+- `anexo_assinatura_check`: `CHECK (tipo = 'application/pdf'::text AND SUBSTRING(dados FROM 1 FOR 5) = decode('255044462d'::text, 'hex'::text) OR tipo = 'image/png'::text AND SUBSTRING(dados FROM 1 FOR 8) = decode('89504e470d0a1a0a'::text, 'hex'::text) OR tipo = 'image/jpeg'::text AND SUBSTRING(dados FROM 1 FOR 3) = decode('ffd8ff'::text, 'hex'::text))`; validada: sim.
+- `anexo_autor_id_fkey`: `FOREIGN KEY (autor_id) REFERENCES usuario(id)`; validada: sim.
+- `anexo_chave_key`: `UNIQUE (chave)`; validada: sim.
+- `anexo_documento_key`: `UNIQUE (id, documento_veiculo_id)`; validada: sim.
+- `anexo_documento_veiculo_id_fkey`: `FOREIGN KEY (documento_veiculo_id) REFERENCES documento_veiculo(id)`; validada: sim.
+- `anexo_hash_check`: `CHECK (sha256 = encode(sha256(dados), 'hex'::text))`; validada: sim.
+- `anexo_motorista_id_fkey`: `FOREIGN KEY (motorista_id) REFERENCES motorista(id)`; validada: sim.
+- `anexo_motorista_key`: `UNIQUE (id, motorista_id)`; validada: sim.
+- `anexo_nome_check`: `CHECK (char_length(btrim(nome)) >= 1 AND char_length(btrim(nome)) <= 255 AND nome !~ '[[:cntrl:]/]'::text AND POSITION((chr(92)) IN (nome)) = 0 AND (nome <> ALL (ARRAY['.'::text, '..'::text])))`; validada: sim.
+- `anexo_ordem_coleta_id_fkey`: `FOREIGN KEY (ordem_coleta_id) REFERENCES ordem_coleta(id)`; validada: sim.
+- `anexo_pkey`: `PRIMARY KEY (id)`; validada: sim.
+- `anexo_registro_check`: `CHECK (num_nonnulls(solicitacao_viagem_id, solicitacao_obito_id, viagem_id, ordem_coleta_id, abastecimento_id, veiculo_id, motorista_id, documento_veiculo_id) = 1)`; validada: sim.
+- `anexo_solicitacao_obito_id_fkey`: `FOREIGN KEY (solicitacao_obito_id) REFERENCES solicitacao_obito(id)`; validada: sim.
+- `anexo_solicitacao_viagem_id_fkey`: `FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id)`; validada: sim.
+- `anexo_tamanho_check`: `CHECK (tamanho >= 1 AND tamanho <= 5242880 AND tamanho = octet_length(dados))`; validada: sim.
+- `anexo_veiculo_id_fkey`: `FOREIGN KEY (veiculo_id) REFERENCES veiculo(id)`; validada: sim.
+- `anexo_viagem_id_fkey`: `FOREIGN KEY (viagem_id) REFERENCES viagem(id)`; validada: sim.
+
+Índices:
+
+- `CREATE INDEX anexo_abastecimento_idx ON public.anexo USING btree (abastecimento_id, criado_em DESC, id DESC) WHERE (abastecimento_id IS NOT NULL)`.
+- `CREATE UNIQUE INDEX anexo_chave_key ON public.anexo USING btree (chave)`.
+- `CREATE INDEX anexo_documento_idx ON public.anexo USING btree (documento_veiculo_id, criado_em DESC, id DESC) WHERE (documento_veiculo_id IS NOT NULL)`.
+- `CREATE UNIQUE INDEX anexo_documento_key ON public.anexo USING btree (id, documento_veiculo_id)`.
+- `CREATE INDEX anexo_motorista_idx ON public.anexo USING btree (motorista_id, criado_em DESC, id DESC) WHERE (motorista_id IS NOT NULL)`.
+- `CREATE UNIQUE INDEX anexo_motorista_key ON public.anexo USING btree (id, motorista_id)`.
+- `CREATE INDEX anexo_ordem_idx ON public.anexo USING btree (ordem_coleta_id, criado_em DESC, id DESC) WHERE (ordem_coleta_id IS NOT NULL)`.
+- `CREATE UNIQUE INDEX anexo_pkey ON public.anexo USING btree (id)`.
+- `CREATE INDEX anexo_solicitacao_obito_idx ON public.anexo USING btree (solicitacao_obito_id, criado_em DESC, id DESC) WHERE (solicitacao_obito_id IS NOT NULL)`.
+- `CREATE INDEX anexo_solicitacao_viagem_idx ON public.anexo USING btree (solicitacao_viagem_id, criado_em DESC, id DESC) WHERE (solicitacao_viagem_id IS NOT NULL)`.
+- `CREATE INDEX anexo_veiculo_idx ON public.anexo USING btree (veiculo_id, criado_em DESC, id DESC) WHERE (veiculo_id IS NOT NULL)`.
+- `CREATE INDEX anexo_viagem_idx ON public.anexo USING btree (viagem_id, criado_em DESC, id DESC) WHERE (viagem_id IS NOT NULL)`.
+
+## anotacao
+
+RLS: habilitada; FORCE RLS: não.
+
+| Coluna | Tipo | Aceita NULL | Default |
+| --- | --- | --- | --- |
+| `id` | `bigint` | Não | `nextval('anotacao_id_seq'::regclass)` |
+| `solicitacao_viagem_id` | `bigint` | Sim | — |
+| `solicitacao_obito_id` | `bigint` | Sim | — |
+| `viagem_id` | `bigint` | Sim | — |
+| `ordem_coleta_id` | `bigint` | Sim | — |
+| `veiculo_id` | `bigint` | Sim | — |
+| `texto` | `text` | Não | — |
+| `autor_id` | `bigint` | Não | — |
+| `criado_em` | `timestamp with time zone` | Não | `clock_timestamp()` |
+
+Constraints:
+
+- `anotacao_autor_id_fkey`: `FOREIGN KEY (autor_id) REFERENCES usuario(id)`; validada: sim.
+- `anotacao_ordem_coleta_id_fkey`: `FOREIGN KEY (ordem_coleta_id) REFERENCES ordem_coleta(id)`; validada: sim.
+- `anotacao_pkey`: `PRIMARY KEY (id)`; validada: sim.
+- `anotacao_registro_check`: `CHECK (num_nonnulls(solicitacao_viagem_id, solicitacao_obito_id, viagem_id, ordem_coleta_id, veiculo_id) = 1)`; validada: sim.
+- `anotacao_solicitacao_obito_id_fkey`: `FOREIGN KEY (solicitacao_obito_id) REFERENCES solicitacao_obito(id)`; validada: sim.
+- `anotacao_solicitacao_viagem_id_fkey`: `FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id)`; validada: sim.
+- `anotacao_texto_check`: `CHECK (char_length(btrim(texto)) >= 1 AND char_length(btrim(texto)) <= 2000)`; validada: sim.
+- `anotacao_veiculo_id_fkey`: `FOREIGN KEY (veiculo_id) REFERENCES veiculo(id)`; validada: sim.
+- `anotacao_viagem_id_fkey`: `FOREIGN KEY (viagem_id) REFERENCES viagem(id)`; validada: sim.
+
+Índices:
+
+- `CREATE INDEX anotacao_ordem_idx ON public.anotacao USING btree (ordem_coleta_id, criado_em DESC, id DESC) WHERE (ordem_coleta_id IS NOT NULL)`.
+- `CREATE UNIQUE INDEX anotacao_pkey ON public.anotacao USING btree (id)`.
+- `CREATE INDEX anotacao_solicitacao_obito_idx ON public.anotacao USING btree (solicitacao_obito_id, criado_em DESC, id DESC) WHERE (solicitacao_obito_id IS NOT NULL)`.
+- `CREATE INDEX anotacao_solicitacao_viagem_idx ON public.anotacao USING btree (solicitacao_viagem_id, criado_em DESC, id DESC) WHERE (solicitacao_viagem_id IS NOT NULL)`.
+- `CREATE INDEX anotacao_veiculo_idx ON public.anotacao USING btree (veiculo_id, criado_em DESC, id DESC) WHERE (veiculo_id IS NOT NULL)`.
+- `CREATE INDEX anotacao_viagem_idx ON public.anotacao USING btree (viagem_id, criado_em DESC, id DESC) WHERE (viagem_id IS NOT NULL)`.
+
+## documento_historico
+
+RLS: habilitada; FORCE RLS: não.
+
+| Coluna | Tipo | Aceita NULL | Default |
+| --- | --- | --- | --- |
+| `id` | `bigint` | Não | `nextval('documento_historico_id_seq'::regclass)` |
+| `documento_veiculo_id` | `bigint` | Sim | — |
+| `motorista_id` | `bigint` | Sim | — |
+| `versao` | `integer` | Não | — |
+| `tipo_documento` | `character varying(50)` | Sim | — |
+| `data_vencimento` | `date` | Não | — |
+| `status_regular` | `boolean` | Sim | — |
+| `numero_cnh` | `character varying(20)` | Sim | — |
+| `categoria_cnh` | `character varying(5)` | Sim | — |
+| `anexo_id` | `bigint` | Sim | — |
+| `autor_id` | `bigint` | Não | — |
+| `criado_em` | `timestamp with time zone` | Não | `clock_timestamp()` |
+
+Constraints:
+
+- `documento_historico_anexo_documento_fk`: `FOREIGN KEY (anexo_id, documento_veiculo_id) REFERENCES anexo(id, documento_veiculo_id)`; validada: sim.
+- `documento_historico_anexo_motorista_fk`: `FOREIGN KEY (anexo_id, motorista_id) REFERENCES anexo(id, motorista_id)`; validada: sim.
+- `documento_historico_autor_id_fkey`: `FOREIGN KEY (autor_id) REFERENCES usuario(id)`; validada: sim.
+- `documento_historico_dados_check`: `CHECK (documento_veiculo_id IS NOT NULL AND tipo_documento IS NOT NULL AND btrim(tipo_documento::text) <> ''::text AND numero_cnh IS NULL AND categoria_cnh IS NULL OR motorista_id IS NOT NULL AND tipo_documento IS NULL AND status_regular IS NULL AND numero_cnh IS NOT NULL AND btrim(numero_cnh::text) <> ''::text AND categoria_cnh IS NOT NULL AND btrim(categoria_cnh::text) <> ''::text)`; validada: sim.
+- `documento_historico_documento_veiculo_id_fkey`: `FOREIGN KEY (documento_veiculo_id) REFERENCES documento_veiculo(id)`; validada: sim.
+- `documento_historico_documento_versao_key`: `UNIQUE (documento_veiculo_id, versao)`; validada: sim.
+- `documento_historico_motorista_id_fkey`: `FOREIGN KEY (motorista_id) REFERENCES motorista(id)`; validada: sim.
+- `documento_historico_motorista_versao_key`: `UNIQUE (motorista_id, versao)`; validada: sim.
+- `documento_historico_pkey`: `PRIMARY KEY (id)`; validada: sim.
+- `documento_historico_registro_check`: `CHECK (num_nonnulls(documento_veiculo_id, motorista_id) = 1)`; validada: sim.
+- `documento_historico_versao_check`: `CHECK (versao >= 1)`; validada: sim.
+
+Índices:
+
+- `CREATE UNIQUE INDEX documento_historico_documento_versao_key ON public.documento_historico USING btree (documento_veiculo_id, versao)`.
+- `CREATE UNIQUE INDEX documento_historico_motorista_versao_key ON public.documento_historico USING btree (motorista_id, versao)`.
+- `CREATE UNIQUE INDEX documento_historico_pkey ON public.documento_historico USING btree (id)`.
+- `CREATE INDEX documento_historico_vencimento_idx ON public.documento_historico USING btree (data_vencimento, id)`.
+
 ## documento_veiculo
 
 RLS: desabilitada; FORCE RLS: não.
@@ -89,6 +226,7 @@ Constraints:
 Índices:
 
 - `CREATE UNIQUE INDEX documento_veiculo_pkey ON public.documento_veiculo USING btree (id)`.
+- `CREATE INDEX documento_veiculo_vencimento_idx ON public.documento_veiculo USING btree (data_vencimento, id)`.
 
 ## log_atividade
 
@@ -145,6 +283,7 @@ Constraints:
 - `CREATE UNIQUE INDEX motorista_cpf_key ON public.motorista USING btree (cpf)`.
 - `CREATE UNIQUE INDEX motorista_pkey ON public.motorista USING btree (id)`.
 - `CREATE UNIQUE INDEX motorista_usuario_id_key ON public.motorista USING btree (usuario_id)`.
+- `CREATE INDEX motorista_validade_cnh_idx ON public.motorista USING btree (validade_cnh, id)`.
 
 ## notificacao
 

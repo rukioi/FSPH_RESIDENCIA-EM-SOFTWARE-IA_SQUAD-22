@@ -1,5 +1,12 @@
 # Convenções mínimas da API
 
+[Anexos privados](./anexos.md): multipart compartilhado, vínculos com FK,
+autorização por registro e download autenticado (SCRUM-194).
+
+Sprint 9: [notas privadas RF48](./anotacoes.md), [documentos/CNH e histórico](./documentos-s9.md)
+e [Dashboard consolidado](./dashboard-consolidado-s9.md). Alertas RF46 e consumo
+por distância permanecem limitados às decisões de negócio documentadas.
+
 O módulo de [notificações internas](./notificacoes.md) acrescenta caixa individual,
 filtros paginados, leitura e sincronização de vencimentos, com contratos puros no
 registro global. Aplicação da migration e pré-condições de rollout estão no documento do módulo.
