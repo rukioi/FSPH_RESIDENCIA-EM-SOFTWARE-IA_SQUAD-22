@@ -1,10 +1,11 @@
-import { ROTAS, lerRotaSolicitacao } from '../../app/routes/rotas'
+import { ROTAS, lerDetalheSvo, lerRotaSolicitacao } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
   [ROTAS.notificacoes]: ['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],
   [ROTAS.dashboard]: ['ADM'],
   [ROTAS.configuracoes]: ['ADM'],
   [ROTAS.auditoria]: ['ADM'],
+
   [ROTAS.dashboardGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.veiculosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.motoristasGestor]: ['ADM', 'GESTOR_FROTA'],
@@ -13,14 +14,24 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.calendarioGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],
   [ROTAS.minhasSolicitacoes]: ['SOLICITANTE_INTERNO'],
-  '/svo': ['ATENDENTE_SVO'],
+
+  // Mantida temporariamente para links antigos.
+  [ROTAS.svoRaiz]: ['ATENDENTE_SVO'],
+  [ROTAS.svoDashboard]: ['ATENDENTE_SVO'],
+  [ROTAS.svoSolicitacoes]: ['ATENDENTE_SVO'],
+  [ROTAS.svoNovaSolicitacao]: ['ATENDENTE_SVO'],
+  [ROTAS.svoMinhasOrdens]: ['MOTORISTA'],
+  [ROTAS.svoOrdens]: ['ATENDENTE_SVO'],
 }
 
-/** Autoriza as telas conhecidas e os detalhes e edição de solicitações do Gestor. */
+/** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
   const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
   if (solicitacao && /^[0-9]+$/.test(solicitacao.id)) {
     return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil)
   }
-  return perfisPorRota[caminho]?.includes(perfil) ?? false
+  const perfisExatos = perfisPorRota[caminho]
+  if (perfisExatos) return perfisExatos.includes(perfil)
+  const detalhe = lerDetalheSvo(caminho)
+  return !!detalhe && perfil === (detalhe.tela === 'execucao' ? 'MOTORISTA' : 'ATENDENTE_SVO')
 }

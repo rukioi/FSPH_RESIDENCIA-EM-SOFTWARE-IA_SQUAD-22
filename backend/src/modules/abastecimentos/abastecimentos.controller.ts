@@ -90,6 +90,7 @@ export async function criarAbastecimento(req: IncomingMessage, res: ServerRespon
           !(c.tipo === 'image/png' ? png : jpg)) {
         return enviarErro(res, 400, 'ARQUIVO_INVALIDO', 'Envie uma imagem JPEG ou PNG válida de até 1 MiB.');
       }
+      // Buffer vai como bytea; um texto '\\x…' seria gravado literalmente pelo driver (bytes corrompidos).
       arquivo = { nome: c.nome.trim(), tipo: c.tipo, dados: bytes };
     }
 

@@ -9,6 +9,16 @@ reversão condicionada, preflight, provas reais em PostgreSQL isolado e
 documentação. Endpoints, OpenAPI e telas pertencem a BE-S8-01/FE-S8-01; nenhum
 contrato HTTP, cliente gerado ou tela foi alterado aqui.
 
+## Perfis afetados
+
+Parte da **execução de viagens** (Épico 04). Não envolve SVO.
+
+| Perfil | O que o modelo passa a guardar |
+| --- | --- |
+| MOTORISTA | Início e fim da viagem, km inicial/final, fotos do odômetro e avisos de atribuição e lembrete |
+| GESTOR_FROTA e ADM | Validação final da viagem (autor e instante) e correções com justificativa |
+| SOLICITANTE | Nada novo: a solicitação continua sendo a origem 1:1 da viagem |
+
 Arquivos da entrega:
 
 - Migration: [20261109200000_db_s8_01_viagem_execucao.sql](../../backend/src/database/supabase/migrations/20261109200000_db_s8_01_viagem_execucao.sql)
@@ -288,6 +298,46 @@ versionado. Repetir a prova com `npm run db:test:start` oficial antes do aceite.
   a listar as quatro tabelas protegidas. Antes ela só aceitava `notificacao` e já
   falhava com `abastecimento_comprovante`.
 
+### 11.1 CI oficial e revisão — 11/11/2026
+
+O CI do PR #60 rodou no harness oficial da Supabase CLI. Passaram
+`db:test:start`, `db:test:prepare`, `db:docs:check` (sem drift), `api:check`,
+`client:check`, `lint`, `typecheck` e os 14 testes de `viagem-execucao.test.ts`.
+Parou em `test:db` só por causa do `seed.test` já quebrado na main.
+
+Com a liberação do líder para ajustar módulos e testes, a branch foi sincronizada
+com a main (PR #51, sem conflito) e as falhas preexistentes foram corrigidas:
+
+- `seed.test.ts`: usa a PK de cada tabela e dispensa fixtures das quatro tabelas
+  protegidas, sem dados de exemplo no seed.
+- `solicitacoes.detalhes` e `solicitacoes.agenda`: os mocks não previam as
+  consultas de notificação feitas depois do log de atividade.
+- **Bug real em abastecimentos**: o comprovante era enviado ao driver como texto
+  `'\x…'` e gravado literalmente. Um PNG de 11 bytes virava 24 bytes de texto, e o
+  download devolvia arquivo corrompido. Agora os bytes vão como `Buffer`.
+  Comprovantes já gravados no banco remoto continuam corrompidos e exigem reparo
+  autorizado.
+- `abastecimentos.test.ts`: o gatilho de ensaio passou a ser criado pela conexão
+  administrativa (dona da tabela) e sempre é removido. Antes ele ficava no banco e
+  derrubava o `schema.test`.
+
+Resultado local em banco recriado do zero, na ordem do CI:
+
+| Etapa | Resultado |
+| --- | --- |
+| `db:test:prepare`, `db:docs:check`, `api:check`, `client:check`, `lint`, `typecheck` | passaram |
+| `test:db` | 80 de 80 |
+| `npm test` | 743 de 743 |
+| `build` | passou |
+| `test:e2e` | 116 passaram e 33 falharam |
+
+As 33 falhas de E2E vêm de telas como dashboard e perfil do gestor, veículos,
+calendário, solicitações do gestor, auth skeleton e abastecimentos. Na main pura,
+o mesmo ambiente falha em 37; as 33 da branch estão entre elas. São testes de
+tela desatualizados em relação a mudanças recentes de interface, sem relação com
+esta tarefa. O E2E local usou o Chrome do sistema, porque o download do Chromium
+do Playwright é bloqueado aqui.
+
 ## 12. Limites e pendências
 
 - O backend não lê nem grava a viagem nesta entrega. Endpoints, OpenAPI, erros
@@ -300,4 +350,11 @@ versionado. Repetir a prova com `npm run db:test:start` oficial antes do aceite.
   viagem, isso exige tarefa própria.
 - Grants amplos e RLS desligada da `viagem` (baseline) foram preservados; a
   proteção da Data API continua dependente de [segurança](../seguranca.md) (D2).
-- Abastecimentos e a documentação dos Épicos 05/07 não foram alterados.
+- Em abastecimentos, só houve a correção do bug de gravação do comprovante e do
+  teste de gatilho (seção 11.1), com liberação do líder. A documentação dos Épicos
+  05/07 não foi alterada.
+- A migration não foi aplicada no Supabase remoto da equipe. A conta conectada
+  nesta sessão não tem acesso a esse projeto. Aplicar exige autorização e o
+  preflight antes.
+- Os 33 testes E2E de telas já falhando na main ficam para os responsáveis por
+  essas telas.

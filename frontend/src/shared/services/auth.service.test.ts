@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { entrar } from './auth.service';
+import { destinoDoPerfil, entrar } from './auth.service';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -19,4 +19,15 @@ test('login valida o usuário antes de persistir o token', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ token: 'fixture', usuario: {} }))));
   await expect(entrar({ email: 'fixture@example.invalid', senha: 'fixture' })).rejects.toMatchObject({ code: 'RESPOSTA_INVALIDA' });
   expect(setItem).not.toHaveBeenCalled();
+});
+
+
+test.each([
+  ['ATENDENTE_SVO', '/svo/dashboard'],
+  ['MOTORISTA', '/notificacoes'],
+  ['SOLICITANTE_INTERNO', '/solicitante/minhas-solicitacoes'],
+  ['GESTOR_FROTA', '/gestor/dashboard'],
+  ['ADM', '/admin/dashboard'],
+])('preserva destino após login para %s', (perfil, destino) => {
+  expect(destinoDoPerfil(perfil)).toBe(destino);
 });

@@ -39,7 +39,7 @@ export function destinoDoPerfil(perfil: string): string {
     case 'GESTOR_FROTA':
       return ROTAS.dashboardGestor
     case 'ATENDENTE_SVO':
-      return '/svo'
+      return ROTAS.svoDashboard
     case 'MOTORISTA':
       return ROTAS.notificacoes
     case 'SOLICITANTE_INTERNO':

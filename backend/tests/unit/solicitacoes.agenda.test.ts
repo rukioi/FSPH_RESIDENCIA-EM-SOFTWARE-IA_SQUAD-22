@@ -65,6 +65,7 @@ test('reagendamento bloqueia recursos antigos/novos em ordem numérica e ignora 
   const auditoria=mocks.tx.mock.calls.filter(([parts])=>parts.join('').includes('INSERT INTO public.log_atividade'));
   expect(auditoria).toHaveLength(1);
   expect(auditoria[0].slice(1)).toEqual(['42',['Reagendou a solicitação de transporte ID 1024'],['solicitacao_viagem_reagendada'],['1024']]);
+  expect(mocks.tx.mock.calls.indexOf(auditoria[0])).toBeGreaterThan(mocks.tx.mock.calls.indexOf(update));
 });
 test('recursos iguais são bloqueados uma vez por tipo antes da revalidação',async()=>{
   mocks.tx.mockResolvedValueOnce([{status:'AGENDADA',motorista_id:'2',veiculo_id:'4'}]);

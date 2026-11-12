@@ -5,10 +5,25 @@
   display: grid;
   place-items: center;
   padding: 20px;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.svo-modal__fundo:not([open]) { display: none; }
+
+.svo-modal__fundo::backdrop {
   background: rgba(8, 38, 73, 0.55);
 }
 
 .svo-modal {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 560px;
   overflow: hidden;
@@ -36,8 +51,8 @@
 }
 
 .svo-modal__fechar {
-  width: 36px;
-  height: 36px;
+  min-width: 40px;
+  min-height: 40px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -45,6 +60,7 @@
 }
 
 .svo-modal__conteudo {
+  min-height: 0;
   display: grid;
   gap: 20px;
   padding: 24px;
@@ -130,3 +146,5 @@
 .svo-modal__conteudo {
   overflow-y: auto;
 }
+
+.svo-modal__conteudo > button { min-height: 40px; }

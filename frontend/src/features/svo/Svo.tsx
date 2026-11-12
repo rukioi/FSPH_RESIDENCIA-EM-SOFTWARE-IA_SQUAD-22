@@ -1,56 +1,34 @@
 import { useEffect, useRef, useState } from "react";
 import { DashboardSvo } from "./DashboardSvo";
-import {
-  NovaSolicitacaoSvo,
-  type NovaSolicitacaoDados,
-} from "./NovaSolicitacaoSvo";
 import type { OrdemColeta } from "./AguardandoDespacho";
-import type { OrdemPronta } from "./ProntasParaIniciar";
-import type { AtividadeSvo } from "./AtividadeRecente";
 import {
-  criarSolicitacaoSvo,
+  consultarOrdensSvo,
   despacharOrdemSvo,
-  listarMotoristasDisponiveis,
+  consultarRecursosDisponiveisSvo,
   listarOrdensAguardandoSvo,
-  listarVeiculosDisponiveis,
 } from "../../shared/services/svo.service";
-import type {
-  MotoristaApi,
-  VeiculoApi,
-} from "../../shared/types/svo";
+import type { RecursosDisponiveisSvo } from "../../shared/types/svo";
+import { useRemoteData } from '../../shared/api/useRemoteData';
+import { ApiError } from '../../shared/api/errors';
 
-type TelaSvo = "dashboard" | "nova-solicitacao";
+const carregarRecentes = (signal: AbortSignal) => consultarOrdensSvo({ page: 1 }, signal);
 
-/** Orquestra requisições canceláveis e mantém o resumo transitório da sessão existente. */
+/** Orquestra requisições canceláveis e preserva operações existentes sem produzir indicadores ou auditoria locais. */
 export function Svo() {
-  const [telaAtual, setTelaAtual] =
-    useState<TelaSvo>("dashboard");
-
   const [ordensAguardando, setOrdensAguardando] =
     useState<OrdemColeta[]>([]);
 
-  const [ordensProntas, setOrdensProntas] =
-    useState<OrdemPronta[]>([]);
-
-  const [atividades, setAtividades] =
-    useState<AtividadeSvo[]>([]);
-
-  const [solicitacoesRegistradas, setSolicitacoesRegistradas] =
-    useState(0);
+  const recentes = useRemoteData(carregarRecentes, null);
 
   const [erroOrdens, setErroOrdens] = useState("");
 
-  const [motoristas, setMotoristas] =
-    useState<MotoristaApi[]>([]);
-
-  const [veiculos, setVeiculos] =
-    useState<VeiculoApi[]>([]);
+  const recursos = useRemoteData<RecursosDisponiveisSvo | null>(consultarRecursosDisponiveisSvo, null);
+  const motoristas = recursos.data?.motoristas ?? [];
+  const veiculos = recursos.data?.veiculos ?? [];
 
   const request = useRef<AbortController | null>(null);
-  const resources = useRef<AbortController | null>(null);
   const mounted = useRef(false);
   const [carregando, setCarregando] = useState(true);
-  const [erroRecursos, setErroRecursos] = useState('');
   const [tentativa, setTentativa] = useState(0);
 
   async function carregarOrdens() {
@@ -66,6 +44,7 @@ export function Svo() {
         ordens.map((ordem) => ({
           apiId: ordem.id,
           id: `OC-${ordem.id}`,
+          solicitacaoCodigo: ordem.solicitacao_codigo,
           falecido:
             ordem.nome_falecido?.trim() ||
             "Não informado",
@@ -89,153 +68,43 @@ export function Svo() {
 
   useEffect(() => {
     mounted.current = true;
-    const controller = new AbortController();
-    resources.current = controller;
     void carregarOrdens();
-    setErroRecursos('');
-    void Promise.all([listarMotoristasDisponiveis(controller.signal), listarVeiculosDisponiveis(controller.signal)])
-      .then(([drivers, vehicles]) => {
-        if (!controller.signal.aborted) { setMotoristas(drivers); setVeiculos(vehicles); }
-      }).catch(() => {
-        if (!controller.signal.aborted) setErroRecursos('Não foi possível carregar os recursos para despacho. Tente novamente.');
-      });
-    return () => { mounted.current = false; controller.abort(); request.current?.abort(); };
+    return () => { mounted.current = false; request.current?.abort(); };
   }, [tentativa]);
-
-  function adicionarAtividade(
-    titulo: string,
-    descricao: string,
-  ) {
-    const horario = new Date().toLocaleTimeString(
-      "pt-BR",
-      {
-        hour: "2-digit",
-        minute: "2-digit",
-      },
-    );
-
-    setAtividades((lista) => [
-      {
-        id: Date.now(),
-        titulo,
-        descricao,
-        horario,
-      },
-      ...lista,
-    ]);
-  }
-
-  async function confirmarNovaSolicitacao(
-    dados: NovaSolicitacaoDados,
-  ) {
-    const resultado = await criarSolicitacaoSvo(
-      {
-        localFalecimento: dados.localFalecimento,
-        enderecoRemocao: dados.endereco,
-        solicitanteNome: dados.nomeSolicitante,
-        nomeFalecido: dados.nomeFalecido || undefined,
-        solicitanteTelefone:
-          dados.telefoneSolicitante || undefined,
-      },
-    );
-
-    if (!mounted.current) return;
-    setSolicitacoesRegistradas(
-      (valor) => valor + 1,
-    );
-
-    adicionarAtividade(
-      "Solicitação registrada",
-      `${resultado.solicitacao.codigo} registrada e aguardando triagem.`,
-    );
-
-    setTelaAtual("dashboard");
-
-    await carregarOrdens();
-  }
 
   async function confirmarDespacho(
     ordem: OrdemColeta,
     motoristaId: number,
     veiculoId: number,
   ) {
-    await despacharOrdemSvo(
-      ordem.apiId,
-      motoristaId,
-      veiculoId,
-    );
+    try {
+      await despacharOrdemSvo(ordem.apiId, motoristaId, veiculoId);
+    } catch(error) {
+      if(mounted.current && error instanceof ApiError && [404,409].includes(error.status)) {
+        recursos.retry();
+        await carregarOrdens();
+      }
+      throw error;
+    }
 
     if (!mounted.current) return;
-    resources.current?.abort();
-    const motorista = motoristas.find(
-      (item) => item.id === String(motoristaId),
-    );
-
-    const veiculo = veiculos.find(
-      (item) => item.id === String(veiculoId),
-    );
-
-    setOrdensAguardando((ordens) =>
-      ordens.filter(
-        (item) => item.apiId !== ordem.apiId,
-      ),
-    );
-
-    setOrdensProntas((ordens) => [
-      ...ordens,
-      {
-        ...ordem,
-        motorista:
-          motorista?.nome ?? "Motorista selecionado",
-        veiculo: veiculo
-          ? `${veiculo.modelo} - ${veiculo.placa}`
-          : "Veículo selecionado",
-      },
-    ]);
-
-    setMotoristas((lista) =>
-      lista.filter((item) => item.id !== String(motoristaId)),
-    );
-
-    setVeiculos((lista) =>
-      lista.filter((item) => item.id !== String(veiculoId)),
-    );
-
-    adicionarAtividade(
-      "Ordem despachada",
-      `${ordem.id} entrou em andamento.`,
-    );
-
+    recursos.retry();
+    recentes.retry();
     await carregarOrdens();
-  }
-
-  if (telaAtual === "nova-solicitacao") {
-    return (
-      <NovaSolicitacaoSvo
-        onConfirmar={confirmarNovaSolicitacao}
-        onVoltar={() =>
-          setTelaAtual("dashboard")
-        }
-      />
-    );
   }
 
   return (
     <DashboardSvo
-      solicitacoesRegistradas={
-        solicitacoesRegistradas
-      }
       ordensAguardando={ordensAguardando}
-      ordensProntas={ordensProntas}
-      atividades={atividades}
-      erroOrdens={erroOrdens || erroRecursos}
+      recentes={recentes}
+      erroOrdens={erroOrdens}
+      erroRecursos={recursos.error}
+      carregandoRecursos={recursos.loading}
+      onAtualizarRecursos={recursos.retry}
       carregando={carregando}
-      onTentarNovamente={() => setTentativa(t => t + 1)}
+      onTentarNovamente={() => {setTentativa(t => t + 1); recursos.retry(); recentes.retry();}}
       motoristas={motoristas}
       veiculos={veiculos}
-      onNovaSolicitacao={() =>
-        setTelaAtual("nova-solicitacao")
-      }
       onConfirmarDespacho={confirmarDespacho}
     />
   );
