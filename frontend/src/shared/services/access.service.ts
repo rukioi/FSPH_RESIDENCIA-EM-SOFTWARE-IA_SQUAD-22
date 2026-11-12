@@ -26,10 +26,24 @@ const perfisPorRota: Record<string, string[]> = {
 
 /** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
-  const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
+  const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor);
   if (solicitacao && /^[0-9]+$/.test(solicitacao.id)) {
-    return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil)
+    return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil);
   }
+
+  // const abastecimentoId = lerRotaDetalheAbastecimento(caminho);
+
+  // if (abastecimentoId !== null) {
+  //   return perfisPorRota[ROTAS.abastecimentosGestor].includes(perfil);
+  // }
+
+  // const historicoVeiculoId = lerRotaHistoricoAbastecimentosVeiculo(caminho);
+
+  // if (historicoVeiculoId !== null) {
+  //   return perfisPorRota[ROTAS.veiculosGestor].includes(perfil);
+  // }
+
+  // return perfisPorRota[caminho]?.includes(perfil) ?? false;
   const perfisExatos = perfisPorRota[caminho]
   if (perfisExatos) return perfisExatos.includes(perfil)
   const detalhe = lerDetalheSvo(caminho)
