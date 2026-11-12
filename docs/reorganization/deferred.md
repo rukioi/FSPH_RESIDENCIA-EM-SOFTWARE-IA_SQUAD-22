@@ -1,5 +1,13 @@
 # Divergências preservadas — #28
 
+## Atualização funcional — relatórios
+
+O módulo descrito em [relatórios](../api/relatorios.md) entrega consultas de viagens,
+solicitações, demandas por veículo, viagens por motorista, abastecimentos e coletas
+SVO, com exportações CSV/XLSX/PDF. RF74 permanece limitado às correções de
+quilometragem e justificativas existentes: desvios e demais ocorrências ainda
+precisam de cadastro estruturado. As seções abaixo conservam o histórico da #22.
+
 ## Estado consolidado — #33
 
 As seções por ticket abaixo preservam o histórico. #28–#32/#30 já foram entregues;

@@ -15,6 +15,11 @@ export const ROTAS = {
   indicadoresAbastecimentosGestor: "/gestor/abastecimentos/indicadores",
   solicitacoesGestor: "/gestor/solicitacoes",
   calendarioGestor: "/gestor/calendario",
+  relatoriosGestor: '/gestor/relatorios',
+  relatorioVeiculos: '/gestor/veiculos/relatorio',
+  relatorioMotoristas: '/gestor/motoristas/relatorio',
+  relatorioSolicitacoes: '/gestor/solicitacoes/relatorio',
+  relatorioAbastecimentos: '/gestor/abastecimentos/relatorio',
 
   // Solicitante
   novaSolicitacao: '/solicitante/nova-solicitacao',
@@ -23,6 +28,7 @@ export const ROTAS = {
   // SVO
   svoRaiz: '/svo',
   svoDashboard: '/svo/dashboard',
+  svoRelatorios: '/svo/relatorios',
   svoSolicitacoes: '/svo/solicitacoes',
   svoNovaSolicitacao: '/svo/solicitacoes/nova',
   svoOrdens: '/svo/ordens',

@@ -4,6 +4,477 @@ info:
   version: 0.1.0
   description: "Contrato global #32. Legados delimitados no manifesto; não define funcionalidades futuras."
 paths:
+  /api/relatorios:
+    get:
+      operationId: relatorios_get__api_relatorios
+      tags:
+        - relatorios
+      description: "Relatório completo até 5000 linhas; sem truncamento. inicio/fim YYYY-MM-DD inclusivos, até 366 dias; query estrita sem duplicatas. Frota: tipo obrigatório exceto svo. SVO: tipo=svo (padrão), exclusivo ATENDENTE_SVO. Exportações do snapshot validado na tela. Veja docs/api/relatorios.md."
+      security:
+        - bearerAuth: []
+      x-perfis: &a1
+        - ADM
+        - GESTOR_FROTA
+      x-runtime-validation: true
+      parameters:
+        - name: tipo
+          in: query
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - viagens
+              - solicitacoes
+              - veiculos
+              - motoristas
+              - ocorrencias
+              - abastecimentos
+              - svo
+        - name: inicio
+          in: query
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: fim
+          in: query
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: veiculoId
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d{0,18}$
+        - name: motoristaId
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d{0,18}$
+        - name: status
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            minLength: 1
+            maxLength: 30
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaRelatorio"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "422":
+          description: Falha atual HTTP 422
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/relatorios/recursos:
+    get:
+      operationId: relatorios_get__api_relatorios_recursos
+      tags:
+        - relatorios
+      description: Catálogo mínimo de veículo/motorista para filtros; não aceita query. Sem CPF, CNH ou contato.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecursosRelatorios"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/relatorios:
+    get:
+      operationId: relatorios_get__api_svo_relatorios
+      tags:
+        - relatorios
+      description: "Relatório completo até 5000 linhas; sem truncamento. inicio/fim YYYY-MM-DD inclusivos, até 366 dias; query estrita sem duplicatas. Frota: tipo obrigatório exceto svo. SVO: tipo=svo (padrão), exclusivo ATENDENTE_SVO. Exportações do snapshot validado na tela. Veja docs/api/relatorios.md."
+      security:
+        - bearerAuth: []
+      x-perfis: &a2
+        - ATENDENTE_SVO
+      x-runtime-validation: true
+      parameters:
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - viagens
+              - solicitacoes
+              - veiculos
+              - motoristas
+              - ocorrencias
+              - abastecimentos
+              - svo
+        - name: inicio
+          in: query
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: fim
+          in: query
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: veiculoId
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d{0,18}$
+        - name: motoristaId
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d{0,18}$
+        - name: status
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            minLength: 1
+            maxLength: 30
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaRelatorio"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "422":
+          description: Falha atual HTTP 422
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/svo/relatorios/recursos:
+    get:
+      operationId: relatorios_get__api_svo_relatorios_recursos
+      tags:
+        - relatorios
+      description: Catálogo mínimo de veículo/motorista para filtros; não aceita query. Sem CPF, CNH ou contato.
+      security:
+        - bearerAuth: []
+      x-perfis: *a2
+      x-runtime-validation: true
+      parameters: []
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecursosRelatorios"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
   /api/notificacoes:
     get:
       operationId: notificacoes_get__api_notificacoes
@@ -497,9 +968,7 @@ paths:
       description: "PATCH estrito e não vazio: origem, destino, finalidade, dataHoraSaida e qtdPassageiros. PENDENTE permanece PENDENTE; APROVADA retorna a PENDENTE. Outros estados:409. Edição e auditoria atômicas sob bloqueio de linha. Sem cancelamento ou edição de recursos/retorno."
       security:
         - bearerAuth: []
-      x-perfis: &a1
-        - ADM
-        - GESTOR_FROTA
+      x-perfis: *a1
       x-runtime-validation: true
       parameters:
         - name: id
@@ -5599,7 +6068,7 @@ paths:
       description: Foto privada JPEG ou PNG, ou null quando ausente.
       security:
         - bearerAuth: []
-      x-perfis: &a2
+      x-perfis: &a3
         - ADM
         - GESTOR_FROTA
         - ATENDENTE_SVO
@@ -5851,7 +6320,7 @@ paths:
       description: Lista completa id DESC, sem paginação. Piloto validado em runtime.
       security:
         - bearerAuth: []
-      x-perfis: *a2
+      x-perfis: *a3
       x-runtime-validation: true
       parameters: []
       responses:
@@ -6432,7 +6901,7 @@ paths:
       description: Formato atual preservado; query params não declarados são ignorados.
       security:
         - bearerAuth: []
-      x-perfis: *a2
+      x-perfis: *a3
       x-runtime-validation: false
       parameters: []
       responses:
@@ -7579,6 +8048,167 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    RespostaRelatorio:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            tipo:
+              type: string
+              enum:
+                - viagens
+                - solicitacoes
+                - veiculos
+                - motoristas
+                - ocorrencias
+                - abastecimentos
+                - svo
+            titulo:
+              type: string
+            inicio:
+              type: string
+              format: date
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            fim:
+              type: string
+              format: date
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            criterioPeriodo:
+              type: string
+            geradoEm:
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+            observacoes:
+              type: array
+              items:
+                type: string
+            filtros:
+              type: object
+              properties:
+                veiculoId:
+                  type:
+                    - string
+                    - "null"
+                motoristaId:
+                  type:
+                    - string
+                    - "null"
+                status:
+                  type:
+                    - string
+                    - "null"
+              required:
+                - veiculoId
+                - motoristaId
+                - status
+            colunas:
+              type: array
+              items:
+                type: object
+                properties:
+                  chave:
+                    type: string
+                  titulo:
+                    type: string
+                  tipo:
+                    type: string
+                    enum:
+                      - texto
+                      - numero
+                      - data
+                      - dataHora
+                required:
+                  - chave
+                  - titulo
+                  - tipo
+            linhas:
+              maxItems: 5000
+              type: array
+              items:
+                type: object
+                propertyNames:
+                  type: string
+                additionalProperties:
+                  type:
+                    - string
+                    - number
+                    - "null"
+            resumo:
+              type: object
+              properties:
+                registros:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                kmConcluidos:
+                  anyOf:
+                    - type: number
+                      minimum: 0
+                    - type: "null"
+                semQuilometragem:
+                  anyOf:
+                    - type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    - type: "null"
+              required:
+                - registros
+                - kmConcluidos
+                - semQuilometragem
+          required:
+            - tipo
+            - titulo
+            - inicio
+            - fim
+            - criterioPeriodo
+            - geradoEm
+            - observacoes
+            - filtros
+            - colunas
+            - linhas
+            - resumo
+      required:
+        - data
+    RecursosRelatorios:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            veiculos:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  placa:
+                    type: string
+                  modelo:
+                    type: string
+                required:
+                  - id
+                  - placa
+                  - modelo
+            motoristas:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  nome:
+                    type: string
+                required:
+                  - id
+                  - nome
+          required:
+            - veiculos
+            - motoristas
+      required:
+        - data
     ListaNotificacoes:
       type: object
       properties:

@@ -1,5 +1,8 @@
 # Convenções mínimas da API
 
+O módulo de [relatórios](./relatorios.md) oferece consultas por período/recurso e
+exportação CSV, XLSX e PDF do mesmo snapshot, com escopo de frota e SVO separados.
+
 O módulo de [notificações internas](./notificacoes.md) acrescenta caixa individual,
 filtros paginados, leitura e sincronização de vencimentos, com contratos puros no
 registro global. Aplicação da migration e pré-condições de rollout estão no documento do módulo.

@@ -1,9 +1,13 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 67 operações.
+Gerado por api:generate; não editar manualmente. 71 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| GET | /api/relatorios | ADM, GESTOR_FROTA | sem corpo | 200 RespostaRelatorio | 400, 401, 403, 422, 500, 405 | validado | Relatório completo até 5000 linhas; sem truncamento. inicio/fim YYYY-MM-DD inclusivos, até 366 dias; query estrita sem duplicatas. Frota: tipo obrigatório exceto svo. SVO: tipo=svo (padrão), exclusivo ATENDENTE_SVO. Exportações do snapshot validado na tela. Veja docs/api/relatorios.md. |
+| GET | /api/relatorios/recursos | ADM, GESTOR_FROTA | sem corpo | 200 RecursosRelatorios | 400, 401, 403, 500, 405 | validado | Catálogo mínimo de veículo/motorista para filtros; não aceita query. Sem CPF, CNH ou contato. |
+| GET | /api/svo/relatorios | ATENDENTE_SVO | sem corpo | 200 RespostaRelatorio | 400, 401, 403, 422, 500, 405 | validado | Relatório completo até 5000 linhas; sem truncamento. inicio/fim YYYY-MM-DD inclusivos, até 366 dias; query estrita sem duplicatas. Frota: tipo obrigatório exceto svo. SVO: tipo=svo (padrão), exclusivo ATENDENTE_SVO. Exportações do snapshot validado na tela. Veja docs/api/relatorios.md. |
+| GET | /api/svo/relatorios/recursos | ATENDENTE_SVO | sem corpo | 200 RecursosRelatorios | 400, 401, 403, 500, 405 | validado | Catálogo mínimo de veículo/motorista para filtros; não aceita query. Sem CPF, CNH ou contato. |
 | GET | /api/notificacoes | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 ListaNotificacoes | 400, 401, 500, 405 | validado | Caixa individual por sessão atual; ordem criadoEm DESC,id DESC. Query estrita. GET não materializa alertas. |
 | POST | /api/notificacoes/ler-todas | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 NotificacoesAtualizadas | 400, 401, 404, 500, 405 | validado | Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas. |
 | POST | /api/notificacoes/{id}/ler | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 NotificacoesAtualizadas | 400, 401, 404, 500, 405 | validado | Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas. |

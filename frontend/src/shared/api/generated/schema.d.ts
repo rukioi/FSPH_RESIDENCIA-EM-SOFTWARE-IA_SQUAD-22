@@ -171,6 +171,8 @@ export type FinalizarTriagemSvo =
     };
 
 export interface ApiSchemas {
+  RespostaRelatorio: RespostaRelatorio;
+  RecursosRelatorios: RecursosRelatorios;
   ListaNotificacoes: ListaNotificacoes;
   NotificacoesAtualizadas: NotificacoesAtualizadas;
   Erro: Erro;
@@ -261,6 +263,59 @@ export interface ApiSchemas {
   ReagendarSolicitacaoViagem: ReagendarSolicitacaoViagem;
   RespostaAgendaViagem: RespostaAgendaViagem;
   RespostaDisponibilidadeViagem: RespostaDisponibilidadeViagem;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaRelatorio".
+ */
+export interface RespostaRelatorio {
+  data: {
+    tipo: 'viagens' | 'solicitacoes' | 'veiculos' | 'motoristas' | 'ocorrencias' | 'abastecimentos' | 'svo';
+    titulo: string;
+    inicio: string;
+    fim: string;
+    criterioPeriodo: string;
+    geradoEm: string;
+    observacoes: string[];
+    filtros: {
+      veiculoId: string | null;
+      motoristaId: string | null;
+      status: string | null;
+    };
+    colunas: {
+      chave: string;
+      titulo: string;
+      tipo: 'texto' | 'numero' | 'data' | 'dataHora';
+    }[];
+    /**
+     * @maxItems 5000
+     */
+    linhas: {
+      [k: string]: string | number | null;
+    }[];
+    resumo: {
+      registros: number;
+      kmConcluidos: number | null;
+      semQuilometragem: number | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RecursosRelatorios".
+ */
+export interface RecursosRelatorios {
+  data: {
+    veiculos: {
+      id: string;
+      placa: string;
+      modelo: string;
+    }[];
+    motoristas: {
+      id: string;
+      nome: string;
+    }[];
+  };
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -1862,6 +1917,10 @@ export interface RespostaDisponibilidadeViagem {
 }
 
 export interface ApiOperations {
+  'relatorios_get__api_relatorios': { body: undefined; response: ApiSchemas['RespostaRelatorio'] };
+  'relatorios_get__api_relatorios_recursos': { body: undefined; response: ApiSchemas['RecursosRelatorios'] };
+  'relatorios_get__api_svo_relatorios': { body: undefined; response: ApiSchemas['RespostaRelatorio'] };
+  'relatorios_get__api_svo_relatorios_recursos': { body: undefined; response: ApiSchemas['RecursosRelatorios'] };
   'notificacoes_get__api_notificacoes': { body: undefined; response: ApiSchemas['ListaNotificacoes'] };
   'notificacoes_post__api_notificacoes_ler_todas': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };
   'notificacoes_post__api_notificacoes_id_ler': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };

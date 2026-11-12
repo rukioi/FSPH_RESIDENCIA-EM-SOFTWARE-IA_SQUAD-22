@@ -1,6 +1,12 @@
 import { ROTAS, lerDetalheSvo, lerRotaSolicitacao, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
+  [ROTAS.relatoriosGestor]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.relatorioVeiculos]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.relatorioMotoristas]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.relatorioSolicitacoes]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.relatorioAbastecimentos]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.svoRelatorios]: ['ATENDENTE_SVO'],
   [ROTAS.notificacoes]: ['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],
   [ROTAS.dashboard]: ['ADM'],
   [ROTAS.configuracoes]: ['ADM'],
