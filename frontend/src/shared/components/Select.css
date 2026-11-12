@@ -40,9 +40,13 @@
   outline-offset: 2px;
 }
 .select-personalizado__seta {
+  width: 8px;
+  height: 8px;
+  margin: -4px 3px 0 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
   flex: none;
-  font-size: 20px;
-  line-height: 1;
 }
 .select-popup[popover] {
   position: fixed;

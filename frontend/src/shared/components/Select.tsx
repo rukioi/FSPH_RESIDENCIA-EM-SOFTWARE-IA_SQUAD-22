@@ -308,9 +308,7 @@ export function Select({
         onKeyDown={teclado}
       >
         <span>{itens[indiceSelecionado]?.rotulo ?? ""}</span>
-        <span className="select-personalizado__seta" aria-hidden="true">
-          ⌄
-        </span>
+        <span className="select-personalizado__seta" aria-hidden="true" />
       </button>
       <select
         {...nativoProps}
