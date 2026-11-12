@@ -16,6 +16,13 @@ beforeEach(() => {
   vi.mocked(veiculoExiste).mockResolvedValue(true);
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.resetAllMocks(); });
+test('objeto ausente no Storage com HTTP 400 retorna foto null', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ statusCode: '404', error: 'not_found', code: 'NoSuchKey' }), { status: 400 })));
+  const res = response();
+  await consultarFoto(res, '1');
+  expect(res.writeHead).toHaveBeenCalledWith(200, expect.anything());
+  expect(res.end).toHaveBeenCalledWith(expect.stringContaining('"foto":null'));
+});
 test('valida imagem antes de chamar o armazenamento', async () => {
   const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);
   const res = response();

@@ -38,6 +38,13 @@ export async function consultarFoto(res: ServerResponse, id: string) {
     const { url, headers } = configuracao(id);
     const resposta = await fetch(url.replace('/object/', '/object/authenticated/'), { headers, redirect: 'error', signal: AbortSignal.timeout(10000) });
     if (resposta.status === 404) { enviarDados(res, 200, { foto: null }); return; }
+    if (resposta.status === 400) {
+      const falha: unknown = await resposta.json();
+      if (falha && typeof falha === 'object' && 'code' in falha && falha.code === 'NoSuchKey') {
+        enviarDados(res, 200, { foto: null }); return;
+      }
+      throw new Error();
+    }
     if (!resposta.ok || Number(resposta.headers.get('content-length')) > MAXIMO) throw new Error();
     const tipo = resposta.headers.get('content-type')?.split(';')[0];
     if (!resposta.body) throw new Error();

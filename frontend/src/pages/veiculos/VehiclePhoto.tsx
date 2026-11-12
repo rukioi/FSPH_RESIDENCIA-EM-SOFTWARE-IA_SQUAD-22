@@ -1,18 +1,46 @@
 import { useEffect, useRef, useState } from 'react';
 import { buscarFotoVeiculo, type FotoVeiculo } from '../../shared/services/veiculos.service';
 import { VehicleImage } from './VehiclePresentation';
+import { ApiError } from '../../shared/api/errors';
 
 /** Busca a foto privada por sessão; a ilustração continua disponível quando não há foto. */
 export function VehiclePhoto({ id, tipo, versao = 0, eager = false }: { id: string; tipo: string | null; versao?: number; eager?: boolean }) {
+  const container = useRef<HTMLDivElement>(null);
+  const [visivel, setVisivel] = useState(eager);
+  useEffect(() => {
+    if (eager || !('IntersectionObserver' in window)) { setVisivel(true); return; }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) { setVisivel(true); observer.disconnect(); }
+    }, { rootMargin: '240px' });
+    if (container.current) observer.observe(container.current);
+    return () => observer.disconnect();
+  }, [eager]);
+  return <div ref={container} style={{ width: '100%', height: '100%' }}>
+    {visivel ? <VehiclePhotoLoaded key={id} id={id} tipo={tipo} versao={versao} eager={eager} /> : <span className="vehicle-image" role="status">Carregando foto...</span>}
+  </div>;
+}
+
+function VehiclePhotoLoaded({ id, tipo, versao, eager }: { id: string; tipo: string | null; versao: number; eager: boolean }) {
   const [src, setSrc] = useState<string | null>(null);
+  const [estado, setEstado] = useState<'carregando' | 'pronto' | 'erro'>('carregando');
+  const [tentativa, setTentativa] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     setSrc(null);
-    void buscarFotoVeiculo(id, controller.signal).then(foto => {
-      if (!controller.signal.aborted && foto) setSrc(`data:${foto.tipo};base64,${foto.dadosBase64}`);
-    }).catch(() => { if (!controller.signal.aborted) setSrc(null); });
+    setEstado('carregando');
+    void buscarFotoVeiculo(id, controller.signal).catch(error => {
+      if (!controller.signal.aborted && error instanceof ApiError && error.status === 503) return buscarFotoVeiculo(id, controller.signal);
+      throw error;
+    }).then(foto => {
+      if (!controller.signal.aborted) {
+        if (foto) setSrc(`data:${foto.tipo};base64,${foto.dadosBase64}`);
+        setEstado('pronto');
+      }
+    }).catch(() => { if (!controller.signal.aborted) setEstado('erro'); });
     return () => controller.abort();
-  }, [id, versao]);
+  }, [id, versao, tentativa]);
+  if (estado === 'carregando') return <span className="vehicle-image" role="status">Carregando foto...</span>;
+  if (estado === 'erro') return <span className="vehicle-image"><span role="alert">Não foi possível carregar a foto.</span><button type="button" style={{ minHeight: 40 }} onClick={() => setTentativa(value => value + 1)}>Tentar novamente</button></span>;
   return <VehicleImage tipo={tipo} src={src} eager={eager} />;
 }
 
