@@ -30,7 +30,16 @@ for (const entry of ['backend/src/server.ts', 'backend/dist/server.js']) {
     const child = spawn(process.execPath, [
       ...(entry.endsWith('.ts') ? ['--import', 'tsx'] : []),
       '--input-type=module', '-e',
-      `import dotenv from 'dotenv';
+      `import net from 'node:net';
+       const originalListen = net.Server.prototype.listen;
+       net.Server.prototype.listen = function (...args) {
+         if (args[0] === 3000) {
+           args[0] = 0;
+           this.once('listening', () => process.send({ port: this.address().port }));
+         }
+         return originalListen.apply(this, args);
+       };
+       import dotenv from 'dotenv';
        dotenv.config = () => {
          process.env.DATABASE_URL = ${JSON.stringify(testUrl)};
          process.env.NODE_ENV = 'test';
@@ -54,17 +63,19 @@ for (const entry of ['backend/src/server.ts', 'backend/dist/server.js']) {
     child.unref();
     const closed = new Promise<number | null>(resolve => child.on('exit', resolve));
     let output = '';
+    let port = 0;
     try {
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Bootstrap não iniciou no prazo.')), 10000);
         child.once('exit', () => { clearTimeout(timeout); reject(new Error('Bootstrap encerrou antes de iniciar.')); });
-        child.stderr!.on('data', data => {
-          output += String(data);
-          if (output.includes('server_started')) { clearTimeout(timeout); resolve(); }
+        const ready = () => { if (port && output.includes('server_started')) { clearTimeout(timeout); resolve(); } };
+        child.on('message', message => {
+          if (message && typeof message === 'object' && 'port' in message && typeof message.port === 'number') { port = message.port; ready(); }
         });
+        child.stderr!.on('data', data => { output += String(data); ready(); });
         child.once('error', reject);
       });
-      const login = await fetch('http://127.0.0.1:3000/api/auth/login', {
+      const login = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 't1-adm@example.invalid', senha: 'T1-fixture-2026!' }),
       });

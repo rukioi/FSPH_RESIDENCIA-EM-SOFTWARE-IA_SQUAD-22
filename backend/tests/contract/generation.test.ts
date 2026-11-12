@@ -14,11 +14,14 @@ function independent(code: string) {
   return execFileSync(process.execPath,['--import','tsx','--input-type=module','-e',code],{cwd:root,env,encoding:'utf8'});
 }
 
-test.each(['api','client'])('check %s regenera e compara sem configuração de banco/segredos',kind=>{
-  const code = kind === 'api' ? "import {generateApi} from './scripts/generate-api.ts'; generateApi(true);"
-    : "import {generateClient} from './scripts/generate-client.ts'; await generateClient(true);";
-  expect(independent(code+"console.log('ok');")).toContain('ok');
-});
+for (const kind of ['api','client'] as const) {
+  // A geracao real do cliente pode ultrapassar 5 s sob carga; mantem-se limite finito.
+  test(`check ${kind} regenera e compara sem configuracao de banco/segredos`,()=>{
+    const code = kind === 'api' ? "import {generateApi} from './scripts/generate-api.ts'; generateApi(true);"
+      : "import {generateClient} from './scripts/generate-client.ts'; await generateClient(true);";
+    expect(independent(code+"console.log('ok');")).toContain('ok');
+  },kind === 'client' ? 15000 : 5000);
+}
 
 test('manifesto detecta remoção, duplicação e nova exceção não autorizada',()=>{
   expect(independent("import {readFileSync} from 'node:fs'; import {checkCoverage} from './scripts/generate-api.ts'; const manifest=JSON.parse(readFileSync('docs/api/legacy-manifest.json','utf8')); for(const operations of [manifest.operations.slice(1),[...manifest.operations,manifest.operations[0]],[...manifest.operations,{method:'GET',path:'/api/nova',reason:'extra'}]]) {try {checkCoverage({operations});throw Error('aceitou');} catch(e) {if(e.message==='aceitou')throw e;}} console.log('ok');")).toContain('ok');
@@ -32,15 +35,94 @@ test('migração #30 permite somente 404 comum de abastecimento e sua descriçã
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
-test('inventário fechado mantém 65 operações e limites de pathname compatíveis',()=>{
-  expect(operations).toHaveLength(65);
+test('inventory preserves 81 operations and pathname limits',()=>{
+  expect(operations).toHaveLength(81);
   for (const method of ['patch','post'] as const) {
     expect(operations.filter(o => o.method === method && o.path === '/api/svo/solicitacoes/{id}/triagem')).toHaveLength(1);
   }
 });
 
-test('inventário mantém as 54 operações fora de solicitações e as onze de solicitações',()=>{
-  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(54);
+test('inventory preserves previous operations and adds eleven trip operations',()=>{
+  // Operacoes do OpenAPI da base 1e5f2bb, independentes do HEAD e do historico Git.
+  const anterior = [
+    "delete /api/motoristas/{id}",
+    "delete /api/veiculos/{id}",
+    "get /api/abastecimentos",
+    "get /api/abastecimentos/{id}/comprovante",
+    "get /api/admin/auditoria/logs",
+    "get /api/admin/usuarios",
+    "get /api/auth/sessao",
+    "get /api/dashboard",
+    "get /api/dashboard/gestor",
+    "get /api/dashboard/graficos",
+    "get /api/dashboard/pendencias",
+    "get /api/documentos",
+    "get /api/documentos/pendencias",
+    "get /api/motoristas",
+    "get /api/notificacoes",
+    "get /api/solicitacoes-viagem",
+    "get /api/solicitacoes-viagem/agenda",
+    "get /api/solicitacoes-viagem/disponibilidade",
+    "get /api/solicitacoes-viagem/{id}",
+    "get /api/solicitacoes-viagem/{id}/historico",
+    "get /api/svo/dashboard",
+    "get /api/svo/dashboard/atividades",
+    "get /api/svo/dashboard/filas",
+    "get /api/svo/ordens-coleta",
+    "get /api/svo/ordens-coleta/minhas",
+    "get /api/svo/ordens-coleta/minhas/{id}",
+    "get /api/svo/ordens-coleta/paginadas",
+    "get /api/svo/ordens-coleta/{id}",
+    "get /api/svo/ordens-coleta/{id}/historico",
+    "get /api/svo/recursos-disponiveis",
+    "get /api/svo/solicitacoes",
+    "get /api/svo/solicitacoes/paginadas",
+    "get /api/svo/solicitacoes/{id}",
+    "get /api/svo/solicitacoes/{id}/historico",
+    "get /api/svo/veiculos/{id}/ocupacao",
+    "get /api/veiculos",
+    "patch /api/admin/usuarios/{id}/status",
+    "patch /api/motoristas/{id}",
+    "patch /api/solicitacoes-viagem/{id}",
+    "patch /api/svo/ordens-coleta/{id}/cancelar",
+    "patch /api/svo/ordens-coleta/{id}/concluir",
+    "patch /api/svo/ordens-coleta/{id}/despachar",
+    "patch /api/svo/ordens-coleta/{id}/etapa",
+    "patch /api/svo/ordens-coleta/{id}/iniciar",
+    "patch /api/svo/solicitacoes/{id}/triagem",
+    "patch /api/veiculos/{id}",
+    "post /api/abastecimentos",
+    "post /api/admin/usuarios",
+    "post /api/auth/login",
+    "post /api/documentos",
+    "post /api/motoristas",
+    "post /api/notificacoes/ler-todas",
+    "post /api/notificacoes/sincronizar",
+    "post /api/notificacoes/{id}/ler",
+    "post /api/solicitacoes-viagem",
+    "post /api/solicitacoes-viagem/{id}/agendar",
+    "post /api/solicitacoes-viagem/{id}/aprovar",
+    "post /api/solicitacoes-viagem/{id}/reagendar",
+    "post /api/solicitacoes-viagem/{id}/rejeitar",
+    "post /api/svo/solicitacoes",
+    "post /api/svo/solicitacoes/{id}/triagem",
+    "post /api/veiculos",
+    "put /api/admin/usuarios/{id}",
+    "put /api/motoristas/{id}",
+    "put /api/veiculos/{id}",
+  ];
+  const existentes = operations.filter(o=>o.modulo!=='viagens' && !o.path.startsWith('/api/motorista/notificacoes')).map(o=>o.method+' '+o.path).sort();
+  expect(existentes).toEqual(anterior);
+  expect(operations.filter(o=>o.path.startsWith('/api/motorista/notificacoes')).map(o=>o.method+' '+o.path).sort()).toEqual(['get /api/motorista/notificacoes','patch /api/motorista/notificacoes/{id}/lida']);
+  const viagens = operations.filter(o=>o.modulo==='viagens').map(o=>o.method+' '+o.path).sort();
+  expect(viagens).toEqual([
+    'get /api/viagens', 'get /api/viagens/evidencias/{id}', 'get /api/viagens/minhas', 'get /api/viagens/pendentes-validacao',
+    'get /api/viagens/{id}', 'get /api/viagens/{id}/correcoes', 'get /api/viagens/{id}/evidencias',
+    'get /api/viagens/{id}/historico', 'patch /api/viagens/{id}/concluir',
+    'patch /api/viagens/{id}/corrigir-quilometragem', 'patch /api/viagens/{id}/encerrar', 'patch /api/viagens/{id}/iniciar',
+    'patch /api/viagens/{id}/validar', 'post /api/viagens',
+  ].sort());
+  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(70);
   expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {

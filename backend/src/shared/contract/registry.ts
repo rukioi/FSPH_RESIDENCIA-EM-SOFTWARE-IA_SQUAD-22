@@ -1,7 +1,9 @@
+import { evidenciaMetadadosSchema } from '../../modules/viagens/viagens.evidencias.schemas.js';
 import { z } from 'zod';
+import { viagensSchemas, statusViagemSchema } from '../../modules/viagens/viagens.schemas.js';
 import { notificacoesSchemas } from '../../modules/notificacoes/notificacoes.schemas.js';
 import {parametrosPeriodoDashboard,notasDashboardPeriodo} from '../../modules/dashboard/dashboard.indicadores.schemas.js';
-import { erro, erroString, erroSvo, sucessoExclusao, gestor, consultaFrota } from './schemas.js';
+import { erro, erroString, erroSvo, sucessoExclusao, gestor, consultaFrota, meta as schemasMeta } from './schemas.js';
 import { veiculosSchemas } from '../../modules/veiculos/veiculos.schemas.js';
 import { authSchemas } from '../../modules/auth/auth.schemas.js';
 import { usuariosSchemas } from '../../modules/usuarios/usuarios.schemas.js';
@@ -14,15 +16,15 @@ import { svoSchemas } from '../../modules/svo/svo.schemas.js';
 import { svoConsultasSchemas } from '../../modules/svo/svo.consultas.schemas.js';
 import { svoDashboardSchemas } from '../../modules/svo/svo.dashboard.schemas.js';
 import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas.js';
-import { solicitacoesSchemas, statusSolicitacao } from '../../modules/solicitacoes/solicitacoes.schemas.js';
+import { solicitacoesSchemas, statusSolicitacao, idRecursoSchema } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
-export const schemas = { ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
+export const schemas = { ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
   ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
-export type Modulo = 'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
+export type Modulo = 'viagens'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
   id: string; modulo: Modulo; method: 'get'|'post'|'put'|'patch'|'delete'; path: string;
   perfis: string[]; response: SchemaName; status: number; body?: SchemaName;
@@ -36,6 +38,24 @@ const op = (modulo: Modulo, method: Operacao['method'], path: string, response: 
   notes: 'Formato atual preservado; query params não declarados são ignorados.', ...options,
 });
 export const operations: Operacao[] = [
+  op('viagens','post','/api/viagens','DetalheViagem',gestor,{status:200,body:'CriarViagem',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],notes:'Retorna viagem criada no agendamento; pedido sem viagem exige analise manual.'}),
+  op('viagens','get','/api/viagens/pendentes-validacao','ListaViagens',gestor,{runtimeValidation:true,errors:[400,401,403,500],notes:'Viagens concluidas ainda nao validadas, com paginacao.',query:[{name:'pagina',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('viagens','patch','/api/viagens/{id}/encerrar','RespostaExecucaoViagem',['MOTORISTA'],{body:'ExecutarViagem',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],notes:'Encerra a viagem com quilometragem e foto obrigatorias.'}),
+  op('viagens','get','/api/viagens/{id}/evidencias','ListaEvidenciasViagem',['ADM','GESTOR_FROTA','MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Metadados paginados de uma viagem acessível, sem bytes.',query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('viagens','get','/api/viagens/evidencias/{id}','EvidenciaArquivo',['ADM','GESTOR_FROTA','MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Download autenticado da evidência; motorista apenas da viagem atribuída.'}),
+  op('viagens','get','/api/viagens','ListaViagens',gestor,{runtimeValidation:true,errors:[400,401,403,500],notes:'Viagens institucionais por status e período de início real; ordem id DESC, paginação. Datas ISO com offset; intervalo [inicio,fim).',query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'status',required:false,schema:statusViagemSchema},{name:'motoristaId',required:false,schema:idRecursoSchema},{name:'inicio',required:false,schema:dataHoraInstitucionalSchema},{name:'fim',required:false,schema:dataHoraInstitucionalSchema}]}),
+  op('viagens','get','/api/viagens/{id}','DetalheViagem',['ADM','GESTOR_FROTA','MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Motorista somente da viagem atribuída; ausente ou inacessível retorna 404.'}),
+  op('viagens','get','/api/viagens/{id}/historico','HistoricoViagem',['ADM','GESTOR_FROTA','MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Eventos reais de execução e validação com vínculo à solicitação; ordem data_hora e id. Sem inferir fuso dos registros de auditoria.',query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('viagens','patch','/api/viagens/{id}/corrigir-quilometragem','RespostaCorrecaoViagem',gestor,{body:'CorrigirQuilometragem',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],notes:'Somente concluída; justificativa obrigatória. A confirmação explícita só permite atualizar o odômetro em última leitura verificável; divergências retornam 409.'}),
+  op('viagens','get','/api/viagens/{id}/correcoes','ListaCorrecoesViagem',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Versões de correção em ordem crescente, com justificativa e responsável.',query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('viagens','patch','/api/viagens/{id}/validar','ValidacaoViagem',gestor,{runtimeValidation:true,errors:[400,401,403,404,409,500],notes:'Somente viagem concluída ainda não validada. Ator pela sessão; validação e auditoria na mesma transação.'}),
+  ...(['iniciar','concluir'] as const).map(acao=>op('viagens','patch',`/api/viagens/{id}/${acao}`,'RespostaExecucaoViagem',['MOTORISTA'],{body:'ExecutarViagem',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],notes:'Exclusivo do motorista atribuído; quilometragem e foto JPEG/PNG obrigatórias, até 1 MiB. Transição, evidência e auditoria atômicas.'})),
+  op('viagens','get','/api/viagens/minhas','ListaMinhasViagens',['MOTORISTA'],{
+    runtimeValidation:true, errors:[400,401,403,500], notes:'Viagens institucionais vinculadas ao motorista da sessão. Paginação ordenada por id decrescente. Não inclui ordens SVO.',
+    query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+      {name:'status',required:false,schema:statusViagemSchema}]}),
+  op('notificacoes','get','/api/motorista/notificacoes','ListaNotificacoes',['MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,500],notes:'Caixa individual do motorista.',query:[{name:'pagina',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'lida',required:false,schema:z.enum(['true','false'])}]}),
+  op('notificacoes','patch','/api/motorista/notificacoes/{id}/lida','NotificacoesAtualizadas',['MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Leitura idempotente da notificacao propria.'}),
   op('notificacoes','get','/api/notificacoes','ListaNotificacoes',['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],{
     runtimeValidation:true,errors:[400,401,500],notes:'Caixa individual por sessão atual; ordem criadoEm DESC,id DESC. Query estrita. GET não materializa alertas.',
     query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},

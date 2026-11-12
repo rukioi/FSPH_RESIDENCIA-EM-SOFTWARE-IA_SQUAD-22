@@ -9,9 +9,12 @@ export type EventoAtividade =
   | { operacao: 'solicitacao_confirmada' | 'solicitacao_registrada'; recursoId: string }
   | { operacao: 'solicitacao_viagem_criada'; recursoId: string }
   | { operacao: 'solicitacao_viagem_aprovada' | 'solicitacao_viagem_reprovada'; recursoId: string }
+  | { operacao: 'solicitacao_viagem_quilometragem_corrigida'; recursoId: string }
+  | { operacao: 'solicitacao_viagem_validada'; recursoId: string }
+  | { operacao: 'solicitacao_viagem_iniciada' | 'solicitacao_viagem_concluida'; recursoId: string }
   | { operacao: 'solicitacao_viagem_agendada'; recursoId: string }
   | { operacao: 'solicitacao_viagem_editada'; recursoId: string }
-  | { operacao: 'solicitacao_viagem_reagendada'; recursoId: string }
+  | { operacao: 'solicitacao_viagem_reagendada'; recursoId: string; houveAlteracao?: boolean }
   | { operacao: 'triagem_rascunho_salvo' | 'triagem_confirmada_svo' | 'triagem_encaminhada_iml'; recursoId: string }
   | { operacao: 'ordem_gerada'; recursoId: string; solicitacaoId: string }
   | { operacao: 'ordem_despachada'|'ordem_iniciada'|'ordem_transporte'|'ordem_concluida'|'ordem_cancelada'; recursoId: string };
@@ -50,6 +53,10 @@ function descrever(evento: EventoAtividade): string {
     case 'solicitacao_viagem_criada': return `Criou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_aprovada': return `Aprovou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_reprovada': return `Reprovou a solicitação de transporte ID ${id}`;
+    case 'solicitacao_viagem_quilometragem_corrigida': return `Corrigiu a quilometragem da viagem da solicitação ID ${id}`;
+    case 'solicitacao_viagem_validada': return `Validou a viagem da solicitação ID ${id}`;
+    case 'solicitacao_viagem_iniciada': return `Iniciou a viagem da solicitação ID ${id}`;
+    case 'solicitacao_viagem_concluida': return `Concluiu a viagem da solicitação ID ${id}`;
     case 'solicitacao_viagem_agendada': return `Agendou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_editada': return `Editou a solicitação de transporte ID ${id}`;
     case 'solicitacao_viagem_reagendada': return `Reagendou a solicitação de transporte ID ${id}`;
@@ -73,6 +80,10 @@ export async function registrarAtividades(tx: postgres.TransactionSql, usuarioId
       case 'solicitacao_viagem_aprovada':
       case 'solicitacao_viagem_reprovada':
       case 'solicitacao_viagem_editada':
+      case 'solicitacao_viagem_quilometragem_corrigida':
+      case 'solicitacao_viagem_validada':
+      case 'solicitacao_viagem_iniciada':
+      case 'solicitacao_viagem_concluida':
       case 'solicitacao_viagem_agendada':
       case 'solicitacao_viagem_reagendada':
         return identificador(evento.recursoId);
@@ -86,6 +97,7 @@ export async function registrarAtividades(tx: postgres.TransactionSql, usuarioId
       tx,
       identificador(usuarioId),
       descricoes,
+      eventos.map(evento => evento.operacao),
       solicitacoes.some(id => id !== null) ? solicitacoes : undefined
     );
   }

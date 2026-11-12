@@ -88,6 +88,20 @@ test('imagem protegida é persistida atomicamente e devolvida apenas no download
   expect((await fetch(base+'/api/abastecimentos/99999999/comprovante',{headers:{Authorization:`Bearer ${token}`}})).status).toBe(404);
 });
 
+test.each([
+  {tipo:'image/png',nome:'integridade.png',bytes:Buffer.from([137,80,78,71,13,10,26,10,0,92,255,42])},
+  {tipo:'image/jpeg',nome:'integridade.jpg',bytes:Buffer.from([255,216,255,0,92,128,255,217])},
+])('bytes originais persistidos para $tipo e retornados no download',async ({tipo,nome,bytes})=>{
+  const response=await call({...input,comprovante:{nome,tipo,dadosBase64:bytes.toString('base64')}});
+  expect(response.status).toBe(201);
+  const {data}=await response.json();
+  const [stored]=await sql`SELECT encode(dados,'hex') AS hex,octet_length(dados)::int AS tamanho FROM public.abastecimento_comprovante WHERE abastecimento_id=${data.id}`;
+  expect(stored).toEqual({hex:bytes.toString('hex'),tamanho:bytes.length});
+  const download=await fetch(base+`/api/abastecimentos/${data.id}/comprovante`,{headers:{Authorization:`Bearer ${token}`}});
+  expect(download.status).toBe(200);expect(download.headers.get('content-type')).toBe(tipo);
+  expect(Buffer.from(await download.arrayBuffer())).toEqual(bytes);
+});
+
 test('rejeita comprovantes inválidos e preserva cadastro legado sem imagem', async () => {
   for (const comprovante of [
     {nome:'../foto.png',tipo:'image/png',dadosBase64:'iVBORw0KGgo='},
@@ -113,21 +127,26 @@ test('comprovantes não concedem acesso direto a papéis públicos', async () =>
 
 
 test('falha na gravação da imagem reverte o abastecimento', async () => {
-  // DDL de ensaio exige o dono da tabela (conexão administrativa do harness) e sempre é removida.
+  // O dono da tabela cria o gatilho de teste; a limpeza ocorre mesmo em caso de falha.
   const admin = await verifiedSql(true);
+  let funcaoCriada = false;
+  let triggerCriado = false;
   try {
     await admin.unsafe(`CREATE FUNCTION public.test_falha_comprovante() RETURNS trigger LANGUAGE plpgsql AS $$
       BEGIN RAISE EXCEPTION 'fixture'; END $$`);
+    funcaoCriada = true;
     await admin.unsafe(`CREATE TRIGGER test_falha_comprovante BEFORE INSERT ON public.abastecimento_comprovante
       FOR EACH ROW EXECUTE FUNCTION public.test_falha_comprovante()`);
+    triggerCriado = true;
     const [antes] = await sql`select count(*)::int as total from abastecimento where veiculo_id=30001`;
     const response = await call({...input,comprovante:{nome:'foto.png',tipo:'image/png',dadosBase64:'iVBORw0KGgo='}});
     expect(response.status).toBe(500);
     const [depois] = await sql`select count(*)::int as total from abastecimento where veiculo_id=30001`;
     expect(depois.total).toBe(antes.total);
   } finally {
-    await admin.unsafe('DROP TRIGGER IF EXISTS test_falha_comprovante ON public.abastecimento_comprovante');
-    await admin.unsafe('DROP FUNCTION IF EXISTS public.test_falha_comprovante()');
-    await admin.end();
+    try {
+      if (triggerCriado) await admin.unsafe('DROP TRIGGER test_falha_comprovante ON public.abastecimento_comprovante');
+      if (funcaoCriada) await admin.unsafe('DROP FUNCTION public.test_falha_comprovante()');
+    } finally { await admin.end(); }
   }
 });

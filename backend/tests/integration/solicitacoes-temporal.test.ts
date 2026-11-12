@@ -18,9 +18,10 @@ beforeAll(async()=>{
     await tx`INSERT INTO public.usuario(id,nome,email,senha_hash,perfil,ativo) VALUES
       (7150001,'Fixture Temporal Solicitante','s7-temporal-a@example.invalid','sem-login','SOLICITANTE_INTERNO',true),
       (7150002,'Fixture Temporal Gestor','s7-temporal-g@example.invalid','sem-login','GESTOR_FROTA',true)`;
-    await tx`INSERT INTO public.motorista(id,nome,cnh,categoria_cnh,validade_cnh,status) VALUES
-      (7150101,'Fixture Temporal','TEMP-7150101','D','2099-12-31','DISPONIVEL'),
-      (7150102,'Fixture Temporal Legado','TEMP-7150102','D','2099-12-31','DISPONIVEL')`;
+    await tx`INSERT INTO public.usuario(id,nome,email,senha_hash,perfil,ativo) VALUES (7150011,'Fixture motorista','temporal-7150011@example.invalid','fixture','MOTORISTA',true),(7150012,'Fixture motorista','temporal-7150012@example.invalid','fixture','MOTORISTA',true)`;
+    await tx`INSERT INTO public.motorista(id,usuario_id,nome,cnh,categoria_cnh,validade_cnh,status) VALUES
+      (7150101,7150011,'Fixture Temporal','TEMP-7150101','D','2099-12-31','DISPONIVEL'),
+      (7150102,7150012,'Fixture Temporal Legado','TEMP-7150102','D','2099-12-31','DISPONIVEL')`;
     await tx`INSERT INTO public.veiculo(id,placa,marca,modelo,ano,tipo,status) VALUES
       (7150201,'S7T001A','Fixture','Temporal',2026,'PASSEIO','DISPONIVEL'),
       (7150202,'S7T002A','Fixture','Temporal Legado',2026,'PASSEIO','DISPONIVEL')`;
@@ -36,10 +37,12 @@ afterAll(async()=>{
     if(server.listening)await new Promise<void>(resolve=>server.close(()=>resolve()));
     if(fixtures)await sql.begin(async tx=>{
       await tx`DELETE FROM public.log_atividade WHERE solicitacao_viagem_id=ANY(${pedidos}::bigint[])`;
+      await tx`DELETE FROM public.notificacao WHERE viagem_id IN (SELECT id FROM public.viagem WHERE solicitacao_id=ANY(${pedidos}::bigint[]))`;
+      await tx`DELETE FROM public.viagem WHERE solicitacao_id=ANY(${pedidos}::bigint[])`;
       await tx`DELETE FROM public.solicitacao_viagem WHERE id=ANY(${pedidos}::bigint[])`;
       await tx`DELETE FROM public.motorista WHERE id IN(7150101,7150102)`;
       await tx`DELETE FROM public.veiculo WHERE id IN(7150201,7150202)`;
-      await tx`DELETE FROM public.usuario WHERE id IN(7150001,7150002)`;
+      await tx`DELETE FROM public.usuario WHERE id IN(7150001,7150002,7150011,7150012)`;
     });
   }finally{
     if(previousTZ===undefined)delete process.env.TZ;else process.env.TZ=previousTZ;

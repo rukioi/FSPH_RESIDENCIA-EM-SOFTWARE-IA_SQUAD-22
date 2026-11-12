@@ -80,7 +80,8 @@ CREATE TABLE public."log_atividade" (
   "usuario_id" bigint,
   "descricao" text NOT NULL,
   "data_hora" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-  "solicitacao_viagem_id" bigint
+  "solicitacao_viagem_id" bigint,
+  "tipo_evento" text
 );
 ALTER TABLE public."log_atividade" OWNER TO "postgres";
 CREATE TABLE public."motorista" (

@@ -14,8 +14,10 @@ beforeEach(()=>{
   mocks.tx.mockReset();mocks.begin.mockClear();
   mocks.tx.mockImplementation(async parts=>{
     const sql=parts.join('?');
+    if (parts.join('').includes('SELECT usuario_id::text FROM public.motorista')) return [{usuario_id:'99'}];
+    if (parts.join('').includes('SELECT ativo FROM public.usuario')) return [{ativo:true}];
     if(sql.includes('AS inicio'))return[intervalo];
-    if(sql.includes('SELECT status,motorista_id'))return[{status:'AGENDADA',motorista_id:'9',veiculo_id:'12'}];
+    if(sql.includes('SELECT status,motorista_id') && sql.includes('FROM public.solicitacao_viagem'))return[{status:'AGENDADA',motorista_id:'9',veiculo_id:'12'}];
     if(sql.includes('SELECT id, status'))return[{id:'2',status:'DISPONIVEL'}];
     if(sql.includes('UPDATE public.solicitacao_viagem'))return[resultado];
     if(sql.includes('count(*)'))return[{total:'0'}];
@@ -60,10 +62,10 @@ test('reagendamento bloqueia recursos antigos/novos em ordem numérica e ignora 
   expect(update[0].join('?')).toContain("WHERE id=? AND status='AGENDADA'");
   expect(update[0].join('?')).toContain("clock_timestamp() AT TIME ZONE 'America/Maceio'");
   expect(update.slice(1)).toEqual([intervalo.inicio,intervalo.fim,'2','4','1024',intervalo.inicio]);
-  // O log de atividade é seguido pelas notificações na mesma transação; localiza o INSERT pelo SQL.
-  const log=mocks.tx.mock.calls.find(([parts])=>parts.join('').includes('(usuario_id, descricao, solicitacao_viagem_id, data_hora)'))!;
-  expect(log.slice(1)).toEqual(['42',['Reagendou a solicitação de transporte ID 1024'],['1024']]);
-  expect(mocks.tx.mock.calls.indexOf(log)).toBeGreaterThan(mocks.tx.mock.calls.indexOf(update));
+  const auditoria=mocks.tx.mock.calls.filter(([parts])=>parts.join('').includes('INSERT INTO public.log_atividade'));
+  expect(auditoria).toHaveLength(1);
+  expect(auditoria[0].slice(1)).toEqual(['42',['Reagendou a solicitação de transporte ID 1024'],['solicitacao_viagem_reagendada'],['1024']]);
+  expect(mocks.tx.mock.calls.indexOf(auditoria[0])).toBeGreaterThan(mocks.tx.mock.calls.indexOf(update));
 });
 test('recursos iguais são bloqueados uma vez por tipo antes da revalidação',async()=>{
   mocks.tx.mockResolvedValueOnce([{status:'AGENDADA',motorista_id:'2',veiculo_id:'4'}]);

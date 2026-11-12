@@ -132,3 +132,9 @@ nova é do agendamento institucional, preservando o fluxo SVO fora das verifica�
 de disponibilidade autorizadas.
 
 Testes HTTP reais verificam agendamento, IDs assinados, horários, duplicidade, falha de auditoria com rollback e disputas concorrentes. solicitacoes-aceite.test.ts disputa o mesmo motorista/veículo entre despacho SVO e agendamento institucional: somente uma alocação vence. Reconciliação novo/equivalente/divergente também é ensaiada no PostgreSQL isolado, conforme o procedimento de rollout.
+
+### Integração com viagem institucional
+
+O agendamento cria uma viagem AGENDADA vinculada à solicitação, ao motorista e ao veículo na mesma transação da reserva e auditoria. Uma viagem preexistente impede o agendamento com 409. Saída e retorno previstos permanecem na solicitação; início e fim reais da viagem não são preenchidos no agendamento. A unicidade por solicitação impede duplicação concorrente.
+
+O motorista selecionado deve possuir conta de usuário vinculada e ativa; caso contrário, o agendamento ou reagendamento retorna HTTP 409. A verificação é feita na transação da reserva.
