@@ -60,10 +60,7 @@ test('reagendamento bloqueia recursos antigos/novos em ordem numérica e ignora 
   expect(update[0].join('?')).toContain("WHERE id=? AND status='AGENDADA'");
   expect(update[0].join('?')).toContain("clock_timestamp() AT TIME ZONE 'America/Maceio'");
   expect(update.slice(1)).toEqual([intervalo.inicio,intervalo.fim,'2','4','1024',intervalo.inicio]);
-  // O log de atividade é seguido pelas notificações na mesma transação; localiza o INSERT pelo SQL.
-  const log=mocks.tx.mock.calls.find(([parts])=>parts.join('').includes('(usuario_id, descricao, solicitacao_viagem_id, data_hora)'))!;
-  expect(log.slice(1)).toEqual(['42',['Reagendou a solicitação de transporte ID 1024'],['1024']]);
-  expect(mocks.tx.mock.calls.indexOf(log)).toBeGreaterThan(mocks.tx.mock.calls.indexOf(update));
+  expect(mocks.tx.mock.calls.at(-1)!.slice(1)).toEqual(['42',['Reagendou a solicitação de transporte ID 1024'],['1024']]);
 });
 test('recursos iguais são bloqueados uma vez por tipo antes da revalidação',async()=>{
   mocks.tx.mockResolvedValueOnce([{status:'AGENDADA',motorista_id:'2',veiculo_id:'4'}]);

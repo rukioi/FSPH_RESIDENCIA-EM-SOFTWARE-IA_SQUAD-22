@@ -8,8 +8,7 @@ const mocks=vi.hoisted(()=>{
 vi.mock('../../src/database/connection.js',()=>({sql:Object.assign(mocks.db,{begin:mocks.begin})}));
 import {consultarDetalhes,consultarHistorico} from '../../src/modules/solicitacoes/solicitacoes.detalhes.repository.js';
 import {registrarAtividades,type EventoAtividade} from '../../src/modules/auditoria/auditoria.service.js';
-// Consultas sem retorno programado (ex.: notificações após o log) devolvem lista vazia, como o driver.
-beforeEach(()=>{mocks.db.mockReset();mocks.db.mockResolvedValue([]);mocks.begin.mockClear();});
+beforeEach(()=>{mocks.db.mockReset();mocks.begin.mockClear();});
 
 test.each(['42',null])('detalhes aplicam escopo %s no SQL e projetam só dados mínimos',async escopo=>{
   mocks.db.mockResolvedValueOnce([{id:'1024',finalidade:null}]);

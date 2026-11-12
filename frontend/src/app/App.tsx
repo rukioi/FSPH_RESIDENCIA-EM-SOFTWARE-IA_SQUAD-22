@@ -5,6 +5,8 @@ import { Notificacoes } from '../features/notificacoes/Notificacoes'
 import type { ComponentType } from 'react'
 import '../shared/styles/tema.css'
 
+import LoginMotorista from '../pages/motorista/Minhas-Viagens'
+
 import { Link, navegar, useCaminho } from './routes/router'
 import { ROTAS, lerDetalheSvo, lerRotaSolicitacao } from './routes/rotas'
 import { AuthSkeleton } from './AuthSkeleton'
@@ -14,14 +16,13 @@ import { perfilPodeAcessar } from '../shared/services/access.service'
 import { GestorLayout } from '../layouts/gestor/GestorLayout'
 import { SvoLayout } from '../layouts/svo/SvoLayout'
 
-import { Login } from '../pages/login/Login'
 import { DashboardAdmin } from '../pages/administrador/DashboardAdm'
 import { Configuracoes } from '../pages/administrador/Configuracoes'
 import { Auditoria } from '../pages/administrador/Auditoria'
 import { Dashboard } from '../pages/gerente/DashboardGestor'
-import { Veiculos } from "../pages/veiculos/Veiculos";
-import { Motoristas } from "../pages/motorista/Motoristas";
-import { Abastecimentos } from "../pages/abastecimentos/Abastecimentos";
+import { Veiculos } from '../pages/veiculos/Veiculos'
+import { Motoristas } from '../pages/motorista/Motoristas'
+import { Abastecimentos } from '../pages/abastecimentos/Abastecimentos'
 
 import { SolicitanteLayout } from '../layouts/solicitante/SolicitanteLayout'
 import { Solicitacoes } from '../pages/gerente/Solicitacoes'
@@ -34,8 +35,13 @@ import { EditarSolicitacao } from '../features/solicitacoes/EditarSolicitacao'
 import { telaPreviewSvo } from '../features/svo/preview'
 import { MinhasOrdensSvo, ExecucaoSvo } from '../features/svo/EquipeSvo'
 import { DetalheSolicitacao as DetalheSolicitacaoSvo, DetalheOrdem } from '../features/svo/DetalhesSvo'
-import { Svo } from '../features/svo/Svo';
-import { CadastroSolicitacaoSvo, ListaOrdensIntegrada, ListaSolicitacoesIntegrada, TriagemSvo } from '../features/svo/SvoOperacional'
+import { Svo } from '../features/svo/Svo'
+import {
+  CadastroSolicitacaoSvo,
+  ListaOrdensIntegrada,
+  ListaSolicitacoesIntegrada,
+  TriagemSvo,
+} from '../features/svo/SvoOperacional'
 import {
   buscarSessao,
   destinoDoPerfil,
@@ -69,7 +75,9 @@ function AppContent() {
     if (previewSvo) {
       // Navegação interna: a entrada de desenvolvimento monta a mesma prévia do acesso direto.
       window.location.reload()
-      return
+      return () => {
+        ativa = false
+      }
     }
 
     if (!obterToken()) {
@@ -95,7 +103,7 @@ function AppContent() {
         return
       }
 
-      if (caminho.startsWith('/svo/') && ['ATENDENTE_SVO','MOTORISTA'].includes(usuario.perfil)) return
+      if (caminho.startsWith('/svo/') && ['ATENDENTE_SVO', 'MOTORISTA'].includes(usuario.perfil)) return
 
       if (caminho === ROTAS.login || !perfilPodeAcessar(caminho, usuario.perfil)) {
         try {
@@ -120,22 +128,23 @@ function AppContent() {
 
   if (previewSvo) return null
 
-  // Tela de login
+  // Tela de login temporária para teste visual.
   if (caminho === ROTAS.login) {
-    return <Login />
+    return <LoginMotorista />
   }
 
   if (!obterToken()) {
-    return <Login />
+    return <LoginMotorista />
   }
 
   if (caminhoVerificado === caminho && sessao && caminho.startsWith('/svo/') &&
-    ['ATENDENTE_SVO','MOTORISTA'].includes(sessao.perfil) && !perfilPodeAcessar(caminho, sessao.perfil)) {
+    ['ATENDENTE_SVO', 'MOTORISTA'].includes(sessao.perfil) && !perfilPodeAcessar(caminho, sessao.perfil)) {
     const conhecida = Object.values(ROTAS).some(rota => rota === caminho) || lerDetalheSvo(caminho)
     return <SvoLayout usuario={sessao}><h1>{conhecida ? 'Acesso negado' : 'Página não encontrada'}</h1>
       <p role="alert">{conhecida ? 'Seu perfil não tem acesso a esta página.' : 'Confira o endereço da página.'}</p>
       <Link className="svo-atalho" para={destinoDoPerfil(sessao.perfil)}>Voltar ao início</Link></SvoLayout>
   }
+
   if (caminhoVerificado !== caminho || !sessao || !perfilPodeAcessar(caminho, sessao.perfil)) {
     if (sessao && perfilPodeAcessar(caminho, sessao.perfil) && caminho.startsWith('/gestor/')) {
       return <GestorLayout usuario={sessao}><AuthSkeleton caminho={caminho} somenteConteudo /></GestorLayout>
@@ -157,7 +166,7 @@ function AppContent() {
     )
   }
 
-// Telas de Veículos e Motoristas do Gestor de Frota
+  // Telas de Veículos e Motoristas do Gestor de Frota
   if (caminho === ROTAS.veiculosGestor) {
     return (
       <GestorLayout usuario={sessao}>
@@ -268,19 +277,18 @@ function AppContent() {
   }
   const PaginaSvo = paginasSvo[caminho]
   if (PaginaSvo) return <SvoLayout usuario={sessao}><PaginaSvo key={caminho} /></SvoLayout>
+
   if (detalhe) {
     const { id, tela } = detalhe
     return <SvoLayout usuario={sessao} key={caminho}>
-      {tela === 'solicitacao' && <DetalheSolicitacaoSvo id={id}/>}
-      {tela === 'triagem' && <TriagemSvo id={id}/>}
-      {tela === 'ordem' && <DetalheOrdem id={id}/>}
-      {tela === 'execucao' && <ExecucaoSvo id={id} motorista={sessao.nome ?? '#'+sessao.id}/>}
+      {tela === 'solicitacao' && <DetalheSolicitacaoSvo id={id} />}
+      {tela === 'triagem' && <TriagemSvo id={id} />}
+      {tela === 'ordem' && <DetalheOrdem id={id} />}
+      {tela === 'execucao' && <ExecucaoSvo id={id} motorista={sessao.nome ?? '#' + sessao.id} />}
     </SvoLayout>
   }
-  if (
-    caminho === ROTAS.svoRaiz ||
-    caminho === ROTAS.svoDashboard
-  ) {
+
+  if (caminho === ROTAS.svoRaiz || caminho === ROTAS.svoDashboard) {
     return (
       <SvoLayout usuario={sessao}>
         <Svo />

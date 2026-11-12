@@ -107,13 +107,6 @@
       "forceRls": false
     },
     {
-      "acl": "{postgres=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
-      "rls": true,
-      "name": "abastecimento_comprovante",
-      "owner": "supabase_admin",
-      "forceRls": false
-    },
-    {
       "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
       "rls": false,
       "name": "documento_veiculo",
@@ -132,13 +125,6 @@
       "rls": false,
       "name": "motorista",
       "owner": "postgres",
-      "forceRls": false
-    },
-    {
-      "acl": "{postgres=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
-      "rls": true,
-      "name": "notificacao",
-      "owner": "supabase_admin",
       "forceRls": false
     },
     {
@@ -181,20 +167,6 @@
       "rls": false,
       "name": "viagem",
       "owner": "postgres",
-      "forceRls": false
-    },
-    {
-      "acl": "{postgres=arxtm/supabase_admin,service_role=arxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
-      "rls": true,
-      "name": "viagem_correcao",
-      "owner": "supabase_admin",
-      "forceRls": false
-    },
-    {
-      "acl": "{postgres=arxtm/supabase_admin,service_role=arxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
-      "rls": true,
-      "name": "viagem_evidencia",
-      "owner": "supabase_admin",
       "forceRls": false
     }
   ],
@@ -287,56 +259,6 @@
       "identity": "",
       "nullable": true,
       "position": 9,
-      "generated": ""
-    },
-    {
-      "name": "tanque_completo",
-      "type": "boolean",
-      "table": "abastecimento",
-      "default": "false",
-      "identity": "",
-      "nullable": false,
-      "position": 10,
-      "generated": ""
-    },
-    {
-      "name": "abastecimento_id",
-      "type": "bigint",
-      "table": "abastecimento_comprovante",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 1,
-      "generated": ""
-    },
-    {
-      "name": "nome",
-      "type": "text",
-      "table": "abastecimento_comprovante",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 2,
-      "generated": ""
-    },
-    {
-      "name": "tipo",
-      "type": "text",
-      "table": "abastecimento_comprovante",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 3,
-      "generated": ""
-    },
-    {
-      "name": "dados",
-      "type": "bytea",
-      "table": "abastecimento_comprovante",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 4,
       "generated": ""
     },
     {
@@ -563,106 +485,6 @@
       "name": "telefone",
       "type": "character varying(20)",
       "table": "motorista",
-      "default": null,
-      "identity": "",
-      "nullable": true,
-      "position": 10,
-      "generated": ""
-    },
-    {
-      "name": "id",
-      "type": "bigint",
-      "table": "notificacao",
-      "default": "nextval('notificacao_id_seq'::regclass)",
-      "identity": "",
-      "nullable": false,
-      "position": 1,
-      "generated": ""
-    },
-    {
-      "name": "usuario_id",
-      "type": "bigint",
-      "table": "notificacao",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 2,
-      "generated": ""
-    },
-    {
-      "name": "chave",
-      "type": "text",
-      "table": "notificacao",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 3,
-      "generated": ""
-    },
-    {
-      "name": "titulo",
-      "type": "character varying(200)",
-      "table": "notificacao",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 4,
-      "generated": ""
-    },
-    {
-      "name": "descricao",
-      "type": "text",
-      "table": "notificacao",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 5,
-      "generated": ""
-    },
-    {
-      "name": "categoria",
-      "type": "text",
-      "table": "notificacao",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 6,
-      "generated": ""
-    },
-    {
-      "name": "criado_em",
-      "type": "timestamp with time zone",
-      "table": "notificacao",
-      "default": "clock_timestamp()",
-      "identity": "",
-      "nullable": false,
-      "position": 7,
-      "generated": ""
-    },
-    {
-      "name": "lida_em",
-      "type": "timestamp with time zone",
-      "table": "notificacao",
-      "default": null,
-      "identity": "",
-      "nullable": true,
-      "position": 8,
-      "generated": ""
-    },
-    {
-      "name": "tipo",
-      "type": "text",
-      "table": "notificacao",
-      "default": null,
-      "identity": "",
-      "nullable": true,
-      "position": 9,
-      "generated": ""
-    },
-    {
-      "name": "viagem_id",
-      "type": "bigint",
-      "table": "notificacao",
       "default": null,
       "identity": "",
       "nullable": true,
@@ -1438,226 +1260,6 @@
       "nullable": true,
       "position": 12,
       "generated": ""
-    },
-    {
-      "name": "criado_em",
-      "type": "timestamp with time zone",
-      "table": "viagem",
-      "default": "clock_timestamp()",
-      "identity": "",
-      "nullable": true,
-      "position": 13,
-      "generated": ""
-    },
-    {
-      "name": "validada_por_id",
-      "type": "bigint",
-      "table": "viagem",
-      "default": null,
-      "identity": "",
-      "nullable": true,
-      "position": 14,
-      "generated": ""
-    },
-    {
-      "name": "validada_em",
-      "type": "timestamp with time zone",
-      "table": "viagem",
-      "default": null,
-      "identity": "",
-      "nullable": true,
-      "position": 15,
-      "generated": ""
-    },
-    {
-      "name": "id",
-      "type": "bigint",
-      "table": "viagem_correcao",
-      "default": "nextval('viagem_correcao_id_seq'::regclass)",
-      "identity": "",
-      "nullable": false,
-      "position": 1,
-      "generated": ""
-    },
-    {
-      "name": "viagem_id",
-      "type": "bigint",
-      "table": "viagem_correcao",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 2,
-      "generated": ""
-    },
-    {
-      "name": "versao",
-      "type": "integer",
-      "table": "viagem_correcao",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 3,
-      "generated": ""
-    },
-    {
-      "name": "km_inicial_anterior",
-      "type": "integer",
-      "table": "viagem_correcao",
-      "default": null,
-      "identity": "",
-      "nullable": true,
-      "position": 4,
-      "generated": ""
-    },
-    {
-      "name": "km_final_anterior",
-      "type": "integer",
-      "table": "viagem_correcao",
-      "default": null,
-      "identity": "",
-      "nullable": true,
-      "position": 5,
-      "generated": ""
-    },
-    {
-      "name": "km_inicial",
-      "type": "integer",
-      "table": "viagem_correcao",
-      "default": null,
-      "identity": "",
-      "nullable": true,
-      "position": 6,
-      "generated": ""
-    },
-    {
-      "name": "km_final",
-      "type": "integer",
-      "table": "viagem_correcao",
-      "default": null,
-      "identity": "",
-      "nullable": true,
-      "position": 7,
-      "generated": ""
-    },
-    {
-      "name": "justificativa",
-      "type": "text",
-      "table": "viagem_correcao",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 8,
-      "generated": ""
-    },
-    {
-      "name": "autor_id",
-      "type": "bigint",
-      "table": "viagem_correcao",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 9,
-      "generated": ""
-    },
-    {
-      "name": "criado_em",
-      "type": "timestamp with time zone",
-      "table": "viagem_correcao",
-      "default": "clock_timestamp()",
-      "identity": "",
-      "nullable": false,
-      "position": 10,
-      "generated": ""
-    },
-    {
-      "name": "id",
-      "type": "bigint",
-      "table": "viagem_evidencia",
-      "default": "nextval('viagem_evidencia_id_seq'::regclass)",
-      "identity": "",
-      "nullable": false,
-      "position": 1,
-      "generated": ""
-    },
-    {
-      "name": "viagem_id",
-      "type": "bigint",
-      "table": "viagem_evidencia",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 2,
-      "generated": ""
-    },
-    {
-      "name": "momento",
-      "type": "text",
-      "table": "viagem_evidencia",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 3,
-      "generated": ""
-    },
-    {
-      "name": "versao",
-      "type": "integer",
-      "table": "viagem_evidencia",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 4,
-      "generated": ""
-    },
-    {
-      "name": "nome",
-      "type": "text",
-      "table": "viagem_evidencia",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 5,
-      "generated": ""
-    },
-    {
-      "name": "tipo",
-      "type": "text",
-      "table": "viagem_evidencia",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 6,
-      "generated": ""
-    },
-    {
-      "name": "dados",
-      "type": "bytea",
-      "table": "viagem_evidencia",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 7,
-      "generated": ""
-    },
-    {
-      "name": "enviado_por_id",
-      "type": "bigint",
-      "table": "viagem_evidencia",
-      "default": null,
-      "identity": "",
-      "nullable": false,
-      "position": 8,
-      "generated": ""
-    },
-    {
-      "name": "criado_em",
-      "type": "timestamp with time zone",
-      "table": "viagem_evidencia",
-      "default": "clock_timestamp()",
-      "identity": "",
-      "nullable": false,
-      "position": 9,
-      "generated": ""
     }
   ],
   "indexes": [
@@ -1665,11 +1267,6 @@
       "name": "abastecimento_pkey",
       "table": "abastecimento",
       "definition": "CREATE UNIQUE INDEX abastecimento_pkey ON public.abastecimento USING btree (id)"
-    },
-    {
-      "name": "abastecimento_comprovante_pkey",
-      "table": "abastecimento_comprovante",
-      "definition": "CREATE UNIQUE INDEX abastecimento_comprovante_pkey ON public.abastecimento_comprovante USING btree (abastecimento_id)"
     },
     {
       "name": "documento_veiculo_pkey",
@@ -1705,31 +1302,6 @@
       "name": "motorista_usuario_id_key",
       "table": "motorista",
       "definition": "CREATE UNIQUE INDEX motorista_usuario_id_key ON public.motorista USING btree (usuario_id)"
-    },
-    {
-      "name": "notificacao_caixa_idx",
-      "table": "notificacao",
-      "definition": "CREATE INDEX notificacao_caixa_idx ON public.notificacao USING btree (usuario_id, criado_em DESC, id DESC)"
-    },
-    {
-      "name": "notificacao_nao_lida_idx",
-      "table": "notificacao",
-      "definition": "CREATE INDEX notificacao_nao_lida_idx ON public.notificacao USING btree (usuario_id) WHERE (lida_em IS NULL)"
-    },
-    {
-      "name": "notificacao_pkey",
-      "table": "notificacao",
-      "definition": "CREATE UNIQUE INDEX notificacao_pkey ON public.notificacao USING btree (id)"
-    },
-    {
-      "name": "notificacao_usuario_id_chave_key",
-      "table": "notificacao",
-      "definition": "CREATE UNIQUE INDEX notificacao_usuario_id_chave_key ON public.notificacao USING btree (usuario_id, chave)"
-    },
-    {
-      "name": "notificacao_viagem_idx",
-      "table": "notificacao",
-      "definition": "CREATE INDEX notificacao_viagem_idx ON public.notificacao USING btree (viagem_id) WHERE (viagem_id IS NOT NULL)"
     },
     {
       "name": "ordem_coleta_pkey",
@@ -1817,11 +1389,6 @@
       "definition": "CREATE UNIQUE INDEX veiculo_placa_key ON public.veiculo USING btree (placa)"
     },
     {
-      "name": "viagem_motorista_status_idx",
-      "table": "viagem",
-      "definition": "CREATE INDEX viagem_motorista_status_idx ON public.viagem USING btree (motorista_id, status, data_inicio DESC)"
-    },
-    {
       "name": "viagem_pkey",
       "table": "viagem",
       "definition": "CREATE UNIQUE INDEX viagem_pkey ON public.viagem USING btree (id)"
@@ -1830,31 +1397,6 @@
       "name": "viagem_solicitacao_id_key",
       "table": "viagem",
       "definition": "CREATE UNIQUE INDEX viagem_solicitacao_id_key ON public.viagem USING btree (solicitacao_id)"
-    },
-    {
-      "name": "viagem_status_periodo_idx",
-      "table": "viagem",
-      "definition": "CREATE INDEX viagem_status_periodo_idx ON public.viagem USING btree (status, data_inicio DESC)"
-    },
-    {
-      "name": "viagem_correcao_pkey",
-      "table": "viagem_correcao",
-      "definition": "CREATE UNIQUE INDEX viagem_correcao_pkey ON public.viagem_correcao USING btree (id)"
-    },
-    {
-      "name": "viagem_correcao_versao_key",
-      "table": "viagem_correcao",
-      "definition": "CREATE UNIQUE INDEX viagem_correcao_versao_key ON public.viagem_correcao USING btree (viagem_id, versao)"
-    },
-    {
-      "name": "viagem_evidencia_pkey",
-      "table": "viagem_evidencia",
-      "definition": "CREATE UNIQUE INDEX viagem_evidencia_pkey ON public.viagem_evidencia USING btree (id)"
-    },
-    {
-      "name": "viagem_evidencia_versao_key",
-      "table": "viagem_evidencia",
-      "definition": "CREATE UNIQUE INDEX viagem_evidencia_versao_key ON public.viagem_evidencia USING btree (viagem_id, momento, versao)"
     }
   ],
   "policies": [],
@@ -1913,20 +1455,6 @@
       "owner": "postgres",
       "start": "1",
       "table": "motorista",
-      "column": "id",
-      "increment": "1"
-    },
-    {
-      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
-      "max": "9223372036854775807",
-      "min": "1",
-      "name": "notificacao_id_seq",
-      "type": "bigint",
-      "cache": "1",
-      "cycle": false,
-      "owner": "supabase_admin",
-      "start": "1",
-      "table": "notificacao",
       "column": "id",
       "increment": "1"
     },
@@ -1997,34 +1525,6 @@
       "owner": "postgres",
       "start": "1",
       "table": "veiculo",
-      "column": "id",
-      "increment": "1"
-    },
-    {
-      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
-      "max": "9223372036854775807",
-      "min": "1",
-      "name": "viagem_correcao_id_seq",
-      "type": "bigint",
-      "cache": "1",
-      "cycle": false,
-      "owner": "supabase_admin",
-      "start": "1",
-      "table": "viagem_correcao",
-      "column": "id",
-      "increment": "1"
-    },
-    {
-      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
-      "max": "9223372036854775807",
-      "min": "1",
-      "name": "viagem_evidencia_id_seq",
-      "type": "bigint",
-      "cache": "1",
-      "cycle": false,
-      "owner": "supabase_admin",
-      "start": "1",
-      "table": "viagem_evidencia",
       "column": "id",
       "increment": "1"
     },
@@ -2121,78 +1621,6 @@
       "referencedColumns": [
         "id"
       ]
-    },
-    {
-      "name": "abastecimento_comprovante_abastecimento_id_fkey",
-      "type": "f",
-      "table": "abastecimento_comprovante",
-      "columns": [
-        "abastecimento_id"
-      ],
-      "onDelete": "c",
-      "onUpdate": "a",
-      "validated": true,
-      "definition": "FOREIGN KEY (abastecimento_id) REFERENCES abastecimento(id) ON DELETE CASCADE",
-      "references": "abastecimento",
-      "referencedColumns": [
-        "id"
-      ]
-    },
-    {
-      "name": "abastecimento_comprovante_nome_check",
-      "type": "c",
-      "table": "abastecimento_comprovante",
-      "columns": [
-        "nome"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (length(nome) >= 1 AND length(nome) <= 255)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "abastecimento_comprovante_pkey",
-      "type": "p",
-      "table": "abastecimento_comprovante",
-      "columns": [
-        "abastecimento_id"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "PRIMARY KEY (abastecimento_id)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "abastecimento_comprovante_tamanho_check",
-      "type": "c",
-      "table": "abastecimento_comprovante",
-      "columns": [
-        "dados"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (octet_length(dados) >= 1 AND octet_length(dados) <= 1048576)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "abastecimento_comprovante_tipo_check",
-      "type": "c",
-      "table": "abastecimento_comprovante",
-      "columns": [
-        "tipo"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (tipo = ANY (ARRAY['image/jpeg'::text, 'image/png'::text]))",
-      "references": null,
-      "referencedColumns": null
     },
     {
       "name": "documento_veiculo_pkey",
@@ -2357,111 +1785,6 @@
       "definition": "UNIQUE (usuario_id)",
       "references": null,
       "referencedColumns": null
-    },
-    {
-      "name": "notificacao_categoria_check",
-      "type": "c",
-      "table": "notificacao",
-      "columns": [
-        "categoria"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (categoria = ANY (ARRAY['informacao'::text, 'atencao'::text, 'urgente'::text, 'sucesso'::text]))",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "notificacao_demanda_check",
-      "type": "c",
-      "table": "notificacao",
-      "columns": [
-        "tipo",
-        "viagem_id",
-        "chave"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (tipo IS NULL OR viagem_id IS NOT NULL AND chave ~~ (((('viagem:'::text || viagem_id::text) || ':'::text) || lower(tipo)) || ':%'::text))",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "notificacao_pkey",
-      "type": "p",
-      "table": "notificacao",
-      "columns": [
-        "id"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "PRIMARY KEY (id)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "notificacao_tipo_check",
-      "type": "c",
-      "table": "notificacao",
-      "columns": [
-        "tipo"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (tipo IS NULL OR (tipo = ANY (ARRAY['ATRIBUICAO'::text, 'LEMBRETE'::text])))",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "notificacao_usuario_id_chave_key",
-      "type": "u",
-      "table": "notificacao",
-      "columns": [
-        "usuario_id",
-        "chave"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "UNIQUE (usuario_id, chave)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "notificacao_usuario_id_fkey",
-      "type": "f",
-      "table": "notificacao",
-      "columns": [
-        "usuario_id"
-      ],
-      "onDelete": "c",
-      "onUpdate": "a",
-      "validated": true,
-      "definition": "FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE",
-      "references": "usuario",
-      "referencedColumns": [
-        "id"
-      ]
-    },
-    {
-      "name": "notificacao_viagem_fk",
-      "type": "f",
-      "table": "notificacao",
-      "columns": [
-        "viagem_id"
-      ],
-      "onDelete": "a",
-      "onUpdate": "a",
-      "validated": true,
-      "definition": "FOREIGN KEY (viagem_id) REFERENCES viagem(id)",
-      "references": "viagem",
-      "referencedColumns": [
-        "id"
-      ]
     },
     {
       "name": "ordem_coleta_motorista_id_fkey",
@@ -2805,70 +2128,6 @@
       "referencedColumns": null
     },
     {
-      "name": "viagem_dados_obrigatorios_check",
-      "type": "c",
-      "table": "viagem",
-      "columns": [
-        "solicitacao_id",
-        "veiculo_id",
-        "motorista_id",
-        "status"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": false,
-      "definition": "CHECK (solicitacao_id IS NOT NULL AND veiculo_id IS NOT NULL AND motorista_id IS NOT NULL AND status IS NOT NULL) NOT VALID",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_execucao_status_check",
-      "type": "c",
-      "table": "viagem",
-      "columns": [
-        "status",
-        "data_inicio",
-        "km_inicial",
-        "data_fim",
-        "km_final"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": false,
-      "definition": "CHECK ((status IS DISTINCT FROM 'EM_TRANSPORTE'::status_viagem OR data_inicio IS NOT NULL AND km_inicial IS NOT NULL) AND (status IS DISTINCT FROM 'CONCLUIDA'::status_viagem OR data_inicio IS NOT NULL AND km_inicial IS NOT NULL AND data_fim IS NOT NULL AND km_final IS NOT NULL)) NOT VALID",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_km_final_check",
-      "type": "c",
-      "table": "viagem",
-      "columns": [
-        "km_final",
-        "km_inicial"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": false,
-      "definition": "CHECK (km_final IS NULL OR km_inicial IS NOT NULL AND km_final >= km_inicial) NOT VALID",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_km_inicial_check",
-      "type": "c",
-      "table": "viagem",
-      "columns": [
-        "km_inicial"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": false,
-      "definition": "CHECK (km_inicial IS NULL OR km_inicial >= 0) NOT VALID",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
       "name": "viagem_motorista_id_fkey",
       "type": "f",
       "table": "viagem",
@@ -2883,21 +2142,6 @@
       "referencedColumns": [
         "id"
       ]
-    },
-    {
-      "name": "viagem_periodo_check",
-      "type": "c",
-      "table": "viagem",
-      "columns": [
-        "data_fim",
-        "data_inicio"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": false,
-      "definition": "CHECK (data_fim IS NULL OR data_inicio IS NOT NULL AND data_fim >= data_inicio) NOT VALID",
-      "references": null,
-      "referencedColumns": null
     },
     {
       "name": "viagem_pkey",
@@ -2944,39 +2188,6 @@
       "referencedColumns": null
     },
     {
-      "name": "viagem_validacao_check",
-      "type": "c",
-      "table": "viagem",
-      "columns": [
-        "validada_por_gestor",
-        "validada_por_id",
-        "validada_em",
-        "status"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": false,
-      "definition": "CHECK (validada_por_gestor IS NOT TRUE AND validada_por_id IS NULL AND validada_em IS NULL OR validada_por_gestor IS TRUE AND validada_por_id IS NOT NULL AND validada_em IS NOT NULL AND NOT status IS DISTINCT FROM 'CONCLUIDA'::status_viagem) NOT VALID",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_validada_por_fk",
-      "type": "f",
-      "table": "viagem",
-      "columns": [
-        "validada_por_id"
-      ],
-      "onDelete": "a",
-      "onUpdate": "a",
-      "validated": true,
-      "definition": "FOREIGN KEY (validada_por_id) REFERENCES usuario(id)",
-      "references": "usuario",
-      "referencedColumns": [
-        "id"
-      ]
-    },
-    {
       "name": "viagem_veiculo_id_fkey",
       "type": "f",
       "table": "viagem",
@@ -2988,242 +2199,6 @@
       "validated": true,
       "definition": "FOREIGN KEY (veiculo_id) REFERENCES veiculo(id)",
       "references": "veiculo",
-      "referencedColumns": [
-        "id"
-      ]
-    },
-    {
-      "name": "viagem_correcao_autor_fk",
-      "type": "f",
-      "table": "viagem_correcao",
-      "columns": [
-        "autor_id"
-      ],
-      "onDelete": "a",
-      "onUpdate": "a",
-      "validated": true,
-      "definition": "FOREIGN KEY (autor_id) REFERENCES usuario(id)",
-      "references": "usuario",
-      "referencedColumns": [
-        "id"
-      ]
-    },
-    {
-      "name": "viagem_correcao_justificativa_check",
-      "type": "c",
-      "table": "viagem_correcao",
-      "columns": [
-        "justificativa"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (char_length(btrim(justificativa)) >= 1 AND char_length(btrim(justificativa)) <= 2000)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_correcao_km_check",
-      "type": "c",
-      "table": "viagem_correcao",
-      "columns": [
-        "km_inicial",
-        "km_final"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK ((km_inicial IS NULL OR km_inicial >= 0) AND (km_final IS NULL OR km_inicial IS NOT NULL AND km_final >= km_inicial))",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_correcao_pkey",
-      "type": "p",
-      "table": "viagem_correcao",
-      "columns": [
-        "id"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "PRIMARY KEY (id)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_correcao_versao_check",
-      "type": "c",
-      "table": "viagem_correcao",
-      "columns": [
-        "versao"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (versao >= 1)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_correcao_versao_key",
-      "type": "u",
-      "table": "viagem_correcao",
-      "columns": [
-        "viagem_id",
-        "versao"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "UNIQUE (viagem_id, versao)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_correcao_viagem_fk",
-      "type": "f",
-      "table": "viagem_correcao",
-      "columns": [
-        "viagem_id"
-      ],
-      "onDelete": "a",
-      "onUpdate": "a",
-      "validated": true,
-      "definition": "FOREIGN KEY (viagem_id) REFERENCES viagem(id)",
-      "references": "viagem",
-      "referencedColumns": [
-        "id"
-      ]
-    },
-    {
-      "name": "viagem_evidencia_autor_fk",
-      "type": "f",
-      "table": "viagem_evidencia",
-      "columns": [
-        "enviado_por_id"
-      ],
-      "onDelete": "a",
-      "onUpdate": "a",
-      "validated": true,
-      "definition": "FOREIGN KEY (enviado_por_id) REFERENCES usuario(id)",
-      "references": "usuario",
-      "referencedColumns": [
-        "id"
-      ]
-    },
-    {
-      "name": "viagem_evidencia_momento_check",
-      "type": "c",
-      "table": "viagem_evidencia",
-      "columns": [
-        "momento"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (momento = ANY (ARRAY['INICIAL'::text, 'FINAL'::text]))",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_evidencia_nome_check",
-      "type": "c",
-      "table": "viagem_evidencia",
-      "columns": [
-        "nome"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (char_length(nome) >= 1 AND char_length(nome) <= 255)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_evidencia_pkey",
-      "type": "p",
-      "table": "viagem_evidencia",
-      "columns": [
-        "id"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "PRIMARY KEY (id)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_evidencia_tamanho_check",
-      "type": "c",
-      "table": "viagem_evidencia",
-      "columns": [
-        "dados"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (octet_length(dados) >= 1 AND octet_length(dados) <= 1048576)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_evidencia_tipo_check",
-      "type": "c",
-      "table": "viagem_evidencia",
-      "columns": [
-        "tipo"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (tipo = ANY (ARRAY['image/jpeg'::text, 'image/png'::text]))",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_evidencia_versao_check",
-      "type": "c",
-      "table": "viagem_evidencia",
-      "columns": [
-        "versao"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "CHECK (versao >= 1)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_evidencia_versao_key",
-      "type": "u",
-      "table": "viagem_evidencia",
-      "columns": [
-        "viagem_id",
-        "momento",
-        "versao"
-      ],
-      "onDelete": " ",
-      "onUpdate": " ",
-      "validated": true,
-      "definition": "UNIQUE (viagem_id, momento, versao)",
-      "references": null,
-      "referencedColumns": null
-    },
-    {
-      "name": "viagem_evidencia_viagem_fk",
-      "type": "f",
-      "table": "viagem_evidencia",
-      "columns": [
-        "viagem_id"
-      ],
-      "onDelete": "a",
-      "onUpdate": "a",
-      "validated": true,
-      "definition": "FOREIGN KEY (viagem_id) REFERENCES viagem(id)",
-      "references": "viagem",
       "referencedColumns": [
         "id"
       ]

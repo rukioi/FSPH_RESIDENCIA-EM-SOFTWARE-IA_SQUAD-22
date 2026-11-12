@@ -113,21 +113,18 @@ test('comprovantes não concedem acesso direto a papéis públicos', async () =>
 
 
 test('falha na gravação da imagem reverte o abastecimento', async () => {
-  // DDL de ensaio exige o dono da tabela (conexão administrativa do harness) e sempre é removida.
-  const admin = await verifiedSql(true);
+  await sql.unsafe(`CREATE FUNCTION public.test_falha_comprovante() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN RAISE EXCEPTION 'fixture'; END $$`);
+  await sql.unsafe(`CREATE TRIGGER test_falha_comprovante BEFORE INSERT ON public.abastecimento_comprovante
+    FOR EACH ROW EXECUTE FUNCTION public.test_falha_comprovante()`);
   try {
-    await admin.unsafe(`CREATE FUNCTION public.test_falha_comprovante() RETURNS trigger LANGUAGE plpgsql AS $$
-      BEGIN RAISE EXCEPTION 'fixture'; END $$`);
-    await admin.unsafe(`CREATE TRIGGER test_falha_comprovante BEFORE INSERT ON public.abastecimento_comprovante
-      FOR EACH ROW EXECUTE FUNCTION public.test_falha_comprovante()`);
     const [antes] = await sql`select count(*)::int as total from abastecimento where veiculo_id=30001`;
     const response = await call({...input,comprovante:{nome:'foto.png',tipo:'image/png',dadosBase64:'iVBORw0KGgo='}});
     expect(response.status).toBe(500);
     const [depois] = await sql`select count(*)::int as total from abastecimento where veiculo_id=30001`;
     expect(depois.total).toBe(antes.total);
   } finally {
-    await admin.unsafe('DROP TRIGGER IF EXISTS test_falha_comprovante ON public.abastecimento_comprovante');
-    await admin.unsafe('DROP FUNCTION IF EXISTS public.test_falha_comprovante()');
-    await admin.end();
+    await sql.unsafe('DROP TRIGGER test_falha_comprovante ON public.abastecimento_comprovante');
+    await sql.unsafe('DROP FUNCTION public.test_falha_comprovante()');
   }
 });
