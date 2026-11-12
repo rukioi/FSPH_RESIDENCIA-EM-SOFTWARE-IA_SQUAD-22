@@ -143,7 +143,7 @@ export function renderDer(m: Metadata): string {
   return lines.join('\n') + '\n';
 }
 
-/** Lê só catálogos no banco local comprovado e verifica todos os artefatos gerados. */
+/** Lê só catálogos no banco local comprovado e verifica todos os artefatos gerados. (ESTOU USANDO SUPABASE SOMENTE NÃO  BANCO LOCAL) */ 
 export async function generate(check: boolean) {
   const sql = await verifiedSql();
   let metadata: Metadata;
