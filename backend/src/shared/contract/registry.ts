@@ -7,7 +7,7 @@ import { authSchemas } from '../../modules/auth/auth.schemas.js';
 import { usuariosSchemas } from '../../modules/usuarios/usuarios.schemas.js';
 import { auditoriaSchemas } from '../../modules/auditoria/auditoria.schemas.js';
 import { motoristasSchemas } from '../../modules/motoristas/motoristas.schemas.js';
-import { abastecimentosSchemas } from '../../modules/abastecimentos/abastecimentos.schemas.js';
+import { abastecimentosSchemas, parametrosAbastecimentos, notasListagemAbastecimentos, notasCadastroAbastecimentos } from '../../modules/abastecimentos/abastecimentos.schemas.js';
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
 import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
 import { svoSchemas } from '../../modules/svo/svo.schemas.js';
@@ -166,8 +166,19 @@ export const operations: Operacao[] = [
   ...(['put','patch'] as const).map(method=>op('motoristas',method,'/api/motoristas/{id}','RespostaMotorista',gestor,{body:'EditarMotorista',errors:[400,401,403,404,409,413,415,500]})),
   op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,500]}),
   op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
-  op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
-  op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,413,415,500]}),
+  op('abastecimentos','get','/api/abastecimentos/indicadores','IndicadoresAbastecimentos',gestor,{
+    runtimeValidation:true,errors:[400,401,403,404,500],query:parametrosAbastecimentos.filter(p=>['veiculoId','inicio','fim'].includes(p.name)),
+    notes:'Totais NUMERIC reais de litros/custo e custo por litro (4 casas), quantidade e período observado; km min/max por veículo são leituras, não distância percorrida. Consumo por distância permanece INDISPONIVEL/REGRA_DE_NEGOCIO_PENDENTE. Sem registros: totais zero reais, custo/litro null. Query estrita.'}),
+  op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor,{
+    runtimeValidation:true,errors:[400,401,403,404,500],query:parametrosAbastecimentos,notes:notasListagemAbastecimentos}),
+  op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{
+    runtimeValidation:true,body:'CriarAbastecimentoRF40',errors:[400,401,403,404,409,413,415,500],
+    notes:notasCadastroAbastecimentos}),
+  op('abastecimentos','get','/api/abastecimentos/{id}','RespostaDetalheAbastecimento',gestor,{
+    runtimeValidation:true,errors:[400,401,403,404,500],notes:'Detalhe persistido, autor legado pode ser null. Sem CPF ou bytes.'}),
+  op('abastecimentos','get','/api/veiculos/{id}/abastecimentos','HistoricoAbastecimentos',gestor,{
+    runtimeValidation:true,errors:[400,401,403,404,500],query:parametrosAbastecimentos.filter(p=>p.name!=='veiculoId'),
+    notes:'Histórico real por data_abastecimento ASC,id ASC. Veículo SVO usa o mesmo contrato. Datas civis inclusivas; pagina=1,limit=20,máximo100. Veículo ausente:404; existente sem abastecimentos:data[] vazio.'}),
   op('documentos','get','/api/documentos','Documentos',gestor),
   op('documentos','get','/api/documentos/pendencias','PendenciasDocumentos',gestor),
   op('documentos','post','/api/documentos','RespostaDocumento',gestor,{body:'CriarDocumento'}),

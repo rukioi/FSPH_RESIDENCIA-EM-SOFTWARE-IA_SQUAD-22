@@ -32,15 +32,19 @@ test('migração #30 permite somente 404 comum de abastecimento e sua descriçã
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
-test('inventário fechado mantém 65 operações e limites de pathname compatíveis',()=>{
-  expect(operations).toHaveLength(65);
+test('inventário fechado inclui as três consultas RF40 e mantém limites de pathname compatíveis',()=>{
+  expect(operations).toHaveLength(68);
+  expect(operations.filter(o=>o.modulo==='abastecimentos').map(o=>o.method.toUpperCase()+' '+o.path)).toEqual([
+    'GET /api/abastecimentos/{id}/comprovante','GET /api/abastecimentos/indicadores','GET /api/abastecimentos',
+    'POST /api/abastecimentos','GET /api/abastecimentos/{id}','GET /api/veiculos/{id}/abastecimentos',
+  ]);
   for (const method of ['patch','post'] as const) {
     expect(operations.filter(o => o.method === method && o.path === '/api/svo/solicitacoes/{id}/triagem')).toHaveLength(1);
   }
 });
 
-test('inventário mantém as 54 operações fora de solicitações e as onze de solicitações',()=>{
-  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(54);
+test('inventário mantém as 51 operações externas a abastecimentos/solicitações e as onze de solicitações',()=>{
+  expect(operations.filter(o => o.modulo !== 'solicitacoes'&&o.modulo!=='abastecimentos')).toHaveLength(51);
   expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
@@ -49,6 +53,10 @@ test('inventário mantém as 54 operações fora de solicitações e as onze de 
     expect(routePattern(operation).test(path+'/')).toBe(operation.modulo==='usuarios');
     expect(routePattern(operation).test(path+'/extra')).toBe(false);
   }
+});
+
+test('RF40 permite somente evolução publicada e não libera mudanças de auth, campos ou contratos externos',()=>{
+  expect(independent("import {execFileSync} from 'node:child_process';import {parse} from 'yaml';import {openapi} from './backend/src/shared/contract/openapi.ts';import {checkCompatibility} from './scripts/generate-api.ts';const previous=parse(execFileSync('git',['show','HEAD:docs/api/openapi.yaml'],{encoding:'utf8'}));checkCompatibility(previous,openapi());for(const mutate of [d=>d.paths['/api/abastecimentos'].get.security=[],d=>d.paths['/api/abastecimentos'].post['x-perfis']=['MOTORISTA'],d=>delete d.paths['/api/abastecimentos'].post.responses[201],d=>d.paths['/api/abastecimentos'].get.parameters.push({name:'extra',in:'query'}),d=>d.components.schemas.Abastecimento.properties.quilometragem={type:'string'},d=>delete d.components.schemas.Abastecimento.properties.veiculo_id,d=>d.components.schemas.Abastecimento.required=d.components.schemas.Abastecimento.required.filter(k=>k!=='motorista_id'),d=>d.components.schemas.RespostaAbastecimento.properties.data.properties.valor_total={type:'number'}]){const current=openapi();mutate(current);try{checkCompatibility(previous,current);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
 test('SCRUM-137/138 publicam criação, consulta e decisões com contrato validado', () => {

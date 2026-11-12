@@ -47,14 +47,15 @@ ALTER SEQUENCE public."viagem_id_seq" OWNER TO "postgres";
 CREATE TABLE public."abastecimento" (
   "id" bigint DEFAULT nextval('abastecimento_id_seq'::regclass) NOT NULL,
   "veiculo_id" bigint NOT NULL,
-  "motorista_id" bigint NOT NULL,
+  "motorista_id" bigint,
   "litragem" numeric(10,2) NOT NULL,
   "valor_total" numeric(10,2) NOT NULL,
-  "quilometragem" integer NOT NULL,
+  "quilometragem" integer,
   "data_abastecimento" date NOT NULL,
   "criado_em" timestamp without time zone DEFAULT now(),
   "posto" character varying(255),
-  "tanque_completo" boolean DEFAULT false NOT NULL
+  "tanque_completo" boolean DEFAULT false NOT NULL,
+  "criado_por_id" bigint
 );
 ALTER TABLE public."abastecimento" OWNER TO "postgres";
 CREATE TABLE public."abastecimento_comprovante" (
@@ -245,7 +246,10 @@ ALTER SEQUENCE public."veiculo_id_seq" OWNED BY public."veiculo"."id";
 ALTER SEQUENCE public."viagem_correcao_id_seq" OWNED BY public."viagem_correcao"."id";
 ALTER SEQUENCE public."viagem_evidencia_id_seq" OWNED BY public."viagem_evidencia"."id";
 ALTER SEQUENCE public."viagem_id_seq" OWNED BY public."viagem"."id";
+ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_litragem_positiva" CHECK (litragem > 0::numeric AND litragem <> 'NaN'::numeric);
 ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_pkey" PRIMARY KEY (id);
+ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_quilometragem_valida" CHECK (quilometragem IS NULL OR quilometragem >= 0);
+ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_valor_positivo" CHECK (valor_total > 0::numeric AND valor_total <> 'NaN'::numeric);
 ALTER TABLE public."abastecimento_comprovante" ADD CONSTRAINT "abastecimento_comprovante_nome_check" CHECK (length(nome) >= 1 AND length(nome) <= 255);
 ALTER TABLE public."abastecimento_comprovante" ADD CONSTRAINT "abastecimento_comprovante_pkey" PRIMARY KEY (abastecimento_id);
 ALTER TABLE public."abastecimento_comprovante" ADD CONSTRAINT "abastecimento_comprovante_tamanho_check" CHECK (octet_length(dados) >= 1 AND octet_length(dados) <= 1048576);
@@ -296,6 +300,7 @@ ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_tamanho_c
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_tipo_check" CHECK (tipo = ANY (ARRAY['image/jpeg'::text, 'image/png'::text]));
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_versao_check" CHECK (versao >= 1);
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_versao_key" UNIQUE (viagem_id, momento, versao);
+ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_criado_por_id_fkey" FOREIGN KEY (criado_por_id) REFERENCES usuario(id);
 ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
 ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
 ALTER TABLE public."abastecimento_comprovante" ADD CONSTRAINT "abastecimento_comprovante_abastecimento_id_fkey" FOREIGN KEY (abastecimento_id) REFERENCES abastecimento(id) ON DELETE CASCADE;
@@ -322,6 +327,8 @@ ALTER TABLE public."viagem_correcao" ADD CONSTRAINT "viagem_correcao_autor_fk" F
 ALTER TABLE public."viagem_correcao" ADD CONSTRAINT "viagem_correcao_viagem_fk" FOREIGN KEY (viagem_id) REFERENCES viagem(id);
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_autor_fk" FOREIGN KEY (enviado_por_id) REFERENCES usuario(id);
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_viagem_fk" FOREIGN KEY (viagem_id) REFERENCES viagem(id);
+CREATE INDEX idx_abastecimento_data ON public.abastecimento USING btree (data_abastecimento DESC, id DESC);
+CREATE INDEX idx_abastecimento_veiculo_data ON public.abastecimento USING btree (veiculo_id, data_abastecimento DESC, id DESC);
 CREATE INDEX idx_log_atividade_solicitacao_viagem_id ON public.log_atividade USING btree (solicitacao_viagem_id);
 CREATE INDEX notificacao_caixa_idx ON public.notificacao USING btree (usuario_id, criado_em DESC, id DESC);
 CREATE INDEX notificacao_nao_lida_idx ON public.notificacao USING btree (usuario_id) WHERE (lida_em IS NULL);

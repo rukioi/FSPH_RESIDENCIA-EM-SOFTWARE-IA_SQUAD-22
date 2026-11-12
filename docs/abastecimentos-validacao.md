@@ -1,5 +1,11 @@
 # Abastecimentos — implementação e validação
 
+Este documento registra a entrega anterior à reconciliação RF40. Para a Sprint 9,
+consulte o [contrato atual](./api/abastecimentos.md) e a
+[validação DB/BE](./database/sprint9-abastecimentos.md). Motorista/km já são opcionais
+no backend isolado; a adequação da tela continua com Gustavo. Nenhuma autorização
+histórica de aplicação remota abaixo se aplica ao trabalho atual.
+
 ## Escopo
 
 Tela `/gestor/abastecimentos` para ADM e GESTOR_FROTA, integrada às APIs de

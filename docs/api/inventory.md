@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 65 operações.
+Gerado por api:generate; não editar manualmente. 68 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -64,8 +64,11 @@ Gerado por api:generate; não editar manualmente. 65 operações.
 | PATCH | /api/motoristas/{id} | ADM, GESTOR_FROTA | EditarMotorista | 200 RespostaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | DELETE | /api/motoristas/{id} | ADM, GESTOR_FROTA | sem corpo | 200 Exclusao | 401, 403, 404, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | sem corpo | 200 ComprovanteAbastecimento | 401, 403, 404, 500, 405 | legado | Imagem JPEG ou PNG como bytes; acesso autenticado. |
-| GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 Abastecimentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
-| POST | /api/abastecimentos | ADM, GESTOR_FROTA | CriarAbastecimento | 201 RespostaAbastecimento | 400, 401, 403, 404, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| GET | /api/abastecimentos/indicadores | ADM, GESTOR_FROTA | sem corpo | 200 IndicadoresAbastecimentos | 400, 401, 403, 404, 500, 405 | validado | Totais NUMERIC reais de litros/custo e custo por litro (4 casas), quantidade e período observado; km min/max por veículo são leituras, não distância percorrida. Consumo por distância permanece INDISPONIVEL/REGRA_DE_NEGOCIO_PENDENTE. Sem registros: totais zero reais, custo/litro null. Query estrita. |
+| GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 Abastecimentos | 400, 401, 403, 404, 500, 405 | validado | Sem parâmetros reconhecidos: data[] completo por id DESC, compatível com legado. Com veículo/período/paginação: data[] por data_abastecimento DESC,id DESC e meta {page,limit,total}; pagina=1,limit=20,máximo100. Datas civis inclusivas; parâmetros reconhecidos duplicados/inválidos:400. Outros ignorados. |
+| POST | /api/abastecimentos | ADM, GESTOR_FROTA | CriarAbastecimentoRF40 | 201 RespostaAbastecimento | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | RF40: motorista/km opcionais; positivo numeric(10,2). Autor da sessão, cadastro/comprovante legado/auditoria atômicos. 409 somente conflito transacional; não há chave de deduplicação definida. |
+| GET | /api/abastecimentos/{id} | ADM, GESTOR_FROTA | sem corpo | 200 RespostaDetalheAbastecimento | 400, 401, 403, 404, 500, 405 | validado | Detalhe persistido, autor legado pode ser null. Sem CPF ou bytes. |
+| GET | /api/veiculos/{id}/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 HistoricoAbastecimentos | 400, 401, 403, 404, 500, 405 | validado | Histórico real por data_abastecimento ASC,id ASC. Veículo SVO usa o mesmo contrato. Datas civis inclusivas; pagina=1,limit=20,máximo100. Veículo ausente:404; existente sem abastecimentos:data[] vazio. |
 | GET | /api/documentos | ADM, GESTOR_FROTA | sem corpo | 200 Documentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/documentos/pendencias | ADM, GESTOR_FROTA | sem corpo | 200 PendenciasDocumentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | POST | /api/documentos | ADM, GESTOR_FROTA | CriarDocumento | 201 RespostaDocumento | 400, 413, 415, 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |

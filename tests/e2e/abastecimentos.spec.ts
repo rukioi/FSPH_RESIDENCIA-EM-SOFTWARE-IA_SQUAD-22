@@ -27,11 +27,22 @@ test.beforeAll(async ({ request }) => {
 test.afterAll(async () => {
   if (!sql) return;
   try {
-    await sql`delete from abastecimento_comprovante where abastecimento_id in (select id from abastecimento where veiculo_id in ${sql(vehicleIds)})`;
-    await sql`delete from abastecimento where veiculo_id in ${sql(vehicleIds)}`;
+    await sql`delete from log_atividade where descricao in
+      (select 'Registrou o abastecimento ID ' || id::text from abastecimento where veiculo_id=ANY(${vehicleIds}::bigint[]))`;
+    await sql`delete from abastecimento_comprovante where abastecimento_id in (select id from abastecimento where veiculo_id=ANY(${vehicleIds}::bigint[]))`;
+    await sql`delete from abastecimento where veiculo_id=ANY(${vehicleIds}::bigint[])`;
     await sql`delete from motorista where id = ${driverId}`;
-    await sql`delete from veiculo where id in ${sql(vehicleIds)}`;
+    await sql`delete from veiculo where id=ANY(${vehicleIds}::bigint[])`;
   } finally { await sql.end(); }
+});
+
+test.afterEach(async()=>{
+  if(!sql)return;
+  // Cada resolução começa com os dois registros originais; não herda cadastros da anterior.
+  await sql`delete from log_atividade where descricao in
+    (select 'Registrou o abastecimento ID ' || id::text from abastecimento
+      where veiculo_id=ANY(${vehicleIds}::bigint[]) and data_abastecimento='2026-03-15')`;
+  await sql`delete from abastecimento where veiculo_id=ANY(${vehicleIds}::bigint[]) and data_abastecimento='2026-03-15'`;
 });
 
 for (const width of [390, 768, 1280]) {
@@ -99,6 +110,8 @@ for (const width of [390, 768, 1280]) {
     const download = page.waitForEvent('download');
     await newRow.getByRole('button', { name: 'Baixar comprovante' }).click();
     expect((await download).suggestedFilename()).toBe(`comprovante-${width}.png`);
+    await page.reload();
+    await expect(newRow).toBeVisible();
   });
 }
 

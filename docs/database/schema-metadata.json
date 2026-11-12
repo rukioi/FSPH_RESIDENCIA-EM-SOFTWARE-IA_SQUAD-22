@@ -225,7 +225,7 @@
       "table": "abastecimento",
       "default": null,
       "identity": "",
-      "nullable": false,
+      "nullable": true,
       "position": 3,
       "generated": ""
     },
@@ -255,7 +255,7 @@
       "table": "abastecimento",
       "default": null,
       "identity": "",
-      "nullable": false,
+      "nullable": true,
       "position": 6,
       "generated": ""
     },
@@ -297,6 +297,16 @@
       "identity": "",
       "nullable": false,
       "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "criado_por_id",
+      "type": "bigint",
+      "table": "abastecimento",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 11,
       "generated": ""
     },
     {
@@ -1667,6 +1677,16 @@
       "definition": "CREATE UNIQUE INDEX abastecimento_pkey ON public.abastecimento USING btree (id)"
     },
     {
+      "name": "idx_abastecimento_data",
+      "table": "abastecimento",
+      "definition": "CREATE INDEX idx_abastecimento_data ON public.abastecimento USING btree (data_abastecimento DESC, id DESC)"
+    },
+    {
+      "name": "idx_abastecimento_veiculo_data",
+      "table": "abastecimento",
+      "definition": "CREATE INDEX idx_abastecimento_veiculo_data ON public.abastecimento USING btree (veiculo_id, data_abastecimento DESC, id DESC)"
+    },
+    {
       "name": "abastecimento_comprovante_pkey",
       "table": "abastecimento_comprovante",
       "definition": "CREATE UNIQUE INDEX abastecimento_comprovante_pkey ON public.abastecimento_comprovante USING btree (abastecimento_id)"
@@ -2077,6 +2097,36 @@
   ],
   "constraints": [
     {
+      "name": "abastecimento_criado_por_id_fkey",
+      "type": "f",
+      "table": "abastecimento",
+      "columns": [
+        "criado_por_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (criado_por_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "abastecimento_litragem_positiva",
+      "type": "c",
+      "table": "abastecimento",
+      "columns": [
+        "litragem"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (litragem > 0::numeric AND litragem <> 'NaN'::numeric)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
       "name": "abastecimento_motorista_id_fkey",
       "type": "f",
       "table": "abastecimento",
@@ -2103,6 +2153,34 @@
       "onUpdate": " ",
       "validated": true,
       "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "abastecimento_quilometragem_valida",
+      "type": "c",
+      "table": "abastecimento",
+      "columns": [
+        "quilometragem"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (quilometragem IS NULL OR quilometragem >= 0)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "abastecimento_valor_positivo",
+      "type": "c",
+      "table": "abastecimento",
+      "columns": [
+        "valor_total"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (valor_total > 0::numeric AND valor_total <> 'NaN'::numeric)",
       "references": null,
       "referencedColumns": null
     },

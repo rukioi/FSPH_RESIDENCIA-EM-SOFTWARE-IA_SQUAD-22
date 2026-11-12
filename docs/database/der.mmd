@@ -3,14 +3,15 @@ erDiagram
   abastecimento {
     bigint id PK "NOT NULL"
     bigint veiculo_id FK "NOT NULL"
-    bigint motorista_id FK "NOT NULL"
+    bigint motorista_id FK "nullable"
     numeric_10_2_ litragem "NOT NULL"
     numeric_10_2_ valor_total "NOT NULL"
-    integer quilometragem "NOT NULL"
+    integer quilometragem "nullable"
     date data_abastecimento "NOT NULL"
     timestamp_without_time_zone criado_em "nullable"
     character_varying_255_ posto "nullable"
     boolean tanque_completo "NOT NULL"
+    bigint criado_por_id FK "nullable"
   }
   abastecimento_comprovante {
     bigint abastecimento_id FK,PK "NOT NULL"
@@ -174,7 +175,8 @@ erDiagram
     bigint enviado_por_id FK "NOT NULL"
     timestamp_with_time_zone criado_em "NOT NULL"
   }
-  motorista ||--o{ abastecimento : "abastecimento_motorista_id_fkey DELETE NO ACTION"
+  usuario |o--o{ abastecimento : "abastecimento_criado_por_id_fkey DELETE NO ACTION"
+  motorista |o--o{ abastecimento : "abastecimento_motorista_id_fkey DELETE NO ACTION"
   veiculo ||--o{ abastecimento : "abastecimento_veiculo_id_fkey DELETE NO ACTION"
   abastecimento ||--o| abastecimento_comprovante : "abastecimento_comprovante_abastecimento_id_fkey DELETE CASCADE"
   veiculo |o--o{ documento_veiculo : "documento_veiculo_veiculo_id_fkey DELETE NO ACTION"

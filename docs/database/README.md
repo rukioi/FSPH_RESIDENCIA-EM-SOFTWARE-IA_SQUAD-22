@@ -72,11 +72,13 @@ exigem os novos campos nullable, a posição de APROVADA no enum, CHECK de retor
 FK e índice da auditoria, além da igualdade integral com o snapshot gerado. As
 contagens são derivadas desse snapshot, não substituídas por números adivinhados.
 
-Os artefatos versionados schema.sql, schema-metadata.json e der.mmd já incluem
+Os artefatos versionados schema.sql, schema-metadata.json, der.mmd e dicionario.md incluem
 a evolução SVO e as quatro migrations institucionais da Sprint 7. Foram gerados
 dos catálogos do PostgreSQL 17 Docker isolado; db:docs:check passou sem drift.
-O snapshot atual contém 10 tabelas, 109 colunas, 8 enums, 42 constraints e 27 índices,
-conforme schema-metadata.json. Os testes preservam a comparação integral de
+O snapshot é atualizado pelos incrementos versionados; suas contagens atuais estão
+em schema-metadata.json. A [reconciliação RF40 da Sprint 9](./sprint9-abastecimentos.md)
+documenta os campos opcionais, autoria, checks, índices e rollback de abastecimento.
+Os testes preservam a comparação integral de
 metadados; mocks não substituem a prova real de banco.
 
 A aplicação manual informada no Supabase ainda exige inspeção de equivalência
@@ -117,7 +119,7 @@ Os incrementais antigos foram consolidados na baseline, sem reaplicar ADD COLUMN
 
 A baseline inicial foi renderizada pelo gerador a partir dessa captura de metadados.
 Depois de aplicada localmente, `db:docs:generate` gera schema.sql,
-schema-metadata.json e der.mmd exclusivamente dos catálogos locais; não edite esses
+schema-metadata.json, der.mmd e dicionario.md exclusivamente dos catálogos locais; não edite esses
 artefatos manualmente. `db:docs:check` compara todos os artefatos e detecta drift,
 inclusive ACL/RLS, índices, tipos, nullabilidade, defaults e ações de exclusão.
 O snapshot permite bootstrap sem MCP. Mudanças futuras usam nova migration local,

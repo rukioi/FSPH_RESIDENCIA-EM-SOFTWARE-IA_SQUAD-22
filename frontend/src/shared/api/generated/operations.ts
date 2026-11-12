@@ -240,6 +240,10 @@ export const apiOperations = {
     "method": "GET",
     "path": "/api/abastecimentos/{id}/comprovante"
   },
+  "abastecimentos_get__api_abastecimentos_indicadores": {
+    "method": "GET",
+    "path": "/api/abastecimentos/indicadores"
+  },
   "abastecimentos_get__api_abastecimentos": {
     "method": "GET",
     "path": "/api/abastecimentos"
@@ -247,6 +251,14 @@ export const apiOperations = {
   "abastecimentos_post__api_abastecimentos": {
     "method": "POST",
     "path": "/api/abastecimentos"
+  },
+  "abastecimentos_get__api_abastecimentos_id_": {
+    "method": "GET",
+    "path": "/api/abastecimentos/{id}"
+  },
+  "abastecimentos_get__api_veiculos_id_abastecimentos": {
+    "method": "GET",
+    "path": "/api/veiculos/{id}/abastecimentos"
   },
   "documentos_get__api_documentos": {
     "method": "GET",

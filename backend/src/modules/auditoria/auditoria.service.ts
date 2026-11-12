@@ -4,6 +4,7 @@ import { notificarAtividades } from '../notificacoes/notificacoes.service.js';
 import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from './auditoria.repository.js';
 
 export type EventoAtividade =
+  | { operacao: 'abastecimento_criado'; recursoId: string }
   | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'usuario_status'; recursoId: string; ativo: boolean }
   | { operacao: 'solicitacao_confirmada' | 'solicitacao_registrada'; recursoId: string }
@@ -34,6 +35,7 @@ function identificador(valor: string): string {
 function descrever(evento: EventoAtividade): string {
   const id = identificador(evento.recursoId);
   switch (evento.operacao) {
+    case 'abastecimento_criado': return `Registrou o abastecimento ID ${id}`;
     case 'usuario_criado': return `Criou o usuário ID ${id}`;
     case 'usuario_editado': return `Atualizou os dados do usuário ID ${id}`;
     case 'usuario_status':

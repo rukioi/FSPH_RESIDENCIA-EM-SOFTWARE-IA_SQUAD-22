@@ -19,6 +19,11 @@ test('duas preparações não duplicam nem modificam fixtures, sequências ou mi
     expect(metadata.tables.map(t => t.name)).toEqual(expect.arrayContaining(semFixtures));
     const records: Record<string, unknown> = {};
     for (const table of metadata.tables) {
+      // Preserva também todas as linhas das tabelas sem seed ao repetir a preparação.
+      if (semFixtures.includes(table.name)) {
+        records[table.name] = await sql`select to_jsonb(t) as row from ${sql(table.name)} t order by to_jsonb(t)::text`;
+        continue;
+      }
       // Nem toda tabela usa "id" como PK (abastecimento_comprovante usa abastecimento_id).
       const [pk] = metadata.constraints.find(c => c.table === table.name && c.type === 'p')!.columns;
       records[table.name] = await sql`select to_jsonb(t) as row from ${sql(table.name)} t

@@ -206,6 +206,12 @@ export interface ApiSchemas {
   RespostaAbastecimento: RespostaAbastecimento;
   Abastecimentos: Abastecimentos;
   CriarAbastecimento: CriarAbastecimento;
+  CriarAbastecimentoRF40: CriarAbastecimentoRF40;
+  DetalheAbastecimento: DetalheAbastecimento;
+  RespostaDetalheAbastecimento: RespostaDetalheAbastecimento;
+  ListaAbastecimentosRF40: ListaAbastecimentosRF40;
+  HistoricoAbastecimentos: HistoricoAbastecimentos;
+  IndicadoresAbastecimentos: IndicadoresAbastecimentos;
   Documentos: Documentos;
   PendenciasDocumentos: PendenciasDocumentos;
   CriarDocumento: CriarDocumento;
@@ -641,10 +647,7 @@ export interface Abastecimento {
    * BIGINT serializado pelo postgres como string; não converter para Number.
    */
   veiculo_id: string;
-  /**
-   * BIGINT serializado pelo postgres como string; não converter para Number.
-   */
-  motorista_id: string;
+  motorista_id: string | null;
   /**
    * NUMERIC serializado pelo driver como string, preservando precisão.
    */
@@ -653,7 +656,7 @@ export interface Abastecimento {
    * NUMERIC serializado pelo driver como string, preservando precisão.
    */
   valor_total: string;
-  quilometragem: number;
+  quilometragem: number | null;
   /**
    * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
    */
@@ -662,6 +665,9 @@ export interface Abastecimento {
   posto: string | null;
   tanque_completo: boolean;
   comprovante_nome: string | null;
+  criado_por_id?: string | null;
+  veiculo_placa?: string | null;
+  motorista_nome?: string | null;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -677,10 +683,7 @@ export interface RespostaAbastecimento {
      * BIGINT serializado pelo postgres como string; não converter para Number.
      */
     veiculo_id: string;
-    /**
-     * BIGINT serializado pelo postgres como string; não converter para Number.
-     */
-    motorista_id: string;
+    motorista_id: string | null;
     /**
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
@@ -689,7 +692,7 @@ export interface RespostaAbastecimento {
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
     valor_total: string;
-    quilometragem: number;
+    quilometragem: number | null;
     /**
      * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
      */
@@ -698,6 +701,9 @@ export interface RespostaAbastecimento {
     posto: string | null;
     tanque_completo: boolean;
     comprovante_nome: string | null;
+    criado_por_id?: string | null;
+    veiculo_placa?: string | null;
+    motorista_nome?: string | null;
   };
 }
 /**
@@ -714,10 +720,7 @@ export interface Abastecimentos {
      * BIGINT serializado pelo postgres como string; não converter para Number.
      */
     veiculo_id: string;
-    /**
-     * BIGINT serializado pelo postgres como string; não converter para Number.
-     */
-    motorista_id: string;
+    motorista_id: string | null;
     /**
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
@@ -726,7 +729,7 @@ export interface Abastecimentos {
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
     valor_total: string;
-    quilometragem: number;
+    quilometragem: number | null;
     /**
      * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
      */
@@ -735,12 +738,18 @@ export interface Abastecimentos {
     posto: string | null;
     tanque_completo: boolean;
     comprovante_nome: string | null;
+    criado_por_id?: string | null;
     veiculo_placa: string | null;
     motorista_nome: string | null;
   }[];
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+  };
 }
 /**
- * Forma usual de transporte. #30 classifica JSON/tipo/campo incompatível com o schema atual como 400 e FK inexistente como 404. Motorista/km omitidos ou nulos recebem 400 pelo NOT NULL atual; RF40 permanece adiado, sem migration para alterar obrigatoriedade. Validação técnica de calendário e tipos ocorre no controller.
+ * DTO legado de transporte. A validação RF40 do servidor está em CriarAbastecimentoRF40; motorista/km podem ser omitidos ou nulos.
  *
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "CriarAbastecimento".
@@ -759,6 +768,221 @@ export interface CriarAbastecimento {
     tipo: 'image/jpeg' | 'image/png';
     dadosBase64: string;
   } | null;
+}
+/**
+ * RF40/SCRUM-186: motorista, km e posto opcionais. Litros/valor positivos numeric(10,2); km inteiro não negativo. Autoria sempre da sessão; campos extras ignorados. Comprovante legado JPEG/PNG mantém validação de assinatura no service.
+ *
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CriarAbastecimentoRF40".
+ */
+export interface CriarAbastecimentoRF40 {
+  veiculo_id: number | string;
+  motorista_id?: (number | string) | null;
+  posto?: string | null;
+  litragem: number | string;
+  valor_total: number | string;
+  quilometragem?: number | null;
+  data_abastecimento: string;
+  tanque_completo?: boolean;
+  comprovante?: {
+    nome: string;
+    tipo: 'image/jpeg' | 'image/png';
+    dadosBase64: string;
+  } | null;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "DetalheAbastecimento".
+ */
+export interface DetalheAbastecimento {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  veiculo_id: string;
+  motorista_id: string | null;
+  /**
+   * NUMERIC serializado pelo driver como string, preservando precisão.
+   */
+  litragem: string;
+  /**
+   * NUMERIC serializado pelo driver como string, preservando precisão.
+   */
+  valor_total: string;
+  quilometragem: number | null;
+  /**
+   * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+   */
+  data_abastecimento: string;
+  criado_em: string | null;
+  posto: string | null;
+  tanque_completo: boolean;
+  comprovante_nome: string | null;
+  criado_por_id: string | null;
+  veiculo_placa: string | null;
+  motorista_nome: string | null;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaDetalheAbastecimento".
+ */
+export interface RespostaDetalheAbastecimento {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    veiculo_id: string;
+    motorista_id: string | null;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    litragem: string;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    valor_total: string;
+    quilometragem: number | null;
+    /**
+     * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+     */
+    data_abastecimento: string;
+    criado_em: string | null;
+    posto: string | null;
+    tanque_completo: boolean;
+    comprovante_nome: string | null;
+    criado_por_id: string | null;
+    veiculo_placa: string | null;
+    motorista_nome: string | null;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaAbastecimentosRF40".
+ */
+export interface ListaAbastecimentosRF40 {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    veiculo_id: string;
+    motorista_id: string | null;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    litragem: string;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    valor_total: string;
+    quilometragem: number | null;
+    /**
+     * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+     */
+    data_abastecimento: string;
+    criado_em: string | null;
+    posto: string | null;
+    tanque_completo: boolean;
+    comprovante_nome: string | null;
+    criado_por_id: string | null;
+    veiculo_placa: string | null;
+    motorista_nome: string | null;
+  }[];
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "HistoricoAbastecimentos".
+ */
+export interface HistoricoAbastecimentos {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    veiculo_id: string;
+    motorista_id: string | null;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    litragem: string;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    valor_total: string;
+    quilometragem: number | null;
+    /**
+     * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+     */
+    data_abastecimento: string;
+    criado_em: string | null;
+    posto: string | null;
+    tanque_completo: boolean;
+    comprovante_nome: string | null;
+    criado_por_id: string | null;
+    veiculo_placa: string | null;
+    motorista_nome: string | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "IndicadoresAbastecimentos".
+ */
+export interface IndicadoresAbastecimentos {
+  data: {
+    estado: 'DISPONIVEL' | 'SEM_ABASTECIMENTOS';
+    quantidade: number;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    totalLitros: string;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    totalCusto: string;
+    custoPorLitro: string | null;
+    periodoObservado: {
+      inicio: string | null;
+      fim: string | null;
+    };
+    kmObservadosPorVeiculo: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      veiculoId: string;
+      leiturasComKm: number;
+      leiturasSemKm: number;
+      menorKm: number | null;
+      maiorKm: number | null;
+    }[];
+    consumoPorDistancia: {
+      valor: null;
+      estado: 'INDISPONIVEL';
+      motivo: 'REGRA_DE_NEGOCIO_PENDENTE';
+    };
+  };
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -1900,8 +2124,11 @@ export interface ApiOperations {
   'motoristas_patch__api_motoristas_id_': { body: ApiSchemas['EditarMotorista']; response: ApiSchemas['RespostaMotorista'] };
   'motoristas_delete__api_motoristas_id_': { body: undefined; response: ApiSchemas['Exclusao'] };
   'abastecimentos_get__api_abastecimentos_id_comprovante': { body: undefined; response: Blob };
+  'abastecimentos_get__api_abastecimentos_indicadores': { body: undefined; response: ApiSchemas['IndicadoresAbastecimentos'] };
   'abastecimentos_get__api_abastecimentos': { body: undefined; response: ApiSchemas['Abastecimentos'] };
-  'abastecimentos_post__api_abastecimentos': { body: ApiSchemas['CriarAbastecimento']; response: ApiSchemas['RespostaAbastecimento'] };
+  'abastecimentos_post__api_abastecimentos': { body: ApiSchemas['CriarAbastecimentoRF40']; response: ApiSchemas['RespostaAbastecimento'] };
+  'abastecimentos_get__api_abastecimentos_id_': { body: undefined; response: ApiSchemas['RespostaDetalheAbastecimento'] };
+  'abastecimentos_get__api_veiculos_id_abastecimentos': { body: undefined; response: ApiSchemas['HistoricoAbastecimentos'] };
   'documentos_get__api_documentos': { body: undefined; response: ApiSchemas['Documentos'] };
   'documentos_post__api_documentos': { body: ApiSchemas['CriarDocumento']; response: ApiSchemas['RespostaDocumento'] };
   'documentos_get__api_documentos_pendencias': { body: undefined; response: ApiSchemas['PendenciasDocumentos'] };

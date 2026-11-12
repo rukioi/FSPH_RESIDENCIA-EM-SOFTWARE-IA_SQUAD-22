@@ -143,6 +143,36 @@ export function renderDer(m: Metadata): string {
   return lines.join('\n') + '\n';
 }
 
+/** Descreve o catálogo real, sem atribuir significado de negócio a nomes de colunas. */
+export function renderDictionary(m: Metadata): string {
+  const code = (value: string) => '`' + value.replaceAll('|', '\\|').replaceAll('`', '&#96;') + '`';
+  const lines = [
+    '# Dicionário estrutural', '',
+    '<!-- Gerado por db:docs:generate. Não editar manualmente. -->', '',
+    'Fonte: catálogo do PostgreSQL isolado. Tipos, nulabilidade, constraints e índices',
+    'não substituem regras de negócio. Veja [metadados](./schema-metadata.json),',
+    '[DDL](./schema.sql), [DER](./der.mmd) e [limites de segurança](../seguranca.md).', '',
+    'DEFAULT não implica NOT NULL. Datas civis e timestamps sem fuso preservam os',
+    'tipos existentes; este catálogo não define sua serialização HTTP ou fuso histórico.', '',
+  ];
+  for (const table of m.tables) {
+    lines.push('## ' + table.name, '',
+      `RLS: ${table.rls ? 'habilitada' : 'desabilitada'}; FORCE RLS: ${table.forceRls ? 'sim' : 'não'}.`, '',
+      '| Coluna | Tipo | Aceita NULL | Default |', '| --- | --- | --- | --- |');
+    for (const column of m.columns.filter(c => c.table === table.name)) {
+      lines.push(`| ${code(column.name)} | ${code(column.type)} | ${column.nullable ? 'Sim' : 'Não'} | ${column.default === null ? '—' : code(column.default)} |`);
+    }
+    lines.push('', 'Constraints:', '');
+    for (const c of m.constraints.filter(c => c.table === table.name)) {
+      lines.push(`- ${code(c.name)}: ${code(c.definition)}; validada: ${c.validated ? 'sim' : 'não'}.`);
+    }
+    lines.push('', 'Índices:', '');
+    for (const i of m.indexes.filter(i => i.table === table.name)) lines.push('- ' + code(i.definition) + '.');
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
 /** Lê só catálogos no banco local comprovado e verifica todos os artefatos gerados. */
 export async function generate(check: boolean) {
   const sql = await verifiedSql();
@@ -158,6 +188,7 @@ export async function generate(check: boolean) {
     'schema-metadata.json': JSON.stringify(metadata, null, 2) + '\n',
     'schema.sql': renderSchema(metadata),
     'der.mmd': renderDer(metadata),
+    'dicionario.md': renderDictionary(metadata),
   };
   for (const [name, source] of Object.entries(outputs)) {
     const path = resolve(directory, name);
@@ -165,7 +196,7 @@ export async function generate(check: boolean) {
       if (readFileSync(path, 'utf8').replaceAll('\r\n', '\n') !== source) throw new Error('Drift estrutural: ' + name);
     } else { writeFileSync(path, source); }
   }
-  console.log(check ? 'Sem drift nos metadados, schema e DER.' : 'Metadados, schema e DER gerados do banco isolado.');
+  console.log(check ? 'Sem drift nos metadados, schema, DER e dicionário.' : 'Metadados, schema, DER e dicionário gerados do banco isolado.');
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const auditIndex = process.argv.indexOf('--baseline-from-audit');
