@@ -3,7 +3,7 @@ import { Select } from '../../shared/components/Select';
 import { IconeGestor } from '../../shared/components/IconeGestor'
 import { useRemoteData } from '../../shared/api/useRemoteData';
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { buscarMotoristas, cadastrarMotorista as salvarMotorista } from "../../shared/services/motoristas.service";
+import { buscarMotoristas, cadastrarMotorista as salvarMotorista, removerMotorista as excluirMotorista } from "../../shared/services/motoristas.service";
 import type { MotoristaDto, CriarMotoristaDto } from "../../shared/services/motoristas.service";
 import "./Motoristas.css";
 import '../../shared/styles/cartao-identidade.css';
@@ -175,6 +175,9 @@ export function Motoristas() {
   const [menuMotoristaAberto, setMenuMotoristaAberto] = useState<string | null>(
     null,
   );
+  const [confirmacaoRemocao, setConfirmacaoRemocao] = useState<{ motorista: Motorista; etapa: 1 | 2 } | null>(null);
+  const [removendoMotorista, setRemovendoMotorista] = useState(false);
+  const [erroRemocao, setErroRemocao] = useState('');
 
   const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
   const [salvandoCadastro, setSalvandoCadastro] = useState(false);
@@ -267,6 +270,22 @@ export function Motoristas() {
       );
     } finally {
       setSalvandoCadastro(false);
+    }
+  }
+
+  async function removerMotoristaSelecionado() {
+    if (!confirmacaoRemocao || confirmacaoRemocao.etapa !== 2 || removendoMotorista) return;
+    setRemovendoMotorista(true);
+    setErroRemocao('');
+    try {
+      await excluirMotorista(confirmacaoRemocao.motorista.id);
+      setMotoristas(atuais => atuais.filter(item => item.id !== confirmacaoRemocao.motorista.id));
+      setAviso(`Motorista ${confirmacaoRemocao.motorista.nome} removido com sucesso.`);
+      setConfirmacaoRemocao(null);
+    } catch (erroEnvio) {
+      setErroRemocao(erroEnvio instanceof Error ? erroEnvio.message : 'Não foi possível remover o motorista.');
+    } finally {
+      setRemovendoMotorista(false);
     }
   }
 
@@ -507,6 +526,23 @@ export function Motoristas() {
 
   return (
     <section className="motoristas-pagina">
+      {confirmacaoRemocao && (
+        <div className="motorista-remocao-overlay">
+          <section className="motorista-remocao-dialog" role="alertdialog" aria-modal="true" aria-labelledby="motorista-remocao-titulo" aria-describedby="motorista-remocao-descricao">
+            <h2 id="motorista-remocao-titulo">{confirmacaoRemocao.etapa === 1 ? 'Confirmar remoção' : 'Confirmação final'}</h2>
+            <p id="motorista-remocao-descricao">{confirmacaoRemocao.etapa === 1 ? `Deseja iniciar a remoção de ${confirmacaoRemocao.motorista.nome}?` : `Esta ação removerá ${confirmacaoRemocao.motorista.nome} do cadastro. Deseja concluir?`}</p>
+            {erroRemocao && <p role="alert">{erroRemocao}</p>}
+            <div className="motorista-remocao-acoes">
+              <button type="button" disabled={removendoMotorista} onClick={() => { setConfirmacaoRemocao(null); setErroRemocao(''); }}>Cancelar</button>
+              {confirmacaoRemocao.etapa === 1 ? (
+                <button type="button" onClick={() => setConfirmacaoRemocao({ ...confirmacaoRemocao, etapa: 2 })}>Continuar</button>
+              ) : (
+                <button type="button" disabled={removendoMotorista} onClick={removerMotoristaSelecionado}>{removendoMotorista ? 'Removendo...' : 'Remover definitivamente'}</button>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
       <header className="motoristas-cabecalho">
         <div>
           <h1>Motoristas</h1>
@@ -1023,7 +1059,7 @@ export function Motoristas() {
                           type="button"
                           className="motorista-card__menu-item"
                           role="menuitem"
-                          onClick={() => setMenuMotoristaAberto(null)}
+                          onClick={() => { setMenuMotoristaAberto(null); setErroRemocao(''); setConfirmacaoRemocao({ motorista, etapa: 1 }); }}
                         >
                           <svg
                             viewBox="0 0 24 24"

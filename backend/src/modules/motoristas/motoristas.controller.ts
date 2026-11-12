@@ -524,7 +524,7 @@ export async function deletarMotorista(
       );
     }
 
-    enviarJson(res, 200, { success: true });
+    enviarJson(res, 200, { data: { success: true } });
   } catch (err) {
     tratarErro(res, err, 'Falha ao remover motorista.');
   }
