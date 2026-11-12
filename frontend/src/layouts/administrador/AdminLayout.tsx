@@ -1,3 +1,5 @@
+import { useSidebar } from '../../shared/components/useSidebar'
+import { MarcaInstitucional } from '../../shared/components/MarcaInstitucional'
 import { Sininho } from '../../features/notificacoes/Sininho'
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
@@ -21,7 +23,7 @@ const itensMenu: ItemMenu[] = [
   { nome: 'SVO', icone: 'svo', rota: ROTAS.svoDashboard },
   { nome: 'Documentos', icone: 'documentos' },
   { nome: 'Abastecimentos', icone: 'abastecimentos', rota: ROTAS.abastecimentosGestor },
-  { nome: 'Relatórios', icone: 'relatorios' },
+  { nome: 'Relatórios', icone: 'relatorios', rota: ROTAS.relatoriosGestor },
   { nome: 'Auditoria', icone: 'auditoria', rota: ROTAS.auditoria },
   { nome: 'Notificações', icone: 'notificacoes', rota: ROTAS.notificacoes },
 ]
@@ -52,9 +54,11 @@ function ItemDoMenu({ item, ativo, aoNavegar }: { item: ItemMenu; ativo: boolean
         para={item.rota}
         className={ativo ? 'menu__item menu__item--ativo' : 'menu__item'}
         ariaCurrent={ativo}
+        title={item.nome}
+        ariaLabel={item.nome}
       >
         <Icone nome={item.icone} />
-        {item.nome}
+        <span className="menu__rotulo">{item.nome}</span>
       </Link>
     </span>
   )
@@ -68,7 +72,7 @@ export function AdminLayout({ children, usuario: sessao }: { children: ReactNode
     cargo: sessao.perfil === 'ADM' ? 'Administrador' : 'Gestor da Frota',
     iniciais: iniciais(nome),
   }
-  const [menuAberto, setMenuAberto] = useState(() => window.innerWidth > 900)
+  const { menuAberto, setMenuAberto, menuMovel } = useSidebar()
   const [deslocamento, setDeslocamento] = useState(0)
   const inicioArraste = useRef<number | null>(null)
 
@@ -116,7 +120,7 @@ export function AdminLayout({ children, usuario: sessao }: { children: ReactNode
         className={deslocamento ? 'menu menu--arrastando' : 'menu'}
         style={deslocamento ? { transform: `translateX(${deslocamento}px)` } : undefined}
         aria-label="Menu principal"
-        aria-hidden={!menuAberto}
+        inert={menuMovel && !menuAberto}
         onPointerDown={iniciar}
         onPointerMove={mover}
         onPointerUp={soltar}
@@ -124,9 +128,7 @@ export function AdminLayout({ children, usuario: sessao }: { children: ReactNode
         onPointerLeave={soltar}
       >
         <div className="menu__marca">
-          <span className="menu__logo">
-            <Icone nome="veiculos" tamanho={22} />
-          </span>
+          <MarcaInstitucional />
           <div>
             <strong>Gestão de Frotas</strong>
             <small>Central de Transporte</small>
@@ -157,7 +159,7 @@ export function AdminLayout({ children, usuario: sessao }: { children: ReactNode
         </div>
       </aside>
 
-      <div className="shell__fundo" onClick={() => setMenuAberto(false)} />
+      <button type="button" className="shell__fundo" aria-label="Fechar menu" tabIndex={-1} onClick={() => setMenuAberto(false)} />
 
       <div className="shell__principal">
         <header className="cabecalho">

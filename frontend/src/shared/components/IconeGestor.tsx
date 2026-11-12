@@ -4,7 +4,7 @@ const icones = {
   rota: "M4 6h13l-3-3 M20 18H7l3 3 M17 6l-3 3 M7 18l3-3 M4 5v2 M20 17v2",
   manutencao: "M14.7 6.3a5 5 0 0 0-6.3 6.3L3 18a2.1 2.1 0 0 0 3 3l5.4-5.4a5 5 0 0 0 6.3-6.3l-3 3-3-3z",
   confirmado: "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0 M8 12l3 3 5-6",
-  frota: "M3 13h18v6H3z M5 13l2-6h10l2 6 M7 16h.01 M17 16h.01 M5 19v2 M19 19v2 M8 4h8",
+  frota: "M5 11l1.5-5h11l1.5 5 M4 11h16a1 1 0 0 1 1 1v6H3v-6a1 1 0 0 1 1-1z M6 14h2 M16 14h2 M5 18v2 M19 18v2",
   dashboard: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
   solicitacoes:
     'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2 M9 3h6v4H9z M9 12h6 M9 16h6',

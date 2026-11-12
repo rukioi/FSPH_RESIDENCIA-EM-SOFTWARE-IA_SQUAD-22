@@ -1,5 +1,7 @@
+import { useSidebar } from '../../shared/components/useSidebar'
+import { MarcaInstitucional } from '../../shared/components/MarcaInstitucional'
 import { Sininho } from '../../features/notificacoes/Sininho'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { navegar, useCaminho } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
@@ -8,6 +10,7 @@ import type { UsuarioSessao } from '../../shared/services/auth.service'
 import { Perfil } from '../../pages/gerente/Perfil'
 import './GestorLayout.css'
 import { IconeGestor as Icone, type NomeIcone } from '../../shared/components/IconeGestor'
+
 
 // rota: tela já desenvolvida (os demais itens ainda não navegam)
 const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
@@ -18,7 +21,7 @@ const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
   { nome: 'Motoristas', icone: 'motoristas', rota: ROTAS.motoristasGestor },
   { nome: 'Documentos', icone: 'documentos' },
   { nome: 'Abastecimentos', icone: 'abastecimentos', rota: ROTAS.abastecimentosGestor },
-  { nome: 'Relatórios', icone: 'relatorios' },
+  { nome: 'Relatórios', icone: 'relatorios', rota: ROTAS.relatoriosGestor },
   { nome: 'Notificações', icone: 'notificacoes', rota: ROTAS.notificacoes },
 ]
 
@@ -38,14 +41,8 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
     iniciais: iniciais(nome),
   }
   // Menu aberto por padrão no computador e fechado no celular
-  const [menuAberto, setMenuAberto] = useState(window.innerWidth > 900)
-  const [menuMovel, setMenuMovel] = useState(window.innerWidth <= 900)
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 900px)')
-    const atualizar = () => setMenuMovel(media.matches)
-    media.addEventListener('change', atualizar)
-    return () => media.removeEventListener('change', atualizar)
-  }, [])
+  const { menuAberto, setMenuAberto, menuMovel } = useSidebar()
+
   // Item ativo segue a rota atual (inclusive detalhe/edição: /gestor/solicitacoes/...)
   const caminho = useCaminho()
   const [itemClicado, setItemClicado] = useState('Dashboard')
@@ -59,9 +56,7 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
       {/* ===== Menu lateral ===== */}
       <aside id="menu-gestor" className="menu" inert={menuMovel && !menuAberto}>
         <div className="menu__marca">
-          <span className="menu__logo">
-            <Icone nome="frota" tamanho={26} />
-          </span>
+          <MarcaInstitucional />
           <div>
             <strong>Gestão de Frotas</strong>
             <small>Central de Transporte</small>
@@ -79,6 +74,9 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
     <button
       key={item.nome}
       title={item.nome}
+      aria-label={item.nome}
+      aria-current={item.nome === itemAtivo ? 'page' : undefined}
+      disabled={!item.rota}
       type="button"
       className={
         item.nome === itemAtivo
@@ -109,7 +107,7 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
         </div>
       </aside>
 
-      <div className="shell__fundo" onClick={() => setMenuAberto(false)} />
+      <button type="button" className="shell__fundo" aria-label="Fechar menu" tabIndex={-1} onClick={() => setMenuAberto(false)} />
 
       {/* ===== Cabeçalho + conteúdo ===== */}
       <div className="shell__principal">

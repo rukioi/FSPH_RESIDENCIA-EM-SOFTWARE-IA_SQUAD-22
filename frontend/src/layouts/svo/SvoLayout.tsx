@@ -1,3 +1,5 @@
+import { useSidebar } from '../../shared/components/useSidebar'
+import { MarcaInstitucional } from '../../shared/components/MarcaInstitucional'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, navegar, useCaminho } from '../../app/routes/router'
@@ -101,6 +103,7 @@ function iniciais(nome: string): string {
 }
 
 function tituloDaPagina(caminho: string): string {
+  if (caminho === ROTAS.svoRelatorios) return 'Relatórios SVO'
   if (/^\/svo\/solicitacoes\/[1-9]\d*\/triagem$/.test(caminho)) return 'Triagem'
   if (caminho === ROTAS.svoNovaSolicitacao) return 'Nova Solicitação'
   if (caminho === ROTAS.svoSolicitacoes) return 'Solicitações'
@@ -116,7 +119,8 @@ export function SvoLayout({
   const caminho = useCaminho()
   const [menuAberto, setMenuAberto] = useState(false)
 
-  const [recolhido, setRecolhido] = useState(false)
+  const { menuAberto: expandido, setMenuAberto: setExpandido, menuMovel } = useSidebar()
+  const recolhido = !expandido
   const botaoMenu = useRef<HTMLButtonElement>(null)
   const painelMenu = useRef<HTMLElement>(null)
 
@@ -164,13 +168,13 @@ export function SvoLayout({
           : 'svo-shell'
       }
     >
-      <aside id="svo-menu" ref={painelMenu} className="svo-menu"
+      <aside id="svo-menu" ref={painelMenu} className="svo-menu" inert={menuMovel && !menuAberto}
         onKeyDown={evento => {
           if (menuAberto && evento.key === 'Escape') fecharMenu()
         }}>
         {menuAberto && <button type="button" className="svo-menu__fechar" onClick={fecharMenu}>Fechar menu</button>}
         <div className="svo-menu__marca">
-          {modoPreview && <span className="svo-marca-icone"><Icone nome="transporte"/></span>}
+          <MarcaInstitucional />
           <div>
             <strong>Gestão de Frotas</strong>
             <small>Central de Transporte</small>
@@ -212,6 +216,8 @@ export function SvoLayout({
               <Link
                 para={modoPreview && item.preview ? item.preview : item.rota}
                 ariaCurrent={ativo}
+                title={item.nome}
+                ariaLabel={item.nome}
                 className={
                   ativo
                     ? 'svo-menu__item svo-menu__item--ativo'
@@ -219,13 +225,13 @@ export function SvoLayout({
                 }
               >
                 <Icone nome={item.icone} />
-                {item.nome}
+                <span className="menu__rotulo">{item.nome}</span>
               </Link>
               </Fragment>
             )
           })}
 
-          {!modoPreview && !equipe && <NotificacoesIndisponiveis/>}
+          {!modoPreview && !equipe && <><Link title="Relatórios SVO" ariaLabel="Relatórios SVO" para={ROTAS.svoRelatorios} className={caminho===ROTAS.svoRelatorios?'svo-menu__item svo-menu__item--ativo':'svo-menu__item'} ariaCurrent={caminho===ROTAS.svoRelatorios}><Icone nome="ordens"/><span className="menu__rotulo">Relatórios SVO</span></Link><NotificacoesIndisponiveis/></>}
         </nav>
 
         <div className="svo-menu__rodape">
@@ -243,7 +249,7 @@ export function SvoLayout({
           {!modoPreview && (
             <button
               type="button"
-              className="svo-menu__sair"
+              className="svo-menu__sair" aria-label="Sair" title="Sair"
               onClick={() => {
                 sair()
                 navegar(ROTAS.login, true)
@@ -281,10 +287,10 @@ export function SvoLayout({
               <Icone nome="menu" />
             </button>
 
-            {modoPreview && <button type="button" className="svo-toggle-desktop" aria-label="Alternar menu lateral"
-              aria-controls="svo-menu" aria-expanded={!recolhido} onClick={() => setRecolhido(!recolhido)}>
+            <button type="button" className="svo-toggle-desktop" aria-label="Alternar menu lateral"
+              aria-controls="svo-menu" aria-expanded={!recolhido} onClick={() => setExpandido(!expandido)}>
               <Icone nome="menu" tamanho={18}/>
-            </button>}
+            </button>
             <strong>{telaPreview === 'triagem' ? 'Triagem' : telaPreview === 'detalhe' ? 'Detalhe da ordem'
               : telaPreview === 'despacho' ? 'Preparar despacho' : telaPreview === 'execucao' ? 'Execução da ordem'
               : tituloDetalhe || tituloDaPagina(caminhoVisual)}</strong>

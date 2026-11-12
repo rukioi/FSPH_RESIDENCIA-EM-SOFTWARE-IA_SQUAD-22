@@ -1,0 +1,48 @@
+/* Hierarquia compartilhada: cores semânticas e navegação compacta. */
+:root {
+  --perigo-fundo: #fff1f2;
+  --perigo-texto: #9f1239;
+  --perigo-borda: #be123c;
+  --atencao-fundo: #fffbeb;
+  --atencao-texto: #854d0e;
+  --atencao-borda: #ca8a04;
+  --informacao-fundo: #f0f6ff;
+  --sucesso-fundo: #f0fdf4;
+}
+.marca-institucional { display: block; flex: none; width: 42px; height: 48px; object-fit: contain; }
+.menu, .svo-menu { background: var(--azul-escuro); box-shadow: 4px 0 20px #0f1f3812; }
+.menu__marca, .svo-menu__marca { gap: 12px; min-height: 76px; flex-shrink: 0; }
+.menu__item, .svo-menu__item { min-height: 44px; flex-shrink: 0; border-radius: 8px; text-decoration: none; }
+.menu__item--ativo, .svo-menu__item--ativo { background: #ffffff20; box-shadow: inset 3px 0 var(--amarelo); color: #fff; }
+.menu__item:disabled { opacity: .55; cursor: default; }
+.menu__grupo { letter-spacing: .08em; font-size: 11px; text-transform: uppercase; color: #b8c9e3; }
+.menu :is(button,a):focus-visible { outline: 2px solid white; outline-offset: -3px; }
+.svo-toggle-desktop { display: none; min-height: 40px; min-width: 40px; border: 1px solid var(--borda); border-radius: 8px; background: white; }
+.svo-menu__nav { overflow-y: auto; }
+:is(.pagina__topo,.cabecalho-pagina) h1 { color: var(--azul-escuro); letter-spacing: -.025em; }
+:is(.pagina__topo,.cabecalho-pagina) { padding-bottom: 18px; border-bottom: 1px solid var(--borda); }
+.cartao { box-shadow: 0 2px 6px #0f1f3808; }
+:where(.conteudo,.svo-conteudo) [role="alert"] { color: var(--perigo-texto); background: var(--perigo-fundo); border-left: 3px solid var(--perigo-borda); border-radius: 6px; padding: 12px; }
+:where(.conteudo,.svo-conteudo) table thead { background: var(--informacao-fundo); color: var(--azul-escuro); }
+.paginacao__botoes button { min-height: 40px; min-width: 40px; }
+@media (min-width: 901px) {
+  .shell:not(.shell--aberto) { grid-template-columns: 76px minmax(0,1fr); }
+  .shell:not(.shell--aberto) .menu { width: 76px; transform: none; }
+  .shell:not(.shell--aberto) .menu__marca { padding: 12px 17px; }
+  .shell:not(.shell--aberto) :is(.menu__marca > div,.menu__grupo,.menu__usuario > div) { display: none; }
+  .shell:not(.shell--aberto) .menu__nav { padding: 18px 10px; }
+  .shell:not(.shell--aberto) .menu__item { justify-content: center; width: 56px; padding: 0; gap: 0; font-size: 0; }
+  .shell:not(.shell--aberto) .menu__item svg { width: 22px; height: 22px; }
+  .shell:not(.shell--aberto) .menu__rotulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .shell:not(.shell--aberto) .menu__usuario { padding: 16px 18px; }
+  .svo-toggle-desktop { display: inline-grid; place-items: center; }
+  .svo-shell[data-recolhido] .svo-menu { width: 76px; }
+  .svo-shell[data-recolhido] .svo-shell__principal { margin-left: 76px; }
+  .svo-shell[data-recolhido] .svo-menu__marca { padding: 12px 17px; }
+  .svo-shell[data-recolhido] :is(.svo-menu__marca > div,.svo-menu__usuario > div,.svo-menu__grupo) { display: none; }
+  .svo-shell[data-recolhido] :is(.svo-menu__item,.svo-menu__sair) { font-size: 0; justify-content: center; gap: 0; padding: 12px 0; }
+  .svo-shell[data-recolhido] .svo-menu__rotulo,.svo-shell[data-recolhido] .menu__rotulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .svo-shell[data-recolhido] .svo-menu__rodape { padding: 12px 8px; }
+  .svo-shell[data-recolhido] .svo-menu__usuario { justify-content: center; padding: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .shell, .menu, .svo-menu { transition: none; } }
