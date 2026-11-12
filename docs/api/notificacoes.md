@@ -102,10 +102,19 @@ O bloqueio do harness local e a regeneração dos snapshots locais continuam pen
 
 O agendamento com viagem vinculada grava aviso `ATRIBUICAO` para a conta ativa do motorista na mesma transação da viagem, reserva e auditoria. A chave é `viagem:<id>:atribuicao:<motoristaId>`; a restrição única impede duplicação por destinatário. Na troca de motorista, o novo atribuído recebe seu próprio aviso. Ao reagendar com o mesmo motorista, alterações efetivas continuam gerando aviso de reagendamento; repetir dados idênticos não gera outro aviso ao motorista. Pedidos antigos sem viagem conservam o aviso genérico existente. Motorista sem conta vinculada ou com conta inativa não recebe atribuição.
 
-A caixa existente permanece restrita ao destinatário e mantém o formato HTTP anterior. Não há lembretes automáticos nesta etapa. O funcionamento depende da migration DB-S8-01; a conferência e implantação no ambiente compartilhado são tarefas separadas e não foram executadas aqui.
+A caixa existente permanece restrita ao destinatário e mantém o formato HTTP anterior. Lembretes automáticos seguem a política provisória documentada abaixo. O funcionamento depende da migration DB-S8-01; a conferência e implantação no ambiente compartilhado são tarefas separadas e não foram executadas aqui.
 
 ## Rotas do motorista
 
 `GET /api/motorista/notificacoes?pagina=1&lida=false` retorna a propria caixa paginada; `lida=true` filtra lidas e a omissao lista todas. `PATCH /api/motorista/notificacoes/{id}/lida` marca somente notificacao propria, de forma idempotente. Ambas exigem perfil MOTORISTA autenticado.
 
 Na troca do motorista, a atribuicao anterior permanece na caixa com titulo de encerramento. Se a viagem voltar ao mesmo motorista, o aviso existente e reativado e volta a nao lido, sem duplicar a chave de atribuicao.
+
+
+## Lembretes automáticos de viagem
+
+O processo do backend consulta viagens institucionais agendadas e grava avisos LEMBRETE para a conta ativa vinculada ao motorista atribuído. A antecedência é configurada por `LEMBRETE_ANTECEDENCIA_MINUTOS` (padrão provisório de desenvolvimento: **30 minutos**, pendente de aprovação; intervalo aceito de 1 a 10080). A verificação ocorre ao iniciar e se repete após cada ciclo pelo intervalo em segundos configurado em `LEMBRETE_INTERVALO_SEGUNDOS` (padrão técnico 60, de 1 a 3600). O horário de saída é interpretado em America/Maceio.
+
+A política provisória gera um aviso por viagem, motorista e horário de saída: repetidas verificações não duplicam o registro. O processamento concorrente usa bloqueio da solicitação e unicidade da caixa. Se a saída ou motorista mudar, os lembretes anteriores são identificados como desatualizados; uma nova atribuição no mesmo horário original reativa o aviso correspondente. Eventos passados não são enviados. Ao reiniciar antes da saída, o processo verifica novamente as viagens ainda dentro da janela.
+
+Para funcionar em produção, pelo menos uma instância do backend precisa permanecer ativa e com acesso ao PostgreSQL durante a janela; se todas estiverem paradas até a saída, não haverá envio retroativo. A periodicidade e a antecedência precisam ser homologadas pela equipe. A falha de uma verificação é registrada sem dados sensíveis e o processo tenta novamente no ciclo seguinte. Não é necessário chamar uma rota manualmente.

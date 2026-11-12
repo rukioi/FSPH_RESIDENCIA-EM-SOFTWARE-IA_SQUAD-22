@@ -73,6 +73,11 @@ export async function reagendarSolicitacao(id:string,atorId:string,dados:z.infer
         to_char(data_hora_retorno_previsto,'YYYY-MM-DD"T"HH24:MI:SS.US')||'-03:00' AS "dataHoraRetornoPrevisto"`;
     if (!row) throw new ErroHttp(400,'SAIDA_INVALIDA','A saída deve estar no futuro.');
     await sincronizarViagemAgendada(tx,id,{motoristaId:pedido.motorista_id,veiculoId:pedido.veiculo_id},dados);
+    if(pedido.motorista_id!==dados.motoristaId || pedido.saida!==intervalo.inicio) {
+      await tx`UPDATE public.notificacao SET titulo='Lembrete desatualizado'
+        WHERE tipo='LEMBRETE' AND viagem_id=(SELECT id FROM public.viagem WHERE solicitacao_id=${id})
+          AND titulo='Lembrete de viagem'`;
+    }
     const houveAlteracao=pedido.motorista_id!==dados.motoristaId || pedido.veiculo_id!==dados.veiculoId || pedido.saida!==intervalo.inicio || pedido.retorno!==intervalo.fim;
     await registrarAtividades(tx,atorId,[{operacao:'solicitacao_viagem_reagendada',recursoId:id,houveAlteracao}]);
     return row;
