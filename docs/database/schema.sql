@@ -20,6 +20,12 @@ CREATE TYPE public."tipo_veiculo" AS ENUM ('PASSEIO', 'VAN', 'AMBULANCIA', 'RABE
 ALTER TYPE public."tipo_veiculo" OWNER TO "postgres";
 CREATE SEQUENCE public."abastecimento_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
 ALTER SEQUENCE public."abastecimento_id_seq" OWNER TO "postgres";
+CREATE SEQUENCE public."anexo_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
+ALTER SEQUENCE public."anexo_id_seq" OWNER TO "supabase_admin";
+CREATE SEQUENCE public."anotacao_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
+ALTER SEQUENCE public."anotacao_id_seq" OWNER TO "supabase_admin";
+CREATE SEQUENCE public."documento_historico_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
+ALTER SEQUENCE public."documento_historico_id_seq" OWNER TO "supabase_admin";
 CREATE SEQUENCE public."documento_veiculo_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
 ALTER SEQUENCE public."documento_veiculo_id_seq" OWNER TO "postgres";
 CREATE SEQUENCE public."log_atividade_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
@@ -47,14 +53,15 @@ ALTER SEQUENCE public."viagem_id_seq" OWNER TO "postgres";
 CREATE TABLE public."abastecimento" (
   "id" bigint DEFAULT nextval('abastecimento_id_seq'::regclass) NOT NULL,
   "veiculo_id" bigint NOT NULL,
-  "motorista_id" bigint NOT NULL,
+  "motorista_id" bigint,
   "litragem" numeric(10,2) NOT NULL,
   "valor_total" numeric(10,2) NOT NULL,
-  "quilometragem" integer NOT NULL,
+  "quilometragem" integer,
   "data_abastecimento" date NOT NULL,
   "criado_em" timestamp without time zone DEFAULT now(),
   "posto" character varying(255),
-  "tanque_completo" boolean DEFAULT false NOT NULL
+  "tanque_completo" boolean DEFAULT false NOT NULL,
+  "criado_por_id" bigint
 );
 ALTER TABLE public."abastecimento" OWNER TO "postgres";
 CREATE TABLE public."abastecimento_comprovante" (
@@ -64,6 +71,53 @@ CREATE TABLE public."abastecimento_comprovante" (
   "dados" bytea NOT NULL
 );
 ALTER TABLE public."abastecimento_comprovante" OWNER TO "supabase_admin";
+CREATE TABLE public."anexo" (
+  "id" bigint DEFAULT nextval('anexo_id_seq'::regclass) NOT NULL,
+  "chave" uuid DEFAULT gen_random_uuid() NOT NULL,
+  "nome" text NOT NULL,
+  "tipo" text NOT NULL,
+  "tamanho" integer NOT NULL,
+  "sha256" text NOT NULL,
+  "dados" bytea NOT NULL,
+  "autor_id" bigint NOT NULL,
+  "criado_em" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  "solicitacao_viagem_id" bigint,
+  "solicitacao_obito_id" bigint,
+  "viagem_id" bigint,
+  "ordem_coleta_id" bigint,
+  "abastecimento_id" bigint,
+  "veiculo_id" bigint,
+  "motorista_id" bigint,
+  "documento_veiculo_id" bigint
+);
+ALTER TABLE public."anexo" OWNER TO "supabase_admin";
+CREATE TABLE public."anotacao" (
+  "id" bigint DEFAULT nextval('anotacao_id_seq'::regclass) NOT NULL,
+  "solicitacao_viagem_id" bigint,
+  "solicitacao_obito_id" bigint,
+  "viagem_id" bigint,
+  "ordem_coleta_id" bigint,
+  "veiculo_id" bigint,
+  "texto" text NOT NULL,
+  "autor_id" bigint NOT NULL,
+  "criado_em" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
+);
+ALTER TABLE public."anotacao" OWNER TO "supabase_admin";
+CREATE TABLE public."documento_historico" (
+  "id" bigint DEFAULT nextval('documento_historico_id_seq'::regclass) NOT NULL,
+  "documento_veiculo_id" bigint,
+  "motorista_id" bigint,
+  "versao" integer NOT NULL,
+  "tipo_documento" character varying(50),
+  "data_vencimento" date NOT NULL,
+  "status_regular" boolean,
+  "numero_cnh" character varying(20),
+  "categoria_cnh" character varying(5),
+  "anexo_id" bigint,
+  "autor_id" bigint NOT NULL,
+  "criado_em" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
+);
+ALTER TABLE public."documento_historico" OWNER TO "supabase_admin";
 CREATE TABLE public."documento_veiculo" (
   "id" bigint DEFAULT nextval('documento_veiculo_id_seq'::regclass) NOT NULL,
   "veiculo_id" bigint,
@@ -233,6 +287,9 @@ CREATE TABLE public."viagem_evidencia" (
 );
 ALTER TABLE public."viagem_evidencia" OWNER TO "supabase_admin";
 ALTER SEQUENCE public."abastecimento_id_seq" OWNED BY public."abastecimento"."id";
+ALTER SEQUENCE public."anexo_id_seq" OWNED BY public."anexo"."id";
+ALTER SEQUENCE public."anotacao_id_seq" OWNED BY public."anotacao"."id";
+ALTER SEQUENCE public."documento_historico_id_seq" OWNED BY public."documento_historico"."id";
 ALTER SEQUENCE public."documento_veiculo_id_seq" OWNED BY public."documento_veiculo"."id";
 ALTER SEQUENCE public."log_atividade_id_seq" OWNED BY public."log_atividade"."id";
 ALTER SEQUENCE public."motorista_id_seq" OWNED BY public."motorista"."id";
@@ -245,11 +302,32 @@ ALTER SEQUENCE public."veiculo_id_seq" OWNED BY public."veiculo"."id";
 ALTER SEQUENCE public."viagem_correcao_id_seq" OWNED BY public."viagem_correcao"."id";
 ALTER SEQUENCE public."viagem_evidencia_id_seq" OWNED BY public."viagem_evidencia"."id";
 ALTER SEQUENCE public."viagem_id_seq" OWNED BY public."viagem"."id";
+ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_litragem_positiva" CHECK (litragem > 0::numeric AND litragem <> 'NaN'::numeric);
 ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_pkey" PRIMARY KEY (id);
+ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_quilometragem_valida" CHECK (quilometragem IS NULL OR quilometragem >= 0);
+ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_valor_positivo" CHECK (valor_total > 0::numeric AND valor_total <> 'NaN'::numeric);
 ALTER TABLE public."abastecimento_comprovante" ADD CONSTRAINT "abastecimento_comprovante_nome_check" CHECK (length(nome) >= 1 AND length(nome) <= 255);
 ALTER TABLE public."abastecimento_comprovante" ADD CONSTRAINT "abastecimento_comprovante_pkey" PRIMARY KEY (abastecimento_id);
 ALTER TABLE public."abastecimento_comprovante" ADD CONSTRAINT "abastecimento_comprovante_tamanho_check" CHECK (octet_length(dados) >= 1 AND octet_length(dados) <= 1048576);
 ALTER TABLE public."abastecimento_comprovante" ADD CONSTRAINT "abastecimento_comprovante_tipo_check" CHECK (tipo = ANY (ARRAY['image/jpeg'::text, 'image/png'::text]));
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_assinatura_check" CHECK (tipo = 'application/pdf'::text AND SUBSTRING(dados FROM 1 FOR 5) = decode('255044462d'::text, 'hex'::text) OR tipo = 'image/png'::text AND SUBSTRING(dados FROM 1 FOR 8) = decode('89504e470d0a1a0a'::text, 'hex'::text) OR tipo = 'image/jpeg'::text AND SUBSTRING(dados FROM 1 FOR 3) = decode('ffd8ff'::text, 'hex'::text));
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_chave_key" UNIQUE (chave);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_documento_key" UNIQUE (id, documento_veiculo_id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_hash_check" CHECK (sha256 = encode(sha256(dados), 'hex'::text));
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_motorista_key" UNIQUE (id, motorista_id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_nome_check" CHECK (char_length(btrim(nome)) >= 1 AND char_length(btrim(nome)) <= 255 AND nome !~ '[[:cntrl:]/]'::text AND POSITION((chr(92)) IN (nome)) = 0 AND (nome <> ALL (ARRAY['.'::text, '..'::text])));
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_pkey" PRIMARY KEY (id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_registro_check" CHECK (num_nonnulls(solicitacao_viagem_id, solicitacao_obito_id, viagem_id, ordem_coleta_id, abastecimento_id, veiculo_id, motorista_id, documento_veiculo_id) = 1);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_tamanho_check" CHECK (tamanho >= 1 AND tamanho <= 5242880 AND tamanho = octet_length(dados));
+ALTER TABLE public."anotacao" ADD CONSTRAINT "anotacao_pkey" PRIMARY KEY (id);
+ALTER TABLE public."anotacao" ADD CONSTRAINT "anotacao_registro_check" CHECK (num_nonnulls(solicitacao_viagem_id, solicitacao_obito_id, viagem_id, ordem_coleta_id, veiculo_id) = 1);
+ALTER TABLE public."anotacao" ADD CONSTRAINT "anotacao_texto_check" CHECK (char_length(btrim(texto)) >= 1 AND char_length(btrim(texto)) <= 2000);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_dados_check" CHECK (documento_veiculo_id IS NOT NULL AND tipo_documento IS NOT NULL AND btrim(tipo_documento::text) <> ''::text AND numero_cnh IS NULL AND categoria_cnh IS NULL OR motorista_id IS NOT NULL AND tipo_documento IS NULL AND status_regular IS NULL AND numero_cnh IS NOT NULL AND btrim(numero_cnh::text) <> ''::text AND categoria_cnh IS NOT NULL AND btrim(categoria_cnh::text) <> ''::text);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_documento_versao_key" UNIQUE (documento_veiculo_id, versao);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_motorista_versao_key" UNIQUE (motorista_id, versao);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_pkey" PRIMARY KEY (id);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_registro_check" CHECK (num_nonnulls(documento_veiculo_id, motorista_id) = 1);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_versao_check" CHECK (versao >= 1);
 ALTER TABLE public."documento_veiculo" ADD CONSTRAINT "documento_veiculo_pkey" PRIMARY KEY (id);
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_pkey" PRIMARY KEY (id);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_cnh_key" UNIQUE (cnh);
@@ -296,9 +374,30 @@ ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_tamanho_c
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_tipo_check" CHECK (tipo = ANY (ARRAY['image/jpeg'::text, 'image/png'::text]));
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_versao_check" CHECK (versao >= 1);
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_versao_key" UNIQUE (viagem_id, momento, versao);
+ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_criado_por_id_fkey" FOREIGN KEY (criado_por_id) REFERENCES usuario(id);
 ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
 ALTER TABLE public."abastecimento" ADD CONSTRAINT "abastecimento_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
 ALTER TABLE public."abastecimento_comprovante" ADD CONSTRAINT "abastecimento_comprovante_abastecimento_id_fkey" FOREIGN KEY (abastecimento_id) REFERENCES abastecimento(id) ON DELETE CASCADE;
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_abastecimento_id_fkey" FOREIGN KEY (abastecimento_id) REFERENCES abastecimento(id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_autor_id_fkey" FOREIGN KEY (autor_id) REFERENCES usuario(id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_documento_veiculo_id_fkey" FOREIGN KEY (documento_veiculo_id) REFERENCES documento_veiculo(id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_ordem_coleta_id_fkey" FOREIGN KEY (ordem_coleta_id) REFERENCES ordem_coleta(id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_solicitacao_obito_id_fkey" FOREIGN KEY (solicitacao_obito_id) REFERENCES solicitacao_obito(id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_solicitacao_viagem_id_fkey" FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
+ALTER TABLE public."anexo" ADD CONSTRAINT "anexo_viagem_id_fkey" FOREIGN KEY (viagem_id) REFERENCES viagem(id);
+ALTER TABLE public."anotacao" ADD CONSTRAINT "anotacao_autor_id_fkey" FOREIGN KEY (autor_id) REFERENCES usuario(id);
+ALTER TABLE public."anotacao" ADD CONSTRAINT "anotacao_ordem_coleta_id_fkey" FOREIGN KEY (ordem_coleta_id) REFERENCES ordem_coleta(id);
+ALTER TABLE public."anotacao" ADD CONSTRAINT "anotacao_solicitacao_obito_id_fkey" FOREIGN KEY (solicitacao_obito_id) REFERENCES solicitacao_obito(id);
+ALTER TABLE public."anotacao" ADD CONSTRAINT "anotacao_solicitacao_viagem_id_fkey" FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id);
+ALTER TABLE public."anotacao" ADD CONSTRAINT "anotacao_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
+ALTER TABLE public."anotacao" ADD CONSTRAINT "anotacao_viagem_id_fkey" FOREIGN KEY (viagem_id) REFERENCES viagem(id);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_anexo_documento_fk" FOREIGN KEY (anexo_id, documento_veiculo_id) REFERENCES anexo(id, documento_veiculo_id);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_anexo_motorista_fk" FOREIGN KEY (anexo_id, motorista_id) REFERENCES anexo(id, motorista_id);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_autor_id_fkey" FOREIGN KEY (autor_id) REFERENCES usuario(id);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_documento_veiculo_id_fkey" FOREIGN KEY (documento_veiculo_id) REFERENCES documento_veiculo(id);
+ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
 ALTER TABLE public."documento_veiculo" ADD CONSTRAINT "documento_veiculo_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "fk_log_atividade_usuario" FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL;
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_solicitacao_viagem_id_fkey" FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id);
@@ -322,7 +421,25 @@ ALTER TABLE public."viagem_correcao" ADD CONSTRAINT "viagem_correcao_autor_fk" F
 ALTER TABLE public."viagem_correcao" ADD CONSTRAINT "viagem_correcao_viagem_fk" FOREIGN KEY (viagem_id) REFERENCES viagem(id);
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_autor_fk" FOREIGN KEY (enviado_por_id) REFERENCES usuario(id);
 ALTER TABLE public."viagem_evidencia" ADD CONSTRAINT "viagem_evidencia_viagem_fk" FOREIGN KEY (viagem_id) REFERENCES viagem(id);
+CREATE INDEX idx_abastecimento_data ON public.abastecimento USING btree (data_abastecimento DESC, id DESC);
+CREATE INDEX idx_abastecimento_veiculo_data ON public.abastecimento USING btree (veiculo_id, data_abastecimento DESC, id DESC);
+CREATE INDEX anexo_abastecimento_idx ON public.anexo USING btree (abastecimento_id, criado_em DESC, id DESC) WHERE (abastecimento_id IS NOT NULL);
+CREATE INDEX anexo_documento_idx ON public.anexo USING btree (documento_veiculo_id, criado_em DESC, id DESC) WHERE (documento_veiculo_id IS NOT NULL);
+CREATE INDEX anexo_motorista_idx ON public.anexo USING btree (motorista_id, criado_em DESC, id DESC) WHERE (motorista_id IS NOT NULL);
+CREATE INDEX anexo_ordem_idx ON public.anexo USING btree (ordem_coleta_id, criado_em DESC, id DESC) WHERE (ordem_coleta_id IS NOT NULL);
+CREATE INDEX anexo_solicitacao_obito_idx ON public.anexo USING btree (solicitacao_obito_id, criado_em DESC, id DESC) WHERE (solicitacao_obito_id IS NOT NULL);
+CREATE INDEX anexo_solicitacao_viagem_idx ON public.anexo USING btree (solicitacao_viagem_id, criado_em DESC, id DESC) WHERE (solicitacao_viagem_id IS NOT NULL);
+CREATE INDEX anexo_veiculo_idx ON public.anexo USING btree (veiculo_id, criado_em DESC, id DESC) WHERE (veiculo_id IS NOT NULL);
+CREATE INDEX anexo_viagem_idx ON public.anexo USING btree (viagem_id, criado_em DESC, id DESC) WHERE (viagem_id IS NOT NULL);
+CREATE INDEX anotacao_ordem_idx ON public.anotacao USING btree (ordem_coleta_id, criado_em DESC, id DESC) WHERE (ordem_coleta_id IS NOT NULL);
+CREATE INDEX anotacao_solicitacao_obito_idx ON public.anotacao USING btree (solicitacao_obito_id, criado_em DESC, id DESC) WHERE (solicitacao_obito_id IS NOT NULL);
+CREATE INDEX anotacao_solicitacao_viagem_idx ON public.anotacao USING btree (solicitacao_viagem_id, criado_em DESC, id DESC) WHERE (solicitacao_viagem_id IS NOT NULL);
+CREATE INDEX anotacao_veiculo_idx ON public.anotacao USING btree (veiculo_id, criado_em DESC, id DESC) WHERE (veiculo_id IS NOT NULL);
+CREATE INDEX anotacao_viagem_idx ON public.anotacao USING btree (viagem_id, criado_em DESC, id DESC) WHERE (viagem_id IS NOT NULL);
+CREATE INDEX documento_historico_vencimento_idx ON public.documento_historico USING btree (data_vencimento, id);
+CREATE INDEX documento_veiculo_vencimento_idx ON public.documento_veiculo USING btree (data_vencimento, id);
 CREATE INDEX idx_log_atividade_solicitacao_viagem_id ON public.log_atividade USING btree (solicitacao_viagem_id);
+CREATE INDEX motorista_validade_cnh_idx ON public.motorista USING btree (validade_cnh, id);
 CREATE INDEX notificacao_caixa_idx ON public.notificacao USING btree (usuario_id, criado_em DESC, id DESC);
 CREATE INDEX notificacao_nao_lida_idx ON public.notificacao USING btree (usuario_id) WHERE (lida_em IS NULL);
 CREATE INDEX notificacao_viagem_idx ON public.notificacao USING btree (viagem_id) WHERE (viagem_id IS NOT NULL);
@@ -397,6 +514,69 @@ GRANT TRUNCATE ON TABLE public."abastecimento_comprovante" TO "supabase_admin";
 GRANT REFERENCES ON TABLE public."abastecimento_comprovante" TO "supabase_admin";
 GRANT TRIGGER ON TABLE public."abastecimento_comprovante" TO "supabase_admin";
 GRANT MAINTAIN ON TABLE public."abastecimento_comprovante" TO "supabase_admin";
+ALTER TABLE public."anexo" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."anexo" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."anexo" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."anexo" TO "postgres";
+GRANT SELECT ON TABLE public."anexo" TO "postgres";
+GRANT REFERENCES ON TABLE public."anexo" TO "postgres";
+GRANT TRIGGER ON TABLE public."anexo" TO "postgres";
+GRANT MAINTAIN ON TABLE public."anexo" TO "postgres";
+GRANT INSERT ON TABLE public."anexo" TO "service_role";
+GRANT SELECT ON TABLE public."anexo" TO "service_role";
+GRANT REFERENCES ON TABLE public."anexo" TO "service_role";
+GRANT TRIGGER ON TABLE public."anexo" TO "service_role";
+GRANT MAINTAIN ON TABLE public."anexo" TO "service_role";
+GRANT INSERT ON TABLE public."anexo" TO "supabase_admin";
+GRANT SELECT ON TABLE public."anexo" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."anexo" TO "supabase_admin";
+GRANT DELETE ON TABLE public."anexo" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."anexo" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."anexo" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."anexo" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."anexo" TO "supabase_admin";
+ALTER TABLE public."anotacao" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."anotacao" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."anotacao" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."anotacao" TO "postgres";
+GRANT SELECT ON TABLE public."anotacao" TO "postgres";
+GRANT REFERENCES ON TABLE public."anotacao" TO "postgres";
+GRANT TRIGGER ON TABLE public."anotacao" TO "postgres";
+GRANT MAINTAIN ON TABLE public."anotacao" TO "postgres";
+GRANT INSERT ON TABLE public."anotacao" TO "service_role";
+GRANT SELECT ON TABLE public."anotacao" TO "service_role";
+GRANT REFERENCES ON TABLE public."anotacao" TO "service_role";
+GRANT TRIGGER ON TABLE public."anotacao" TO "service_role";
+GRANT MAINTAIN ON TABLE public."anotacao" TO "service_role";
+GRANT INSERT ON TABLE public."anotacao" TO "supabase_admin";
+GRANT SELECT ON TABLE public."anotacao" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."anotacao" TO "supabase_admin";
+GRANT DELETE ON TABLE public."anotacao" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."anotacao" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."anotacao" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."anotacao" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."anotacao" TO "supabase_admin";
+ALTER TABLE public."documento_historico" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."documento_historico" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."documento_historico" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."documento_historico" TO "postgres";
+GRANT SELECT ON TABLE public."documento_historico" TO "postgres";
+GRANT REFERENCES ON TABLE public."documento_historico" TO "postgres";
+GRANT TRIGGER ON TABLE public."documento_historico" TO "postgres";
+GRANT MAINTAIN ON TABLE public."documento_historico" TO "postgres";
+GRANT INSERT ON TABLE public."documento_historico" TO "service_role";
+GRANT SELECT ON TABLE public."documento_historico" TO "service_role";
+GRANT REFERENCES ON TABLE public."documento_historico" TO "service_role";
+GRANT TRIGGER ON TABLE public."documento_historico" TO "service_role";
+GRANT MAINTAIN ON TABLE public."documento_historico" TO "service_role";
+GRANT INSERT ON TABLE public."documento_historico" TO "supabase_admin";
+GRANT SELECT ON TABLE public."documento_historico" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."documento_historico" TO "supabase_admin";
+GRANT DELETE ON TABLE public."documento_historico" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."documento_historico" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."documento_historico" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."documento_historico" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."documento_historico" TO "supabase_admin";
 ALTER TABLE public."documento_veiculo" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public."documento_veiculo" NO FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public."documento_veiculo" FROM PUBLIC, postgres, anon, authenticated, service_role;
@@ -794,6 +974,36 @@ GRANT USAGE ON SEQUENCE public."abastecimento_id_seq" TO "postgres";
 GRANT SELECT ON SEQUENCE public."abastecimento_id_seq" TO "service_role";
 GRANT UPDATE ON SEQUENCE public."abastecimento_id_seq" TO "service_role";
 GRANT USAGE ON SEQUENCE public."abastecimento_id_seq" TO "service_role";
+REVOKE ALL ON SEQUENCE public."anexo_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT SELECT ON SEQUENCE public."anexo_id_seq" TO "postgres";
+GRANT UPDATE ON SEQUENCE public."anexo_id_seq" TO "postgres";
+GRANT USAGE ON SEQUENCE public."anexo_id_seq" TO "postgres";
+GRANT SELECT ON SEQUENCE public."anexo_id_seq" TO "service_role";
+GRANT UPDATE ON SEQUENCE public."anexo_id_seq" TO "service_role";
+GRANT USAGE ON SEQUENCE public."anexo_id_seq" TO "service_role";
+GRANT SELECT ON SEQUENCE public."anexo_id_seq" TO "supabase_admin";
+GRANT UPDATE ON SEQUENCE public."anexo_id_seq" TO "supabase_admin";
+GRANT USAGE ON SEQUENCE public."anexo_id_seq" TO "supabase_admin";
+REVOKE ALL ON SEQUENCE public."anotacao_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT SELECT ON SEQUENCE public."anotacao_id_seq" TO "postgres";
+GRANT UPDATE ON SEQUENCE public."anotacao_id_seq" TO "postgres";
+GRANT USAGE ON SEQUENCE public."anotacao_id_seq" TO "postgres";
+GRANT SELECT ON SEQUENCE public."anotacao_id_seq" TO "service_role";
+GRANT UPDATE ON SEQUENCE public."anotacao_id_seq" TO "service_role";
+GRANT USAGE ON SEQUENCE public."anotacao_id_seq" TO "service_role";
+GRANT SELECT ON SEQUENCE public."anotacao_id_seq" TO "supabase_admin";
+GRANT UPDATE ON SEQUENCE public."anotacao_id_seq" TO "supabase_admin";
+GRANT USAGE ON SEQUENCE public."anotacao_id_seq" TO "supabase_admin";
+REVOKE ALL ON SEQUENCE public."documento_historico_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT SELECT ON SEQUENCE public."documento_historico_id_seq" TO "postgres";
+GRANT UPDATE ON SEQUENCE public."documento_historico_id_seq" TO "postgres";
+GRANT USAGE ON SEQUENCE public."documento_historico_id_seq" TO "postgres";
+GRANT SELECT ON SEQUENCE public."documento_historico_id_seq" TO "service_role";
+GRANT UPDATE ON SEQUENCE public."documento_historico_id_seq" TO "service_role";
+GRANT USAGE ON SEQUENCE public."documento_historico_id_seq" TO "service_role";
+GRANT SELECT ON SEQUENCE public."documento_historico_id_seq" TO "supabase_admin";
+GRANT UPDATE ON SEQUENCE public."documento_historico_id_seq" TO "supabase_admin";
+GRANT USAGE ON SEQUENCE public."documento_historico_id_seq" TO "supabase_admin";
 REVOKE ALL ON SEQUENCE public."documento_veiculo_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
 GRANT SELECT ON SEQUENCE public."documento_veiculo_id_seq" TO "anon";
 GRANT UPDATE ON SEQUENCE public."documento_veiculo_id_seq" TO "anon";

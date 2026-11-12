@@ -115,17 +115,6 @@ function AppContent() {
             navegar(ROTAS.login, true)
           }
 
-          if (
-            caminho === ROTAS.login ||
-            !perfilPodeAcessar(caminho, usuario.perfil)
-          ) {
-            try {
-              navegar(destinoDoPerfil(usuario.perfil), true);
-            } catch {
-              sair();
-              navegar(ROTAS.login, true);
-            }
-          }
         }}
       ).catch(() => {
         if (!ativa) return;

@@ -21,6 +21,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()));
   await sql`delete from abastecimento where veiculo_id=30001`;
+  await sql`delete from log_atividade where usuario_id=30001`;
   await sql`delete from motorista where id=30001`;
   await sql`delete from veiculo where id=30001`;
   await sql`delete from usuario where id in (30001,30002)`;
@@ -39,7 +40,7 @@ test('exige sessão e perfil efetivo; conta inativa não passa',async () => {
   await sql`update usuario set ativo=false where id=30002`;
   expect((await call(input,svo)).status).toBe(401);
 });
-test.each([null,[],42,{...input,motorista_id:null},{...input,quilometragem:null},
+test.each([null,[],42,{...input,motorista_id:{}},{...input,quilometragem:'não informado'},
   {...input,litragem:{}},{...input,posto:123},{...input,posto:'x'.repeat(256)},{...input,quilometragem:1.5},
   {...input,data_abastecimento:'2026-02-30'}])('entrada técnica inválida retorna 400: %j',async body => {
   const response = await call(body);

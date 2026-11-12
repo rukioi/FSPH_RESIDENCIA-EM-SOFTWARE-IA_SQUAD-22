@@ -1,4 +1,7 @@
+import { dashboardConsolidadoSchemas,notaDashboardConsolidado } from '../../modules/dashboard/dashboard.consolidado.schemas.js';
 import { z } from 'zod';
+import { anexosSchemas, tipoRegistro, registroId } from '../../modules/anexos/anexos.schemas.js';
+import { anotacoesSchemas, tipoNota } from '../../modules/anotacoes/anotacoes.schemas.js';
 import { notificacoesSchemas } from '../../modules/notificacoes/notificacoes.schemas.js';
 import {parametrosPeriodoDashboard,notasDashboardPeriodo} from '../../modules/dashboard/dashboard.indicadores.schemas.js';
 import { erro, erroString, erroSvo, sucessoExclusao, gestor, consultaFrota } from './schemas.js';
@@ -7,8 +10,9 @@ import { authSchemas } from '../../modules/auth/auth.schemas.js';
 import { usuariosSchemas } from '../../modules/usuarios/usuarios.schemas.js';
 import { auditoriaSchemas } from '../../modules/auditoria/auditoria.schemas.js';
 import { motoristasSchemas } from '../../modules/motoristas/motoristas.schemas.js';
-import { abastecimentosSchemas } from '../../modules/abastecimentos/abastecimentos.schemas.js';
+import { abastecimentosSchemas, parametrosAbastecimentos, notasListagemAbastecimentos, notasCadastroAbastecimentos } from '../../modules/abastecimentos/abastecimentos.schemas.js';
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
+import { gestaoDocumentalSchemas,parametrosDocumentais,tipoDocumental } from '../../modules/documentos/documentos.gestao.schemas.js';
 import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
 import { svoSchemas } from '../../modules/svo/svo.schemas.js';
 import { svoConsultasSchemas } from '../../modules/svo/svo.consultas.schemas.js';
@@ -17,15 +21,16 @@ import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas
 import { solicitacoesSchemas, statusSolicitacao } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
-export const schemas = { ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
+export const schemas = { ...dashboardConsolidadoSchemas, ...anotacoesSchemas, ...anexosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
-  ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
+  ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
-export type Modulo = 'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
+export type Modulo = 'anotacoes'|'anexos'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
   id: string; modulo: Modulo; method: 'get'|'post'|'put'|'patch'|'delete'; path: string;
   perfis: string[]; response: SchemaName; status: number; body?: SchemaName;
+  multipart?: boolean;
   errors: number[]; runtimeValidation?:boolean; errorSchema?: SchemaName; notes: string; query?: { name: string; required: boolean; schema: z.ZodType }[];
 }
 const op = (modulo: Modulo, method: Operacao['method'], path: string, response: SchemaName,
@@ -36,6 +41,22 @@ const op = (modulo: Modulo, method: Operacao['method'], path: string, response: 
   notes: 'Formato atual preservado; query params não declarados são ignorados.', ...options,
 });
 export const operations: Operacao[] = [
+  op('anotacoes','post','/api/anotacoes','RespostaAnotacao',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    body:'CriarAnotacao',runtimeValidation:true,errors:[400,401,403,404,413,415,500],
+    notes:'RF48: texto privado de 1–2000 caracteres, vínculo único autorizado, autoria/instante do servidor e auditoria atômica. Texto simples, nunca HTML; não altera decisão/status e não tem edição/exclusão.'}),
+  op('anotacoes','get','/api/anotacoes','ListaAnotacoes',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    runtimeValidation:true,errors:[400,401,403,404,500],notes:'Somente registro autorizado, mesma matriz dos anexos; solicitante/equipe só recursos próprios. Query estrita; total e página consistentes.',
+    query:[{name:'tipoRegistro',required:true,schema:tipoNota},{name:'registroId',required:true,schema:registroId},
+      {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('anexos','post','/api/anexos','RespostaAnexo',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    body:'CriarAnexo',multipart:true,runtimeValidation:true,errors:[400,401,403,404,413,415,500],
+    notes:'Arquivo PDF/JPEG/PNG até 5 MiB, campo arquivo e vínculo tipoRegistro/registroId. RBAC e proprietário no servidor. Bytes/metadados/auditoria atômicos. Novo POST cria outro anexo imutável; sem URL pública ou chave de storage no DTO.'}),
+  op('anexos','get','/api/anexos','ListaAnexos',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    runtimeValidation:true,errors:[400,401,403,404,500],notes:'Metadados somente do registro autorizado; query estrita. Perfil negado:403; registro alheio/ausente:404. criadoEm DESC,id DESC.',
+    query:[{name:'tipoRegistro',required:true,schema:tipoRegistro},{name:'registroId',required:true,schema:registroId},
+      {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('anexos','get','/api/anexos/{id}','ArquivoAnexo',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    runtimeValidation:true,errors:[401,403,404,500],notes:'Download autenticado com scoping atual por registro. Bytes privados via streaming; attachment, nosniff, no-store. ID não concede acesso.'}),
   op('notificacoes','get','/api/notificacoes','ListaNotificacoes',['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],{
     runtimeValidation:true,errors:[400,401,500],notes:'Caixa individual por sessão atual; ordem criadoEm DESC,id DESC. Query estrita. GET não materializa alertas.',
     query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
@@ -84,10 +105,12 @@ export const operations: Operacao[] = [
   op('usuarios','patch','/api/admin/usuarios/{id}/status','UsuarioStatus',['ADM'],{body:'StatusUsuario',errors:[400,401,403,404,413,415,500],errorSchema:'ErroUsuario',notes:'Estado explícito idempotente; barra final opcional.'}),
   op('auditoria','get','/api/admin/auditoria/logs','Auditoria',['ADM'],{errors:[400,401,403,500],notes:'Sem page/limit retorna array legado com email. Com qualquer parâmetro de paginação retorna DTO mínimo; defaults page=1, limit=20, max=100. Duplicatas/offset inseguro:400.',query:[
     {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)}, {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
-  ...(['Dashboard','Graficos','PendenciasDashboard','DashboardGestor'] as const).map((s,i)=>op('dashboard','get',
-    ['/api/dashboard','/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],
-    i===1?'GraficosPeriodo':i===3?'DashboardGestorIndicadores':s,gestor,
-    i===1||i===3?{runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notasDashboardPeriodo}:{})),
+  op('dashboard','get','/api/dashboard','DashboardConsolidado',['ADM','GESTOR_FROTA','ATENDENTE_SVO'],{
+    runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notaDashboardConsolidado}),
+  ...(['Graficos','PendenciasDashboard','DashboardGestor'] as const).map((s,i)=>op('dashboard','get',
+    ['/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],
+    i===0?'GraficosPeriodo':i===2?'DashboardGestorIndicadores':s,gestor,
+    i!==1?{runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notasDashboardPeriodo}:{})),
   // SCRUM-132/145/147/148 — capacidades, vínculo por motorista e execução auditada.
   op('svo','get','/api/svo/recursos-disponiveis','RecursosDisponiveisSvo',['ATENDENTE_SVO'],{
     errors:[400,401,403,500],notes:'Disponibilidade informativa: S10 própria Chevrolet com cadastro coerente, lotação ativa 0/4..4/4; CNH válida, motorista autenticável, documentos vencidos e reservas bloqueiam. Revalidar no PATCH de despacho.'}),
@@ -165,10 +188,32 @@ export const operations: Operacao[] = [
   op('motoristas','post','/api/motoristas','RespostaMotorista',gestor,{body:'CriarMotorista',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('motoristas',method,'/api/motoristas/{id}','RespostaMotorista',gestor,{body:'EditarMotorista',errors:[400,401,403,404,409,413,415,500]})),
   op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,500]}),
-  op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
-  op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
-  op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,413,415,500]}),
+  op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'PDF/JPEG/PNG privados: último anexo compartilhado, com fallback do comprovante legado. Acesso autenticado.'}),
+  op('abastecimentos','post','/api/abastecimentos/{id}/comprovante','RespostaAnexo',gestor,{
+    body:'CriarComprovante',multipart:true,runtimeValidation:true,errors:[400,401,403,404,413,415,500],
+    notes:'SCRUM-187: único arquivo multipart PDF/JPEG/PNG até 5 MiB via infraestrutura compartilhada. Vínculo fixo, autoria e auditoria atômicas; reenvio acrescenta versão, não apaga comprovantes anteriores.'}),
+  op('abastecimentos','get','/api/abastecimentos/indicadores','IndicadoresAbastecimentos',gestor,{
+    runtimeValidation:true,errors:[400,401,403,404,500],query:parametrosAbastecimentos.filter(p=>['veiculoId','inicio','fim'].includes(p.name)),
+    notes:'Totais NUMERIC reais de litros/custo e custo por litro (4 casas), quantidade e período observado; km min/max por veículo são leituras, não distância percorrida. Consumo por distância permanece INDISPONIVEL/REGRA_DE_NEGOCIO_PENDENTE. Sem registros: totais zero reais, custo/litro null. Query estrita.'}),
+  op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor,{
+    runtimeValidation:true,errors:[400,401,403,404,500],query:parametrosAbastecimentos,notes:notasListagemAbastecimentos}),
+  op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{
+    runtimeValidation:true,body:'CriarAbastecimentoRF40',errors:[400,401,403,404,409,413,415,500],
+    notes:notasCadastroAbastecimentos}),
+  op('abastecimentos','get','/api/abastecimentos/{id}','RespostaDetalheAbastecimento',gestor,{
+    runtimeValidation:true,errors:[400,401,403,404,500],notes:'Detalhe persistido, autor legado pode ser null. Sem CPF ou bytes.'}),
+  op('abastecimentos','get','/api/veiculos/{id}/abastecimentos','HistoricoAbastecimentos',gestor,{
+    runtimeValidation:true,errors:[400,401,403,404,500],query:parametrosAbastecimentos.filter(p=>p.name!=='veiculoId'),
+    notes:'Histórico real por data_abastecimento ASC,id ASC. Veículo SVO usa o mesmo contrato. Datas civis inclusivas; pagina=1,limit=20,máximo100. Veículo ausente:404; existente sem abastecimentos:data[] vazio.'}),
   op('documentos','get','/api/documentos','Documentos',gestor),
+  op('documentos','get','/api/documentos/consulta','ListaDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,500],query:parametrosDocumentais,
+    notes:'SCRUM-193: consulta paginada por tipo/veículo/motorista/validade. Situação vencido/hoje/futuro pela data civil do banco, sem escolher janela RF46. Legado /api/documentos preservado.'}),
+  op('documentos','get','/api/documentos/{id}','DetalheDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],
+    query:[{name:'tipo',required:false,schema:tipoDocumental}],notes:'Tipo padrão DOCUMENTO_VEICULO; CNH_MOTORISTA identifica cadastro existente. Versão 0 significa ausência de histórico, sem autor retroativo.'}),
+  op('documentos','get','/api/documentos/{id}/historico','HistoricoDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],
+    query:parametrosDocumentais.filter(p=>['tipo','page','limit'].includes(p.name)),notes:'Snapshots reais append-only com autor/instante; paginação decrescente. Histórico legado vazio não é reconstruído.'}),
+  op('documentos','patch','/api/documentos/{id}','DetalheDocumental',gestor,{body:'AlterarDocumento',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],
+    query:[{name:'tipo',required:false,schema:tipoDocumental}],notes:'SCRUM-193: versão obrigatória e data civil válida. Lock do cadastro, histórico e auditoria atômicos; 409 versão antiga. Motorista não edita CNH. Anexo opcional deve pertencer ao mesmo documento/motorista.'}),
   op('documentos','get','/api/documentos/pendencias','PendenciasDocumentos',gestor),
   op('documentos','post','/api/documentos','RespostaDocumento',gestor,{body:'CriarDocumento'}),
 ];

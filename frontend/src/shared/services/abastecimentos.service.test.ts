@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { baixarComprovanteAbastecimento, buscarAbastecimentos, registrarAbastecimento } from './abastecimentos.service';
+import { baixarComprovanteAbastecimento, buscarAbastecimentos, registrarAbastecimento,
+  buscarDetalheAbastecimento, buscarHistoricoAbastecimentos, buscarIndicadoresAbastecimentos } from './abastecimentos.service';
 
 vi.mock('./auth.service', () => ({ fetchAutenticada: (...args: Parameters<typeof fetch>) => fetch(...args) }));
 afterEach(() => vi.unstubAllGlobals());
@@ -10,6 +11,58 @@ const registro = { id: '9007199254740993', veiculo_id: '1', motorista_id: '2', p
   tanque_completo: true, comprovante_nome: 'comprovante.png' };
 const entrada = { veiculo_id: '1', motorista_id: '2', litragem: 12.5, valor_total: 75,
   quilometragem: 1000, data_abastecimento: '2026-11-09', tanque_completo: true };
+
+test('comprovante compartilhado aceita PDF privado de até 5 MiB', async () => {
+  const mock = vi.fn().mockResolvedValue(new Response(new Uint8Array(2 * 1024 * 1024), { headers: { 'Content-Type': 'application/pdf' } }));
+  vi.stubGlobal('fetch', mock);
+  const arquivo = await baixarComprovanteAbastecimento('1');
+  expect(arquivo.type).toBe('application/pdf');
+  expect(arquivo.size).toBe(2 * 1024 * 1024);
+});
+
+test.each([null, 0])('cadastro preserva km %s sem converter ausência em zero', async quilometragem => {
+  const mock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: {...registro, quilometragem, motorista_id: null} }), {status:201}));
+  vi.stubGlobal('fetch', mock);
+  const resultado = await registrarAbastecimento({...entrada, quilometragem, motorista_id: null});
+  expect(JSON.parse(mock.mock.calls[0][1].body)).toMatchObject({quilometragem, motorista_id:null});
+  expect(resultado.quilometragem).toBe(quilometragem);
+});
+
+test('detalhe/histórico usam endpoints publicados, paginação e cancelamento', async () => {
+  const detalhe = {...registro, quilometragem:null, motorista_id:null, veiculo_placa:'SVO1234',motorista_nome:null,criado_por_id:'9'};
+  const mock = vi.fn()
+    .mockResolvedValueOnce(new Response(JSON.stringify({data:detalhe})))
+    .mockResolvedValueOnce(new Response(JSON.stringify({data:[detalhe],meta:{page:2,limit:20,total:21}})));
+  vi.stubGlobal('fetch', mock);
+  const controller = new AbortController();
+  expect((await buscarDetalheAbastecimento(registro.id, controller.signal)).quilometragem).toBeNull();
+  expect(mock.mock.calls[0][0]).toBe(`/api/abastecimentos/${registro.id}`);
+  expect((await buscarHistoricoAbastecimentos('1', {inicio:'2026-11-01',fim:'2026-11-30',pagina:2,limit:20}, controller.signal)).meta.total).toBe(21);
+  expect(mock.mock.calls[1][0]).toBe('/api/veiculos/1/abastecimentos?inicio=2026-11-01&fim=2026-11-30&pagina=2&limit=20');
+  expect(mock.mock.calls[1][1].signal).toBe(controller.signal);
+});
+
+test('indicadores preservam zero real, consumo indisponível e não substituem erro por zero', async () => {
+  const data = {estado:'SEM_ABASTECIMENTOS',quantidade:0,totalLitros:'0.00',totalCusto:'0.00',custoPorLitro:null,
+    periodoObservado:{inicio:null,fim:null},kmObservadosPorVeiculo:[],
+    consumoPorDistancia:{valor:null,estado:'INDISPONIVEL',motivo:'REGRA_DE_NEGOCIO_PENDENTE'}};
+  const mock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({data})))
+    .mockResolvedValueOnce(new Response(JSON.stringify({error:{code:'ERRO_INTERNO',message:'Falha'}}),{status:500}));
+  vi.stubGlobal('fetch', mock);
+  expect(await buscarIndicadoresAbastecimentos({veiculoId:'1',inicio:'',fim:''})).toEqual(data);
+  expect(mock.mock.calls[0][0]).toBe('/api/abastecimentos/indicadores?veiculoId=1');
+  await expect(buscarIndicadoresAbastecimentos({})).rejects.toMatchObject({status:500});
+});
+
+test.each([400,401,403,404,413,415])('preserva erro HTTP %s do comprovante protegido', async status => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({error:{code:'FALHA',message:'Falha esperada'}}),{status})));
+  await expect(baixarComprovanteAbastecimento('1')).rejects.toMatchObject({status});
+});
+
+test('download recusa PDF acima de 5 MiB', async () => {
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response(new Uint8Array(5 * 1024 * 1024 + 1),{headers:{'Content-Type':'application/pdf'}})));
+  await expect(baixarComprovanteAbastecimento('1')).rejects.toMatchObject({code:'RESPOSTA_INVALIDA'});
+});
 
 test('lista preserva BIGINT e transmite cancelamento sem expor conteúdo de comprovantes', async () => {
   const row = { ...registro, veiculo_placa: 'ABC1D23', motorista_nome: 'Fixture' };

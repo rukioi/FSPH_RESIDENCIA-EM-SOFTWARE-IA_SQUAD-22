@@ -9,7 +9,6 @@
     {"method":"PUT","path":"/api/admin/usuarios/{id}","reason":"PUT parcial, objeto direto, erro string de ausência; barra final opcional."},
     {"method":"PATCH","path":"/api/admin/usuarios/{id}/status","reason":"Objeto direto; erro string de ausência; estado explícito da #29."},
     {"method":"GET","path":"/api/admin/auditoria/logs","reason":"Sem page/limit: array legado com email; paginado: DTO mínimo camelCase. Ambos preservados."},
-    {"method":"GET","path":"/api/dashboard","reason":"data vazio; widgets não constituem API de indicadores."},
     {"method":"GET","path":"/api/dashboard/pendencias","reason":"Projeções legadas de vencimento, sem paginação."},
     {"method":"GET","path":"/api/svo/ordens-coleta","reason":"Array snake_case; status público AGUARDANDO_DESPACHO difere do banco PENDENTE_ALOCACAO; erro/erro objeto."},
     {"method":"GET","path":"/api/svo/solicitacoes","reason":"Até 20 ocorrências recentes, apenas protocolo, estado e horário; filtro de triagem validado. Paginação/detalhe na SCRUM-146."},
@@ -40,8 +39,6 @@
     {"method":"PATCH","path":"/api/motoristas/{id}","reason":"PATCH igual a PUT; sem nova regra de disponibilidade."},
     {"method":"DELETE","path":"/api/motoristas/{id}","reason":"200 data.success, não 204; erro FK permanece 500."},
     {"method":"GET","path":"/api/abastecimentos/{id}/comprovante","reason":"Resposta binaria; identidade e identificador conferidos no modulo."},
-    {"method":"GET","path":"/api/abastecimentos","reason":"Lista completa snake_case; NUMERIC como string; joins placa/nome."},
-    {"method":"POST","path":"/api/abastecimentos","reason":"Valida somente truthiness; tipos de entrada não uniformes. Motorista/km ausentes falham NOT NULL com 500. Schema descreve formato usual, não todas coerções PostgreSQL."},
     {"method":"GET","path":"/api/documentos","reason":"Lista combinada de documentos/CNH; datas serializadas pelo driver."},
     {"method":"GET","path":"/api/documentos/pendencias","reason":"Lista sem paginação e campos snake_case."},
     {"method":"POST","path":"/api/documentos","reason":"JSON ou multipart com arquivo; assinatura e limites no validador atual; metadados de arquivo só no cadastro."}

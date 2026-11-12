@@ -24,9 +24,11 @@ export async function generateClient(check = false) {
     const jsonResponse = operation.responses[success].content['application/json'];
     const response = jsonResponse?.schema.$ref.split('/').at(-1);
     const responseType = response ? `ApiSchemas['${response}']` : 'Blob';
-    const body = operation.requestBody?.content['application/json'].schema.$ref.split('/').at(-1);
+    const body = operation.requestBody?.content['application/json']?.schema.$ref.split('/').at(-1);
+    const bodyType = body ? `ApiSchemas['${body}']`
+      : operation.requestBody?.content['multipart/form-data'] ? 'FormData' : 'undefined';
     bindings[name] = {method:method.toUpperCase(),path};
-    operationTypes += `  '${name}': { body: ${body ? `ApiSchemas['${body}']` : 'undefined'}; response: ${responseType} };\n`;
+    operationTypes += `  '${name}': { body: ${bodyType}; response: ${responseType} };\n`;
   }
   operationTypes += '}\n';
   const files = [['frontend/src/shared/api/generated/schema.d.ts',types+operationTypes],

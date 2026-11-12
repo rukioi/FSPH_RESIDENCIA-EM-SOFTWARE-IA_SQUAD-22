@@ -56,6 +56,7 @@ export function Abastecimentos() {
   }, []);
   const dialogo = useRef<HTMLDialogElement>(null);
   const abrir = useRef<HTMLButtonElement>(null);
+  const envioEmAndamento = useRef(false);
 
   const registros = useMemo(
     () =>
@@ -96,6 +97,7 @@ export function Abastecimentos() {
 
   async function salvar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (envioEmAndamento.current) return;
     const form = evento.currentTarget;
     const campos = new FormData(form);
     const arquivo = campos.get("comprovante");
@@ -109,6 +111,7 @@ export function Abastecimentos() {
       return;
     }
     setErro("");
+    envioEmAndamento.current = true;
     setSalvando(true);
     try {
       let comprovante:
@@ -131,10 +134,10 @@ export function Abastecimentos() {
       if (!montado.current) return;
       await registrarAbastecimento({
         veiculo_id: String(campos.get("veiculo")),
-        motorista_id: String(campos.get("motorista")),
+        motorista_id: String(campos.get("motorista") ?? "") || null,
         posto: String(campos.get("posto") ?? "").trim() || null,
         data_abastecimento: String(campos.get("data")),
-        quilometragem: Number(campos.get("quilometragem")),
+        quilometragem: campos.get("quilometragem") === "" ? null : Number(campos.get("quilometragem")),
         litragem: String(campos.get("litros")),
         valor_total: String(campos.get("valor")),
         tanque_completo: campos.has("tanque"),
@@ -150,6 +153,7 @@ export function Abastecimentos() {
     } catch (falha) {
       if (montado.current) setErro(errorMessage(falha));
     } finally {
+      envioEmAndamento.current = false;
       if (montado.current) setSalvando(false);
     }
   }
@@ -333,13 +337,13 @@ export function Abastecimentos() {
                       <tr key={item.id}>
                         <td>
                           <strong>
-                            <Link
+                            {/^[1-9]\d*$/.test(item.veiculo_id) ? <Link
                               para={rotaHistoricoAbastecimentosVeiculo(
                                 String(item.veiculo_id),
                               )}
                             >
                               {item.veiculo_placa ?? "Placa não informada"}
-                            </Link>
+                            </Link> : item.veiculo_placa ?? "Placa não informada"}
                           </strong>
                           <small>
                             {veic
@@ -354,7 +358,7 @@ export function Abastecimentos() {
                             .reverse()
                             .join("/")}
                         </td>
-                        <td>{item.quilometragem ? (numero.format(item.quilometragem)+'km') : 'Não informada'}</td>
+                        <td>{item.quilometragem === null ? 'Não informada' : `${numero.format(item.quilometragem)} km`}</td>
                         <td>{numero.format(Number(item.litragem))} L</td>
                         <td>{moeda.format(Number(item.valor_total))}</td>
                         <td>
@@ -373,12 +377,12 @@ export function Abastecimentos() {
                           )}
                         </td>
                         <td>
-                          <Link
+                          {/^[1-9]\d*$/.test(item.id) ? <Link
                             para={rotaDetalheAbastecimento(item.id)}
                             className="abastecimentos__download"
                           >
                             Ver detalhes
-                          </Link>
+                          </Link> : "Detalhe indisponível"}
                         </td>
                       </tr>
                     );
@@ -465,9 +469,9 @@ export function Abastecimentos() {
               </label>
               <label className="abastecimentos-modal__inteiro">
                 Motorista
-                <Select name="motorista" required defaultValue="">
-                  <option value="" disabled>
-                    Selecione o motorista
+                <Select name="motorista" defaultValue="">
+                  <option value="">
+                    Não informado (opcional)
                   </option>
                   {remoto.data.motoristas.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -498,8 +502,10 @@ export function Abastecimentos() {
                   type="number"
                   min="0"
                   step="1"
-                  required
+                  max="2147483647"
+                  aria-describedby="km-opcional"
                 />
+                <small id="km-opcional">Opcional. Em branco: não informada.</small>
               </label>
               <label>
                 Litros

@@ -7,7 +7,7 @@ import { SignJWT } from 'jose';
 import { afterEach, expect, test, vi } from 'vitest';
 
 vi.mock('../../src/config/db.js', () => ({
-  sql: vi.fn(),
+  sql: Object.assign(vi.fn(), {begin: (fn: (tx: unknown)=>unknown) => fn(sql)}),
 }));
 
 vi.mock('../../src/database/connection.js', () => ({
@@ -15,6 +15,7 @@ vi.mock('../../src/database/connection.js', () => ({
 }));
 
 import { sql } from '../../src/config/db.js';
+vi.mock('../../src/modules/documentos/documentos.historico.js',()=>({registrarVersaoDocumental:vi.fn()}));
 import { createApp } from '../../src/app.js';
 import {
   criarDocumento,
@@ -119,7 +120,7 @@ test('BE-S6-02 rejeita documento sem campos obrigatórios', async () => {
 
   const { res, writeHead, end } = respostaSimulada();
 
-  await criarDocumento(req, res);
+  await criarDocumento(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     400,
@@ -154,7 +155,7 @@ test('BE-S6-02 cadastra documento válido com status 201', async () => {
 
   const { res, writeHead, end } = respostaSimulada();
 
-  await criarDocumento(req, res);
+  await criarDocumento(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     201,
@@ -457,7 +458,7 @@ test('BE-S6-02 recebe PDF por multipart e prepara cadastro no banco', async () =
 
   const { res, writeHead, end } = respostaSimulada();
 
-  await criarDocumento(req, res);
+  await criarDocumento(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     201,
@@ -474,7 +475,7 @@ test('BE-S6-02 recebe PDF por multipart e prepara cadastro no banco', async () =
 
   expect(parametros).toContain('documento.pdf');
   expect(parametros).toContain('application/pdf');
-  expect(parametros).toContain(`\\x${pdf.toString('hex')}`);
+  expect(parametros).toContainEqual(pdf);
 });
 test('BE-S6-02 rejeita JSON maior que 1 MB', async () => {
   const req = Readable.from([
@@ -487,7 +488,7 @@ test('BE-S6-02 rejeita JSON maior que 1 MB', async () => {
 
   const { res, writeHead, end } = respostaSimulada();
 
-  await criarDocumento(req, res);
+  await criarDocumento(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     413,

@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "../../app/routes/router";
 import { ROTAS } from "../../app/routes/rotas";
 import { useRemoteData } from "../../shared/api/useRemoteData";
 import { errorMessage } from "../../shared/api/errors";
 import {
-  buscarAbastecimentos,
+  buscarDetalheAbastecimento,
   baixarComprovanteAbastecimento,
-  type AbastecimentoDto,
+  type DetalheAbastecimentoDto,
 } from "../../shared/services/abastecimentos.service";
 import "./Abastecimentos.css";
 
@@ -24,14 +24,15 @@ const moeda = new Intl.NumberFormat("pt-BR", {
 });
 
 export function DetalheAbastecimento({ id }: Props) {
-  const remoto = useRemoteData(buscarAbastecimentos, [] as AbastecimentoDto[]);
+  const carregar = useCallback((signal: AbortSignal) => buscarDetalheAbastecimento(id, signal), [id]);
+  const remoto = useRemoteData<DetalheAbastecimentoDto | null>(carregar, null);
 
   const [baixando, setBaixando] = useState(false);
   const [erroDownload, setErroDownload] = useState("");
 
   const downloadController = useRef<AbortController | null>(null);
 
-  const registro = remoto.data.find((item) => item.id === id);
+  const registro = remoto.data;
 
   // Cancela o download caso o usuário saia da página.
   useEffect(() => {
@@ -147,7 +148,7 @@ export function DetalheAbastecimento({ id }: Props) {
 
             <div>
               <dt>Quilometragem</dt>
-              <dd>{numero.format(registro.quilometragem)} km</dd>
+              <dd>{registro.quilometragem === null ? "Não informada" : `${numero.format(registro.quilometragem)} km`}</dd>
             </div>
 
             <div>

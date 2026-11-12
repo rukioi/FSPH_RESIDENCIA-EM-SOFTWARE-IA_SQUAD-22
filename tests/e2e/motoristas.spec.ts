@@ -11,7 +11,17 @@ test.beforeAll(async({request})=>{
   sql=await verifiedSql();
 });
 test.afterAll(async()=>{
-  if(sql) { try {await sql`delete from motorista where nome like 'Fixture T30 E2E%'`;} finally {await sql.end();} }
+  if(sql) {
+    const admin=await verifiedSql(true);
+    try {
+      // História append-only é removida só pelo teardown autorizado do harness, nos IDs desta fixture.
+      await admin`delete from documento_historico where motorista_id in
+        (select id from motorista where nome like 'Fixture T30 E2E%')`;
+      await sql`delete from log_atividade where descricao in
+        (select 'Registrou versão da CNH do motorista ID '||id from motorista where nome like 'Fixture T30 E2E%')`;
+      await sql`delete from motorista where nome like 'Fixture T30 E2E%'`;
+    } finally {await admin.end();await sql.end();}
+  }
 });
 for(const width of [390,768,1280]) {
   test(`motoristas confirma cadastro, filtros e detalhes em ${width}px`,async({page},info)=>{

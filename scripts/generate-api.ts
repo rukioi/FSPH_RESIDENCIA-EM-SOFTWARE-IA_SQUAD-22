@@ -7,6 +7,9 @@ import { openapi } from '../backend/src/shared/contract/openapi.js';
 import { operations, possuiValidacaoRuntime } from '../backend/src/shared/contract/registry.js';
 import {z} from 'zod';
 import {parametrosPeriodoDashboard,notasDashboardPeriodo} from '../backend/src/modules/dashboard/dashboard.indicadores.schemas.js';
+import { parametrosAbastecimentos, notasListagemAbastecimentos, notasCadastroAbastecimentos } from '../backend/src/modules/abastecimentos/abastecimentos.schemas.js';
+import { id, meta } from '../backend/src/shared/contract/schemas.js';
+import { dashboardConsolidadoSchemas,notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 
 export const root = fileURLToPath(new URL('../',import.meta.url));
 /** Serializa o contrato em ordem estável, sem data de geração ou informação do ambiente. */
@@ -31,8 +34,26 @@ type Document = ReturnType<typeof openapi>;
 /** Gate conservador: qualquer alteração de contrato existente exige migração explícita; permite somente componentes e operações adicionais. */
 export function checkCompatibility(previous: Document, current: Document) {
   for (const [path,methods] of Object.entries(previous.paths)) for (const [method,definition] of Object.entries(methods)) {
-    const candidate = structuredClone(current.paths[path]?.[method]) as {responses?: Record<string,unknown>} | undefined;
+    let candidate = structuredClone(current.paths[path]?.[method]) as {responses?: Record<string,unknown>} | undefined;
     const old = definition as {responses?: Record<string,unknown>};
+    // SCRUM-195 autoriza somente substituir o painel vazio por estas visões tipadas.
+    if(path==='/api/dashboard'&&method==='get'&&candidate){
+      const previous=definition as {responses:Record<string,{content?:{'application/json'?:{schema?:{$ref?:string}}}}>};
+      if(previous.responses[200]?.content?.['application/json']?.schema?.$ref==='#/components/schemas/Dashboard'){
+        const expected={...structuredClone(definition as Record<string,unknown>),description:notaDashboardConsolidado,
+          'x-perfis':['ADM','GESTOR_FROTA','ATENDENTE_SVO'],'x-runtime-validation':true,
+          parameters:parametrosPeriodoDashboard.map(q=>({name:q.name,in:'query',required:q.required,schema:z.toJSONSchema(q.schema)})),
+          responses:structuredClone(previous.responses)};
+        expected.responses[200].content!['application/json']!.schema!.$ref='#/components/schemas/DashboardConsolidado';
+        expected.responses[400]={...expected.responses[500],description:'Falha atual HTTP 400'} as typeof expected.responses[string];
+        const {$schema:dialect,...shape}=z.toJSONSchema(dashboardConsolidadoSchemas.DashboardConsolidado,{io:'input'});void dialect;
+        if(JSON.stringify(current.components.schemas.DashboardConsolidado)!==JSON.stringify(shape))throw new Error('Dashboard consolidado fora do contrato aprovado.');
+        // Ordem de chaves não tem semântica contratual; preserve a ordem do documento derivado.
+        if(JSON.stringify({...candidate,responses:undefined})===JSON.stringify({...expected,responses:undefined})
+          &&Object.keys(expected.responses).length===Object.keys(candidate.responses??{}).length
+          &&Object.entries(expected.responses).every(([key,value])=>JSON.stringify(candidate!.responses?.[key])===JSON.stringify(value)))candidate=structuredClone(old);
+      }
+    }
     // Migração autorizada dos 4xx: somente a troca exata do envelope legado pelo comum.
     // Status, headers, descrições, sucessos e componentes continuam protegidos pelo gate.
     for (const [status, previousResponse] of Object.entries(old.responses ?? {})) {
@@ -48,6 +69,44 @@ export function checkCompatibility(previous: Document, current: Document) {
     if (path === '/api/abastecimentos' && method === 'post' && !old.responses?.[404] && candidate?.responses?.[404]) {
       const expected = { ...(old.responses?.[500] as object), description:'Falha atual HTTP 404' };
       if (JSON.stringify(candidate.responses[404]) === JSON.stringify(expected)) delete candidate.responses[404];
+    }
+    // SCRUM-185/186: evolução fechada da coleção/cadastro. Auth, sucesso, headers e erros legados seguem protegidos.
+    if (path === '/api/abastecimentos/{id}/comprovante' && method === 'get' && candidate) {
+      const before = definition as {description?:string;responses?:Record<string,{content?:Record<string,unknown>}>};
+      const after = candidate as typeof before;
+      if (before.description === 'Imagem JPEG ou PNG como bytes; acesso autenticado.'
+        && after.description === 'PDF/JPEG/PNG privados: último anexo compartilhado, com fallback do comprovante legado. Acesso autenticado.') {
+        after.description = before.description;
+      }
+      const content = after.responses?.[200]?.content;
+      if (!before.responses?.[200]?.content?.['application/pdf'] && content
+        && JSON.stringify(content['application/pdf']) === JSON.stringify({schema:{type:'string',format:'binary'}})) {
+        delete content['application/pdf'];
+      }
+    }
+    if(path==='/api/abastecimentos' && ['get','post'].includes(method) && candidate) {
+      type Operation = {description?:string;parameters?:unknown[];'x-runtime-validation'?:boolean;
+        requestBody?:{content?:{'application/json'?:{schema?:{$ref?:string}}}};
+        responses?:Record<string,{content?:{'application/json'?:{schema?:{$ref?:string}}}}>};
+      const before=definition as Operation,after=candidate as Operation;
+      const status=method==='get' ? 200 : 201;
+      const previousRef='#/components/schemas/'+(method==='get'?'Abastecimentos':'RespostaAbastecimento');
+      const replacement=previousRef;
+      const response=after.responses?.[status]?.content?.['application/json']?.schema;
+      if(before.responses?.[status]?.content?.['application/json']?.schema?.$ref===previousRef && response?.$ref===replacement) {
+        response.$ref=previousRef;
+        if(before['x-runtime-validation']===false && after['x-runtime-validation']===true) after['x-runtime-validation']=false;
+        const notes=method==='get'?notasListagemAbastecimentos:notasCadastroAbastecimentos;
+        if(before.description==='Formato atual preservado; query params não declarados são ignorados.' && after.description===notes)after.description=before.description;
+        const parameters=parametrosAbastecimentos.map(q=>({name:q.name,in:'query',required:q.required,schema:z.toJSONSchema(q.schema)}));
+        if(method==='get'&&JSON.stringify(before.parameters)==='[]'&&JSON.stringify(after.parameters)===JSON.stringify(parameters))after.parameters=[];
+        const body=after.requestBody?.content?.['application/json']?.schema;
+        if(method==='post'&&before.requestBody?.content?.['application/json']?.schema?.$ref==='#/components/schemas/CriarAbastecimento' && body?.$ref==='#/components/schemas/CriarAbastecimentoRF40')body.$ref='#/components/schemas/CriarAbastecimento';
+        for(const code of method==='get'?[400,404]:[409]) {
+          const expected={...(before.responses?.[500] as object),description:'Falha atual HTTP '+code};
+          if(!before.responses?.[code]&&JSON.stringify(after.responses?.[code])===JSON.stringify(expected))delete after.responses![code];
+        }
+      }
     }
     // SCRUM-164: transição fechada dos dois GETs para DTOs novos; componentes antigos permanecem imutáveis.
     // Não autoriza alteração de perfis, security, headers, outros erros ou remoção de campos legados.
@@ -98,6 +157,29 @@ export function checkCompatibility(previous: Document, current: Document) {
   }
   for (const [name,schema] of Object.entries(previous.components.schemas)) {
     const candidate = structuredClone(current.components.schemas[name as keyof typeof current.components.schemas]);
+    // RF40: somente motorista_id/quilometragem admitem NULL nos três DTOs legados de resposta.
+    // Não remove campo obrigatório, não muda tipo dos valores presentes nem altera qualquer outro componente.
+    if(candidate&&['Abastecimento','RespostaAbastecimento','Abastecimentos'].includes(name)) {
+      const nullable=(old:unknown,next:unknown):void=>{
+        if(!old||typeof old!=='object'||!next||typeof next!=='object')return;
+        const a=old as Record<string,unknown>,b=next as Record<string,unknown>;
+        if(a.properties&&b.properties&&typeof a.properties==='object'&&typeof b.properties==='object') {
+          const previousProperties=a.properties as Record<string,unknown>,properties=b.properties as Record<string,unknown>;
+          const extras={criado_por_id:id.nullable(),veiculo_placa:z.string().nullable(),motorista_nome:z.string().nullable(),meta};
+          for(const [key,validator] of Object.entries(extras)) {
+            if(key in previousProperties||!(key in properties))continue;
+            const {$schema,...expected}=z.toJSONSchema(validator,{io:'input'});void $schema;
+            if(JSON.stringify(properties[key])===JSON.stringify(expected)&&!(Array.isArray(b.required)&&b.required.includes(key)))delete properties[key];
+          }
+        }
+        for(const key of Object.keys(a)) {
+          const shape=a[key] as {type?:string}|undefined;
+          if(['motorista_id','quilometragem'].includes(key)&&shape?.type&&(shape.type==='string'||shape.type==='integer')&&JSON.stringify(b[key])===JSON.stringify({anyOf:[a[key],{type:'null'}]}))b[key]=a[key];
+          else nullable(a[key],b[key]);
+        }
+      };
+      nullable(schema,candidate);
+    }
     // A forma legada permanece; apenas a descrição da correção autorizada muda.
     if (name === 'CriarAbastecimento' && candidate) candidate.description = schema.description;
     // Extens?o aditiva autorizada para combust?vel; os campos anteriores permanecem id?nticos.

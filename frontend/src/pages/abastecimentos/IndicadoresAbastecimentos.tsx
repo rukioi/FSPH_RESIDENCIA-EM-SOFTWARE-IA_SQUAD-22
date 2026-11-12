@@ -1,30 +1,28 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "../../app/routes/router";
 import { ROTAS } from "../../app/routes/rotas";
+import { useRemoteData } from "../../shared/api/useRemoteData";
+import { buscarIndicadoresAbastecimentos, type IndicadoresAbastecimentosDto } from "../../shared/services/abastecimentos.service";
+import { buscarVeiculos } from "../../shared/services/veiculos.service";
 import "./Abastecimentos.css";
-
-const indicadores = [
-  {
-    titulo: "Total gasto",
-    descricao: "Valor total dos abastecimentos",
-  },
-  {
-    titulo: "Litros abastecidos",
-    descricao: "Quantidade de combustível registrada",
-  },
-  {
-    titulo: "Distância percorrida",
-    descricao: "Distância calculada com leituras válidas",
-  },
-  {
-    titulo: "Consumo médio",
-    descricao: "Consumo calculado pelo servidor",
-  },
-];
+const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const numero = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 4 });
 
 export function IndicadoresAbastecimentos() {
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
+
+  const [veiculoId, setVeiculoId] = useState("");
+  const veiculos = useRemoteData(buscarVeiculos, [] as Awaited<ReturnType<typeof buscarVeiculos>>);
+  const carregar = useCallback((signal: AbortSignal) => buscarIndicadoresAbastecimentos({ inicio, fim, veiculoId }, signal), [inicio, fim, veiculoId]);
+  const remoto = useRemoteData<IndicadoresAbastecimentosDto | null>(carregar, null);
+  const dados = !remoto.loading && !remoto.error ? remoto.data : null;
+  const indicadores = [
+    { titulo: "Total gasto", descricao: "Valor total dos abastecimentos", valor: dados ? moeda.format(Number(dados.totalCusto)) : "—" },
+    { titulo: "Litros abastecidos", descricao: "Quantidade de combustível registrada", valor: dados ? `${numero.format(Number(dados.totalLitros))} L` : "—" },
+    { titulo: "Abastecimentos", descricao: "Quantidade de registros", valor: dados ? numero.format(dados.quantidade) : "—" },
+    { titulo: "Custo por litro", descricao: "Custo total dividido pelos litros registrados", valor: dados?.custoPorLitro != null ? `R$ ${numero.format(Number(dados.custoPorLitro))}/L` : "—" },
+  ];
 
   const periodoInvalido = Boolean(inicio && fim && inicio > fim);
 
@@ -55,11 +53,12 @@ export function IndicadoresAbastecimentos() {
 
             <select
               id="indicadores-veiculo"
-              disabled
-              aria-describedby="indicadores-aviso"
-              defaultValue=""
+              value={veiculoId}
+              disabled={veiculos.loading || !!veiculos.error}
+              onChange={e => setVeiculoId(e.target.value)}
             >
-              <option value="">Aguardando integração com a API</option>
+              <option value="">Todos os veículos</option>
+              {veiculos.data.map(veiculo => <option key={veiculo.id} value={veiculo.id}>{veiculo.placa}</option>)}
             </select>
           </div>
 
@@ -106,47 +105,41 @@ export function IndicadoresAbastecimentos() {
           </p>
         )}
 
-        <p id="indicadores-aviso" role="status">
-          Os filtros de período estão preparados, mas ainda não são aplicados
-          aos dados. A consulta depende da API de indicadores da Sprint 9.
-        </p>
+        {veiculos.error && <div role="alert"><p>{veiculos.error}</p><button type="button" onClick={veiculos.retry}>Recarregar veículos</button></div>}
       </div>
 
-      <div className="abastecimentos__painel" role="status">
-        <h2>Indicadores temporariamente indisponíveis</h2>
-
-        <p>
-          Aguardando a integração com a API de indicadores. Nenhuma métrica
-          fictícia será apresentada.
-        </p>
-      </div>
+      {remoto.loading && <p role="status">Carregando indicadores...</p>}
+      {remoto.error && <div className="abastecimentos__painel" role="alert"><h2>Indicadores indisponíveis</h2><p>{remoto.error}</p><button type="button" onClick={remoto.retry}>Tentar novamente</button></div>}
+      {dados?.estado === 'SEM_ABASTECIMENTOS' && <p role="status">Nenhum abastecimento encontrado no período.</p>}
 
       <div className="abastecimentos__indicadores">
         {indicadores.map((indicador) => (
           <article className="abastecimentos__painel" key={indicador.titulo}>
             <h3>{indicador.titulo}</h3>
 
-            <p className="abastecimentos__indicador-valor">—</p>
+            <p className="abastecimentos__indicador-valor">{indicador.valor}</p>
 
             <p>{indicador.descricao}</p>
 
-            <small>Dados ainda indisponíveis</small>
+            <small>{dados ? "Dados consultados no servidor" : "Dados indisponíveis"}</small>
           </article>
         ))}
       </div>
 
+      {dados && <div className="abastecimentos__painel">
+        <h2>Período e quilometragem observados</h2>
+        <p>{dados.periodoObservado.inicio && dados.periodoObservado.fim
+          ? `${dados.periodoObservado.inicio.split('-').reverse().join('/')} a ${dados.periodoObservado.fim.split('-').reverse().join('/')}`
+          : "Período sem registros"}</p>
+        {dados.kmObservadosPorVeiculo.map(item => <p key={item.veiculoId}>
+          Veículo {veiculos.data.find(veiculo => veiculo.id === item.veiculoId)?.placa ?? item.veiculoId}: {item.leiturasComKm} leituras com km e {item.leiturasSemKm} sem km.
+          Menor leitura: {item.menorKm === null ? "Não informada" : numero.format(item.menorKm)}; maior leitura: {item.maiorKm === null ? "Não informada" : numero.format(item.maiorKm)}.
+        </p>)}
+        <p>As leituras são observações; não representam distância percorrida.</p>
+      </div>}
       <div className="abastecimentos__painel">
-        <h2>Evolução do consumo</h2>
-
-        <p>
-          O gráfico e sua tabela acessível serão exibidos quando os indicadores
-          calculados pelo Back-end estiverem disponíveis.
-        </p>
-
-        <p>
-          Não é possível calcular o consumo sem leituras válidas fornecidas pelo
-          servidor.
-        </p>
+        <h2>Consumo por distância indisponível</h2>
+        <p>A regra de associação dos litros às leituras de quilometragem ainda depende de definição de negócio. Nenhum consumo ou gráfico é estimado.</p>
       </div>
     </section>
   );

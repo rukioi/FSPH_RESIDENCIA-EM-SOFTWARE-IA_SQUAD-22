@@ -1,5 +1,25 @@
 /* Gerado por client:generate. Não editar. */
 export const apiOperations = {
+  "anotacoes_post__api_anotacoes": {
+    "method": "POST",
+    "path": "/api/anotacoes"
+  },
+  "anotacoes_get__api_anotacoes": {
+    "method": "GET",
+    "path": "/api/anotacoes"
+  },
+  "anexos_post__api_anexos": {
+    "method": "POST",
+    "path": "/api/anexos"
+  },
+  "anexos_get__api_anexos": {
+    "method": "GET",
+    "path": "/api/anexos"
+  },
+  "anexos_get__api_anexos_id_": {
+    "method": "GET",
+    "path": "/api/anexos/{id}"
+  },
   "notificacoes_get__api_notificacoes": {
     "method": "GET",
     "path": "/api/notificacoes"
@@ -240,6 +260,14 @@ export const apiOperations = {
     "method": "GET",
     "path": "/api/abastecimentos/{id}/comprovante"
   },
+  "abastecimentos_post__api_abastecimentos_id_comprovante": {
+    "method": "POST",
+    "path": "/api/abastecimentos/{id}/comprovante"
+  },
+  "abastecimentos_get__api_abastecimentos_indicadores": {
+    "method": "GET",
+    "path": "/api/abastecimentos/indicadores"
+  },
   "abastecimentos_get__api_abastecimentos": {
     "method": "GET",
     "path": "/api/abastecimentos"
@@ -248,6 +276,14 @@ export const apiOperations = {
     "method": "POST",
     "path": "/api/abastecimentos"
   },
+  "abastecimentos_get__api_abastecimentos_id_": {
+    "method": "GET",
+    "path": "/api/abastecimentos/{id}"
+  },
+  "abastecimentos_get__api_veiculos_id_abastecimentos": {
+    "method": "GET",
+    "path": "/api/veiculos/{id}/abastecimentos"
+  },
   "documentos_get__api_documentos": {
     "method": "GET",
     "path": "/api/documentos"
@@ -255,6 +291,22 @@ export const apiOperations = {
   "documentos_post__api_documentos": {
     "method": "POST",
     "path": "/api/documentos"
+  },
+  "documentos_get__api_documentos_consulta": {
+    "method": "GET",
+    "path": "/api/documentos/consulta"
+  },
+  "documentos_get__api_documentos_id_": {
+    "method": "GET",
+    "path": "/api/documentos/{id}"
+  },
+  "documentos_patch__api_documentos_id_": {
+    "method": "PATCH",
+    "path": "/api/documentos/{id}"
+  },
+  "documentos_get__api_documentos_id_historico": {
+    "method": "GET",
+    "path": "/api/documentos/{id}/historico"
   },
   "documentos_get__api_documentos_pendencias": {
     "method": "GET",

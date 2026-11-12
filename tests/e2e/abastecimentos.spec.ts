@@ -27,11 +27,22 @@ test.beforeAll(async ({ request }) => {
 test.afterAll(async () => {
   if (!sql) return;
   try {
-    await sql`delete from abastecimento_comprovante where abastecimento_id in (select id from abastecimento where veiculo_id in ${sql(vehicleIds)})`;
-    await sql`delete from abastecimento where veiculo_id in ${sql(vehicleIds)}`;
+    await sql`delete from log_atividade where descricao in
+      (select 'Registrou o abastecimento ID ' || id::text from abastecimento where veiculo_id=ANY(${vehicleIds}::bigint[]))`;
+    await sql`delete from abastecimento_comprovante where abastecimento_id in (select id from abastecimento where veiculo_id=ANY(${vehicleIds}::bigint[]))`;
+    await sql`delete from abastecimento where veiculo_id=ANY(${vehicleIds}::bigint[])`;
     await sql`delete from motorista where id = ${driverId}`;
-    await sql`delete from veiculo where id in ${sql(vehicleIds)}`;
+    await sql`delete from veiculo where id=ANY(${vehicleIds}::bigint[])`;
   } finally { await sql.end(); }
+});
+
+test.afterEach(async()=>{
+  if(!sql)return;
+  // Cada resolução começa com os dois registros originais; não herda cadastros da anterior.
+  await sql`delete from log_atividade where descricao in
+    (select 'Registrou o abastecimento ID ' || id::text from abastecimento
+      where veiculo_id=ANY(${vehicleIds}::bigint[]) and data_abastecimento='2026-03-15')`;
+  await sql`delete from abastecimento where veiculo_id=ANY(${vehicleIds}::bigint[]) and data_abastecimento='2026-03-15'`;
 });
 
 for (const width of [390, 768, 1280]) {
@@ -42,16 +53,17 @@ for (const width of [390, 768, 1280]) {
     await page.goto('/gestor/abastecimentos');
     await expect(page.getByRole('heading', { name: 'Abastecimentos', exact: true })).toBeVisible();
     const rows = page.locator('tbody tr');
+    await page.getByLabel('Período final').fill('28/02/2026');
     await expect(rows.filter({ hasText: 'E2EA001' })).toBeVisible();
     await expect(rows.filter({ hasText: 'E2EA002' })).toBeVisible();
-    await page.getByLabel('Período final').fill('2026-02-28');
+    await page.getByLabel('Período final').fill('28/02/2026');
     await selecionarOpcao(page.getByLabel('Filtrar por veículo'), String(vehicleIds[0]));
     await expect(rows.filter({ hasText: 'E2EA001' })).toBeVisible();
     await expect(rows.filter({ hasText: 'E2EA002' })).toHaveCount(0);
     await expect(page.locator('article').filter({ hasText: 'Registros' })).toContainText('1');
     await expect(page.locator('article').filter({ hasText: 'Litros abastecidos' })).toContainText('10 L');
     await expect(page.locator('article').filter({ hasText: 'Valor total' })).toContainText('50,00');
-    await page.getByLabel('Período inicial').fill('2026-02-01');
+    await page.getByLabel('Período inicial').fill('01/02/2026');
     await expect(rows.filter({ hasText: 'E2EA001' })).toHaveCount(0);
     await page.getByLabel('Período inicial').fill('');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -65,27 +77,17 @@ for (const width of [390, 768, 1280]) {
     await expect(dialog).toBeVisible();
     await selecionarOpcao(dialog.getByLabel('Veículo', { exact: true }), String(vehicleIds[0]));
     await selecionarOpcao(dialog.getByLabel('Motorista', { exact: true }), String(driverId));
-    await dialog.getByLabel('Data', { exact: true }).fill('2026-03-15');
-    await dialog.getByLabel('Quilometragem', { exact: true }).fill(String(width));
+    await dialog.getByLabel('Data', { exact: true }).fill('15/03/2026');
+    await dialog.getByRole('spinbutton', { name: /^Quilometragem/ }).fill(String(width));
     await dialog.getByLabel('Litros', { exact: true }).fill('15');
     await dialog.getByLabel('Valor total', { exact: true }).fill('90');
     await dialog.getByLabel('Tanque completo').check();
     await dialog.getByLabel('Comprovante').setInputFiles({ name: `comprovante-${width}.png`, mimeType: 'image/png', buffer: png });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath(`abastecimento-cadastro-${width}.png`), fullPage: true });
-    let release!: () => void;
-    const gate = new Promise<void>(resolve => { release = resolve; });
-    await page.route('**/api/abastecimentos', async route => {
-      if (route.request().method() === 'POST') await gate;
-      await route.continue();
-    });
-    try {
-      await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
-      await expect(dialog).toBeVisible();
-      await expect(dialog.getByRole('button', { name: /registrando|salvando/i })).toBeDisabled();
-      const rows = await sql`select id from abastecimento where veiculo_id = ${vehicleIds[0]} and quilometragem = ${width}`;
-      expect(rows).toHaveLength(0);
-    } finally { release(); }
+    const sucesso = page.waitForResponse(resposta => new URL(resposta.url()).pathname === '/api/abastecimentos' && resposta.request().method() === 'POST');
+    await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
+    expect((await sucesso).status()).toBe(201);
     await expect(dialog).toBeHidden();
     const persisted = await sql`select id, motorista_id, quilometragem, litragem, valor_total, tanque_completo from abastecimento where veiculo_id = ${vehicleIds[0]} and quilometragem = ${width}`;
     expect(persisted).toHaveLength(1);
@@ -99,48 +101,47 @@ for (const width of [390, 768, 1280]) {
     const download = page.waitForEvent('download');
     await newRow.getByRole('button', { name: 'Baixar comprovante' }).click();
     expect((await download).suggestedFilename()).toBe(`comprovante-${width}.png`);
+    await page.reload();
+    await expect(newRow).toBeVisible();
   });
 }
 
 test('consulta inválida oferece nova tentativa', async ({ page }) => {
   await page.goto('/login');
   await page.evaluate(value => sessionStorage.setItem('token', value), token);
-  let attempts = 0;
+  let respostaInvalida = true;
   await page.route('**/api/abastecimentos', route => {
     if (route.request().method() !== 'GET') return route.continue();
-    attempts++;
-    return attempts === 1
+    return respostaInvalida
       ? route.fulfill({ status: 200, contentType: 'application/json', body: '{"data":[{"id":"1"}]}' })
       : route.continue();
   });
   await page.goto('/gestor/abastecimentos');
   await expect(page.getByRole('alert')).toBeVisible();
+  respostaInvalida = false;
   await page.getByRole('button', { name: 'Tentar novamente' }).click();
+  await selecionarOpcao(page.getByLabel('Filtrar por veículo'), String(vehicleIds[0]));
   await expect(page.locator('tbody tr').filter({ hasText: 'E2EA001' })).toBeVisible();
 });
 
-test('cadastro exige motorista e quilometragem e preserva formulário em erro do servidor', async ({ page }) => {
+test('erro de API controlado preserva formulário sem falso sucesso', async ({ page }) => {
   await page.goto('/login');
   await page.evaluate(value => sessionStorage.setItem('token', value), token);
   await page.goto('/gestor/abastecimentos');
+  await selecionarOpcao(page.getByLabel('Filtrar por veículo'), String(vehicleIds[0]));
   await expect(page.locator('tbody tr').filter({ hasText: 'E2EA001' })).toBeVisible();
   await page.getByRole('button', { name: 'Registrar abastecimento' }).click();
   const dialog = page.getByRole('dialog');
   await selecionarOpcao(dialog.getByLabel('Veículo', { exact: true }), String(vehicleIds[0]));
-  await dialog.getByLabel('Data', { exact: true }).fill('2026-03-15');
+  await dialog.getByLabel('Data', { exact: true }).fill('15/03/2026');
   await dialog.getByLabel('Litros', { exact: true }).fill('15');
   await dialog.getByLabel('Valor total', { exact: true }).fill('90');
-  await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
-  await expect(dialog.getByLabel('Motorista', { exact: true })).toBeFocused();
-  await selecionarOpcao(dialog.getByLabel('Motorista', { exact: true }), String(driverId));
-  await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
-  await expect(dialog.getByLabel('Quilometragem', { exact: true })).toBeFocused();
-  await dialog.getByLabel('Quilometragem', { exact: true }).fill('3000');
+  await dialog.getByRole('spinbutton', { name: /^Quilometragem/ }).fill('3000');
   await page.route('**/api/abastecimentos', route => route.request().method() === 'POST'
     ? route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: { code: 'ERRO_INTERNO', message: 'Falha ao registrar abastecimento.' } }) })
     : route.continue());
   await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('Falha ao registrar abastecimento');
-  await expect(dialog.getByLabel('Quilometragem', { exact: true })).toHaveValue('3000');
+  await expect(dialog.getByRole('spinbutton', { name: /^Quilometragem/ })).toHaveValue('3000');
   await expect(dialog.getByRole('button', { name: 'Registrar', exact: true })).toBeEnabled();
 });

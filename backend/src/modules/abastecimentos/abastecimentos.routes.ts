@@ -1,46 +1,25 @@
-import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { enviarErro } from '../../shared/http/json.js';
 import { autenticarRequisicao } from '../../security/session.js';
 import { autorizarPerfis } from '../../security/authorization.js';
-import { listarAbastecimentos, criarAbastecimento, baixarComprovante } from './abastecimentos.controller.js';
+import { listarAbastecimentos, criarAbastecimento, baixarComprovante, enviarComprovante, obterAbastecimento, indicadoresAbastecimentos } from './abastecimentos.controller.js';
 
-export async function abastecimentosRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const url = new URL(req.url ?? '', `http://${req.headers.host ?? 'localhost'}`);
-  const pathname = url.pathname;
-  const method = req.method;
-
-  const comprovante = /^\/api\/abastecimentos\/(\d+)\/comprovante$/.exec(pathname);
-
-  if (
-    !comprovante && pathname !== '/api/abastecimentos' ||
-    (method !== 'GET' && method !== 'POST')
-  ) {
-    jsonCompartilhado(res, 404, {
-      error: {
-        code: 'NAO_ENCONTRADO',
-        message: 'Rota de abastecimentos não encontrada.',
-      },
-    });
-    return;
+/** Aplica sessão e RBAC comuns em todas as consultas e escritas de abastecimento. */
+export async function abastecimentosRoute(req:IncomingMessage,res:ServerResponse):Promise<void> {
+  const pathname=new URL(req.url??'', 'http://localhost').pathname;
+  const usuario=await autenticarRequisicao(req,res);
+  if(!usuario||!autorizarPerfis(usuario,['ADM','GESTOR_FROTA'],res)) { req.resume(); return; }
+  const comprovante=/^\/api\/abastecimentos\/(\d+)\/comprovante$/.exec(pathname);
+  const historico=/^\/api\/veiculos\/(\d+)\/abastecimentos$/.exec(pathname);
+  const detalhe=/^\/api\/abastecimentos\/(\d+)$/.exec(pathname);
+  if(req.method==='GET') {
+    if(pathname==='/api/abastecimentos/indicadores') return indicadoresAbastecimentos(req,res);
+    if(comprovante) return baixarComprovante(res,comprovante[1],usuario);
+    if(historico) return listarAbastecimentos(req,res,historico[1]);
+    if(detalhe) return obterAbastecimento(res,detalhe[1]);
+    if(pathname==='/api/abastecimentos') return listarAbastecimentos(req,res);
   }
-
-  const usuario = await autenticarRequisicao(req, res);
-  if (!usuario) return;
-  if (!autorizarPerfis(usuario, ['ADM', 'GESTOR_FROTA'], res)) return;
-
-  if (method === 'GET' && comprovante) {
-    return baixarComprovante(res, comprovante[1]);
-  }
-
-  if (method === 'GET' && pathname === '/api/abastecimentos') {
-    return listarAbastecimentos(req, res);
-  }
-
-  if (method === 'POST' && pathname === '/api/abastecimentos') {
-    return criarAbastecimento(req, res);
-  }
-
-  jsonCompartilhado(res, 404, {
-      error: { code: 'NAO_ENCONTRADO', message: 'Rota de abastecimentos não encontrada.' },
-    });
+  if(req.method==='POST'&&comprovante) return enviarComprovante(req,res,comprovante[1],usuario);
+  if(req.method==='POST'&&pathname==='/api/abastecimentos') return criarAbastecimento(req,res,usuario.id);
+  enviarErro(res,404,'NAO_ENCONTRADO','Rota de abastecimentos não encontrada.');
 }

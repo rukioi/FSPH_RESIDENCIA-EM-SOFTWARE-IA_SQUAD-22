@@ -36,8 +36,9 @@ export async function requestApi<T = unknown>(path: string, init: RequestInit = 
   }
 }
 
-/** Consulta imagens privadas pelo mesmo transporte autenticado, sem expor respostas HTML como arquivos. */
-export async function requestImageApi(path: string, signal?: AbortSignal): Promise<Blob> {
+/** Consulta arquivos privados pelo transporte comum; o consumidor declara MIME/limite do contrato. */
+export async function requestImageApi(path: string, signal?: AbortSignal,
+  contrato = { tipos: ['image/jpeg', 'image/png'], limite: 1024 * 1024 }): Promise<Blob> {
   const response = await fetchApi(path, { signal }, true);
   const requestId = response.headers.get('X-Request-Id') ?? undefined;
   if (!response.ok) {
@@ -47,7 +48,7 @@ export async function requestImageApi(path: string, signal?: AbortSignal): Promi
     throw apiError(response.status, body, requestId);
   }
   const tipo = response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase();
-  if (tipo !== 'image/jpeg' && tipo !== 'image/png') {
+  if (!tipo || !contrato.tipos.includes(tipo)) {
     throw new ApiError(response.status, 'RESPOSTA_INVALIDA', 'O comprovante recebido é inválido. Tente novamente.', undefined, requestId);
   }
   let blob: Blob;
@@ -57,7 +58,7 @@ export async function requestImageApi(path: string, signal?: AbortSignal): Promi
     throw new ApiError(0, 'FALHA_REDE', 'Não foi possível baixar o comprovante. Tente novamente.', undefined, requestId);
   }
   if (signal?.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError');
-  if (!blob.size || blob.size > 1024 * 1024) {
+  if (!blob.size || blob.size > contrato.limite) {
     throw new ApiError(response.status, 'RESPOSTA_INVALIDA', 'O comprovante recebido é inválido. Tente novamente.', undefined, requestId);
   }
   return blob;

@@ -1,10 +1,9 @@
-import { useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "../../app/routes/router";
 import { ROTAS, rotaDetalheAbastecimento } from "../../app/routes/rotas";
 import { useRemoteData } from "../../shared/api/useRemoteData";
 import {
-  buscarAbastecimentos,
-  type AbastecimentoDto,
+  buscarHistoricoAbastecimentos,
 } from "../../shared/services/abastecimentos.service";
 import "./Abastecimentos.css";
 
@@ -22,21 +21,13 @@ const numero = new Intl.NumberFormat("pt-BR", {
 });
 
 export function HistoricoAbastecimentos({ veiculoId }: Props) {
-  const remoto = useRemoteData(buscarAbastecimentos, [] as AbastecimentoDto[]);
-
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
-
-  const registros = useMemo(() => {
-    return remoto.data
-      .filter((item) => String(item.veiculo_id) === veiculoId)
-      .filter((item) => {
-        const data = item.data_abastecimento.slice(0, 10);
-
-        return (!inicio || data >= inicio) && (!fim || data <= fim);
-      })
-      .sort((a, b) => b.data_abastecimento.localeCompare(a.data_abastecimento));
-  }, [remoto.data, veiculoId, inicio, fim]);
+  const [pagina, setPagina] = useState(1);
+  const carregar = useCallback((signal: AbortSignal) => buscarHistoricoAbastecimentos(
+    veiculoId, { inicio, fim, pagina, limit: 20 }, signal), [veiculoId, inicio, fim, pagina]);
+  const remoto = useRemoteData<Awaited<ReturnType<typeof buscarHistoricoAbastecimentos>> | null>(carregar, null);
+  const registros = remoto.data?.data ?? [];
 
   return (
     <section className="abastecimentos">
@@ -61,7 +52,7 @@ export function HistoricoAbastecimentos({ veiculoId }: Props) {
               type="date"
               value={inicio}
               max={fim || undefined}
-              onChange={(e) => setInicio(e.target.value)}
+              onChange={(e) => { setInicio(e.target.value); setPagina(1); }}
             />
           </label>
 
@@ -71,7 +62,7 @@ export function HistoricoAbastecimentos({ veiculoId }: Props) {
               type="date"
               value={fim}
               min={inicio || undefined}
-              onChange={(e) => setFim(e.target.value)}
+              onChange={(e) => { setFim(e.target.value); setPagina(1); }}
             />
           </label>
         </div>
@@ -139,6 +130,14 @@ export function HistoricoAbastecimentos({ veiculoId }: Props) {
             </tbody>
           </table>
         </div>
+      )}
+      {!remoto.loading && !remoto.error && remoto.data && (
+        <nav className="abastecimentos__paginacao" aria-label="Paginação do histórico">
+          <button type="button" disabled={pagina === 1} onClick={() => setPagina(pagina - 1)}>Anterior</button>
+          <span>Página {pagina} de {Math.max(1, Math.ceil(remoto.data.meta.total / remoto.data.meta.limit))}</span>
+          <button type="button" disabled={pagina * remoto.data.meta.limit >= remoto.data.meta.total}
+            onClick={() => setPagina(pagina + 1)}>Próxima</button>
+        </nav>
       )}
     </section>
   );

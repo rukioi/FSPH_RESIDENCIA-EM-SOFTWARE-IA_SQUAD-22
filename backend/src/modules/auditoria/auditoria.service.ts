@@ -4,6 +4,10 @@ import { notificarAtividades } from '../notificacoes/notificacoes.service.js';
 import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from './auditoria.repository.js';
 
 export type EventoAtividade =
+  | { operacao: 'anexo_criado'; recursoId: string }
+  | { operacao: 'anotacao_criada'; recursoId: string }
+  | { operacao: 'documento_versionado'|'cnh_versionada'; recursoId: string }
+  | { operacao: 'abastecimento_criado'; recursoId: string }
   | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'usuario_status'; recursoId: string; ativo: boolean }
   | { operacao: 'solicitacao_confirmada' | 'solicitacao_registrada'; recursoId: string }
@@ -34,6 +38,11 @@ function identificador(valor: string): string {
 function descrever(evento: EventoAtividade): string {
   const id = identificador(evento.recursoId);
   switch (evento.operacao) {
+    case 'anexo_criado': return `Anexou arquivo ID ${id}`;
+    case 'anotacao_criada': return `Registrou anotação ID ${id}`;
+    case 'documento_versionado': return `Registrou versão do documento ID ${id}`;
+    case 'cnh_versionada': return `Registrou versão da CNH do motorista ID ${id}`;
+    case 'abastecimento_criado': return `Registrou o abastecimento ID ${id}`;
     case 'usuario_criado': return `Criou o usuário ID ${id}`;
     case 'usuario_editado': return `Atualizou os dados do usuário ID ${id}`;
     case 'usuario_status':
