@@ -112,8 +112,7 @@ estado e repetição (`409`) são regras do BE.
 | EM_TRANSPORTE | CONCLUIDA | `data_fim ≥ data_inicio`, `km_final ≥ km_inicial` | MOTORISTA atribuído |
 | CONCLUIDA não validada | CONCLUIDA validada | `validada_por_id`, `validada_em` | ADM/GESTOR_FROTA |
 
-Correção depois da validação não está definida: proposta é aceitar correção só
-antes da validação até decisão contrária.
+Correções justificadas são permitidas mesmo após a validação, preservando o histórico e as evidências.
 
 ## 5. Campos e constraints
 

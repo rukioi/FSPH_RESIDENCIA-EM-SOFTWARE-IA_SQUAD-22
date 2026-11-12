@@ -169,3 +169,9 @@ Disponibilidade não ignora reservas
 próprias: a exclusão só existe na validação transacional do reagendamento.
 
 Testes unitários e HTTP reais verificam filtros, limites, isolamento, intervalos adjacentes, reagendamento e rollback. solicitacoes-temporal.test.ts verifica parâmetros preparados repetidos e microssegundos; solicitacoes-aceite.test.ts verifica conflito com a reserva anterior e ordens SVO ativas. A disponibilidade consultada continua sem garantir a reserva.
+
+### Reagendamento e viagem vinculada
+
+O reagendamento atualiza na mesma transação os recursos da viagem vinculada AGENDADA e os horários previstos da solicitação. Viagem em outro estado ou com recursos inconsistentes bloqueia a operação com 409. Solicitações legadas sem viagem continuam sem viagem; não ocorre criação histórica automática.
+
+O motorista selecionado deve possuir conta de usuário vinculada e ativa; caso contrário, o agendamento ou reagendamento retorna HTTP 409. A verificação é feita na transação da reserva.

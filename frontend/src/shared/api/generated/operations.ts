@@ -1,5 +1,69 @@
 /* Gerado por client:generate. Não editar. */
 export const apiOperations = {
+  "viagens_post__api_viagens": {
+    "method": "POST",
+    "path": "/api/viagens"
+  },
+  "viagens_get__api_viagens": {
+    "method": "GET",
+    "path": "/api/viagens"
+  },
+  "viagens_get__api_viagens_pendentes_validacao": {
+    "method": "GET",
+    "path": "/api/viagens/pendentes-validacao"
+  },
+  "viagens_patch__api_viagens_id_encerrar": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/encerrar"
+  },
+  "viagens_get__api_viagens_id_evidencias": {
+    "method": "GET",
+    "path": "/api/viagens/{id}/evidencias"
+  },
+  "viagens_get__api_viagens_evidencias_id_": {
+    "method": "GET",
+    "path": "/api/viagens/evidencias/{id}"
+  },
+  "viagens_get__api_viagens_id_": {
+    "method": "GET",
+    "path": "/api/viagens/{id}"
+  },
+  "viagens_get__api_viagens_id_historico": {
+    "method": "GET",
+    "path": "/api/viagens/{id}/historico"
+  },
+  "viagens_patch__api_viagens_id_corrigir_quilometragem": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/corrigir-quilometragem"
+  },
+  "viagens_get__api_viagens_id_correcoes": {
+    "method": "GET",
+    "path": "/api/viagens/{id}/correcoes"
+  },
+  "viagens_patch__api_viagens_id_validar": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/validar"
+  },
+  "viagens_patch__api_viagens_id_iniciar": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/iniciar"
+  },
+  "viagens_patch__api_viagens_id_concluir": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/concluir"
+  },
+  "viagens_get__api_viagens_minhas": {
+    "method": "GET",
+    "path": "/api/viagens/minhas"
+  },
+  "notificacoes_get__api_motorista_notificacoes": {
+    "method": "GET",
+    "path": "/api/motorista/notificacoes"
+  },
+  "notificacoes_patch__api_motorista_notificacoes_id_lida": {
+    "method": "PATCH",
+    "path": "/api/motorista/notificacoes/{id}/lida"
+  },
   "notificacoes_get__api_notificacoes": {
     "method": "GET",
     "path": "/api/notificacoes"

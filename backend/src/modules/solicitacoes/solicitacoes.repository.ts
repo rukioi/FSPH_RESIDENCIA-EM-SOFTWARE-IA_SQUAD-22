@@ -1,7 +1,9 @@
+import type postgres from 'postgres';
 import type { z } from 'zod';
 // Parâmetros temporais entram como text: evita Date/UTC e truncamento de microssegundos no driver.
 // O PostgreSQL interpreta o offset ou o horário civil de acordo com o cast explícito de cada caminho.
 import type { criarSolicitacaoSchema, listarSolicitacoesSchema, statusSolicitacao, agendarSolicitacaoSchema, agendamentoSolicitacao, editarSolicitacaoSchema } from './solicitacoes.schemas.js';
+import { criarViagemAgendada } from '../viagens/viagens.repository.js';
 import { verificarDisponibilidade } from '../alocacao/alocacao.repository.js';
 import { sql } from '../../database/connection.js';
 import { registrarAtividades } from '../auditoria/auditoria.service.js';
@@ -58,6 +60,14 @@ export async function editarSolicitacao(id: string, responsavelId: string, dados
   });
 }
 
+/** Verifica a conta do motorista e conserva os bloqueios ate o commit. */
+export async function validarContaMotorista(tx: postgres.TransactionSql, motoristaId: string): Promise<void> {
+  const [motorista] = await tx`SELECT usuario_id::text FROM public.motorista WHERE id=${motoristaId} FOR UPDATE`;
+  if (!motorista?.usuario_id) throw new ErroHttp(409, 'MOTORISTA_SEM_CONTA_ATIVA', 'O motorista selecionado n\u00e3o possui uma conta ativa no sistema.');
+  const [usuario] = await tx`SELECT ativo FROM public.usuario WHERE id=${motorista.usuario_id} FOR SHARE`;
+  if (!usuario || usuario.ativo !== true) throw new ErroHttp(409, 'MOTORISTA_SEM_CONTA_ATIVA', 'O motorista selecionado n\u00e3o possui uma conta ativa no sistema.');
+}
+
 /** Agenda somente pedido aprovado, serializando reservas com o despacho SVO. */
 export async function agendarSolicitacao(id: string, responsavelId: string, dados: z.infer<typeof agendarSolicitacaoSchema>) {
   return sql.begin('isolation level read committed', async tx => {
@@ -73,6 +83,7 @@ export async function agendarSolicitacao(id: string, responsavelId: string, dado
     if (disponibilidade === 'referencia_inexistente') throw new ErroHttp(404, 'REFERENCIA_INEXISTENTE', 'Motorista ou veículo não encontrado.');
     if (disponibilidade === 'recurso_inelegivel') throw new ErroHttp(409, 'RECURSO_INDISPONIVEL', 'Motorista ou veículo não está disponível.');
     if (disponibilidade === 'conflito_alocacao') throw new ErroHttp(409, 'CONFLITO_ALOCACAO', 'Motorista ou veículo possui uma alocação conflitante.');
+    await validarContaMotorista(tx, dados.motoristaId);
     const [row] = await tx<z.infer<typeof agendamentoSolicitacao>[]>`UPDATE public.solicitacao_viagem
       SET motorista_id=${dados.motoristaId}, veiculo_id=${dados.veiculoId},
         data_hora_retorno_previsto=${pedido.fim}::text::timestamp, status='AGENDADA'
@@ -81,6 +92,7 @@ export async function agendarSolicitacao(id: string, responsavelId: string, dado
         to_char(data_hora_saida, 'YYYY-MM-DD"T"HH24:MI:SS.US') || '-03:00' AS "dataHoraSaida",
         to_char(data_hora_retorno_previsto, 'YYYY-MM-DD"T"HH24:MI:SS.US') || '-03:00' AS "dataHoraRetornoPrevisto"`;
     if (!row) throw new ErroHttp(409, 'ESTADO_INCOMPATIVEL', 'A solicitação não está mais aprovada.');
+    await criarViagemAgendada(tx, id, dados.motoristaId, dados.veiculoId);
     await registrarAtividades(tx, responsavelId, [{ operacao: 'solicitacao_viagem_agendada', recursoId: id }]);
     return row;
   });

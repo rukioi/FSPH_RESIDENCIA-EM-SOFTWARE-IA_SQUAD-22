@@ -12,16 +12,16 @@ export interface LinhaAtividade {
 export interface PaginacaoAtividades { page: number; limit: number }
 
 /** Insere descrições na transação do chamador; eventos vinculados usam o relógio de inserção após os locks. */
-export async function inserirAtividades(tx: postgres.TransactionSql, usuarioId: string, descricoes: string[], solicitacoes?: (string|null)[]): Promise<void> {
+export async function inserirAtividades(tx: postgres.TransactionSql, usuarioId: string, descricoes: string[], tipos: string[], solicitacoes?: (string|null)[]): Promise<void> {
+  if (tipos.length !== descricoes.length || (solicitacoes && solicitacoes.length !== descricoes.length)) throw new Error('Atividades invalidas.');
   if (solicitacoes) {
-    if (solicitacoes.length!==descricoes.length) throw new Error('Vínculos de atividade inválidos.');
-    await tx`INSERT INTO public.log_atividade (usuario_id, descricao, solicitacao_viagem_id, data_hora)
-      SELECT ${usuarioId}, d.descricao, d.solicitacao_id, clock_timestamp()::timestamp
-      FROM unnest(${descricoes}::text[], ${solicitacoes}::bigint[]) AS d(descricao, solicitacao_id)`;
+    await tx`INSERT INTO public.log_atividade (usuario_id, descricao, tipo_evento, solicitacao_viagem_id, data_hora)
+      SELECT ${usuarioId}, d.descricao, d.tipo, d.solicitacao_id, clock_timestamp()::timestamp
+      FROM unnest(${descricoes}::text[], ${tipos}::text[], ${solicitacoes}::bigint[]) AS d(descricao, tipo, solicitacao_id)`;
     return;
   }
-  await tx`INSERT INTO public.log_atividade (usuario_id, descricao)
-    SELECT ${usuarioId}, unnest(${descricoes}::text[])`;
+  await tx`INSERT INTO public.log_atividade (usuario_id, descricao, tipo_evento)
+    SELECT ${usuarioId}, d.descricao, d.tipo FROM unnest(${descricoes}::text[], ${tipos}::text[]) AS d(descricao, tipo)`;
 }
 
 /** Projeta campos conhecidos e lê página/total no mesmo snapshot, sem alterar histórico. */

@@ -330,11 +330,61 @@ test('preflight é somente leitura e não acusa divergência nas fixtures atuais
   const [legado, associacao, constraints, protecao] = await sql.begin('isolation level repeatable read read only',
     async tx => { const rows = []; for (const q of preflight) rows.push(await tx.unsafe(q)); return rows; });
   expect(legado[0]).toMatchObject({ verificacao: 'viagens_legadas', sem_dados_obrigatorios: 0, km_inicial_negativo: 0,
-    km_final_invalido: 0, periodo_invalido: 0, execucao_incompleta: 0, validacao_sem_autor_ou_conclusao: 0 });
+    km_final_invalido: 0, periodo_invalido: 0, execucao_incompleta: 0, validacao_inconsistente: 0 });
   expect(associacao[0]).toMatchObject({ verificacao: 'associacao', recursos_divergentes: 0 });
   expect(constraints.filter(c => c.tabela === 'viagem' && c.contype === 'c' && !c.convalidated)).toHaveLength(6);
   expect(protecao.map(p => ({ nome: p.nome, existe: p.existe, rls: p.rls, anon: p.anon_select })))
     .toEqual(['notificacao', 'viagem_correcao', 'viagem_evidencia'].map(nome => ({ nome, existe: true, rls: true, anon: false })));
+});
+
+
+
+test('preflight confere todas as constraints com registros sinteticos e schema anterior', async () => {
+  const erro = await sql.begin(async tx => {
+    await tx.unsafe(`CREATE TEMP TABLE s8_preflight_fixture (
+      solicitacao_id bigint, veiculo_id bigint, motorista_id bigint, status text,
+      km_inicial integer, km_final integer, data_inicio timestamp, data_fim timestamp,
+      validada_por_gestor boolean, validada_por_id bigint, validada_em timestamptz
+    ) ON COMMIT DROP`);
+    const consulta = preflight[0].replace('FROM public.viagem v', 'FROM pg_temp.s8_preflight_fixture v');
+    const casos = [
+      [true, null, '2026-01-01T00:00:00Z', 'CONCLUIDA', 1],
+      [true, 42, null, 'CONCLUIDA', 1],
+      [true, 42, '2026-01-01T00:00:00Z', 'AGENDADA', 1],
+      [false, 42, null, 'CONCLUIDA', 1],
+      [false, null, '2026-01-01T00:00:00Z', 'CONCLUIDA', 1],
+      [null, 42, null, 'CONCLUIDA', 1],
+      [true, 42, '2026-01-01T00:00:00Z', 'CONCLUIDA', 0],
+      [false, null, null, 'AGENDADA', 0],
+      [null, null, null, 'AGENDADA', 0],
+    ] as const;
+    for (const [validada, autor, instante, status, esperado] of casos) {
+      await tx`DELETE FROM pg_temp.s8_preflight_fixture`;
+      await tx`INSERT INTO pg_temp.s8_preflight_fixture VALUES (1,1,1,${status},10,20,'2026-01-01','2026-01-02',${validada},${autor},${instante}::timestamptz)`;
+      const [resultado] = await tx.unsafe(consulta);
+      expect(resultado.validacao_inconsistente, JSON.stringify([validada, autor, instante, status])).toBe(esperado);
+    }
+    await tx`DELETE FROM pg_temp.s8_preflight_fixture`;
+    await tx.unsafe(`INSERT INTO pg_temp.s8_preflight_fixture VALUES
+      (NULL,1,1,'AGENDADA',-1,NULL,NULL,NULL,false,NULL,NULL),
+      (1,1,1,'CONCLUIDA',10,9,'2026-01-02','2026-01-01',false,NULL,NULL),
+      (1,1,1,'EM_TRANSPORTE',NULL,NULL,NULL,NULL,false,NULL,NULL)`);
+    const [resultado] = await tx.unsafe(consulta);
+    const [checks] = await tx`SELECT
+      count(*) FILTER (WHERE (solicitacao_id IS NOT NULL AND veiculo_id IS NOT NULL AND motorista_id IS NOT NULL AND status IS NOT NULL) IS FALSE)::int AS sem_dados_obrigatorios,
+      count(*) FILTER (WHERE (km_inicial IS NULL OR km_inicial >= 0) IS FALSE)::int AS km_inicial_negativo,
+      count(*) FILTER (WHERE (km_final IS NULL OR (km_inicial IS NOT NULL AND km_final >= km_inicial)) IS FALSE)::int AS km_final_invalido,
+      count(*) FILTER (WHERE (data_fim IS NULL OR (data_inicio IS NOT NULL AND data_fim >= data_inicio)) IS FALSE)::int AS periodo_invalido,
+      count(*) FILTER (WHERE ((status IS DISTINCT FROM 'EM_TRANSPORTE' OR (data_inicio IS NOT NULL AND km_inicial IS NOT NULL)) AND (status IS DISTINCT FROM 'CONCLUIDA' OR (data_inicio IS NOT NULL AND km_inicial IS NOT NULL AND data_fim IS NOT NULL AND km_final IS NOT NULL))) IS FALSE)::int AS execucao_incompleta
+      FROM pg_temp.s8_preflight_fixture`;
+    expect(resultado).toMatchObject({...checks, sem_dados_obrigatorios:1, km_inicial_negativo:1, km_final_invalido:1, periodo_invalido:1, execucao_incompleta:1});
+    await tx.unsafe(`CREATE TEMP TABLE s8_preflight_antigo (solicitacao_id bigint, veiculo_id bigint, motorista_id bigint, status text, km_inicial integer, km_final integer, data_inicio timestamp, data_fim timestamp, validada_por_gestor boolean) ON COMMIT DROP`);
+    await tx`INSERT INTO pg_temp.s8_preflight_antigo VALUES (1,1,1,'CONCLUIDA',10,20,'2026-01-01','2026-01-02',true),(1,1,1,'AGENDADA',NULL,NULL,NULL,NULL,false)`;
+    const [anterior] = await tx.unsafe(preflight[0].replace('FROM public.viagem v', 'FROM pg_temp.s8_preflight_antigo v'));
+    expect(anterior.validacao_inconsistente).toBe(1);
+    throw desfazer;
+  }).catch((e: unknown) => e);
+  expect(erro).toBe(desfazer);
 });
 
 test('migration convive com dados legados divergentes; VALIDATE só após reconciliação', async () => {
@@ -348,7 +398,7 @@ test('migration convive com dados legados divergentes; VALIDATE só após reconc
     await tx.unsafe(migration);
     const [legado] = await tx.unsafe(preflight[0]);
     expect(legado).toMatchObject({ sem_dados_obrigatorios: 2, km_final_invalido: 1, periodo_invalido: 1,
-      execucao_incompleta: 1, validacao_sem_autor_ou_conclusao: 1 });
+      execucao_incompleta: 1, validacao_inconsistente: 1 });
     const [antigo] = await tx`select criado_em, validada_por_id from public.viagem where id = -28301`;
     expect(antigo).toEqual({ criado_em: null, validada_por_id: null });
     await tx`alter table public.viagem validate constraint viagem_km_final_check`;

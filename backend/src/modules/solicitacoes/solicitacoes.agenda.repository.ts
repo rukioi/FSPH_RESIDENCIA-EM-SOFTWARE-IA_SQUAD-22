@@ -4,6 +4,8 @@ import type { z } from 'zod';
 // O PostgreSQL interpreta o offset ou o horário civil de acordo com o cast explícito de cada caminho.
 import { sql } from '../../database/connection.js';
 import { ErroHttp } from '../../shared/http/errors.js';
+import { sincronizarViagemAgendada } from '../viagens/viagens.repository.js';
+import { validarContaMotorista } from './solicitacoes.repository.js';
 import { registrarAtividades } from '../auditoria/auditoria.service.js';
 import { verificarDisponibilidade,bloquearRecursosDaTroca,consultarRecursosDisponiveis,type IntervaloReserva } from '../alocacao/alocacao.repository.js';
 import type { consultarAgendaSchema,consultarDisponibilidadeSchema,reagendarSolicitacaoSchema,itemAgenda,agendamentoSolicitacao } from './solicitacoes.schemas.js';
@@ -51,7 +53,7 @@ export async function consultarDisponibilidade(filtros:z.infer<typeof consultarD
 /** Troca a reserva atomicamente, bloqueando recursos antigos/novos em ordem global. */
 export async function reagendarSolicitacao(id:string,atorId:string,dados:z.infer<typeof reagendarSolicitacaoSchema>) {
   return sql.begin('isolation level read committed',async tx => {
-    const [pedido]=await tx`SELECT status,motorista_id::text,veiculo_id::text FROM public.solicitacao_viagem WHERE id=${id} FOR UPDATE`;
+    const [pedido]=await tx`SELECT status,motorista_id::text,veiculo_id::text,to_char(data_hora_saida,'YYYY-MM-DD"T"HH24:MI:SS.US') AS saida,to_char(data_hora_retorno_previsto,'YYYY-MM-DD"T"HH24:MI:SS.US') AS retorno FROM public.solicitacao_viagem WHERE id=${id} FOR UPDATE`;
     if (!pedido) throw new ErroHttp(404,'NAO_ENCONTRADO','Solicitação não encontrada.');
     if (pedido.status!=='AGENDADA') throw new ErroHttp(409,'ESTADO_INCOMPATIVEL','Somente solicitações agendadas podem ser reagendadas.');
     const intervalo=await normalizarPeriodo(tx,{inicio:dados.dataHoraSaida,fim:dados.dataHoraRetornoPrevisto});
@@ -60,6 +62,7 @@ export async function reagendarSolicitacao(id:string,atorId:string,dados:z.infer
     if (disponibilidade==='referencia_inexistente') throw new ErroHttp(404,'REFERENCIA_INEXISTENTE','Motorista ou veículo não encontrado.');
     if (disponibilidade==='recurso_inelegivel') throw new ErroHttp(409,'RECURSO_INDISPONIVEL','Motorista ou veículo não está disponível.');
     if (disponibilidade==='conflito_alocacao') throw new ErroHttp(409,'CONFLITO_ALOCACAO','Motorista ou veículo possui uma alocação conflitante.');
+    await validarContaMotorista(tx,dados.motoristaId);
     const [row]=await tx<z.infer<typeof agendamentoSolicitacao>[]>`UPDATE public.solicitacao_viagem
       SET data_hora_saida=${intervalo.inicio}::text::timestamp,data_hora_retorno_previsto=${intervalo.fim}::text::timestamp,
         motorista_id=${dados.motoristaId},veiculo_id=${dados.veiculoId}
@@ -69,7 +72,9 @@ export async function reagendarSolicitacao(id:string,atorId:string,dados:z.infer
         to_char(data_hora_saida,'YYYY-MM-DD"T"HH24:MI:SS.US')||'-03:00' AS "dataHoraSaida",
         to_char(data_hora_retorno_previsto,'YYYY-MM-DD"T"HH24:MI:SS.US')||'-03:00' AS "dataHoraRetornoPrevisto"`;
     if (!row) throw new ErroHttp(400,'SAIDA_INVALIDA','A saída deve estar no futuro.');
-    await registrarAtividades(tx,atorId,[{operacao:'solicitacao_viagem_reagendada',recursoId:id}]);
+    await sincronizarViagemAgendada(tx,id,{motoristaId:pedido.motorista_id,veiculoId:pedido.veiculo_id},dados);
+    const houveAlteracao=pedido.motorista_id!==dados.motoristaId || pedido.veiculo_id!==dados.veiculoId || pedido.saida!==intervalo.inicio || pedido.retorno!==intervalo.fim;
+    await registrarAtividades(tx,atorId,[{operacao:'solicitacao_viagem_reagendada',recursoId:id,houveAlteracao}]);
     return row;
   });
 }

@@ -13,10 +13,18 @@ test('duas preparações não duplicam nem modificam fixtures, sequências ou mi
     const [row] = await sql.unsafe(metadataQuery);
     const metadata = row.metadata as Metadata;
     const records: Record<string, unknown> = {};
+    // O seed possui fixtures em tabelas específicas; tabelas adicionadas depois podem ficar vazias.
+    const fixtureTables = new Set(['usuario', 'motorista', 'veiculo', 'solicitacao_viagem', 'viagem',
+      'solicitacao_obito', 'ordem_coleta', 'documento_veiculo', 'abastecimento', 'log_atividade']);
+    expect(metadata.constraints.find(c => c.table === 'abastecimento_comprovante' && c.type === 'p')?.columns)
+      .toEqual(['abastecimento_id']);
     for (const table of metadata.tables) {
-      records[table.name] = await sql`select to_jsonb(t) as row from ${sql(table.name)} t
-        where id between -27099 and -27001 order by id`;
-      expect((records[table.name] as unknown[]).length).toBeGreaterThan(0);
+      // Snapshot integral inclui tabelas sem id, com ordenação determinística e inclusive as vazias.
+      records[table.name] = await sql`select to_jsonb(t) as row from ${sql(table.name)} t order by to_jsonb(t)::text`;
+      if (fixtureTables.has(table.name)) {
+        const fixtures = await sql`select id from ${sql(table.name)} where id between -27099 and -27001`;
+        expect(fixtures.length, table.name).toBeGreaterThan(0);
+      }
     }
     records.migrations = await sql`select * from fsph_test_harness.migrations order by name`;
     for (const sequence of metadata.sequences) {

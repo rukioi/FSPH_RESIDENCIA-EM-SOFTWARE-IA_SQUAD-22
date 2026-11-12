@@ -8,7 +8,7 @@ const mocks=vi.hoisted(()=>{
 vi.mock('../../src/database/connection.js',()=>({sql:Object.assign(mocks.db,{begin:mocks.begin})}));
 import {consultarDetalhes,consultarHistorico} from '../../src/modules/solicitacoes/solicitacoes.detalhes.repository.js';
 import {registrarAtividades,type EventoAtividade} from '../../src/modules/auditoria/auditoria.service.js';
-beforeEach(()=>{mocks.db.mockReset();mocks.begin.mockClear();});
+beforeEach(()=>{mocks.db.mockReset();mocks.db.mockResolvedValue([]);mocks.begin.mockClear();});
 
 test.each(['42',null])('detalhes aplicam escopo %s no SQL e projetam só dados mínimos',async escopo=>{
   mocks.db.mockResolvedValueOnce([{id:'1024',finalidade:null}]);
@@ -42,9 +42,9 @@ test.each(['42',null])('histórico filtra vínculo estruturado e escopo %s em p�
 test.each(['solicitacao_viagem_criada','solicitacao_viagem_aprovada','solicitacao_viagem_reprovada','solicitacao_viagem_editada','solicitacao_viagem_agendada','solicitacao_viagem_reagendada'] as const)('evento %s persiste vínculo sem interpretar a descrição',async operacao=>{
   mocks.db.mockResolvedValueOnce([]);
   await registrarAtividades(mocks.db as unknown as postgres.TransactionSql,'42',[{operacao,recursoId:'1024'}]);
-  const [parts,...values]=mocks.db.mock.calls[0];expect(parts.join('?')).toContain('(usuario_id, descricao, solicitacao_viagem_id, data_hora)');
+  const [parts,...values]=mocks.db.mock.calls[0];expect(parts.join('?')).toContain('(usuario_id, descricao, tipo_evento, solicitacao_viagem_id, data_hora)');
   expect(parts.join('?')).toContain('clock_timestamp()::timestamp');
-  expect(values[0]).toBe('42');expect(values[2]).toEqual(['1024']);
+  expect(values[0]).toBe('42');expect(values[2]).toEqual([operacao]);expect(values[3]).toEqual(['1024']);
 });
 test('eventos SVO e usuários continuam sem vínculo institucional',async()=>{
   mocks.db.mockResolvedValueOnce([]);
@@ -57,6 +57,7 @@ test('lote misto preserva alinhamento entre descrições e vínculos, sem backfi
   mocks.db.mockResolvedValueOnce([]);
   const eventos:EventoAtividade[]=[{operacao:'usuario_editado',recursoId:'1024'},{operacao:'solicitacao_viagem_criada',recursoId:'1024'}];
   await registrarAtividades(mocks.db as unknown as postgres.TransactionSql,'42',eventos);
-  expect(mocks.db.mock.calls[0][3]).toEqual([null,'1024']);
+  expect(mocks.db.mock.calls[0][3]).toEqual(['usuario_editado','solicitacao_viagem_criada']);
+  expect(mocks.db.mock.calls[0][4]).toEqual([null,'1024']);
   expect(mocks.db.mock.calls[0][0].join('')).not.toContain('UPDATE');
 });

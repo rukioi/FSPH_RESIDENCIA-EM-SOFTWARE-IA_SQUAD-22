@@ -97,3 +97,15 @@ preservação de lida_em ao repetir a leitura; foi revertida integralmente, sem 
 o aviso de teste nem avançar a sequência. Isso valida o banco sob o papel postgres;
 não substitui a validação HTTP com a identidade/configuração do backend publicado.
 O bloqueio do harness local e a regeneração dos snapshots locais continuam pendentes.
+
+## Atribuição institucional — BE-S8-01
+
+O agendamento com viagem vinculada grava aviso `ATRIBUICAO` para a conta ativa do motorista na mesma transação da viagem, reserva e auditoria. A chave é `viagem:<id>:atribuicao:<motoristaId>`; a restrição única impede duplicação por destinatário. Na troca de motorista, o novo atribuído recebe seu próprio aviso. Ao reagendar com o mesmo motorista, alterações efetivas continuam gerando aviso de reagendamento; repetir dados idênticos não gera outro aviso ao motorista. Pedidos antigos sem viagem conservam o aviso genérico existente. Motorista sem conta vinculada ou com conta inativa não recebe atribuição.
+
+A caixa existente permanece restrita ao destinatário e mantém o formato HTTP anterior. Não há lembretes automáticos nesta etapa. O funcionamento depende da migration DB-S8-01; a conferência e implantação no ambiente compartilhado são tarefas separadas e não foram executadas aqui.
+
+## Rotas do motorista
+
+`GET /api/motorista/notificacoes?pagina=1&lida=false` retorna a propria caixa paginada; `lida=true` filtra lidas e a omissao lista todas. `PATCH /api/motorista/notificacoes/{id}/lida` marca somente notificacao propria, de forma idempotente. Ambas exigem perfil MOTORISTA autenticado.
+
+Na troca do motorista, a atribuicao anterior permanece na caixa com titulo de encerramento. Se a viagem voltar ao mesmo motorista, o aviso existente e reativado e volta a nao lido, sem duplicar a chave de atribuicao.

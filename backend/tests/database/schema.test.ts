@@ -37,6 +37,7 @@ test('as quatro migrations incrementais estão presentes no catálogo, com tipos
     ['solicitacao_viagem','finalidade','text'],
     ['solicitacao_viagem','data_hora_retorno_previsto','timestamp without time zone'],
     ['log_atividade','solicitacao_viagem_id','bigint'],
+    ['log_atividade','tipo_evento','text'],
   ]) {
     expect(metadata.columns.find(c => c.table === table && c.name === name)).toMatchObject({type,nullable:true,default:null});
   }

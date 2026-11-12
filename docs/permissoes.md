@@ -76,3 +76,15 @@ O frontend mantém as restrições de navegação já existentes.
 SCRUM-164: /api/dashboard/gestor e /api/dashboard/graficos permanecem restritos
 a ADM/GESTOR_FROTA, sem acesso de solicitante/motorista/SVO. Período e indicadores
 não alteram o escopo das solicitações individuais nem autorizam escrita em logs.
+
+BE-S8-01 (etapa inicial): GET /api/viagens/minhas é exclusivo de MOTORISTA e consulta somente viagens institucionais vinculadas ao usuário da sessão. Não concede acesso a ordens SVO nem altera permissões das solicitações.
+
+BE-S8-01: iniciar e concluir viagens institucionais é exclusivo do MOTORISTA vinculado à viagem; acesso a viagem alheia recebe 404.
+
+BE-S8-01: validar viagem institucional concluída é exclusivo de ADM e GESTOR_FROTA; o responsável é obtido da sessão atual.
+
+BE-S8-01: listagem de viagens é exclusiva de ADM/GESTOR_FROTA; detalhes e histórico também permitem MOTORISTA atribuído, com 404 para viagem inacessível.
+
+BE-S8-01: a consulta e o download de evidências institucionais permitem ADM, GESTOR_FROTA e MOTORISTA atribuído; evidência ou viagem inacessível retorna 404. A foto operacional obrigatória é enviada somente pelo motorista atribuído, junto ao início ou à conclusão da viagem.
+
+BE-S8-01: corrigir quilometragem de viagem concluída e consultar as versões da correção são ações exclusivas de ADM/GESTOR_FROTA.

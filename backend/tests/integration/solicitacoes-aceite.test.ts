@@ -21,9 +21,10 @@ beforeAll(async()=>{
   await sql.begin(async tx=>{
     for(const [name,actor] of Object.entries(actors))await tx`INSERT INTO public.usuario(id,nome,email,senha_hash,perfil,ativo)
       VALUES(${actor.id},${'Fixture Aceite '+name},${'s7-aceite-'+name+'@example.invalid'},'sem-login',${actor.perfil},true)`;
+    await tx`INSERT INTO public.usuario(id,nome,email,senha_hash,perfil,ativo) VALUES (7160011,'Fixture motorista','aceite-motorista-7160011@example.invalid','fixture','MOTORISTA',true),(7160012,'Fixture motorista','aceite-motorista-7160012@example.invalid','fixture','MOTORISTA',true),(7160013,'Fixture motorista','aceite-motorista-7160013@example.invalid','fixture','MOTORISTA',true),(7160014,'Fixture motorista','aceite-motorista-7160014@example.invalid','fixture','MOTORISTA',true)`;
     for(let n=1;n<=4;n++){
-      await tx`INSERT INTO public.motorista(id,nome,cnh,categoria_cnh,validade_cnh,status)
-        VALUES(${7160100+n},'Fixture Aceite',${'ACEITE-'+n},'D','2099-12-31','DISPONIVEL')`;
+      await tx`INSERT INTO public.motorista(id,usuario_id,nome,cnh,categoria_cnh,validade_cnh,status)
+        VALUES(${7160100+n},${7160010+n},'Fixture Aceite',${'ACEITE-'+n},'D','2099-12-31','DISPONIVEL')`;
       await tx`INSERT INTO public.veiculo(id,placa,marca,modelo,ano,tipo,status,is_svo)
         VALUES(${7160200+n},${'S7A00'+n+'X'},'Fixture','Aceite',2026,'PASSEIO','DISPONIVEL',false)`;
     }
@@ -39,9 +40,12 @@ afterAll(async()=>{
       await tx`DELETE FROM public.ordem_coleta WHERE id=ANY(${ordens}::bigint[])`;
       await tx`DELETE FROM public.solicitacao_obito WHERE id=ANY(${ocorrencias}::bigint[])`;
       await tx`DELETE FROM public.log_atividade WHERE usuario_id=ANY(${Object.values(actors).map(a=>a.id)}::bigint[])`;
+      await tx`DELETE FROM public.notificacao WHERE viagem_id IN (SELECT id FROM public.viagem WHERE solicitacao_id=ANY(${pedidos}::bigint[]))`;
+      await tx`DELETE FROM public.viagem WHERE solicitacao_id=ANY(${pedidos}::bigint[])`;
       await tx`DELETE FROM public.solicitacao_viagem WHERE id=ANY(${pedidos}::bigint[])`;
       await tx`DELETE FROM public.motorista WHERE id IN(7160101,7160102,7160103,7160104)`;
       await tx`DELETE FROM public.veiculo WHERE id IN(7160201,7160202,7160203,7160204)`;
+      await tx`DELETE FROM public.usuario WHERE id IN (7160011,7160012,7160013,7160014)`;
       await tx`DELETE FROM public.usuario WHERE id=ANY(${Object.values(actors).map(a=>a.id)}::bigint[])`;
     });
   }finally{await sql.end();await fecharBanco();}

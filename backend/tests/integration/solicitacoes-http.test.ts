@@ -26,8 +26,8 @@ beforeAll(async()=>{
       (7137003,'Fixture S7 A','s7-http-a@example.invalid','sem-login','SOLICITANTE_INTERNO',true),
       (7137004,'Fixture S7 B','s7-http-b@example.invalid','sem-login','SOLICITANTE_INTERNO',true),
       (7137005,'Fixture S7 Motorista','s7-http-m@example.invalid','sem-login','MOTORISTA',true)`;
-    await tx`INSERT INTO public.motorista (id,nome,cnh,categoria_cnh,validade_cnh,status)
-      VALUES (7137101,'Fixture S7 HTTP','S7-HTTP-7137101','D','2099-12-31','DISPONIVEL')`;
+    await tx`INSERT INTO public.motorista (id,usuario_id,nome,cnh,categoria_cnh,validade_cnh,status)
+      VALUES (7137101,7137005,'Fixture S7 HTTP','S7-HTTP-7137101','D','2099-12-31','DISPONIVEL')`;
     await tx`INSERT INTO public.veiculo (id,placa,marca,modelo,ano,tipo,status,capacidade_passageiros)
       VALUES (7137201,'S7H137A','Fixture','HTTP',2026,'PASSEIO','DISPONIVEL',5)`;
   });
@@ -42,6 +42,8 @@ afterAll(async()=>{
     if(fixturesCreated)await sql.begin(async tx=>{
       // Somente fixtures criadas por este arquivo, no banco comprovadamente isolado.
       await tx`DELETE FROM public.log_atividade WHERE usuario_id IN (7137001,7137002,7137003,7137004,7137005)`;
+      await tx`DELETE FROM public.notificacao WHERE viagem_id IN (SELECT id FROM public.viagem WHERE solicitacao_id IN (SELECT id FROM public.solicitacao_viagem WHERE solicitante_id IN (7137003,7137004)))`;
+      await tx`DELETE FROM public.viagem WHERE solicitacao_id IN (SELECT id FROM public.solicitacao_viagem WHERE solicitante_id IN (7137003,7137004))`;
       await tx`DELETE FROM public.solicitacao_viagem WHERE solicitante_id IN (7137003,7137004)`;
       await tx`DELETE FROM public.motorista WHERE id=7137101`;
       await tx`DELETE FROM public.veiculo WHERE id=7137201`;

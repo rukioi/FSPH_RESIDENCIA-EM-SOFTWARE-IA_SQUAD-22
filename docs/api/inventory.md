@@ -1,9 +1,25 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 65 operações.
+Gerado por api:generate; não editar manualmente. 81 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| POST | /api/viagens | ADM, GESTOR_FROTA | CriarViagem | 200 DetalheViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Retorna viagem criada no agendamento; pedido sem viagem exige analise manual. |
+| GET | /api/viagens/pendentes-validacao | ADM, GESTOR_FROTA | sem corpo | 200 ListaViagens | 400, 401, 403, 500, 405 | validado | Viagens concluidas ainda nao validadas, com paginacao. |
+| PATCH | /api/viagens/{id}/encerrar | MOTORISTA | ExecutarViagem | 200 RespostaExecucaoViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Encerra a viagem com quilometragem e foto obrigatorias. |
+| GET | /api/viagens/{id}/evidencias | ADM, GESTOR_FROTA, MOTORISTA | sem corpo | 200 ListaEvidenciasViagem | 400, 401, 403, 404, 500, 405 | validado | Metadados paginados de uma viagem acessível, sem bytes. |
+| GET | /api/viagens/evidencias/{id} | ADM, GESTOR_FROTA, MOTORISTA | sem corpo | 200 EvidenciaArquivo | 400, 401, 403, 404, 500, 405 | validado | Download autenticado da evidência; motorista apenas da viagem atribuída. |
+| GET | /api/viagens | ADM, GESTOR_FROTA | sem corpo | 200 ListaViagens | 400, 401, 403, 500, 405 | validado | Viagens institucionais por status e período de início real; ordem id DESC, paginação. Datas ISO com offset; intervalo [inicio,fim). |
+| GET | /api/viagens/{id} | ADM, GESTOR_FROTA, MOTORISTA | sem corpo | 200 DetalheViagem | 400, 401, 403, 404, 500, 405 | validado | Motorista somente da viagem atribuída; ausente ou inacessível retorna 404. |
+| GET | /api/viagens/{id}/historico | ADM, GESTOR_FROTA, MOTORISTA | sem corpo | 200 HistoricoViagem | 400, 401, 403, 404, 500, 405 | validado | Eventos reais de execução e validação com vínculo à solicitação; ordem data_hora e id. Sem inferir fuso dos registros de auditoria. |
+| PATCH | /api/viagens/{id}/corrigir-quilometragem | ADM, GESTOR_FROTA | CorrigirQuilometragem | 200 RespostaCorrecaoViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Somente concluída; justificativa obrigatória. A confirmação explícita só permite atualizar o odômetro em última leitura verificável; divergências retornam 409. |
+| GET | /api/viagens/{id}/correcoes | ADM, GESTOR_FROTA | sem corpo | 200 ListaCorrecoesViagem | 400, 401, 403, 404, 500, 405 | validado | Versões de correção em ordem crescente, com justificativa e responsável. |
+| PATCH | /api/viagens/{id}/validar | ADM, GESTOR_FROTA | sem corpo | 200 ValidacaoViagem | 400, 401, 403, 404, 409, 500, 405 | validado | Somente viagem concluída ainda não validada. Ator pela sessão; validação e auditoria na mesma transação. |
+| PATCH | /api/viagens/{id}/iniciar | MOTORISTA | ExecutarViagem | 200 RespostaExecucaoViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Exclusivo do motorista atribuído; quilometragem e foto JPEG/PNG obrigatórias, até 1 MiB. Transição, evidência e auditoria atômicas. |
+| PATCH | /api/viagens/{id}/concluir | MOTORISTA | ExecutarViagem | 200 RespostaExecucaoViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Exclusivo do motorista atribuído; quilometragem e foto JPEG/PNG obrigatórias, até 1 MiB. Transição, evidência e auditoria atômicas. |
+| GET | /api/viagens/minhas | MOTORISTA | sem corpo | 200 ListaMinhasViagens | 400, 401, 403, 500, 405 | validado | Viagens institucionais vinculadas ao motorista da sessão. Paginação ordenada por id decrescente. Não inclui ordens SVO. |
+| GET | /api/motorista/notificacoes | MOTORISTA | sem corpo | 200 ListaNotificacoes | 400, 401, 403, 500, 405 | validado | Caixa individual do motorista. |
+| PATCH | /api/motorista/notificacoes/{id}/lida | MOTORISTA | sem corpo | 200 NotificacoesAtualizadas | 400, 401, 403, 404, 500, 405 | validado | Leitura idempotente da notificacao propria. |
 | GET | /api/notificacoes | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 ListaNotificacoes | 400, 401, 500, 405 | validado | Caixa individual por sessão atual; ordem criadoEm DESC,id DESC. Query estrita. GET não materializa alertas. |
 | POST | /api/notificacoes/ler-todas | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 NotificacoesAtualizadas | 400, 401, 404, 500, 405 | validado | Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas. |
 | POST | /api/notificacoes/{id}/ler | ADM, GESTOR_FROTA, SOLICITANTE_INTERNO, MOTORISTA, ATENDENTE_SVO | sem corpo | 200 NotificacoesAtualizadas | 400, 401, 404, 500, 405 | validado | Sem corpo; destinatário sempre pela sessão. Leitura idempotente. Sincronizar materializa vencimentos até 30 dias apenas para ADM/Gestor; chave por validade/fase impede duplicatas. |

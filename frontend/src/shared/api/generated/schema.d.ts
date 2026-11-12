@@ -2,6 +2,11 @@
 
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "EvidenciaArquivo".
+ */
+export type EvidenciaArquivo = string;
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "ErroUsuario".
  */
 export type ErroUsuario =
@@ -171,6 +176,19 @@ export type FinalizarTriagemSvo =
     };
 
 export interface ApiSchemas {
+  ListaEvidenciasViagem: ListaEvidenciasViagem;
+  EvidenciaArquivo: EvidenciaArquivo;
+  CriarViagem: CriarViagem;
+  CorrigirQuilometragem: CorrigirQuilometragem;
+  RespostaCorrecaoViagem: RespostaCorrecaoViagem;
+  ListaCorrecoesViagem: ListaCorrecoesViagem;
+  ListaViagens: ListaViagens;
+  DetalheViagem: DetalheViagem;
+  HistoricoViagem: HistoricoViagem;
+  ValidacaoViagem: ValidacaoViagem;
+  ListaMinhasViagens: ListaMinhasViagens;
+  ExecutarViagem: ExecutarViagem;
+  RespostaExecucaoViagem: RespostaExecucaoViagem;
   ListaNotificacoes: ListaNotificacoes;
   NotificacoesAtualizadas: NotificacoesAtualizadas;
   Erro: Erro;
@@ -259,6 +277,229 @@ export interface ApiSchemas {
   ReagendarSolicitacaoViagem: ReagendarSolicitacaoViagem;
   RespostaAgendaViagem: RespostaAgendaViagem;
   RespostaDisponibilidadeViagem: RespostaDisponibilidadeViagem;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaEvidenciasViagem".
+ */
+export interface ListaEvidenciasViagem {
+  data: {
+    id: string;
+    momento: 'INICIAL' | 'FINAL';
+    versao: number;
+    nome: string;
+    tipo: 'image/jpeg' | 'image/png';
+    enviadoPorId: string;
+    criadoEm: string;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CriarViagem".
+ */
+export interface CriarViagem {
+  solicitacaoId: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CorrigirQuilometragem".
+ */
+export interface CorrigirQuilometragem {
+  kmInicial?: number;
+  kmFinal?: number;
+  confirmarOdometroAtual?: boolean;
+  justificativa: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaCorrecaoViagem".
+ */
+export interface RespostaCorrecaoViagem {
+  data: {
+    id: string;
+    versao: number;
+    kmInicialAnterior: number;
+    kmFinalAnterior: number;
+    kmInicial: number;
+    kmFinal: number;
+    justificativa: string;
+    autorId: string;
+    criadoEm: string;
+    odometroAtualizado: boolean;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaCorrecoesViagem".
+ */
+export interface ListaCorrecoesViagem {
+  data: {
+    id: string;
+    versao: number;
+    kmInicialAnterior: number | null;
+    kmFinalAnterior: number | null;
+    kmInicial: number | null;
+    kmFinal: number | null;
+    justificativa: string;
+    autorId: string;
+    criadoEm: string;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaViagens".
+ */
+export interface ListaViagens {
+  data: {
+    id: string;
+    solicitacaoId: string;
+    codigo: string;
+    origem: string | null;
+    destino: string | null;
+    status: ('AGENDADA' | 'EM_TRANSPORTE' | 'CONCLUIDA' | 'CANCELADA') | null;
+    kmInicial: number | null;
+    kmFinal: number | null;
+    finalidade: string | null;
+    qtdPassageiros: number | null;
+    dataHoraSaida: string | null;
+    dataHoraRetornoPrevisto: string | null;
+    dataInicio: string | null;
+    dataFim: string | null;
+    motorista: {
+      id: string;
+      nome: string | null;
+    } | null;
+    veiculo: {
+      id: string;
+      placa: string | null;
+      modelo: string | null;
+    } | null;
+    validadaPorGestor: boolean | null;
+    validadaEm: string | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "DetalheViagem".
+ */
+export interface DetalheViagem {
+  data: {
+    id: string;
+    solicitacaoId: string;
+    codigo: string;
+    origem: string | null;
+    destino: string | null;
+    status: ('AGENDADA' | 'EM_TRANSPORTE' | 'CONCLUIDA' | 'CANCELADA') | null;
+    kmInicial: number | null;
+    kmFinal: number | null;
+    finalidade: string | null;
+    qtdPassageiros: number | null;
+    dataHoraSaida: string | null;
+    dataHoraRetornoPrevisto: string | null;
+    dataInicio: string | null;
+    dataFim: string | null;
+    motorista: {
+      id: string;
+      nome: string | null;
+    } | null;
+    veiculo: {
+      id: string;
+      placa: string | null;
+      modelo: string | null;
+    } | null;
+    validadaPorGestor: boolean | null;
+    validadaEm: string | null;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "HistoricoViagem".
+ */
+export interface HistoricoViagem {
+  data: {
+    id: string;
+    descricao: string;
+    dataHora: string | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ValidacaoViagem".
+ */
+export interface ValidacaoViagem {
+  data: {
+    id: string;
+    status: 'CONCLUIDA';
+    validadaPorId: string;
+    validadaEm: string;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaMinhasViagens".
+ */
+export interface ListaMinhasViagens {
+  data: {
+    id: string;
+    solicitacaoId: string;
+    codigo: string;
+    origem: string | null;
+    destino: string | null;
+    status: ('AGENDADA' | 'EM_TRANSPORTE' | 'CONCLUIDA' | 'CANCELADA') | null;
+    kmInicial: number | null;
+    kmFinal: number | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ExecutarViagem".
+ */
+export interface ExecutarViagem {
+  quilometragem: number;
+  foto: {
+    nome: string;
+    tipo: 'image/jpeg' | 'image/png';
+    dadosBase64: string;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaExecucaoViagem".
+ */
+export interface RespostaExecucaoViagem {
+  data: {
+    id: string;
+    status: 'EM_TRANSPORTE' | 'CONCLUIDA';
+    kmInicial: number;
+    kmFinal: number | null;
+    dataInicio: string;
+    dataFim: string | null;
+  };
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -1840,6 +2081,22 @@ export interface RespostaDisponibilidadeViagem {
 }
 
 export interface ApiOperations {
+  'viagens_post__api_viagens': { body: ApiSchemas['CriarViagem']; response: ApiSchemas['DetalheViagem'] };
+  'viagens_get__api_viagens': { body: undefined; response: ApiSchemas['ListaViagens'] };
+  'viagens_get__api_viagens_pendentes_validacao': { body: undefined; response: ApiSchemas['ListaViagens'] };
+  'viagens_patch__api_viagens_id_encerrar': { body: ApiSchemas['ExecutarViagem']; response: ApiSchemas['RespostaExecucaoViagem'] };
+  'viagens_get__api_viagens_id_evidencias': { body: undefined; response: ApiSchemas['ListaEvidenciasViagem'] };
+  'viagens_get__api_viagens_evidencias_id_': { body: undefined; response: Blob };
+  'viagens_get__api_viagens_id_': { body: undefined; response: ApiSchemas['DetalheViagem'] };
+  'viagens_get__api_viagens_id_historico': { body: undefined; response: ApiSchemas['HistoricoViagem'] };
+  'viagens_patch__api_viagens_id_corrigir_quilometragem': { body: ApiSchemas['CorrigirQuilometragem']; response: ApiSchemas['RespostaCorrecaoViagem'] };
+  'viagens_get__api_viagens_id_correcoes': { body: undefined; response: ApiSchemas['ListaCorrecoesViagem'] };
+  'viagens_patch__api_viagens_id_validar': { body: undefined; response: ApiSchemas['ValidacaoViagem'] };
+  'viagens_patch__api_viagens_id_iniciar': { body: ApiSchemas['ExecutarViagem']; response: ApiSchemas['RespostaExecucaoViagem'] };
+  'viagens_patch__api_viagens_id_concluir': { body: ApiSchemas['ExecutarViagem']; response: ApiSchemas['RespostaExecucaoViagem'] };
+  'viagens_get__api_viagens_minhas': { body: undefined; response: ApiSchemas['ListaMinhasViagens'] };
+  'notificacoes_get__api_motorista_notificacoes': { body: undefined; response: ApiSchemas['ListaNotificacoes'] };
+  'notificacoes_patch__api_motorista_notificacoes_id_lida': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };
   'notificacoes_get__api_notificacoes': { body: undefined; response: ApiSchemas['ListaNotificacoes'] };
   'notificacoes_post__api_notificacoes_ler_todas': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };
   'notificacoes_post__api_notificacoes_id_ler': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };
