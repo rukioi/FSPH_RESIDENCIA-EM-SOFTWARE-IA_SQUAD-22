@@ -55,7 +55,7 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
     itemClicado
 
   return (
-    <div className={menuAberto ? 'shell shell--gestor shell--aberto' : 'shell shell--gestor'}>
+    <div className={`${menuAberto ? 'shell shell--gestor shell--aberto' : 'shell shell--gestor'}${itemAtivo === 'Motoristas' ? ' shell--motoristas' : ''}`}>
       {/* ===== Menu lateral ===== */}
       <aside id="menu-gestor" className="menu" inert={menuMovel && !menuAberto}>
         <div className="menu__marca">

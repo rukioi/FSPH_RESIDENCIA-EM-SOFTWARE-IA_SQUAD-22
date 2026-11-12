@@ -830,6 +830,9 @@ export function Motoristas() {
           </Select>
         </label>
 
+        {(busca || filtroDisponibilidade !== "TODOS" || filtroCnh !== "TODOS") && (
+          <button type="button" className="motoristas-limpar" onClick={() => { setBusca(""); setFiltroDisponibilidade("TODOS"); setFiltroCnh("TODOS"); }}>Limpar filtros</button>
+        )}
         <span className="motoristas-resultado">
           {motoristasFiltrados.length} de {motoristas.length} motoristas
         </span>
@@ -988,7 +991,7 @@ export function Motoristas() {
                     </span>
                   </button>
 
-                  <div className="motorista-card__menu-wrap">
+                  <div className="motorista-card__menu-wrap" onBlur={(evento) => { if (!evento.currentTarget.contains(evento.relatedTarget)) setMenuMotoristaAberto(null); }}>
                     <button
                       type="button"
                       className="motorista-card__mais"
