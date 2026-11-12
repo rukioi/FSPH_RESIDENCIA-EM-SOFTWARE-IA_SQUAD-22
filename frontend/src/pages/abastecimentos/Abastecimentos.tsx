@@ -14,8 +14,6 @@ import { IconeGestor } from "../../shared/components/IconeGestor";
 import "./Abastecimentos.css";
 import { Link } from "../../app/routes/router";
 import {
-  ROTAS,
-  rotaDetalheAbastecimento,
   rotaHistoricoAbastecimentosVeiculo,
 } from "../../app/routes/rotas";
 
@@ -54,6 +52,8 @@ export function Abastecimentos() {
       download.current?.abort();
     };
   }, []);
+  const detalhes = useRef<HTMLDialogElement>(null);
+  const [selecionado, setSelecionado] = useState<Dados["registros"][number] | null>(null);
   const dialogo = useRef<HTMLDialogElement>(null);
   const abrir = useRef<HTMLButtonElement>(null);
 
@@ -183,12 +183,6 @@ export function Abastecimentos() {
           <h1>Abastecimentos</h1>
           <p>Registre e acompanhe os abastecimentos da frota.</p>
         </div>
-        <Link
-          para={ROTAS.indicadoresAbastecimentosGestor}
-          className="abastecimentos__download"
-        >
-          Ver indicadores
-        </Link>
         <button
           ref={abrir}
           className="abastecimentos__primario"
@@ -373,12 +367,9 @@ export function Abastecimentos() {
                           )}
                         </td>
                         <td>
-                          <Link
-                            para={rotaDetalheAbastecimento(item.id)}
-                            className="abastecimentos__download"
-                          >
+                          <button type="button" className="abastecimentos__download" onClick={() => { setSelecionado(item); detalhes.current?.showModal(); }}>
                             Ver detalhes
-                          </Link>
+                          </button>
                         </td>
                       </tr>
                     );
@@ -421,6 +412,27 @@ export function Abastecimentos() {
           </div>
         </>
       )}
+      <dialog ref={detalhes} className="abastecimentos-modal" aria-labelledby="detalhes-abastecimento-titulo">
+        {selecionado && <div className="abastecimentos__painel">
+          <div className="abastecimentos-modal__topo">
+            <h2 id="detalhes-abastecimento-titulo">Detalhes do abastecimento</h2>
+            <button type="button" aria-label="Fechar" onClick={() => detalhes.current?.close()}><IconeGestor nome="fechar" /></button>
+          </div>
+          <h3>Abastecimento #{selecionado.id}</h3>
+          <dl className="abastecimentos__detalhes">
+            <div><dt>Ve?culo</dt><dd>{selecionado.veiculo_placa ?? "N?o informado"}</dd></div>
+            <div><dt>Motorista</dt><dd>{selecionado.motorista_nome ?? "N?o informado"}</dd></div>
+            <div><dt>Data</dt><dd>{selecionado.data_abastecimento.slice(0, 10).split("-").reverse().join("/")}</dd></div>
+            <div><dt>Posto de combust?vel</dt><dd>{selecionado.posto ?? "N?o informado"}</dd></div>
+            <div><dt>Quilometragem</dt><dd>{numero.format(selecionado.quilometragem)} km</dd></div>
+            <div><dt>Litros abastecidos</dt><dd>{numero.format(Number(selecionado.litragem))} L</dd></div>
+            <div><dt>Valor total</dt><dd>{moeda.format(Number(selecionado.valor_total))}</dd></div>
+            <div><dt>Tanque completo</dt><dd>{selecionado.tanque_completo ? "Sim" : "N?o"}</dd></div>
+            <div><dt>Comprovante</dt><dd>{selecionado.comprovante_nome ? <button type="button" className="abastecimentos__download" onClick={() => void baixar(selecionado.id, selecionado.comprovante_nome!)}>Baixar comprovante</button> : "N?o anexado"}</dd></div>
+          </dl>
+          {erroDownload && <p role="alert">{erroDownload}</p>}
+        </div>}
+      </dialog>
       <dialog
         ref={dialogo}
         className="abastecimentos-modal"

@@ -40,7 +40,7 @@ export function Notificacoes() {
         <div className="notificacoes__texto"><span className="sr-only">{categoria[n.categoria]}: </span><h2>{n.titulo}</h2><p>{n.descricao}</p></div>
         <div className="notificacoes__meta"><time dateTime={n.criadoEm}>{dataHora.format(new Date(n.criadoEm))}</time>
           {n.lidaEm ? <span className="notificacoes__lida">Lida</span> : <button type="button" className="notificacoes__ler" disabled={salvando}
-            title="Marcar como lida" aria-label={`Marcar como lida: ${n.titulo}`} onClick={()=>void caixa.ler(n.id)}>Não lida <span aria-hidden="true">✓</span></button>}</div>
+            title="Marcar como lida" aria-label={`Marcar como lida: ${n.titulo}`} onClick={()=>void caixa.ler(n.id)}>Marcar como lida</button>}</div>
       </li>)}</ul>}
       {!error && !loading && paginas>1 && <nav className="notificacoes__paginacao" aria-label="Paginação das notificações">
         <button type="button" className="btn" disabled={caixa.page===1 || salvando} onClick={()=>caixa.setPage(caixa.page-1)}>Anterior</button>

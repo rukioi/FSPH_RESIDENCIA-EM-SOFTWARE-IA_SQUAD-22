@@ -19,6 +19,7 @@ afterAll(async () => { const first = fecharBanco(); expect(fecharBanco()).toBe(f
 
 test('adaptador usa o mesmo pool e fechamento é idempotente', async () => {
   expect(legado).toBe(sql);
+  expect(sql.options.prepare).toBe(false);
   const [row] = await sql`select current_database() as name`;
   expect(row.name).toBe('fsph_t1_baseline');
   // O encerramento real ocorre em afterAll, sem afetar as demais provas.

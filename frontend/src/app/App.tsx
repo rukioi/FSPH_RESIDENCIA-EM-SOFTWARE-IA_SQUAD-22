@@ -1,7 +1,7 @@
 // App do perfil Administrador e Gestor de Frota.
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { NotificacoesProvider } from "../features/notificacoes/NotificacoesContext";
-import { Notificacoes } from "../features/notificacoes/Notificacoes";
+const Notificacoes = lazy(() => import('../features/notificacoes/Notificacoes').then(module => ({ default: module.Notificacoes })));
 import type { ComponentType } from "react";
 import "../shared/styles/tema.css";
 
@@ -14,37 +14,45 @@ import { perfilPodeAcessar } from '../shared/services/access.service'
 import { GestorLayout } from '../layouts/gestor/GestorLayout'
 import { SvoLayout } from '../layouts/svo/SvoLayout'
 
-import { Login } from "../pages/login/Login";
-import { DashboardAdmin } from "../pages/administrador/DashboardAdm";
-import { Configuracoes } from "../pages/administrador/Configuracoes";
-import { Auditoria } from "../pages/administrador/Auditoria";
-import { Dashboard } from "../pages/gerente/DashboardGestor";
-import { Veiculos } from "../pages/veiculos/Veiculos";
-import { Motoristas } from "../pages/motorista/Motoristas";
-import { Abastecimentos } from "../pages/abastecimentos/Abastecimentos";
-import { DetalheAbastecimento } from "../pages/abastecimentos/DetalheAbastecimento";
-import { HistoricoAbastecimentos } from "../pages/abastecimentos/HistoricoAbastecimentos";
-import { IndicadoresAbastecimentos } from "../pages/abastecimentos/IndicadoresAbastecimentos";
+const Login = lazy(() => import('../pages/login/Login').then(module => ({ default: module.Login })));
+const DashboardAdmin = lazy(() => import('../pages/administrador/DashboardAdm').then(module => ({ default: module.DashboardAdmin })));
+const Configuracoes = lazy(() => import('../pages/administrador/Configuracoes').then(module => ({ default: module.Configuracoes })));
+const Auditoria = lazy(() => import('../pages/administrador/Auditoria').then(module => ({ default: module.Auditoria })));
+const Dashboard = lazy(() => import('../pages/gerente/DashboardGestor').then(module => ({ default: module.Dashboard })));
+const Veiculos = lazy(() => import('../pages/veiculos/Veiculos').then(module => ({ default: module.Veiculos })));
+const Motoristas = lazy(() => import('../pages/motorista/Motoristas').then(module => ({ default: module.Motoristas })));
+const Abastecimentos = lazy(() => import('../pages/abastecimentos/Abastecimentos').then(module => ({ default: module.Abastecimentos })));
+const Relatorios = lazy(() => import('../features/relatorios/Relatorios').then(module => ({ default: module.Relatorios })));
+import type { ConsultaRelatorio } from '../shared/services/relatorios.service';
+const DetalheAbastecimento = lazy(() => import('../pages/abastecimentos/DetalheAbastecimento').then(module => ({ default: module.DetalheAbastecimento })));
+const HistoricoAbastecimentos = lazy(() => import('../pages/abastecimentos/HistoricoAbastecimentos').then(module => ({ default: module.HistoricoAbastecimentos })));
+const IndicadoresAbastecimentos = lazy(() => import('../pages/abastecimentos/IndicadoresAbastecimentos').then(module => ({ default: module.IndicadoresAbastecimentos })));
 
 import { SolicitanteLayout } from '../layouts/solicitante/SolicitanteLayout'
-import { Solicitacoes } from '../pages/gerente/Solicitacoes'
-import { Calendario } from '../pages/gerente/Calendario'
-import { NovaSolicitacao } from '../pages/solicitante/NovaSolicitacao'
-import { MinhasSolicitacoes } from '../pages/solicitante/MinhasSolicitacoes'
-import { DetalheSolicitacao } from '../features/solicitacoes/DetalheSolicitacao'
-import { EditarSolicitacao } from '../features/solicitacoes/EditarSolicitacao'
+const Solicitacoes = lazy(() => import('../pages/gerente/Solicitacoes').then(module => ({ default: module.Solicitacoes })));
+const Calendario = lazy(() => import('../pages/gerente/Calendario').then(module => ({ default: module.Calendario })));
+const NovaSolicitacao = lazy(() => import('../pages/solicitante/NovaSolicitacao').then(module => ({ default: module.NovaSolicitacao })));
+const MinhasSolicitacoes = lazy(() => import('../pages/solicitante/MinhasSolicitacoes').then(module => ({ default: module.MinhasSolicitacoes })));
+const DetalheSolicitacao = lazy(() => import('../features/solicitacoes/DetalheSolicitacao').then(module => ({ default: module.DetalheSolicitacao })));
+const EditarSolicitacao = lazy(() => import('../features/solicitacoes/EditarSolicitacao').then(module => ({ default: module.EditarSolicitacao })));
 
 import { telaPreviewSvo } from '../features/svo/preview'
-import { MinhasOrdensSvo, ExecucaoSvo } from '../features/svo/EquipeSvo'
-import { DetalheSolicitacao as DetalheSolicitacaoSvo, DetalheOrdem } from '../features/svo/DetalhesSvo'
-import { Svo } from '../features/svo/Svo';
-import { CadastroSolicitacaoSvo, ListaOrdensIntegrada, ListaSolicitacoesIntegrada, TriagemSvo } from '../features/svo/SvoOperacional'
+const MinhasOrdensSvo = lazy(() => import('../features/svo/EquipeSvo').then(module => ({ default: module.MinhasOrdensSvo })));
+const ExecucaoSvo = lazy(() => import('../features/svo/EquipeSvo').then(module => ({ default: module.ExecucaoSvo })));
+const DetalheSolicitacaoSvo = lazy(() => import('../features/svo/DetalhesSvo').then(module => ({ default: module.DetalheSolicitacao })));
+const DetalheOrdem = lazy(() => import('../features/svo/DetalhesSvo').then(module => ({ default: module.DetalheOrdem })));
+const Svo = lazy(() => import('../features/svo/Svo').then(module => ({ default: module.Svo })));
+const CadastroSolicitacaoSvo = lazy(() => import('../features/svo/SvoOperacional').then(module => ({ default: module.CadastroSolicitacaoSvo })));
+const ListaOrdensIntegrada = lazy(() => import('../features/svo/SvoOperacional').then(module => ({ default: module.ListaOrdensIntegrada })));
+const ListaSolicitacoesIntegrada = lazy(() => import('../features/svo/SvoOperacional').then(module => ({ default: module.ListaSolicitacoesIntegrada })));
+const TriagemSvo = lazy(() => import('../features/svo/SvoOperacional').then(module => ({ default: module.TriagemSvo })));
 import {
   buscarSessao,
   destinoDoPerfil,
   obterToken,
   sair,
 } from "../shared/services/auth.service";
+import '../shared/styles/hierarquia.css';
 import type { UsuarioSessao } from "../shared/services/auth.service";
 
 const paginas: Record<string, ComponentType> = {
@@ -58,7 +66,7 @@ export function App() {
   useCaminho();
   return (
     <NotificacoesProvider key={obterToken() ?? "sem-sessao"}>
-      <AppContent />
+      <Suspense fallback={<div role="status" className="conteudo">Carregando página…</div>}><AppContent /></Suspense>
     </NotificacoesProvider>
   );
 }
@@ -180,6 +188,15 @@ function AppContent() {
   }
 
   // Tela do Gestor de Frota
+  const tiposRelatorio: Record<string, ConsultaRelatorio['tipo']> = {
+    [ROTAS.relatoriosGestor]: 'viagens', [ROTAS.relatorioVeiculos]: 'veiculos',
+    [ROTAS.relatorioMotoristas]: 'motoristas', [ROTAS.relatorioSolicitacoes]: 'solicitacoes',
+    [ROTAS.relatorioAbastecimentos]: 'abastecimentos', [ROTAS.svoRelatorios]: 'svo',
+  };
+  if (tiposRelatorio[caminho]) {
+    const Layout = caminho === ROTAS.svoRelatorios ? SvoLayout : GestorLayout;
+    return <Layout usuario={sessao}><Relatorios key={caminho} tipoInicial={tiposRelatorio[caminho]}/></Layout>;
+  }
   if (caminho === ROTAS.dashboardGestor) {
     return (
       <GestorLayout usuario={sessao}>
@@ -192,6 +209,7 @@ function AppContent() {
   if (caminho === ROTAS.veiculosGestor) {
     return (
       <GestorLayout usuario={sessao}>
+        <Link className="btn btn--secundario relatorio-atalho" para={ROTAS.relatorioVeiculos}>Relatório de veículos</Link>
         <Veiculos />
       </GestorLayout>
     );
@@ -212,6 +230,7 @@ function AppContent() {
   if (caminho === ROTAS.motoristasGestor) {
     return (
       <GestorLayout usuario={sessao}>
+        <Link className="btn btn--secundario relatorio-atalho" para={ROTAS.relatorioMotoristas}>Relatório de motoristas</Link>
         <Motoristas />
       </GestorLayout>
     );
@@ -221,6 +240,7 @@ function AppContent() {
   if (caminho === ROTAS.abastecimentosGestor) {
     return (
       <GestorLayout usuario={sessao}>
+        <Link className="btn btn--secundario relatorio-atalho" para={ROTAS.relatorioAbastecimentos}>Relatório de abastecimentos</Link>
         <Abastecimentos />
       </GestorLayout>
     );
@@ -246,6 +266,7 @@ function AppContent() {
   if (caminho === ROTAS.solicitacoesGestor) {
     return (
       <GestorLayout usuario={sessao}>
+        <Link className="btn btn--secundario relatorio-atalho" para={ROTAS.relatorioSolicitacoes}>Relatório de solicitações</Link>
         <Solicitacoes />
       </GestorLayout>
     );

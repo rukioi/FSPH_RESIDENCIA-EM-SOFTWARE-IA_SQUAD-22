@@ -29,9 +29,11 @@ type LinkProps = {
   className?: string
   children: ReactNode
   ariaCurrent?: boolean
+  title?: string
+  ariaLabel?: string
 }
 
-export function Link({ para, className, children, ariaCurrent }: LinkProps) {
+export function Link({ para, className, children, ariaCurrent, title, ariaLabel }: LinkProps) {
   function aoClicar(e: MouseEvent<HTMLAnchorElement>) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
     e.preventDefault()
@@ -39,6 +41,8 @@ export function Link({ para, className, children, ariaCurrent }: LinkProps) {
   }
   return (
     <a
+      title={title}
+      aria-label={ariaLabel}
       href={para}
       className={className}
       onClick={aoClicar}

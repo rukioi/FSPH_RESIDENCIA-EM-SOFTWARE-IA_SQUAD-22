@@ -6,7 +6,9 @@ import { useRemoteData } from '../../shared/api/useRemoteData';
 import { buscarAbastecimentos } from '../../shared/services/abastecimentos.service';
 import { buscarDocumentos } from '../../shared/services/documentos.service';
 import { atualizarVeiculo, type VeiculoDto } from '../../shared/services/veiculos.service';
-import { VehicleImage, VehicleStatusBadge, vehicleTitle, vehicleTypeLabel, formatarQuilometragem } from './VehiclePresentation';
+import { VehiclePhoto, VehiclePhotoInput } from './VehiclePhoto';
+import { salvarFotoVeiculo, type FotoVeiculo } from '../../shared/services/veiculos.service';
+import { VehicleStatusBadge, vehicleTitle, vehicleTypeLabel, formatarQuilometragem } from './VehiclePresentation';
 import './VehicleDetails.css';
 
 function campo(valor: string | number | null | undefined) {
@@ -18,9 +20,11 @@ function data(valor: string | null) {
 }
 
 /** Apresenta os dados reais do veículo e as consultas disponíveis para a gestão da frota. */
-export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
+export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar, fotoVersao, aoSalvarFoto }: {
   veiculo: VeiculoDto;
   aoVoltar: () => void;
+  fotoVersao: number;
+  aoSalvarFoto: () => void;
   aoAtualizar?: (veiculo: VeiculoDto) => void;
 }) {
   const tituloRef = useRef<HTMLHeadingElement>(null);
@@ -28,6 +32,7 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
     window.scrollTo({ top: 0, behavior: 'instant' });
     tituloRef.current?.focus({ preventScroll: true });
   }, []);
+  const [foto, setFoto] = useState<FotoVeiculo | null>(null);
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
@@ -35,13 +40,18 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
   const [form, setForm] = useState({ placa: veiculo.placa, marca: veiculo.marca, modelo: veiculo.modelo, status: veiculo.status ?? '', capacidade_passageiros: veiculo.capacidade_passageiros?.toString() ?? '', vinculo: veiculo.vinculo, fornecedor_locacao: veiculo.fornecedor_locacao ?? '' });
   const dialogo = useRef<HTMLDialogElement>(null);
   const botaoEditar = useRef<HTMLButtonElement>(null);
-  function fecharEdicao() { dialogo.current?.close(); setEditando(false); requestAnimationFrame(() => botaoEditar.current?.focus()); }
+  function fecharEdicao() { dialogo.current?.close(); setFoto(null); setEditando(false); requestAnimationFrame(() => botaoEditar.current?.focus()); }
   useEffect(() => { if (editando) dialogo.current?.showModal(); }, [editando]);
   async function salvar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault(); setErro(''); setSalvando(true);
     try {
       const atualizado = await atualizarVeiculo(veiculo.id, { placa: form.placa.trim(), marca: form.marca.trim(), modelo: form.modelo.trim(), ...(form.status ? { status: form.status } : {}), ...(form.capacidade_passageiros ? { capacidade_passageiros: Number(form.capacidade_passageiros) } : {}), vinculo: form.vinculo, ...(form.vinculo === 'LOCADO' ? { fornecedor_locacao: form.fornecedor_locacao.trim() } : {}) });
-      aoAtualizar?.(atualizado); fecharEdicao(); setAviso('Veículo atualizado com sucesso.');
+      aoAtualizar?.(atualizado);
+      if (foto) {
+        try { await salvarFotoVeiculo(veiculo.id, foto); aoSalvarFoto(); setFoto(null); }
+        catch { setErro('Dados salvos, mas não foi possível salvar a foto. Tente novamente.'); return; }
+      }
+      fecharEdicao(); setAviso('Veículo atualizado com sucesso.');
     } catch (error) { setErro(error instanceof Error ? error.message : 'Não foi possível atualizar o veículo.'); }
     finally { setSalvando(false); }
   }
@@ -70,7 +80,7 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
   return <section className="vehicle-details">
     <button className="vehicle-details__back" type="button" onClick={aoVoltar}>‹ Voltar para veículos</button>
     <header className="vehicle-details__hero">
-      <div className="vehicle-details__image"><VehicleImage tipo={veiculo.tipo} eager /></div>
+      <div className="vehicle-details__image"><VehiclePhoto id={veiculo.id} tipo={veiculo.tipo} versao={fotoVersao} eager /></div>
       <div className="vehicle-details__identity">
         <p className="vehicle-details__eyebrow">Frota / Detalhes do veículo</p>
         <h1 ref={tituloRef} tabIndex={-1}>{vehicleTitle(veiculo.marca, veiculo.modelo)}</h1>
@@ -89,7 +99,7 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar }: {
         <label>Capacidade de passageiros<input type="number" min="1" step="1" value={form.capacidade_passageiros} onChange={e => setForm({ ...form, capacidade_passageiros: e.target.value })} /></label>
         <label>Vínculo<Select value={form.vinculo} onChange={e => setForm({ ...form, vinculo: e.target.value as typeof form.vinculo })}><option value="PROPRIO">Próprio</option><option value="LOCADO">Locado</option></Select></label>
         {form.vinculo === 'LOCADO' && <label>Fornecedor de locação<input required value={form.fornecedor_locacao} onChange={e => setForm({ ...form, fornecedor_locacao: e.target.value })} /></label>}
-      </div>{erro && <p role="alert">{erro}</p>}<div className="vehicle-details__actions"><button type="button" disabled={salvando} onClick={fecharEdicao}>Cancelar</button><button type="submit" disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar alterações'}</button></div></form>
+      </div><VehiclePhotoInput foto={foto} onChange={setFoto} />{erro && <p role="alert">{erro}</p>}<div className="vehicle-details__actions"><button type="button" disabled={salvando} onClick={fecharEdicao}>Cancelar</button><button type="submit" disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar alterações'}</button></div></form>
     </dialog>}
 
     <article className="vehicle-details__panel">

@@ -1,5 +1,10 @@
 # Permissões
 
+Relatórios: `/api/relatorios` e `/api/relatorios/recursos` permitem ADM/GESTOR_FROTA.
+`/api/svo/relatorios` e `/api/svo/relatorios/recursos` permitem somente ATENDENTE_SVO.
+Consultas/exportações usam projeções mínimas; motorista e solicitante não ganham
+acesso geral. Detalhes e limites em [relatórios](./api/relatorios.md).
+
 Esta é a referência de acesso implementado. A matriz descreve a API atual;
 novas permissões e reconciliações de negócio exigem tarefa própria.
 

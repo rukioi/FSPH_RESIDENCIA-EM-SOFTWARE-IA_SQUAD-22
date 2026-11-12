@@ -1,6 +1,12 @@
-import { ROTAS, lerDetalheSvo, lerRotaSolicitacao } from '../../app/routes/rotas'
+import { ROTAS, lerDetalheSvo, lerRotaSolicitacao, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
+  [ROTAS.relatoriosGestor]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.relatorioVeiculos]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.relatorioMotoristas]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.relatorioSolicitacoes]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.relatorioAbastecimentos]: ['ADM','GESTOR_FROTA'],
+  [ROTAS.svoRelatorios]: ['ATENDENTE_SVO'],
   [ROTAS.notificacoes]: ['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],
   [ROTAS.dashboard]: ['ADM'],
   [ROTAS.configuracoes]: ['ADM'],
@@ -31,19 +37,13 @@ export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
     return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil);
   }
 
-  // const abastecimentoId = lerRotaDetalheAbastecimento(caminho);
+  if (lerRotaDetalheAbastecimento(caminho) !== null) {
+    return perfisPorRota[ROTAS.abastecimentosGestor].includes(perfil);
+  }
+  if (lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null) {
+    return perfisPorRota[ROTAS.veiculosGestor].includes(perfil);
+  }
 
-  // if (abastecimentoId !== null) {
-  //   return perfisPorRota[ROTAS.abastecimentosGestor].includes(perfil);
-  // }
-
-  // const historicoVeiculoId = lerRotaHistoricoAbastecimentosVeiculo(caminho);
-
-  // if (historicoVeiculoId !== null) {
-  //   return perfisPorRota[ROTAS.veiculosGestor].includes(perfil);
-  // }
-
-  // return perfisPorRota[caminho]?.includes(perfil) ?? false;
   const perfisExatos = perfisPorRota[caminho]
   if (perfisExatos) return perfisExatos.includes(perfil)
   const detalhe = lerDetalheSvo(caminho)

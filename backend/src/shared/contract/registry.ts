@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { relatoriosSchemas, consultaRelatorioSchema } from '../../modules/relatorios/relatorios.schemas.js';
 import { notificacoesSchemas } from '../../modules/notificacoes/notificacoes.schemas.js';
 import {parametrosPeriodoDashboard,notasDashboardPeriodo} from '../../modules/dashboard/dashboard.indicadores.schemas.js';
 import { erro, erroString, erroSvo, sucessoExclusao, gestor, consultaFrota } from './schemas.js';
@@ -17,12 +18,12 @@ import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas
 import { solicitacoesSchemas, statusSolicitacao } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
-export const schemas = { ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
+export const schemas = { ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
   ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
-export type Modulo = 'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
+export type Modulo = 'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
   id: string; modulo: Modulo; method: 'get'|'post'|'put'|'patch'|'delete'; path: string;
   perfis: string[]; response: SchemaName; status: number; body?: SchemaName;
@@ -36,6 +37,19 @@ const op = (modulo: Modulo, method: Operacao['method'], path: string, response: 
   notes: 'Formato atual preservado; query params não declarados são ignorados.', ...options,
 });
 export const operations: Operacao[] = [
+  ...(['/api/relatorios', '/api/svo/relatorios'] as const).flatMap(path => {
+    const perfis = path.includes('/svo/') ? ['ATENDENTE_SVO'] : gestor;
+    return [
+      op('relatorios','get',path,'RespostaRelatorio',perfis,{
+        runtimeValidation:true,errors:[400,401,403,422,500],
+        notes:'Relatório completo até 5000 linhas; sem truncamento. inicio/fim YYYY-MM-DD inclusivos, até 366 dias; query estrita sem duplicatas. Frota: tipo obrigatório exceto svo. SVO: tipo=svo (padrão), exclusivo ATENDENTE_SVO. Exportações do snapshot validado na tela. Veja docs/api/relatorios.md.',
+        query:Object.entries(consultaRelatorioSchema.shape).map(([name,schema]) => ({name,required:['inicio','fim'].includes(name) || name==='tipo' && !path.includes('/svo/'),schema})),
+      }),
+      op('relatorios','get',path+'/recursos','RecursosRelatorios',perfis,{
+        runtimeValidation:true,errors:[400,401,403,500],notes:'Catálogo mínimo de veículo/motorista para filtros; não aceita query. Sem CPF, CNH ou contato.',
+      }),
+    ];
+  }),
   op('notificacoes','get','/api/notificacoes','ListaNotificacoes',['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],{
     runtimeValidation:true,errors:[400,401,500],notes:'Caixa individual por sessão atual; ordem criadoEm DESC,id DESC. Query estrita. GET não materializa alertas.',
     query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
@@ -156,6 +170,8 @@ export const operations: Operacao[] = [
   op('svo','get','/api/svo/dashboard/atividades','AtividadesRecentesSvo',['ATENDENTE_SVO'],{
     errors:[400,401,403,500],notes:'SCRUM-149 IND-07: eventos SVO reais, sem dados pessoais; limite 1..50.',
     query:[{name:'limite',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('veiculos','get','/api/veiculos/{id}/foto','FotoVeiculoResposta',consultaFrota,{errors:[401,403,404,500,503],notes:'Foto privada JPEG ou PNG, ou null quando ausente.'}),
+  op('veiculos','put','/api/veiculos/{id}/foto','FotoVeiculoResposta',gestor,{body:'FotoVeiculoEntrada',errors:[400,401,403,404,413,415,500,503],notes:'Substitui foto privada; máximo 1 MiB.'}),
   op('veiculos','get','/api/veiculos','ListaVeiculos',consultaFrota,{notes:'Lista completa id DESC, sem paginação. Piloto validado em runtime.'}),
   op('veiculos','post','/api/veiculos','RespostaVeiculo',gestor,{body:'CriarVeiculo',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('veiculos',method,'/api/veiculos/{id}','RespostaVeiculo',gestor,

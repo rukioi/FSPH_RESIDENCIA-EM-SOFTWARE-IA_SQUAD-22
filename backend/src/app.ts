@@ -10,6 +10,7 @@ import { authRoute } from './modules/auth/auth.routes.js';
 import { usuariosRoute } from './modules/usuarios/usuarios.routes.js';
 import { auditoriaRoute } from './modules/auditoria/auditoria.routes.js';
 import { solicitacoesRoute } from './modules/solicitacoes/solicitacoes.routes.js';
+import { relatoriosRoute } from './modules/relatorios/relatorios.routes.js';
 
 import { enviarErro } from './shared/http/json.js';
 import { tratarErroTecnico } from './shared/http/errors.js';
@@ -22,7 +23,7 @@ export function isolarFalhaDaRequisicao(response: ServerResponse, operacao: Prom
   void operacao.catch((erro: unknown) => tratarErroTecnico(response, erro));
 }
 
-const handlers = { notificacoes: notificacoesRoute, auth: authRoute, usuarios: usuariosRoute, auditoria: auditoriaRoute,
+const handlers = { relatorios: relatoriosRoute, notificacoes: notificacoesRoute, auth: authRoute, usuarios: usuariosRoute, auditoria: auditoriaRoute,
   dashboard: dashboardRoute, svo: svoRoute, veiculos: veiculosRoute, motoristas: motoristasRoute,
   abastecimentos: abastecimentosRoute, documentos: documentosRoute, solicitacoes: solicitacoesRoute };
 const rotas = operations.map(operation => ({ path: routePattern(operation),

@@ -171,6 +171,8 @@ export type FinalizarTriagemSvo =
     };
 
 export interface ApiSchemas {
+  RespostaRelatorio: RespostaRelatorio;
+  RecursosRelatorios: RecursosRelatorios;
   ListaNotificacoes: ListaNotificacoes;
   NotificacoesAtualizadas: NotificacoesAtualizadas;
   Erro: Erro;
@@ -179,6 +181,8 @@ export interface ApiSchemas {
   ErroUsuario: ErroUsuario;
   ErroOperacionalSvo: ErroOperacionalSvo;
   Exclusao: Exclusao;
+  FotoVeiculoEntrada: FotoVeiculoEntrada;
+  FotoVeiculoResposta: FotoVeiculoResposta;
   Veiculo: Veiculo;
   CriarVeiculo: CriarVeiculo;
   EditarVeiculo: EditarVeiculo;
@@ -262,6 +266,59 @@ export interface ApiSchemas {
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaRelatorio".
+ */
+export interface RespostaRelatorio {
+  data: {
+    tipo: 'viagens' | 'solicitacoes' | 'veiculos' | 'motoristas' | 'ocorrencias' | 'abastecimentos' | 'svo';
+    titulo: string;
+    inicio: string;
+    fim: string;
+    criterioPeriodo: string;
+    geradoEm: string;
+    observacoes: string[];
+    filtros: {
+      veiculoId: string | null;
+      motoristaId: string | null;
+      status: string | null;
+    };
+    colunas: {
+      chave: string;
+      titulo: string;
+      tipo: 'texto' | 'numero' | 'data' | 'dataHora';
+    }[];
+    /**
+     * @maxItems 5000
+     */
+    linhas: {
+      [k: string]: string | number | null;
+    }[];
+    resumo: {
+      registros: number;
+      kmConcluidos: number | null;
+      semQuilometragem: number | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RecursosRelatorios".
+ */
+export interface RecursosRelatorios {
+  data: {
+    veiculos: {
+      id: string;
+      placa: string;
+      modelo: string;
+    }[];
+    motoristas: {
+      id: string;
+      nome: string;
+    }[];
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "ListaNotificacoes".
  */
 export interface ListaNotificacoes {
@@ -323,6 +380,26 @@ export interface ErroSvo {
 export interface Exclusao {
   data: {
     success: true;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "FotoVeiculoEntrada".
+ */
+export interface FotoVeiculoEntrada {
+  tipo: 'image/jpeg' | 'image/png';
+  dadosBase64: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "FotoVeiculoResposta".
+ */
+export interface FotoVeiculoResposta {
+  data: {
+    foto: {
+      tipo: 'image/jpeg' | 'image/png';
+      dadosBase64: string;
+    } | null;
   };
 }
 /**
@@ -1840,6 +1917,10 @@ export interface RespostaDisponibilidadeViagem {
 }
 
 export interface ApiOperations {
+  'relatorios_get__api_relatorios': { body: undefined; response: ApiSchemas['RespostaRelatorio'] };
+  'relatorios_get__api_relatorios_recursos': { body: undefined; response: ApiSchemas['RecursosRelatorios'] };
+  'relatorios_get__api_svo_relatorios': { body: undefined; response: ApiSchemas['RespostaRelatorio'] };
+  'relatorios_get__api_svo_relatorios_recursos': { body: undefined; response: ApiSchemas['RecursosRelatorios'] };
   'notificacoes_get__api_notificacoes': { body: undefined; response: ApiSchemas['ListaNotificacoes'] };
   'notificacoes_post__api_notificacoes_ler_todas': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };
   'notificacoes_post__api_notificacoes_id_ler': { body: undefined; response: ApiSchemas['NotificacoesAtualizadas'] };
@@ -1889,6 +1970,8 @@ export interface ApiOperations {
   'svo_get__api_svo_dashboard': { body: undefined; response: ApiSchemas['DashboardOperacionalSvo'] };
   'svo_get__api_svo_dashboard_filas': { body: undefined; response: ApiSchemas['FilasOperacionaisSvo'] };
   'svo_get__api_svo_dashboard_atividades': { body: undefined; response: ApiSchemas['AtividadesRecentesSvo'] };
+  'veiculos_get__api_veiculos_id_foto': { body: undefined; response: ApiSchemas['FotoVeiculoResposta'] };
+  'veiculos_put__api_veiculos_id_foto': { body: ApiSchemas['FotoVeiculoEntrada']; response: ApiSchemas['FotoVeiculoResposta'] };
   'veiculos_get__api_veiculos': { body: undefined; response: ApiSchemas['ListaVeiculos'] };
   'veiculos_post__api_veiculos': { body: ApiSchemas['CriarVeiculo']; response: ApiSchemas['RespostaVeiculo'] };
   'veiculos_put__api_veiculos_id_': { body: ApiSchemas['EditarVeiculo']; response: ApiSchemas['RespostaVeiculo'] };

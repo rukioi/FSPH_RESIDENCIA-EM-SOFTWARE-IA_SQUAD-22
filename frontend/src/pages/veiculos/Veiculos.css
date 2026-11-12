@@ -370,3 +370,9 @@
 .veiculos-modal::backdrop { background: rgb(8 25 48 / 50%); }
 .veiculos-vazio h2 { margin: 0 0 8px; font-size: 18px; color: var(--texto); }
 .veiculos-vazio button { margin-top: 16px; }
+
+.veiculos-foto-input { display: grid; gap: 8px; grid-column: 1 / -1; min-width: 0; }
+.veiculos-foto-input label { display: grid; gap: 8px; }
+.veiculos-foto-input input { max-width: 100%; min-height: 40px; }
+.veiculos-foto-input small { color: var(--texto-suave); }
+.veiculos-foto-input__preview { width: min(100%, 280px); max-height: 160px; object-fit: contain; border-radius: 8px; }
