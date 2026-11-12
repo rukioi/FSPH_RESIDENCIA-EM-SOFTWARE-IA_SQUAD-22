@@ -354,7 +354,7 @@ export function Abastecimentos() {
                             .reverse()
                             .join("/")}
                         </td>
-                        <td>{numero.format(item.quilometragem)} km</td>
+                        <td>{item.quilometragem ? (numero.format(item.quilometragem)+'km') : 'Não informada'}</td>
                         <td>{numero.format(Number(item.litragem))} L</td>
                         <td>{moeda.format(Number(item.valor_total))}</td>
                         <td>
