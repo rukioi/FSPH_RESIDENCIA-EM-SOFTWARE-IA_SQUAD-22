@@ -64,6 +64,22 @@ export const apiOperations = {
     "method": "PATCH",
     "path": "/api/motorista/notificacoes/{id}/lida"
   },
+  "relatorios_get__api_relatorios": {
+    "method": "GET",
+    "path": "/api/relatorios"
+  },
+  "relatorios_get__api_relatorios_recursos": {
+    "method": "GET",
+    "path": "/api/relatorios/recursos"
+  },
+  "relatorios_get__api_svo_relatorios": {
+    "method": "GET",
+    "path": "/api/svo/relatorios"
+  },
+  "relatorios_get__api_svo_relatorios_recursos": {
+    "method": "GET",
+    "path": "/api/svo/relatorios/recursos"
+  },
   "notificacoes_get__api_notificacoes": {
     "method": "GET",
     "path": "/api/notificacoes"
@@ -259,6 +275,14 @@ export const apiOperations = {
   "svo_get__api_svo_dashboard_atividades": {
     "method": "GET",
     "path": "/api/svo/dashboard/atividades"
+  },
+  "veiculos_get__api_veiculos_id_foto": {
+    "method": "GET",
+    "path": "/api/veiculos/{id}/foto"
+  },
+  "veiculos_put__api_veiculos_id_foto": {
+    "method": "PUT",
+    "path": "/api/veiculos/{id}/foto"
   },
   "veiculos_get__api_veiculos": {
     "method": "GET",

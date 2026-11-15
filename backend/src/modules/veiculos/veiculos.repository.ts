@@ -64,3 +64,9 @@ export async function removerVeiculo(id: string) {
   const rows = await sql`DELETE FROM veiculo WHERE id=${id} RETURNING id`;
   return rows.length > 0;
 }
+
+/** Confirma que a foto pertence a um veículo cadastrado. */
+export async function veiculoExiste(id: string) {
+  const rows = await sql`SELECT id FROM veiculo WHERE id = ${id}`;
+  return rows.length > 0;
+}

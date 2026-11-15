@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "project": {
+    "name": "frota-svo",
+    "productType": "Gestão institucional de transporte",
+    "stack": [
+      "React",
+      "TypeScript",
+      "Vite",
+      "CSS"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "frontend/src/shared/styles/tema.css",
+      "frontend/src/shared/styles/hierarquia.css"
+    ],
+    "components": [
+      "frontend/src/shared/components/MarcaInstitucional.tsx",
+      "frontend/src/shared/components/useSidebar.ts"
+    ],
+    "assets": [],
+    "instructions": [
+      "AGENTS.md"
+    ]
+  },
+  "design": {
+    "colorMode": "light",
+    "colors": {},
+    "typography": {},
+    "spacing": {},
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "compact"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [],
+    "avoid": []
+  },
+  "decisions": [
+    "Preservar azul institucional; vermelho para vencidos/erros, amarelo para vencimento próximo, sempre com texto de estado.",
+    "Sidebar desktop recolhido permanece navegável por ícones e mantém preferência em memória da sessão.",
+    "Brasão fornecido pelo usuário substitui o carro na marca do sidebar."
+  ],
+  "evidence": [
+    {
+      "fact": "project.instructions",
+      "source": "AGENTS.md"
+    }
+  ],
+  "generatedAt": "2026-11-12T21:52:07.690Z"
+}

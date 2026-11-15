@@ -3,10 +3,11 @@ import { IconeGestor } from '../../shared/components/IconeGestor'
 import { useRemoteData } from '../../shared/api/useRemoteData';
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { buscarVeiculos, cadastrarVeiculo as salvarVeiculo } from "../../shared/services/veiculos.service";
+import { buscarVeiculos, cadastrarVeiculo as salvarVeiculo, salvarFotoVeiculo, type FotoVeiculo } from "../../shared/services/veiculos.service";
 import type { VeiculoDto } from "../../shared/services/veiculos.service";
+import { VehiclePhoto, VehiclePhotoInput } from './VehiclePhoto';
 import { VehicleDetails } from "./VehicleDetails";
-import { VehicleImage, VehicleStatusBadge, vehicleTitle, vehicleTypeLabel, formatarQuilometragem } from "./VehiclePresentation";
+import { VehicleStatusBadge, vehicleTitle, vehicleTypeLabel, formatarQuilometragem } from "./VehiclePresentation";
 import "./Veiculos.css";
 
 type Veiculo = VeiculoDto;
@@ -64,6 +65,8 @@ export function Veiculos() {
     else if (cadastroVisitado.current) cadastroTrigger.current?.focus();
   }, [modalAberto]);
   const [salvando, setSalvando] = useState(false);
+  const [foto, setFoto] = useState<FotoVeiculo | null>(null);
+  const [fotoVersao, setFotoVersao] = useState(0);
   const [formulario, setFormulario] =
     useState<FormularioVeiculo>(formularioInicial);
 
@@ -153,7 +156,13 @@ export function Veiculos() {
           is_svo: formulario.is_svo,
       });
       setVeiculos((atuais) => [novoVeiculo, ...atuais]);
-      setAviso('Veículo cadastrado com sucesso.');
+      let mensagem = 'Veículo cadastrado com sucesso.';
+      if (foto) {
+        try { await salvarFotoVeiculo(novoVeiculo.id, foto); setFotoVersao(v => v + 1); }
+        catch { mensagem = 'Veículo cadastrado, mas não foi possível salvar a foto. Tente novamente nos detalhes do veículo.'; }
+      }
+      setAviso(mensagem);
+      setFoto(null);
 
       setFormulario(formularioInicial);
       setModalAberto(false);
@@ -173,6 +182,8 @@ export function Veiculos() {
       <VehicleDetails
         veiculo={veiculoSelecionado}
         aoVoltar={() => setVeiculoSelecionado(null)}
+        fotoVersao={fotoVersao}
+        aoSalvarFoto={() => setFotoVersao(v => v + 1)}
         aoAtualizar={(atualizado) => {
           setVeiculos((atuais) => atuais.map((item) => item.id === atualizado.id ? atualizado : item));
           setVeiculoSelecionado(atualizado);
@@ -195,6 +206,7 @@ export function Veiculos() {
           type="button"
           onClick={() => {
             setErro("");
+            setFoto(null);
             setModalAberto(true);
           }}
         >
@@ -341,7 +353,7 @@ export function Veiculos() {
             return (
               <article className="veiculo-card" key={chave}>
                 <div className="veiculo-card__midia">
-                  <VehicleImage tipo={veiculo.tipo} />
+                  <VehiclePhoto id={veiculo.id} tipo={veiculo.tipo} versao={fotoVersao} />
                   <VehicleStatusBadge status={veiculo.status} />
                 </div>
                 <div className="veiculo-card__conteudo">
@@ -500,6 +512,8 @@ export function Veiculos() {
                 />
                 Veículo da categoria SVO
               </label>
+
+              <VehiclePhotoInput foto={foto} onChange={setFoto} />
 
               {salvando && <p role="status">Salvando veículo...</p>}
               {erroFormulario && (

@@ -164,3 +164,7 @@ Conta inativa/inexistente ou token inválido: 401 NAO_AUTENTICADO. Perfil efetiv
 fora da lista existente: 403 ACESSO_NEGADO. Falha de consulta não usa claims como
 fallback e recebe 500 do tratamento comum. As listas de permissão e operações
 permanecem as documentadas acima. Ver [identidade compartilhada](./README.md#identidade-e-usuários--29).
+
+## Foto opcional
+
+`GET /api/veiculos/{id}/foto` retorna `{data:{foto:null}}` quando ausente ou uma foto `{tipo,dadosBase64}`; `PUT` recebe `{tipo,dadosBase64}` e retorna a foto confirmada. JPEG e PNG até 1 MiB; corpo limitado a 1.450.000 bytes. A leitura usa os perfis da listagem; a escrita usa os perfis gestores. O backend valida assinatura e tamanho, verifica o veículo e acessa o bucket privado `veiculos-fotos` pela API do Supabase Storage. Configurar `SUPABASE_STORAGE_URL` (origem HTTPS do projeto) e `SUPABASE_STORAGE_SERVICE_KEY` somente no ambiente do servidor. Criar o bucket privado com limite de 1 MiB e MIME JPEG/PNG antes do uso. Não expor a chave ao frontend. Armazenamento indisponível retorna 503; ausência de foto usa a ilustração. O envio da foto após o cadastro é separado: falha preserva o veículo e informa nova tentativa na edição. Não se aplica migration nem se escreve no banco por este fluxo.

@@ -288,3 +288,147 @@
   font-size: 13px;
   white-space: nowrap;
 }
+
+.abastecimentos__paginacao {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.abastecimentos__paginacao button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #152238;
+}
+
+.abastecimentos__detalhes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.abastecimentos__detalhes div {
+  min-width: 0;
+}
+
+.abastecimentos__detalhes dt {
+  margin-bottom: 6px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.abastecimentos__detalhes dd {
+  margin: 0;
+  color: #152238;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .abastecimentos__detalhes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .abastecimentos__detalhes {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Indicadores de abastecimento */
+
+.abastecimentos__indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.abastecimentos__indicadores h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.abastecimentos__indicador-valor {
+  font-size: 30px;
+  font-weight: 700;
+  color: #17365d;
+  margin: 12px 0;
+}
+
+.abastecimentos__indicadores small {
+  display: block;
+  margin-top: 12px;
+  color: #667085;
+}
+
+/* Filtros dos indicadores */
+
+.abastecimentos__indicadores-filtros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.abastecimentos__indicadores-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.abastecimentos__indicadores-campo label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.abastecimentos__indicadores-campo input,
+.abastecimentos__indicadores-campo select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.abastecimentos__indicadores-campo select:disabled {
+  background: #f2f4f7;
+  color: #667085;
+  cursor: not-allowed;
+}
+
+.abastecimentos__indicadores-acoes {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.abastecimentos__indicadores-acoes button {
+  padding: 10px 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.abastecimentos__indicadores-acoes button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .abastecimentos__indicadores-filtros {
+    grid-template-columns: 1fr;
+  }
+}

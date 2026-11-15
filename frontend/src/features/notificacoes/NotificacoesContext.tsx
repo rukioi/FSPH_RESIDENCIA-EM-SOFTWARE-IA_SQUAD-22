@@ -46,9 +46,18 @@ function useCaixa() {
     try {
       await lerNotificacoes(id,controller.signal);
       if (!controller.signal.aborted) {
-        remote.setData(atual=>atual);
-        setPage(1);
-        retryRef.current();
+        const lidaEm = new Date().toISOString();
+        remote.setData(atual => {
+          const atualizadas = id ? atual.data.filter(n => n.id === id && !n.lidaEm).length : atual.data.filter(n => !n.lidaEm).length;
+          if (!atualizadas) return atual;
+          const data = id
+            ? atual.data.map(n => n.id === id ? {...n,lidaEm} : n)
+            : atual.data.map(n => n.lidaEm ? n : {...n,lidaEm});
+          const removidas = id && filtro === 'nao-lidas' ? atualizadas : 0;
+          return { ...atual, data: removidas ? data.filter(n => n.id !== id) : data,
+            meta: { ...atual.meta, total: atual.meta.total - removidas,
+              naoLidas: Math.max(0, atual.meta.naoLidas - atualizadas) } };
+        });
       }
     } catch (erro) { if (!controller.signal.aborted) setErroAcao(errorMessage(erro)); }
     finally { if (!controller.signal.aborted) {escrita.current=null;setSalvando(false);} }

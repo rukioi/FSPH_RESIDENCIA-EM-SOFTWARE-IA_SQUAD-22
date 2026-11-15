@@ -10,6 +10,8 @@ const config = configurarBanco(process.env.NODE_ENV === 'test'
 
 /** Pool único da aplicação; os clientes do harness são exclusivos da verificação isolada. */
 export const sql = postgres(config.url, {
+  // O pooler transacional do Supabase não preserva statements entre conexões.
+  prepare: false,
   ssl: config.ssl, max: 10, idle_timeout: 20, connect_timeout: 15,
   onnotice: () => {},
 });

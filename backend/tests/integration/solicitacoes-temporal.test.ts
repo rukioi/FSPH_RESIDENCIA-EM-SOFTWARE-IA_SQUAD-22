@@ -139,16 +139,31 @@ test('agendamento e reagendamento aceitam reserva positiva de um microssegundo',
   expect(await armazenado(pedido.id)).toEqual({saida:'2099-11-27T08:00:00.000004',retorno:'2099-11-27T08:00:00.000005'});
 });
 
-test('PostgreSQL confirma reutilização das consultas preparadas nos caminhos reais',async()=>{
-  const connections=[];
-  try{
-    for(let n=0;n<applicationSql.options.max;n++)connections.push(await applicationSql.reserve());
-    const batches=await Promise.all(connections.map(c=>c`SELECT statement,parameter_types::text AS types,(generic_plans+custom_plans)::int AS executions FROM pg_prepared_statements`));
-    const rows=batches.flat();
-    for(const pattern of ['INSERT INTO public.solicitacao_viagem','UPDATE public.solicitacao_viagem SET','SET motorista_id=','SET data_hora_saida=','WHERE s.status=']){
-      const matching=rows.filter(r=>r.statement.includes(pattern)&&r.executions>=2);
-      expect(matching.length,pattern).toBeGreaterThan(0);
-      for(const row of matching)expect(row.types,pattern).not.toMatch(/timestamp/);
-    }
-  }finally{for(const c of connections)await c.release();}
+
+test('PostgreSQL preserva os horários em consultas repetidas sem prepared statements', async () => {
+  expect(applicationSql.options.prepare).toBe(false);
+  process.env.TZ = 'America/Fortaleza';
+
+  const pedido = await criar('2099-12-27T08:15:30.123456-03:00');
+  expect((await call('/' + pedido.id + '/aprovar', 'POST')).status).toBe(200);
+
+  const agendamento = await call('/' + pedido.id + '/agendar', 'POST', {
+    motoristaId,
+    veiculoId,
+    dataHoraRetornoPrevisto: '2099-12-27T17:00:00.654321-03:00',
+  });
+  expect(agendamento.status).toBe(200);
+
+  const esperado = await armazenado(pedido.id);
+
+  for (let n = 0; n < 7; n++) {
+    const response = await call('/' + pedido.id);
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+    expect(body.data.dataHoraSaida).toBe('2099-12-27T08:15:30.123456-03:00');
+    expect(body.data.dataHoraRetornoPrevisto).toBe('2099-12-27T17:00:00.654321-03:00');
+
+    expect(await armazenado(pedido.id)).toEqual(esperado);
+  }
 });

@@ -21,6 +21,8 @@ for (const width of [390, 768, 1280]) {
       sessionStorage.setItem('token', 'fixture-ui-controls');
       history.replaceState({}, '', '/gestor/abastecimentos');
     });
+    await page.route('https://fonts.googleapis.com/**', route => route.fulfill({ body: '', contentType: 'text/css' }));
+    await page.route('https://fonts.gstatic.com/**', route => route.abort());
     let enviado: Record<string, unknown> | undefined;
     await page.route('**/api/**', async route => {
       const { pathname } = new URL(route.request().url());

@@ -150,3 +150,11 @@
   html:has(.gestor-dashboard) { scroll-behavior: smooth; }
 }
 .gestor-dashboard [id] { scroll-margin-top: 90px; }
+
+.gestor-dashboard .dashboard-lista .pendencia--critica { background: var(--perigo-fundo); color: var(--perigo-texto); border-left: 4px solid var(--perigo-borda); }
+.gestor-dashboard .dashboard-lista .pendencia--atencao { background: var(--atencao-fundo); color: var(--atencao-texto); border-left: 4px solid var(--atencao-borda); }
+.gestor-dashboard .dashboard-lista [class^="pendencia--"] { padding: 12px; margin-bottom: 8px; border-radius: 8px; }
+.gestor-dashboard .card-kpi { border-top: 4px solid var(--azul-medio); background: var(--informacao-fundo); }
+.gestor-dashboard .card-kpi:first-child { border-top-color: var(--atencao-borda); background: var(--atencao-fundo); }
+.gestor-dashboard .card-kpi:nth-child(3) { border-top-color: #15803d; background: var(--sucesso-fundo); }
+.gestor-dashboard .gestor-painel h2 { color: var(--azul-escuro); padding-bottom: 12px; border-bottom: 1px solid var(--borda); }

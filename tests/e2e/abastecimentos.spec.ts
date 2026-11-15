@@ -41,6 +41,16 @@ for (const width of [390, 768, 1280]) {
     await page.evaluate(value => sessionStorage.setItem('token', value), token);
     await page.goto('/gestor/abastecimentos');
     await expect(page.getByRole('heading', { name: 'Abastecimentos', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Ver indicadores' })).toHaveCount(0);
+    const action = page.locator('tbody tr').filter({ hasText: 'E2EA001' }).getByRole('button', { name: 'Ver detalhes' });
+    await action.click();
+    const details = page.getByRole('dialog', { name: 'Detalhes do abastecimento' });
+    await expect(details).toContainText('Fixture posto A');
+    await expect(details).toContainText('Fixture E2E Abastecimento');
+    await expect(page).toHaveURL(/\/gestor\/abastecimentos$/);
+    await page.screenshot({ path: info.outputPath(`abastecimento-detalhes-${width}.png`), fullPage: true });
+    await page.keyboard.press('Escape');
+    await expect(action).toBeFocused();
     const rows = page.locator('tbody tr');
     await expect(rows.filter({ hasText: 'E2EA001' })).toBeVisible();
     await expect(rows.filter({ hasText: 'E2EA002' })).toBeVisible();
