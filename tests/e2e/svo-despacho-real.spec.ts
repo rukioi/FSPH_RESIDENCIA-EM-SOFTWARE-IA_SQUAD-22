@@ -394,7 +394,7 @@ for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equi
         await expect(abrir).toHaveAttribute('aria-expanded','false');
         await expect(motoristaA.getByRole('navigation')).toHaveCount(0);
         await abrir.press('Enter');
-        await expect(motoristaA.locator('[aria-controls="svo-menu"]')).toHaveAttribute('aria-expanded','true');
+        await expect(motoristaA.getByRole('button', { name: 'Fechar menu', exact: true }).and(motoristaA.locator('[aria-controls="svo-menu"]'))).toHaveAttribute('aria-expanded','true');
         await expect(motoristaA.locator('nav [aria-current=page]')).toBeFocused();
       }
       await motoristaA.screenshot({ path: info.outputPath('menu-' + width + '.png') });

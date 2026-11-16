@@ -39,6 +39,7 @@ export function PrepararDespachoModal({
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const envio = useRef(false);
+  const focoPrincipal = useRef(false);
   const ativa = useRef(false);
   const modal = useRef<HTMLDialogElement>(null);
   const titulo = useRef<HTMLHeadingElement>(null);
@@ -66,7 +67,7 @@ export function PrepararDespachoModal({
       ativa.current=false;
       elemento?.close();
       requestAnimationFrame(()=>{
-        if(anterior?.isConnected && !anterior.matches(':disabled')) anterior.focus();
+        if(!focoPrincipal.current && anterior?.isConnected && !anterior.matches(':disabled')) anterior.focus();
         else document.querySelector<HTMLElement>('main')?.focus();
       });
     };
@@ -82,6 +83,7 @@ export function PrepararDespachoModal({
     }
 
     envio.current=true;
+    focoPrincipal.current=true;
     // O controle acionado será desabilitado; preserve o foco dentro do diálogo nativo.
     titulo.current?.focus();
     setErro("");
@@ -93,6 +95,7 @@ export function PrepararDespachoModal({
         Number(veiculoId),
       );
     } catch (error) {
+      focoPrincipal.current=false;
       if(!ativa.current)return;
       if(error instanceof ApiError && [404,409].includes(error.status)) {
         ocupacao.retry();ordem.retry();

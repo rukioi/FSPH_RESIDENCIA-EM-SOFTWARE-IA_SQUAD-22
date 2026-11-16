@@ -110,7 +110,7 @@ export function lerRotaDetalheAbastecimento(caminho: string) {
 }
 
 export function rotaHistoricoAbastecimentosVeiculo(id: string) {
-  if (!/^[1-9]\d*$/.test(id)) {
+  if (!/^-?[1-9]\d*$/.test(id)) {
     throw new Error("ID de veículo inválido");
   }
 
@@ -123,7 +123,7 @@ export function lerRotaHistoricoAbastecimentosVeiculo(caminho: string) {
   if (!caminho.startsWith(prefixo)) return null;
 
   const restante = caminho.slice(prefixo.length);
-  const resultado = /^([1-9]\d*)\/abastecimentos$/.exec(restante);
+  const resultado = /^(-?[1-9]\d*)\/abastecimentos$/.exec(restante);
 
   return resultado ? resultado[1] : null;
 }

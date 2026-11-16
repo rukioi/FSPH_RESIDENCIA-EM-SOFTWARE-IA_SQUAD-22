@@ -12,6 +12,9 @@ for (const width of [390, 768, 1280]) {
       tipo: 'PASSEIO', status: 'DISPONIVEL', capacidade_obitos: null, quilometragem_atual: 1500,
       is_svo: false, criado_em: null, capacidade_passageiros: 5, vinculo: 'PROPRIO', fornecedor_locacao: null,
     }] } }))
+    await page.route(url => url.pathname === '/api/notificacoes/sincronizar', route => route.request().method() === 'POST' ? route.fulfill({ json: { data: { atualizadas: 0 } } }) : route.fallback())
+    await page.route(url => url.pathname === '/api/notificacoes', route => route.request().method() === 'GET' ? route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0, naoLidas: 0 } } }) : route.fallback())
+    await page.route('**/api/veiculos/20/foto', route => route.request().method() === 'GET' ? route.fulfill({ json: { data: { foto: null } } }) : route.fallback())
     await page.goto('/gestor/veiculos')
     await expect(page.locator('.veiculo-card')).toBeVisible()
     await expect(page.locator('.veiculo-card .vehicle-image__illustration')).toHaveAttribute('aria-hidden', 'true')
@@ -62,6 +65,8 @@ for (const width of [390, 768, 1280]) {
       id: '12', usuario_id: null, nome: 'Motorista Exemplo', cnh: '12345678901', categoria_cnh: 'B',
       validade_cnh: '2099-01-01', status: 'DISPONIVEL', criado_em: null, cpf: null, telefone: null,
     }] } }))
+    await page.route(url => url.pathname === '/api/notificacoes/sincronizar', route => route.request().method() === 'POST' ? route.fulfill({ json: { data: { atualizadas: 0 } } }) : route.fallback())
+    await page.route(url => url.pathname === '/api/notificacoes', route => route.request().method() === 'GET' ? route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0, naoLidas: 0 } } }) : route.fallback())
     await page.goto('/gestor/motoristas')
     const detalhes = page.getByRole('button', { name: 'Ver detalhes' })
     await expect(detalhes).toBeVisible()

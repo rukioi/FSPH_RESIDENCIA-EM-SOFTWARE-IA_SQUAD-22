@@ -63,15 +63,18 @@ const paginas: Record<string, ComponentType> = {
 
 /** Confirma a sessão da rota atual antes de montar qualquer página protegida. */
 export function App() {
-  useCaminho();
+  const caminho = useCaminho();
+  const token = obterToken();
+  const [confirmacao, setConfirmacao] = useState<{ caminho: string; token: string; perfil: string } | null>(null);
+  const ativo = Boolean(token && caminho !== ROTAS.login && confirmacao?.token === token && confirmacao.caminho === caminho && perfilPodeAcessar(caminho, confirmacao.perfil));
   return (
-    <NotificacoesProvider key={obterToken() ?? "sem-sessao"}>
-      <Suspense fallback={<div role="status" className="conteudo">Carregando página…</div>}><AppContent /></Suspense>
+    <NotificacoesProvider key={token ?? "sem-sessao"} ativo={ativo}>
+      <Suspense fallback={<div role="status" className="conteudo">Carregando página…</div>}><AppContent onSessaoConfirmada={setConfirmacao} /></Suspense>
     </NotificacoesProvider>
   );
 }
 
-function AppContent() {
+function AppContent({ onSessaoConfirmada }: { onSessaoConfirmada: (confirmacao: { caminho: string; token: string; perfil: string } | null) => void }) {
   const caminho = useCaminho();
   const [sessao, setSessao] = useState<UsuarioSessao | null>(null);
   const [caminhoVerificado, setCaminhoVerificado] = useState<string | null>(
@@ -89,7 +92,9 @@ function AppContent() {
       return
     }
 
-    if (!obterToken()) {
+    const tokenAoIniciar = obterToken();
+    if (!tokenAoIniciar) {
+      onSessaoConfirmada(null);
       sair();
       setSessao(null);
       setCaminhoVerificado(null);
@@ -102,8 +107,9 @@ function AppContent() {
     setCaminhoVerificado(null);
     void buscarSessao()
       .then((usuario) => {
-        if (!ativa) return;
+        if (!ativa || obterToken() !== tokenAoIniciar) return;
 
+        onSessaoConfirmada(usuario ? { caminho, token: tokenAoIniciar, perfil: usuario.perfil } : null);
         setSessao(usuario);
         setCaminhoVerificado(caminho);
 
@@ -136,7 +142,8 @@ function AppContent() {
           }
         }}
       ).catch(() => {
-        if (!ativa) return;
+        if (!ativa || obterToken() !== tokenAoIniciar) return;
+        onSessaoConfirmada(null);
         sair();
         setSessao(null);
         setCaminhoVerificado(null);

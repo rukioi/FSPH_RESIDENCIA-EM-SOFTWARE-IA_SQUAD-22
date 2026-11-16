@@ -16,6 +16,8 @@ for (const width of [390, 768, 1280]) {
       meta: { page: 1, limit: 100, total: 3 },
     } }));
     await page.addInitScript(() => sessionStorage.setItem('token', 'fixture'));
+    await page.route(url => url.pathname === '/api/notificacoes/sincronizar', route => route.request().method() === 'POST' ? route.fulfill({ json: { data: { atualizadas: 0 } } }) : route.fallback());
+    await page.route(url => url.pathname === '/api/notificacoes', route => route.request().method() === 'GET' ? route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0, naoLidas: 0 } } }) : route.fallback());
     await page.goto('/gestor/calendario');
     await expect(page.getByRole('heading', { name: 'Calendário', exact: true })).toBeVisible();
     await expect(page.locator('.cal__painel')).toContainText('2 compromissos agendados');

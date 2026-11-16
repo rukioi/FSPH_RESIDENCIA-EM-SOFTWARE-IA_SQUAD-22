@@ -17,7 +17,9 @@ for (const width of [390, 768, 1280]) {
       if (url.pathname.endsWith('/1')) return route.fulfill({ json: { data: { ...pedido, motivoRejeicao: null, dataHoraRetornoPrevisto: null, motorista: null, veiculo: null } } });
       return route.fulfill({ json: { data: [pedido], meta: { page: 1, limit: 100, total: 1 } } });
     });
-    await page.goto('/gestor/solicitacoes');
+    await page.route(url => url.pathname === '/api/notificacoes/sincronizar', route => route.request().method() === 'POST' ? route.fulfill({ json: { data: { atualizadas: 0 } } }) : route.fallback());
+  await page.route(url => url.pathname === '/api/notificacoes', route => route.request().method() === 'GET' ? route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0, naoLidas: 0 } } }) : route.fallback());
+  await page.goto('/gestor/solicitacoes');
     await expect(page.getByText('#TRP-1')).toBeVisible();
     await page.getByLabel('Buscar').fill('Unidade');
     await page.getByRole('button', { name: 'Ver detalhes de #TRP-1' }).click();
@@ -50,6 +52,8 @@ test('gestor aprova e navega pelo histórico confirmado', async ({ page }) => {
     if (url.pathname.endsWith('/1')) return route.fulfill({ json: { data: { ...pedido(), motivoRejeicao: null, dataHoraRetornoPrevisto: null, motorista: null, veiculo: null } } });
     return route.fulfill({ json: { data: [pedido()], meta: { page: 1, limit: 100, total: 1 } } });
   });
+  await page.route(url => url.pathname === '/api/notificacoes/sincronizar', route => route.request().method() === 'POST' ? route.fulfill({ json: { data: { atualizadas: 0 } } }) : route.fallback());
+  await page.route(url => url.pathname === '/api/notificacoes', route => route.request().method() === 'GET' ? route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0, naoLidas: 0 } } }) : route.fallback());
   await page.goto('/gestor/solicitacoes');
   await page.getByRole('button', { name: 'Aprovar #TRP-1' }).click();
   await expect(page.getByRole('status')).toContainText('aprovada');
