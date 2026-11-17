@@ -1,9 +1,25 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 71 operações.
+Gerado por api:generate; não editar manualmente. 87 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| POST | /api/viagens | ADM, GESTOR_FROTA | CriarViagem | 200 DetalheViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Retorna viagem criada no agendamento; pedido sem viagem exige analise manual. |
+| GET | /api/viagens/pendentes-validacao | ADM, GESTOR_FROTA | sem corpo | 200 ListaViagens | 400, 401, 403, 500, 405 | validado | Viagens concluidas ainda nao validadas, com paginacao. |
+| PATCH | /api/viagens/{id}/encerrar | MOTORISTA | ExecutarViagem | 200 RespostaExecucaoViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Encerra a viagem com quilometragem e foto obrigatorias. |
+| GET | /api/viagens/{id}/evidencias | ADM, GESTOR_FROTA, MOTORISTA | sem corpo | 200 ListaEvidenciasViagem | 400, 401, 403, 404, 500, 405 | validado | Metadados paginados de uma viagem acessível, sem bytes. |
+| GET | /api/viagens/evidencias/{id} | ADM, GESTOR_FROTA, MOTORISTA | sem corpo | 200 EvidenciaArquivo | 400, 401, 403, 404, 500, 405 | validado | Download autenticado da evidência; motorista apenas da viagem atribuída. |
+| GET | /api/viagens | ADM, GESTOR_FROTA | sem corpo | 200 ListaViagens | 400, 401, 403, 500, 405 | validado | Viagens institucionais por status e período de início real; ordem id DESC, paginação. Datas ISO com offset; intervalo [inicio,fim). |
+| GET | /api/viagens/{id} | ADM, GESTOR_FROTA, MOTORISTA | sem corpo | 200 DetalheViagem | 400, 401, 403, 404, 500, 405 | validado | Motorista somente da viagem atribuída; ausente ou inacessível retorna 404. |
+| GET | /api/viagens/{id}/historico | ADM, GESTOR_FROTA, MOTORISTA | sem corpo | 200 HistoricoViagem | 400, 401, 403, 404, 500, 405 | validado | Eventos reais de execução e validação com vínculo à solicitação; ordem data_hora e id. Sem inferir fuso dos registros de auditoria. |
+| PATCH | /api/viagens/{id}/corrigir-quilometragem | ADM, GESTOR_FROTA | CorrigirQuilometragem | 200 RespostaCorrecaoViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Somente concluída; justificativa obrigatória. A confirmação explícita só permite atualizar o odômetro em última leitura verificável; divergências retornam 409. |
+| GET | /api/viagens/{id}/correcoes | ADM, GESTOR_FROTA | sem corpo | 200 ListaCorrecoesViagem | 400, 401, 403, 404, 500, 405 | validado | Versões de correção em ordem crescente, com justificativa e responsável. |
+| PATCH | /api/viagens/{id}/validar | ADM, GESTOR_FROTA | sem corpo | 200 ValidacaoViagem | 400, 401, 403, 404, 409, 500, 405 | validado | Somente viagem concluída ainda não validada. Ator pela sessão; validação e auditoria na mesma transação. |
+| PATCH | /api/viagens/{id}/iniciar | MOTORISTA | ExecutarViagem | 200 RespostaExecucaoViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Exclusivo do motorista atribuído; quilometragem e foto JPEG/PNG obrigatórias, até 1 MiB. Transição, evidência e auditoria atômicas. |
+| PATCH | /api/viagens/{id}/concluir | MOTORISTA | ExecutarViagem | 200 RespostaExecucaoViagem | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Exclusivo do motorista atribuído; quilometragem e foto JPEG/PNG obrigatórias, até 1 MiB. Transição, evidência e auditoria atômicas. |
+| GET | /api/viagens/minhas | MOTORISTA | sem corpo | 200 ListaMinhasViagens | 400, 401, 403, 500, 405 | validado | Viagens institucionais vinculadas ao motorista da sessão. Paginação ordenada por id decrescente. Não inclui ordens SVO. |
+| GET | /api/motorista/notificacoes | MOTORISTA | sem corpo | 200 ListaNotificacoes | 400, 401, 403, 500, 405 | validado | Caixa individual do motorista. |
+| PATCH | /api/motorista/notificacoes/{id}/lida | MOTORISTA | sem corpo | 200 NotificacoesAtualizadas | 400, 401, 403, 404, 500, 405 | validado | Leitura idempotente da notificacao propria. |
 | GET | /api/relatorios | ADM, GESTOR_FROTA | sem corpo | 200 RespostaRelatorio | 400, 401, 403, 422, 500, 405 | validado | Relatório completo até 5000 linhas; sem truncamento. inicio/fim YYYY-MM-DD inclusivos, até 366 dias; query estrita sem duplicatas. Frota: tipo obrigatório exceto svo. SVO: tipo=svo (padrão), exclusivo ATENDENTE_SVO. Exportações do snapshot validado na tela. Veja docs/api/relatorios.md. |
 | GET | /api/relatorios/recursos | ADM, GESTOR_FROTA | sem corpo | 200 RecursosRelatorios | 400, 401, 403, 500, 405 | validado | Catálogo mínimo de veículo/motorista para filtros; não aceita query. Sem CPF, CNH ou contato. |
 | GET | /api/svo/relatorios | ATENDENTE_SVO | sem corpo | 200 RespostaRelatorio | 400, 401, 403, 422, 500, 405 | validado | Relatório completo até 5000 linhas; sem truncamento. inicio/fim YYYY-MM-DD inclusivos, até 366 dias; query estrita sem duplicatas. Frota: tipo obrigatório exceto svo. SVO: tipo=svo (padrão), exclusivo ATENDENTE_SVO. Exportações do snapshot validado na tela. Veja docs/api/relatorios.md. |
@@ -71,7 +87,7 @@ Gerado por api:generate; não editar manualmente. 71 operações.
 | DELETE | /api/motoristas/{id} | ADM, GESTOR_FROTA | sem corpo | 200 Exclusao | 401, 403, 404, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | sem corpo | 200 ComprovanteAbastecimento | 401, 403, 404, 500, 405 | legado | Imagem JPEG ou PNG como bytes; acesso autenticado. |
 | GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 Abastecimentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
-| POST | /api/abastecimentos | ADM, GESTOR_FROTA | CriarAbastecimento | 201 RespostaAbastecimento | 400, 401, 403, 404, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| POST | /api/abastecimentos | ADM, GESTOR_FROTA | CriarAbastecimento | 201 RespostaAbastecimento | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/documentos | ADM, GESTOR_FROTA | sem corpo | 200 Documentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/documentos/pendencias | ADM, GESTOR_FROTA | sem corpo | 200 PendenciasDocumentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | POST | /api/documentos | ADM, GESTOR_FROTA | CriarDocumento | 201 RespostaDocumento | 400, 413, 415, 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |

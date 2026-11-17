@@ -12,6 +12,20 @@ export async function inserirNotificacao(tx: postgres.TransactionSql, usuarios: 
     WHERE u.id=ANY(${usuarios}::bigint[]) AND u.ativo=true ON CONFLICT (usuario_id,chave) DO NOTHING`;
 }
 
+/** Insere atribuição tipada com destinatário ativo e chave única da viagem e motorista. */
+export async function inserirAtribuicaoViagem(tx:postgres.TransactionSql,viagemId:string):Promise<boolean> {
+  const rows=await tx`INSERT INTO public.notificacao (usuario_id,chave,titulo,descricao,categoria,tipo,viagem_id)
+    SELECT u.id,'viagem:'||v.id::text||':atribuicao:'||m.id::text,'Nova viagem atribuída a você',
+      'Solicitação #'||s.codigo,'sucesso','ATRIBUICAO',v.id
+    FROM public.viagem v JOIN public.solicitacao_viagem s ON s.id=v.solicitacao_id
+      JOIN public.motorista m ON m.id=v.motorista_id JOIN public.usuario u ON u.id=m.usuario_id
+    WHERE v.id=${viagemId} AND u.ativo=true AND v.status='AGENDADA' AND s.status='AGENDADA'
+      AND s.motorista_id=v.motorista_id AND s.veiculo_id=v.veiculo_id
+    ON CONFLICT (usuario_id,chave) DO UPDATE SET titulo=EXCLUDED.titulo,lida_em=NULL
+      WHERE public.notificacao.titulo='Atribui\u00e7\u00e3o encerrada' RETURNING id`;
+  return rows.length>0;
+}
+
 /** Lista e contadores compartilham snapshot; todo acesso é restrito ao destinatário atual. */
 export async function consultarCaixa(usuarioId: string, consulta: z.infer<typeof consultaNotificacoes>) {
   return sql.begin('isolation level repeatable read read only', async tx => {

@@ -4,6 +4,8 @@ import { registrarFalha } from '../../shared/logging/logger.js';
 import { enviarDados as enviarJson, enviarErro } from '../../shared/http/json.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
+import { conflitoAbastecimentoViagem } from '../viagens/quilometragem-abastecimento.js';
+import { ErroHttp, responderErroHttp } from '../../shared/http/errors.js';
 
 interface CorpoAbastecimento {
   veiculo_id?: number;
@@ -95,6 +97,19 @@ export async function criarAbastecimento(req: IncomingMessage, res: ServerRespon
     }
 
     const novo = await sql.begin(async tx => {
+      // Mesma ordem de bloqueios da alocação: motorista, depois veículo.
+      await tx`SELECT id FROM public.motorista WHERE id=${motorista_id ?? null} FOR KEY SHARE`;
+      await tx`SELECT id FROM public.veiculo WHERE id=${veiculo_id} FOR UPDATE`;
+      const viagens = await tx<{inicio:string;fim:string;inicial:number;final:number}[]>`
+        SELECT to_char(v.data_inicio,'YYYY-MM-DD') AS inicio, to_char(v.data_fim,'YYYY-MM-DD') AS fim,
+          v.km_inicial AS inicial, v.km_final AS final
+        FROM public.viagem v WHERE v.veiculo_id=${veiculo_id} AND v.status='CONCLUIDA'
+          AND v.data_inicio IS NOT NULL AND v.data_fim IS NOT NULL
+          AND v.km_inicial IS NOT NULL AND v.km_final IS NOT NULL
+          AND EXISTS (SELECT 1 FROM public.viagem_correcao c WHERE c.viagem_id=v.id)`;
+      if (viagens.some(v => conflitoAbastecimentoViagem(data_abastecimento, quilometragem!, v))) {
+        throw new ErroHttp(409,'ODOMETRO_INCONSISTENTE','Quilometragem incompatível com viagem corrigida.');
+      }
       const [registro] = await tx`
       INSERT INTO abastecimento (
         veiculo_id, motorista_id, posto, litragem, valor_total, quilometragem, data_abastecimento,
@@ -115,6 +130,7 @@ export async function criarAbastecimento(req: IncomingMessage, res: ServerRespon
     enviarJson(res, 201, novo);
   } catch (err) {
     if (responderErroCorpo(res, err)) return;
+    if (responderErroHttp(res, err)) return;
     const code = typeof err === 'object' && err !== null && 'code' in err ? err.code : undefined;
     if (code === '23503') return enviarErro(res, 404, 'REFERENCIA_INEXISTENTE', 'Veículo ou motorista não encontrado.');
     if (['23502','22P02','22001','22003','22007','22008'].includes(String(code))) {

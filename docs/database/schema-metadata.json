@@ -470,6 +470,16 @@
       "generated": ""
     },
     {
+      "name": "tipo_evento",
+      "type": "text",
+      "table": "log_atividade",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 6,
+      "generated": ""
+    },
+    {
       "name": "id",
       "type": "bigint",
       "table": "motorista",

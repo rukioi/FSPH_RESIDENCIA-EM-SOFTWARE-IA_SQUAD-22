@@ -101,7 +101,7 @@ for(const width of [390,768,1280]) {
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`dashboard-${width}.png`),fullPage:true});
     await page.goto('/admin/auditoria');
-    await expect(page.locator('.pagina__descricao')).toContainText('Demonstração');
+    await expect(page.locator('.pagina__descricao')).toContainText('Consulte os registros de acessos e ações realizadas no sistema.');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`auditoria-${width}.png`),fullPage:true});
   });

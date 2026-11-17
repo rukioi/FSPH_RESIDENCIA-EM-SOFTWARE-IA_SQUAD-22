@@ -18,7 +18,8 @@ beforeAll(async()=>{
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
   base='http://127.0.0.1:'+(server.address() as AddressInfo).port;
   await sql.begin(async tx=>{
-    await tx`INSERT INTO public.motorista(id,nome,cnh,categoria_cnh,validade_cnh,status) VALUES (7140101,'Fixture Dashboard','DASH-7140101','D','2099-12-31','DISPONIVEL')`;
+    await tx`INSERT INTO public.usuario(id,nome,email,senha_hash,perfil,ativo) VALUES (7140001,'Fixture motorista','dashboard-7140001@example.invalid','fixture','MOTORISTA',true)`;
+    await tx`INSERT INTO public.motorista(id,usuario_id,nome,cnh,categoria_cnh,validade_cnh,status) VALUES (7140101,7140001,'Fixture Dashboard','DASH-7140101','D','2099-12-31','DISPONIVEL')`;
     await tx`INSERT INTO public.veiculo(id,placa,marca,modelo,ano,tipo,status,is_svo) VALUES
       (7140201,'S7D164A','Fixture','Dashboard',2026,'PASSEIO','DISPONIVEL',false),
       (7140202,'S7D164S','Fixture','Dashboard SVO',2026,'RABECÃO_SVO','DISPONIVEL',true)`;
@@ -28,9 +29,11 @@ afterAll(async()=>{
   if(server.listening)await new Promise<void>(resolve=>server.close(()=>resolve()));
   try{await sql.begin(async tx=>{
     if(ordens.length)await tx`DELETE FROM public.ordem_coleta WHERE id=ANY(${ordens}::bigint[])`;
-    if(pedidos.length){await tx`DELETE FROM public.log_atividade WHERE solicitacao_viagem_id=ANY(${pedidos}::bigint[])`;
+    if(pedidos.length){await tx`DELETE FROM public.notificacao WHERE viagem_id IN (SELECT id FROM public.viagem WHERE solicitacao_id=ANY(${pedidos}::bigint[]))`;
+      await tx`DELETE FROM public.viagem WHERE solicitacao_id=ANY(${pedidos}::bigint[])`;
+      await tx`DELETE FROM public.log_atividade WHERE solicitacao_viagem_id=ANY(${pedidos}::bigint[])`;
       await tx`DELETE FROM public.solicitacao_viagem WHERE id=ANY(${pedidos}::bigint[])`;}
-    if(recursosCriados){await tx`DELETE FROM public.motorista WHERE id=7140101`;await tx`DELETE FROM public.veiculo WHERE id IN (7140201,7140202)`;}
+    if(recursosCriados){await tx`DELETE FROM public.motorista WHERE id=7140101`;await tx`DELETE FROM public.usuario WHERE id=7140001`;await tx`DELETE FROM public.veiculo WHERE id IN (7140201,7140202)`;}
   });}finally{await sql.end();await fecharBanco();if(timezoneAnterior===undefined)delete process.env.TZ;else process.env.TZ=timezoneAnterior;}
 });
 function call(query='',path='gestor',auth=token){return fetch(base+'/api/dashboard/'+path+query,{headers:auth?{Authorization:'Bearer '+auth}:{}});}

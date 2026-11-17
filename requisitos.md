@@ -31,9 +31,9 @@
 
 ### 1.1 Objetivo Geral
 
-Desenvolver um sistema web que permita gerenciar de forma integrada as 
+Desenvolver um sistema web que permita gerenciar de forma integrada as
 
-demandas de transporte da organização, proporcionando controle, rastreabilidade e 
+demandas de transporte da organização, proporcionando controle, rastreabilidade e
 
 eficiência na utilização de veículos e motoristas.
 
@@ -54,11 +54,11 @@ eficiência na utilização de veículos e motoristas.
 
 ## 2. ESCOPO DO SISTEMA
 
-O escopo inicial contempla a gestão das solicitações de transporte, aprovação, 
+O escopo inicial contempla a gestão das solicitações de transporte, aprovação,
 
-cadastro e controle de veículos e motoristas, organização das viagens, 
+cadastro e controle de veículos e motoristas, organização das viagens,
 
-acompanhamento de quilometragem, documentação, abastecimento, anexos e 
+acompanhamento de quilometragem, documentação, abastecimento, anexos e
 
 evidências, notificações, indicadores e relatórios.
 
@@ -70,7 +70,7 @@ evidências, notificações, indicadores e relatórios.
 - Gestão de motoristas.
 - Gestão de viagens e tickets.
 - Registro de quilometragem e fotografias.
-- Controle básico de rotas e possíveis desvios, condicionado à disponibilidade de 
+- Controle básico de rotas e possíveis desvios, condicionado à disponibilidade de
 
 geolocalização.
 - Fluxo específico para demandas SVO.
@@ -88,9 +88,9 @@ Ator Descrição
 
 Administrador/Gestor
 
-Responsável pela gestão da frota, solicitações, viagens, 
+Responsável pela gestão da frota, solicitações, viagens,
 
-veículos, motoristas, aprovações, acompanhamento 
+veículos, motoristas, aprovações, acompanhamento
 
 operacional, relatórios e configurações. No escopo inicial,
 
@@ -98,9 +98,9 @@ ambos possuem as mesmas permissões operacionais.
 
 Motorista
 
-Responsável pela execução das viagens atribuídas, 
+Responsável pela execução das viagens atribuídas,
 
-realizando apenas os registros operacionais necessários, 
+realizando apenas os registros operacionais necessários,
 
 como identificação da demanda, quilometragem e evidências
 
@@ -116,7 +116,7 @@ sem possuir conta interna.
 
 Sistema
 
-Ator automático responsável por notificações, alertas de 
+Ator automático responsável por notificações, alertas de
 
 vencimento, atualização de status e demais processos
 
@@ -124,9 +124,9 @@ automáticos.
 
 ## 5. REQUISITOS FUNCIONAIS
 
-Os requisitos funcionais descrevem os serviços, comportamentos e 
+Os requisitos funcionais descrevem os serviços, comportamentos e
 
-funcionalidades que o sistema deverá disponibilizar aos seus usuários e aos 
+funcionalidades que o sistema deverá disponibilizar aos seus usuários e aos
 
 processos automáticos.
 
@@ -142,7 +142,7 @@ RF02 Autenticação
 
 O sistema deve permitir que usuários internos
 
-realizem autenticação utilizando credenciais de 
+realizem autenticação utilizando credenciais de
 
 acesso.
 
@@ -150,15 +150,15 @@ RF03 Controle de permissões
 
 O sistema deve controlar o acesso às funcionalidades
 
-e informações de acordo com as permissões do 
+e informações de acordo com as permissões do
 
 usuário.
 
 RF04 Gestão de perfis
 
-O sistema deve permitir a definição de perfis de 
+O sistema deve permitir a definição de perfis de
 
-acesso, contemplando inicialmente 
+acesso, contemplando inicialmente
 
 Administrador/Gestor e estrutura para futuras
 
@@ -170,7 +170,7 @@ criação ou intermediação de cada solicitação.
 
 RF06 Histórico de ações
 
-O sistema deve registrar as principais ações 
+O sistema deve registrar as principais ações
 
 realizadas pelos usuários para fins de rastreabilidade
 
@@ -184,7 +184,7 @@ RF07 Cadastro de solicitação
 
 O sistema deve permitir o registro de solicitações de
 
-transporte contendo as informações necessárias para 
+transporte contendo as informações necessárias para
 
 o atendimento da demanda.
 
@@ -194,17 +194,17 @@ incluindo identificação por CPF quando aplicável.
 
 RF09 Origem da solicitação
 
-O sistema deve identificar se a solicitação foi 
+O sistema deve identificar se a solicitação foi
 
 realizada por usuário interno ou por solicitante
 
 externo.
 
-RF10 Intermediação de 
+RF10 Intermediação de
 
 solicitação externa
 
-Solicitações externas devem ser disponibilizadas ao 
+Solicitações externas devem ser disponibilizadas ao
 
 Administrador/Gestor para análise e eventual
 
@@ -232,7 +232,7 @@ pessoas que serão transportadas.
 
 RF15 Observações
 
-O sistema deve permitir adicionar informações 
+O sistema deve permitir adicionar informações
 
 complementares à solicitação, como documentos ou
 
@@ -244,7 +244,7 @@ visualizar as solicitações registradas.
 
 RF17 Atualização dasolicitação
 
-O Administrador/Gestor deve poder atualizar os 
+O Administrador/Gestor deve poder atualizar os
 
 dados de uma solicitação enquanto ela estiver em
 
@@ -252,7 +252,7 @@ estado que permita alteração.
 
 RF18 Cancelamento
 
-O sistema deve permitir o cancelamento de 
+O sistema deve permitir o cancelamento de
 
 solicitações, registrando o responsável e, quando
 
@@ -260,9 +260,9 @@ aplicável, o motivo.
 
 RF19 Status da solicitação
 
-O sistema deve controlar o ciclo de vida da 
+O sistema deve controlar o ciclo de vida da
 
-solicitação, contemplando estados como pendente, 
+solicitação, contemplando estados como pendente,
 
 aprovada, recusada, agendada, em andamento,
 
@@ -274,7 +274,7 @@ ID Requisito Funcional Descrição
 
 RF20 Análise da solicitação
 
-O sistema deve disponibilizar as solicitações 
+O sistema deve disponibilizar as solicitações
 
 pendentes para análise do Administrador/Gestor
 
@@ -310,7 +310,7 @@ RF26 Cadastro de veículos
 
 O sistema deve permitir cadastrar os veículos
 
-pertencentes ou disponibilizados para atendimento 
+pertencentes ou disponibilizados para atendimento
 
 das demandas.
 
@@ -320,7 +320,7 @@ identificação, tipo/categoria e situação do veículo.
 
 RF28 Status do veículo
 
-O sistema deve permitir controlar a disponibilidade do 
+O sistema deve permitir controlar a disponibilidade do
 
 veículo, incluindo situações como disponível, em
 
@@ -388,7 +388,7 @@ horário, quantidade de passageiros e finalidade.
 
 RF41 Ticket da demanda
 
-O sistema deve gerar uma identificação única para 
+O sistema deve gerar uma identificação única para
 
 cada demanda/viagem, permitindo seu
 
@@ -428,11 +428,11 @@ destino previsto para cada viagem.
 
 ID Requisito Funcional Descrição
 
-RF48 Cadastro dedemanda 
+RF48 Cadastro dedemanda
 
 SVO
 
-O sistema deve permitir registrar demandas 
+O sistema deve permitir registrar demandas
 
 específicas relacionadas ao Serviço de Verificação de
 
@@ -450,7 +450,7 @@ RF50 Dados da ocorrência
 
 A demanda SVO deve permitir registrar informações
 
-específicas, incluindo endereço, nome da pessoa e 
+específicas, incluindo endereço, nome da pessoa e
 
 dados relacionados à ocorrência.
 
@@ -468,7 +468,7 @@ status das demandas SVO.
 
 RF54 Capacidade do veículo
 
-O sistema deve permitir considerar a capacidade 
+O sistema deve permitir considerar a capacidade
 
 operacional específica dos veículos utilizados no
 
@@ -586,9 +586,9 @@ inicialmente em PDF, conforme escopo definido.
 
 ## 6. REQUISITOS NÃO FUNCIONAIS
 
-Os requisitos não funcionais definem características de qualidade, segurança, 
+Os requisitos não funcionais definem características de qualidade, segurança,
 
-desempenho, usabilidade, confiabilidade, manutenção e compatibilidade que deverão 
+desempenho, usabilidade, confiabilidade, manutenção e compatibilidade que deverão
 
 ser observadas na implementação do sistema.
 
@@ -602,13 +602,13 @@ RNF01 Tempo de resposta
 
 As operações comuns do sistema devem apresentar
 
-tempo de resposta adequado em condições normais 
+tempo de resposta adequado em condições normais
 
 de utilização.
 
 RNF02 Consultas
 
-Consultas e filtros de registros devem ser 
+Consultas e filtros de registros devem ser
 
 executados sem degradação perceptível para o
 
@@ -696,7 +696,7 @@ RNF13 Clareza das informações
 
 Informações críticas como destino, horário, veículo,
 
-passageiro e status devem possuir destaque visual 
+passageiro e status devem possuir destaque visual
 
 adequado.
 
@@ -704,7 +704,7 @@ RNF14 Acessibilidade
 
 A interface deve considerar boas práticas de
 
-acessibilidade para facilitar a utilização por 
+acessibilidade para facilitar a utilização por
 
 diferentes usuários.
 
@@ -712,7 +712,7 @@ RNF15 Aprendizado
 
 As principais funcionalidades devem ser
 
-compreensíveis sem necessidade de treinamento 
+compreensíveis sem necessidade de treinamento
 
 técnico especializado.
 
@@ -724,7 +724,7 @@ Funcional Descrição
 
 RNF16 Disponibilidade
 
-O sistema deve permanecer disponível durante os 
+O sistema deve permanecer disponível durante os
 
 períodos necessários para a operação da
 
@@ -732,7 +732,7 @@ organização.
 
 RNF17 Confiabilidade
 
-O sistema devemanter consistência das 
+O sistema devemanter consistência das
 
 informações mesmo diante de falhas ou
 
@@ -740,7 +740,7 @@ interrupções inesperadas.
 
 RNF18 Integridade das viagens
 
-O sistema não deve permitir que uma mesma 
+O sistema não deve permitir que uma mesma
 
 viagem seja atribuída simultaneamente a veículos
 
@@ -750,7 +750,7 @@ RNF19 Continuidade operacional
 
 A solução deve ser projetada de forma aminimizar
 
-impactos de falhas de componentes e permitir 
+impactos de falhas de componentes e permitir
 
 retomada adequada da operação.
 
@@ -762,7 +762,7 @@ Funcional Descrição
 
 RNF20 Integridade referencial
 
-Os relacionamentos entre solicitações, viagens, 
+Os relacionamentos entre solicitações, viagens,
 
 motoristas e veículos devem preservar a integridade
 
@@ -770,7 +770,7 @@ dos dados.
 
 RNF21 Consistência
 
-As alterações realizadas no sistema devem manter 
+As alterações realizadas no sistema devem manter
 
 os registros consistentes entre as diferentes
 
@@ -780,7 +780,7 @@ RNF22 Unicidade
 
 Identificadores como placa do veículo e outros
 
-dados que necessitem de unicidade não devem 
+dados que necessitem de unicidade não devem
 
 possuir duplicidades indevidas.
 
@@ -822,13 +822,13 @@ RNF28 Crescimento da frota
 
 A arquitetura deve permitir a inclusão de novos
 
-veículos sem necessidade de alterações estruturais 
+veículos sem necessidade de alterações estruturais
 
 significativas.
 
 RNF29 Crescimento de usuários
 
-O sistema deve suportar aumento do número de 
+O sistema deve suportar aumento do número de
 
 usuários e solicitações sem degradação
 
@@ -836,7 +836,7 @@ significativa.
 
 RNF30 Crescimento de dados
 
-O banco de dados deve ser estruturado para 
+O banco de dados deve ser estruturado para
 
 suportar o crescimento contínuo do histórico de
 
@@ -850,7 +850,7 @@ Funcional Descrição
 
 RNF31 Arquitetura modular
 
-O sistema deve possuir arquitetura organizada em 
+O sistema deve possuir arquitetura organizada em
 
 módulos, permitindo manutenção e evolução
 
@@ -858,7 +858,7 @@ independente das funcionalidades.
 
 RNF32 Código documentado
 
-Componentes críticos e regras de negócio 
+Componentes críticos e regras de negócio
 
 relevantes devem possuir documentação técnica
 
@@ -866,7 +866,7 @@ adequada.
 
 RNF33 Evolução
 
-A arquitetura deve permitir incorporar novas 
+A arquitetura deve permitir incorporar novas
 
 funcionalidades, integrações e perfis de usuário sem
 
@@ -884,7 +884,7 @@ RNF35 Infraestrutura
 
 A aplicação deve possuir arquitetura compatível
 
-com o ambiente de infraestrutura definido para sua 
+com o ambiente de infraestrutura definido para sua
 
 implantação.
 
@@ -910,19 +910,19 @@ vinculados ao registro correto.
 
 ID Requisito Não Funcional Descrição
 
-RNF39 Confiabilidade das 
+RNF39 Confiabilidade das
 
 notificações
 
 As notificações devem ser processadas de maneira
 
-confiável, evitando perdas ou duplicidades 
+confiável, evitando perdas ou duplicidades
 
 indevidas.
 
 RNF40 Não bloqueio
 
-Falhas no envio de uma notificação não devem 
+Falhas no envio de uma notificação não devem
 
 impedir a execução das demais funcionalidades do
 
@@ -946,7 +946,7 @@ diagnóstico emanutenção.
 
 RNF43 Monitoramento
 
-A infraestrutura deve permitir monitorar 
+A infraestrutura deve permitir monitorar
 
 disponibilidade e funcionamento dos principais
 
@@ -958,7 +958,7 @@ para auxiliar na investigação de falhas.
 
 ## 7. REGRAS DE NEGÓCIO
 
-As regras de negócio representam decisões e condições da operação que 
+As regras de negócio representam decisões e condições da operação que
 
 devem ser respeitadas pelo sistema independentemente da tecnologia utilizada.
 
@@ -1010,7 +1010,7 @@ execução da demanda.
 
 RN15
 
-A solução deve priorizar simplicidade operacional para o motorista 
+A solução deve priorizar simplicidade operacional para o motorista
 
 devido à baixa utilização de dispositivos móveis observada na
 
@@ -1026,7 +1026,7 @@ para consulta e geração de relatórios.
 
 ## 8. REQUISITOS DE INTEGRAÇÃO
 
-As integrações abaixo representam capacidades previstas ou condicionadas à 
+As integrações abaixo representam capacidades previstas ou condicionadas à
 
 definição da arquitetura e dos serviços externos.
 
@@ -1036,13 +1036,13 @@ RI01 API
 
 A solução deverá possuir API para comunicação
 
-entre a interface da aplicação, backend e serviços 
+entre a interface da aplicação, backend e serviços
 
 necessários.
 
 RI02 WhatsApp — evolução
 
-A integração com WhatsApp será considerada 
+A integração com WhatsApp será considerada
 
 funcionalidade futura/Plus e não constitui requisito
 
@@ -1050,7 +1050,7 @@ obrigatório do MVP.
 
 ## 9. RESTRIÇÕES TÉCNICAS
 
-As tecnologias abaixo foram indicadas como referência para a implementação 
+As tecnologias abaixo foram indicadas como referência para a implementação
 
 inicial do sistema.
 
@@ -1068,9 +1068,9 @@ Containerização Docker
 
 ## 10. REQUISITOS DE EVOLUÇÃO / PLUS
 
-Os itens desta seção foram identificados durante o levantamento como 
+Os itens desta seção foram identificados durante o levantamento como
 
-oportunidades de evolução. Eles não devem ser considerados obrigatórios para a 
+oportunidades de evolução. Eles não devem ser considerados obrigatórios para a
 
 primeira versão, salvo decisão posterior de escopo.
 
@@ -1096,7 +1096,7 @@ RF-F05 Análise geoespacial
 
 Utilizar técnicas de agrupamento, como DBSCAN,
 
-para análise de pontos/localizações e apoio à 
+para análise de pontos/localizações e apoio à
 
 definição de rotas.
 
@@ -1118,40 +1118,40 @@ realizados e pontos visitados em mapa.
 
 ## 11. CRITÉRIOS DE ACEITAÇÃO
 
-Os requisitos deverão ser validados por meio de testes funcionais, testes de 
+Os requisitos deverão ser validados por meio de testes funcionais, testes de
 
-integração e validação com os usuários responsáveis. Como critérios gerais de 
+integração e validação com os usuários responsáveis. Como critérios gerais de
 
 aceitação, considera-se necessário:
-- Todas as funcionalidades definidas como MVP deverão estar implementadas e 
+- Todas as funcionalidades definidas como MVP deverão estar implementadas e
 
 acessíveis conforme o perfil autorizado.
-- Uma solicitação deverá poder percorrer o fluxo de criação, aprovação, 
+- Uma solicitação deverá poder percorrer o fluxo de criação, aprovação,
 
 agendamento, execução e conclusão.
 - Solicitações recusadas deverão registrar justificativa.
-- Viagens deverão manter associação consistente entre solicitação, motorista e 
+- Viagens deverão manter associação consistente entre solicitação, motorista e
 
 veículo.
 - Quilometragens inicial e final deverão ser registradas e vinculadas à viagem.
 - Evidências fotográficas deverão permanecer vinculadas ao respectivo registro.
-- O Administrador/Gestor deverá conseguir acompanhar as demandas e consultar 
+- O Administrador/Gestor deverá conseguir acompanhar as demandas e consultar
 
 seu histórico.
 - Os principais indicadores deverão ser apresentados em dashboard.
 - Os relatórios previstos deverão ser gerados conforme os filtros selecionados.
 - As permissões de acesso deverão impedir operações não autorizadas.
-- Os fluxos destinados ao motorista deverão ser validados quanto à simplicidade 
+- Os fluxos destinados ao motorista deverão ser validados quanto à simplicidade
 
 de uso.
 
 ## 12. MATRIZ DE RASTREABILIDADE
 
-A matriz de rastreabilidade relaciona os principais objetivos do sistema aos 
+A matriz de rastreabilidade relaciona os principais objetivos do sistema aos
 
-grupos de requisitos responsáveis por atendê-los. A matriz poderá ser detalhada em 
+grupos de requisitos responsáveis por atendê-los. A matriz poderá ser detalhada em
 
-versões posteriores, à medida que os casos de uso e critérios de aceitação forem 
+versões posteriores, à medida que os casos de uso e critérios de aceitação forem
 
 formalizados.
 
@@ -1183,16 +1183,16 @@ OBJ12 Garantir rastreabilidade RF05–RF06; RNF24–RNF27
 
 ## 13. OBSERVAÇÕES E PONTOS A VALIDAR
 
-Alguns pontos identificados no levantamento dependem de decisões 
+Alguns pontos identificados no levantamento dependem de decisões
 
-posteriores de negócio ou de viabilidade técnica. Recomenda-se validá-los antes do 
+posteriores de negócio ou de viabilidade técnica. Recomenda-se validá-los antes do
 
 congelamento do escopo.
 - Definir os campos obrigatórios do ticket de solicitação.
-- Definir o fluxo exato do portal público sem login e os dados mínimos exigidos 
+- Definir o fluxo exato do portal público sem login e os dados mínimos exigidos
 
 para identificação por CPF.
-- Definir o prazo considerado para alerta de vencimento da CNH e demais 
+- Definir o prazo considerado para alerta de vencimento da CNH e demais
 
 documentos.
 - Definir o método e a precisão esperada para identificação de desvios de rota.

@@ -56,8 +56,8 @@ const telas = [
 for (const width of [390, 768, 1280]) {
   test.describe('Preview SVO em ' + width + ' px', () => {
     test.use({ viewport: { width, height: 850 } })
-    test('abre as telas sem sessão, sem API e com a seção correta ativa', async ({ page }, info) => {
-      for (const [path, titulo, grupo] of telas) {
+    for (const [path, titulo, grupo] of telas) {
+      test('abre ' + path + ' sem sessão, sem API e com a seção correta ativa', async ({ page }, info) => {
         await page.goto('/svo-preview/' + path, { waitUntil: 'domcontentloaded' })
         await expect(page.getByRole('heading', { level: 1, name: titulo, exact: true })).toBeVisible()
         await page.reload({ waitUntil: 'domcontentloaded' })
@@ -77,9 +77,8 @@ for (const width of [390, 768, 1280]) {
           await page.keyboard.press('Enter')
         }
         await expect(page.locator('nav [aria-current="page"]')).toHaveText(grupo)
-      }
-
-    })
+      })
+    }
   })
 }
 

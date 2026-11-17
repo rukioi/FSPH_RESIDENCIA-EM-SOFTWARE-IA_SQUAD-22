@@ -105,6 +105,14 @@ for (const width of [390, 768, 1280]) {
       await expect(page.locator('main')).toContainText('Em deslocamento');
       expect(estado.envios).toBe(1);
     });
+    test('cancelar despacho devolve foco ao controle de origem', async ({ page }) => {
+      const estado = await preparar(page);
+      const modal = await abrir(page);
+      await modal.getByRole('button', { name: 'Cancelar', exact: true }).click();
+      await expect(modal).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Preparar despacho', exact: true })).toBeFocused();
+      expect(estado.envios).toBe(0);
+    });
     test('foco fica no modal durante PATCH pendente', async ({ page }, info) => {
       const estado = await preparar(page); const modal = await abrir(page);
       let liberar!: () => void;

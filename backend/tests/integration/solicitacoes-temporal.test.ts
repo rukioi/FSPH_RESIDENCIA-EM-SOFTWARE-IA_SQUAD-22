@@ -18,9 +18,10 @@ beforeAll(async()=>{
     await tx`INSERT INTO public.usuario(id,nome,email,senha_hash,perfil,ativo) VALUES
       (7150001,'Fixture Temporal Solicitante','s7-temporal-a@example.invalid','sem-login','SOLICITANTE_INTERNO',true),
       (7150002,'Fixture Temporal Gestor','s7-temporal-g@example.invalid','sem-login','GESTOR_FROTA',true)`;
-    await tx`INSERT INTO public.motorista(id,nome,cnh,categoria_cnh,validade_cnh,status) VALUES
-      (7150101,'Fixture Temporal','TEMP-7150101','D','2099-12-31','DISPONIVEL'),
-      (7150102,'Fixture Temporal Legado','TEMP-7150102','D','2099-12-31','DISPONIVEL')`;
+    await tx`INSERT INTO public.usuario(id,nome,email,senha_hash,perfil,ativo) VALUES (7150011,'Fixture motorista','temporal-7150011@example.invalid','fixture','MOTORISTA',true),(7150012,'Fixture motorista','temporal-7150012@example.invalid','fixture','MOTORISTA',true)`;
+    await tx`INSERT INTO public.motorista(id,usuario_id,nome,cnh,categoria_cnh,validade_cnh,status) VALUES
+      (7150101,7150011,'Fixture Temporal','TEMP-7150101','D','2099-12-31','DISPONIVEL'),
+      (7150102,7150012,'Fixture Temporal Legado','TEMP-7150102','D','2099-12-31','DISPONIVEL')`;
     await tx`INSERT INTO public.veiculo(id,placa,marca,modelo,ano,tipo,status) VALUES
       (7150201,'S7T001A','Fixture','Temporal',2026,'PASSEIO','DISPONIVEL'),
       (7150202,'S7T002A','Fixture','Temporal Legado',2026,'PASSEIO','DISPONIVEL')`;
@@ -36,10 +37,12 @@ afterAll(async()=>{
     if(server.listening)await new Promise<void>(resolve=>server.close(()=>resolve()));
     if(fixtures)await sql.begin(async tx=>{
       await tx`DELETE FROM public.log_atividade WHERE solicitacao_viagem_id=ANY(${pedidos}::bigint[])`;
+      await tx`DELETE FROM public.notificacao WHERE viagem_id IN (SELECT id FROM public.viagem WHERE solicitacao_id=ANY(${pedidos}::bigint[]))`;
+      await tx`DELETE FROM public.viagem WHERE solicitacao_id=ANY(${pedidos}::bigint[])`;
       await tx`DELETE FROM public.solicitacao_viagem WHERE id=ANY(${pedidos}::bigint[])`;
       await tx`DELETE FROM public.motorista WHERE id IN(7150101,7150102)`;
       await tx`DELETE FROM public.veiculo WHERE id IN(7150201,7150202)`;
-      await tx`DELETE FROM public.usuario WHERE id IN(7150001,7150002)`;
+      await tx`DELETE FROM public.usuario WHERE id IN(7150001,7150002,7150011,7150012)`;
     });
   }finally{
     if(previousTZ===undefined)delete process.env.TZ;else process.env.TZ=previousTZ;
@@ -136,16 +139,31 @@ test('agendamento e reagendamento aceitam reserva positiva de um microssegundo',
   expect(await armazenado(pedido.id)).toEqual({saida:'2099-11-27T08:00:00.000004',retorno:'2099-11-27T08:00:00.000005'});
 });
 
-test('PostgreSQL confirma reutilização das consultas preparadas nos caminhos reais',async()=>{
-  const connections=[];
-  try{
-    for(let n=0;n<applicationSql.options.max;n++)connections.push(await applicationSql.reserve());
-    const batches=await Promise.all(connections.map(c=>c`SELECT statement,parameter_types::text AS types,(generic_plans+custom_plans)::int AS executions FROM pg_prepared_statements`));
-    const rows=batches.flat();
-    for(const pattern of ['INSERT INTO public.solicitacao_viagem','UPDATE public.solicitacao_viagem SET','SET motorista_id=','SET data_hora_saida=','WHERE s.status=']){
-      const matching=rows.filter(r=>r.statement.includes(pattern)&&r.executions>=2);
-      expect(matching.length,pattern).toBeGreaterThan(0);
-      for(const row of matching)expect(row.types,pattern).not.toMatch(/timestamp/);
-    }
-  }finally{for(const c of connections)await c.release();}
+
+test('PostgreSQL preserva os horários em consultas repetidas sem prepared statements', async () => {
+  expect(applicationSql.options.prepare).toBe(false);
+  process.env.TZ = 'America/Fortaleza';
+
+  const pedido = await criar('2099-12-27T08:15:30.123456-03:00');
+  expect((await call('/' + pedido.id + '/aprovar', 'POST')).status).toBe(200);
+
+  const agendamento = await call('/' + pedido.id + '/agendar', 'POST', {
+    motoristaId,
+    veiculoId,
+    dataHoraRetornoPrevisto: '2099-12-27T17:00:00.654321-03:00',
+  });
+  expect(agendamento.status).toBe(200);
+
+  const esperado = await armazenado(pedido.id);
+
+  for (let n = 0; n < 7; n++) {
+    const response = await call('/' + pedido.id);
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+    expect(body.data.dataHoraSaida).toBe('2099-12-27T08:15:30.123456-03:00');
+    expect(body.data.dataHoraRetornoPrevisto).toBe('2099-12-27T17:00:00.654321-03:00');
+
+    expect(await armazenado(pedido.id)).toEqual(esperado);
+  }
 });

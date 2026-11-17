@@ -53,8 +53,8 @@ for (const caso of [
     const quantidade = await numeroAtividades();
     const original = repository.inserirAtividades;
     // Falha no PostgreSQL real, após a escrita do usuário, dentro da transação recebida.
-    const spy = vi.spyOn(repository, 'inserirAtividades').mockImplementationOnce((tx, _id, descricoes) =>
-      original(tx, '319999999', descricoes));
+    const spy = vi.spyOn(repository, 'inserirAtividades').mockImplementationOnce((tx, _id, descricoes, tipos, solicitacoes) =>
+      original(tx, '319999999', descricoes, tipos, solicitacoes));
     const logger = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
       const response = await call(caso.path, caso.method, caso.body);
@@ -75,8 +75,8 @@ const dadosSvo = { localFalecimento: 'Fixture Hospital', enderecoRemocao: 'Fixtu
 
 test('SVO reverte ocorrência e evento quando a auditoria falha no banco', async () => {
   const original = repository.inserirAtividades;
-  const spy = vi.spyOn(repository, 'inserirAtividades').mockImplementationOnce((tx, _id, descricoes) =>
-    original(tx, '319999999', descricoes));
+  const spy = vi.spyOn(repository, 'inserirAtividades').mockImplementationOnce((tx, _id, descricoes, tipos, solicitacoes) =>
+      original(tx, '319999999', descricoes, tipos, solicitacoes));
   const logger = vi.spyOn(console, 'error').mockImplementation(() => {});
   try {
     expect((await call('/api/svo/solicitacoes', 'POST', dadosSvo, svoToken)).status).toBe(500);
@@ -121,4 +121,21 @@ test('eventos/identificadores inválidos não são interpolados e não gravam at
       .rejects.toThrow(/inválid/);
   }
   expect(await numeroAtividades()).toBe(quantidade);
+});
+
+
+test('lote misto grava cada tipo e vinculo e reverte integralmente com a transacao', async () => {
+  const antes = await numeroAtividades();
+  await expect(sql.begin(async tx => {
+    await registrarAtividades(tx, '31101', [
+      { operacao: 'usuario_editado', recursoId: '31102' },
+      { operacao: 'solicitacao_viagem_iniciada', recursoId: '-27001' },
+    ]);
+    const rows = await tx`select tipo_evento, solicitacao_viagem_id::text from public.log_atividade where usuario_id=31101 order by id desc limit 2`;
+    expect(rows.map(r => [r.tipo_evento, r.solicitacao_viagem_id])).toEqual([
+      ['solicitacao_viagem_iniciada', '-27001'], ['usuario_editado', null],
+    ]);
+    throw new Error('rollback lote misto');
+  })).rejects.toThrow('rollback lote misto');
+  expect(await numeroAtividades()).toBe(antes);
 });
