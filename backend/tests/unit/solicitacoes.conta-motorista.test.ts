@@ -4,7 +4,7 @@ vi.mock('../../src/database/connection.js',()=>({sql:{}}));
 import { validarContaMotorista } from '../../src/modules/solicitacoes/solicitacoes.repository.js';
 
 test('conta ativa e bloqueada durante a transacao', async()=>{
-  const tx=vi.fn().mockResolvedValueOnce([{usuario_id:'42'}]).mockResolvedValueOnce([{ativo:true}]);
+  const tx=vi.fn().mockResolvedValueOnce([{usuario_id:'42'}]).mockResolvedValueOnce([{ativo:true,perfil:'MOTORISTA'}]);
   await expect(validarContaMotorista(tx as unknown as postgres.TransactionSql,'12')).resolves.toBeUndefined();
   expect(tx.mock.calls[0][0].join('?')).toContain('FOR UPDATE');
   expect(tx.mock.calls[1][0].join('?')).toContain('FOR SHARE');
@@ -15,6 +15,7 @@ test.each([
   ['motorista ausente',[],undefined],
   ['usuario ausente',[{usuario_id:'42'}],[]],
   ['conta inativa',[{usuario_id:'42'}],[{ativo:false}]],
+  ['perfil gestor',[{usuario_id:'42'}],[{ativo:true,perfil:'GESTOR_FROTA'}]],
 ])('%s impede confirmacao',async(_descricao,motorista,usuario)=>{
   const tx=vi.fn().mockResolvedValueOnce(motorista);
   if(usuario)tx.mockResolvedValueOnce(usuario);

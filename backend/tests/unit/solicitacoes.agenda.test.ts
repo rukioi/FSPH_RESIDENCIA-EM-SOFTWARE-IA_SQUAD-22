@@ -15,7 +15,7 @@ beforeEach(()=>{
   mocks.tx.mockImplementation(async parts=>{
     const sql=parts.join('?');
     if (parts.join('').includes('SELECT usuario_id::text FROM public.motorista')) return [{usuario_id:'99'}];
-    if (parts.join('').includes('SELECT ativo FROM public.usuario')) return [{ativo:true}];
+    if (parts.join('').includes('SELECT ativo,perfil FROM public.usuario')) return [{ativo:true,perfil:'MOTORISTA'}];
     if(sql.includes('AS inicio'))return[intervalo];
     if(sql.includes('SELECT status,motorista_id') && sql.includes('FROM public.solicitacao_viagem'))return[{status:'AGENDADA',motorista_id:'9',veiculo_id:'12'}];
     if(sql.includes('SELECT id, status'))return[{id:'2',status:'DISPONIVEL'}];

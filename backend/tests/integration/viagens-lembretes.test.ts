@@ -1,4 +1,4 @@
-import {afterAll,beforeAll,expect,test} from 'vitest';
+import {afterAll,beforeAll,expect,test,vi} from 'vitest';
 import type {AddressInfo} from 'node:net';
 import {verifiedSql} from '../../src/database/scripts/verify-test-db.js';
 import {fecharBanco} from '../../src/database/connection.js';
@@ -111,3 +111,67 @@ test('reagendamento concorrente bloqueia aviso para atribuicao anterior',async()
   const rows=await sql`SELECT usuario_id::text FROM public.notificacao WHERE viagem_id=8970301 AND tipo='LEMBRETE' AND titulo='Lembrete de viagem'`;
   expect(rows).toEqual([{usuario_id:'8970001'}]);
 });
+
+
+test('nao grava lembrete quando a saida ocorre durante o lote',async()=>{
+  await sql.begin(async tx=>{
+    await tx`INSERT INTO public.solicitacao_viagem(id,codigo,solicitante_id,origem,destino,finalidade,data_hora_saida,data_hora_retorno_previsto,status,motorista_id,veiculo_id) VALUES (8970203,'S8-L-203',-27003,'A','B','Teste','2099-01-01 10:00','2099-01-01 12:00','AGENDADA',8970101,8970111)`;
+    await tx`INSERT INTO public.viagem(id,solicitacao_id,motorista_id,veiculo_id,status) VALUES (8970303,8970203,8970101,8970111,'AGENDADA')`;
+  });
+  try {
+    vi.useFakeTimers({toFake:['Date']});
+    vi.setSystemTime(new Date('2099-01-01T13:00:00.000Z'));
+    expect(await gerarLembretes(30,'2099-01-01T12:30:00.000Z')).toBe(0);
+    const [row]=await sql`SELECT count(*)::int AS total FROM public.notificacao WHERE viagem_id=8970303`;
+    expect(row.total).toBe(0);
+  } finally {
+    vi.useRealTimers();
+    await sql.begin(async tx=>{await tx`DELETE FROM public.notificacao WHERE viagem_id=8970303`;await tx`DELETE FROM public.viagem WHERE id=8970303`;await tx`DELETE FROM public.solicitacao_viagem WHERE id=8970203`;});
+  }
+});
+
+
+test('limita espera por conta bloqueada e reverte o lote',async()=>{
+  await sql.begin(async tx=>{
+    await tx`INSERT INTO public.solicitacao_viagem(id,codigo,solicitante_id,origem,destino,finalidade,data_hora_saida,data_hora_retorno_previsto,status,motorista_id,veiculo_id) VALUES (8970204,'S8-L-204',-27003,'A','B','Teste','2099-01-01 07:30','2099-01-01 09:30','AGENDADA',8970101,8970111)`;
+    await tx`INSERT INTO public.viagem(id,solicitacao_id,motorista_id,veiculo_id,status) VALUES (8970304,8970204,8970101,8970111,'AGENDADA')`;
+  });
+  try {
+  let liberar:()=>void=()=>{};let pronto:()=>void=()=>{};
+  const portao=new Promise<void>(resolve=>{liberar=resolve;});
+  const bloqueado=new Promise<void>(resolve=>{pronto=resolve;});
+  const lock=sql.begin(async tx=>{await tx`SELECT id FROM public.usuario WHERE id=8970001 FOR UPDATE`;pronto();await portao;});
+  await bloqueado;
+  try {
+    await expect(gerarLembretes(30,'2099-01-01T10:00:00.000Z')).rejects.toMatchObject({code:'55P03'});
+  } finally {liberar();await lock;}
+  const [row]=await sql`SELECT count(*)::int AS total FROM public.notificacao WHERE viagem_id=8970304 AND tipo='LEMBRETE'`;
+  expect(row.total).toBe(0);
+  } finally {
+    await sql.begin(async tx=>{await tx`DELETE FROM public.notificacao WHERE viagem_id=8970304`;await tx`DELETE FROM public.viagem WHERE id=8970304`;await tx`DELETE FROM public.solicitacao_viagem WHERE id=8970204`;});
+  }
+},12000);
+
+
+test('encerramento aguarda timeout de lock e preserva rollback',async()=>{
+  await sql.begin(async tx=>{
+    await tx`INSERT INTO public.solicitacao_viagem(id,codigo,solicitante_id,origem,destino,finalidade,data_hora_saida,data_hora_retorno_previsto,status,motorista_id,veiculo_id) VALUES (8970205,'S8-L-205',-27003,'A','B','Teste',(clock_timestamp() AT TIME ZONE 'America/Maceio')+interval '20 minutes',(clock_timestamp() AT TIME ZONE 'America/Maceio')+interval '2 hours','AGENDADA',8970101,8970111)`;
+    await tx`INSERT INTO public.viagem(id,solicitacao_id,motorista_id,veiculo_id,status) VALUES (8970305,8970205,8970101,8970111,'AGENDADA')`;
+  });
+  const monitor=await verifiedSql().catch(async erro=>{
+    await sql.begin(async tx=>{await tx`DELETE FROM public.viagem WHERE id=8970305`;await tx`DELETE FROM public.solicitacao_viagem WHERE id=8970205`;});
+    throw erro;
+  });let liberar:()=>void=()=>{};let pronto:()=>void=()=>{};
+  const portao=new Promise<void>(resolve=>{liberar=resolve;});const bloqueado=new Promise<void>(resolve=>{pronto=resolve;});
+  const lock=sql.begin(async tx=>{await tx`SELECT id FROM public.usuario WHERE id=8970001 FOR UPDATE`;pronto();await portao;});
+  let parar:(()=>Promise<void>)|undefined;
+  try {
+    await bloqueado;parar=iniciarLembretes();
+    await expect.poll(async()=>{const [r]=await monitor`SELECT count(*)::int AS total FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE '%FOR SHARE OF m,u%'`;return r.total;},{timeout:4000}).toBeGreaterThan(0);
+    const inicio=Date.now();await parar();parar=undefined;expect(Date.now()-inicio).toBeLessThan(8000);
+    const [r]=await monitor`SELECT count(*)::int AS total FROM public.notificacao WHERE viagem_id=8970305`;expect(r.total).toBe(0);
+  } finally {
+    liberar();await lock;if(parar)await parar();await monitor.end();
+    await sql.begin(async tx=>{await tx`DELETE FROM public.notificacao WHERE viagem_id=8970305`;await tx`DELETE FROM public.viagem WHERE id=8970305`;await tx`DELETE FROM public.solicitacao_viagem WHERE id=8970205`;});
+  }
+},15000);

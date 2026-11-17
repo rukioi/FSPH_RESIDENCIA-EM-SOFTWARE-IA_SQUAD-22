@@ -62,6 +62,7 @@ function useCaixa(ativo: boolean) {
             meta: { ...atual.meta, total: atual.meta.total - removidas,
               naoLidas: Math.max(0, atual.meta.naoLidas - atualizadas) } };
         });
+        if (!id && filtro === 'lidas') remote.retry();
       }
     } catch (erro) { if (!controller.signal.aborted) setErroAcao(errorMessage(erro)); }
     finally { if (!controller.signal.aborted) {escrita.current=null;setSalvando(false);} }

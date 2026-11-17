@@ -3,6 +3,8 @@ import { sql } from '../../database/connection.js';
 /** Gera um lote idempotente de avisos para reservas futuras, sob bloqueio da solicitacao. */
 export async function gerarLembretes(antecedenciaMinutos:number, agora = new Date().toISOString()): Promise<number> {
   return sql.begin(async tx=>{
+    await tx`SET LOCAL lock_timeout = '5s'`;
+    await tx`SET LOCAL statement_timeout = '15s'`;
     const pedidos=await tx`SELECT s.id::text FROM public.solicitacao_viagem s
       JOIN public.viagem v ON v.solicitacao_id=s.id
       JOIN public.motorista m ON m.id=v.motorista_id
@@ -25,6 +27,10 @@ export async function gerarLembretes(antecedenciaMinutos:number, agora = new Dat
           AND s.motorista_id=v.motorista_id AND s.veiculo_id=v.veiculo_id FOR SHARE OF m,u`;
       if(!dados)continue;
       const chave='viagem:'+dados.viagem+':lembrete:'+dados.horario+':'+dados.motorista;
+      const instanteAtual=new Date().toISOString();
+      const [atual]=await tx`SELECT data_hora_saida > (${instanteAtual}::text::timestamptz AT TIME ZONE 'America/Maceio') AS futura
+        FROM public.solicitacao_viagem WHERE id=${pedido.id}`;
+      if(!atual?.futura)continue;
       const rows=await tx`INSERT INTO public.notificacao(usuario_id,chave,titulo,descricao,categoria,tipo,viagem_id)
         VALUES (${dados.usuario},${chave},'Lembrete de viagem',${'Solicitação #'+dados.codigo},'informacao','LEMBRETE',${dados.viagem})
         ON CONFLICT (usuario_id,chave) DO UPDATE SET titulo=EXCLUDED.titulo,lida_em=NULL

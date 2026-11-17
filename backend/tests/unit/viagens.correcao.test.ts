@@ -1,4 +1,5 @@
-﻿import {describe,expect,test} from 'vitest';
+import {z} from 'zod';
+import {describe,expect,test} from 'vitest';
 import {corrigirQuilometragemSchema,correcaoViagemSchema,itemCorrecaoViagemSchema} from '../../src/modules/viagens/viagens.correcao.schemas.js';
 describe('validação técnica da correção de quilometragem',()=>{
   test.each([{kmInicial:100},{kmFinal:150},{kmInicial:100,kmFinal:100}])('aceita os campos previstos: %o',campos=>{
@@ -16,4 +17,10 @@ test('preserva leituras anteriores legadas negativas ou nulas no histórico',()=
   const base={id:'1',versao:1,kmInicialAnterior:-1,kmFinalAnterior:-2,kmInicial:0,kmFinal:1,justificativa:'Correção',autorId:'2',criadoEm:'2026-01-01T00:00:00Z'};
   expect(correcaoViagemSchema.parse({...base,odometroAtualizado:false}).kmInicialAnterior).toBe(-1);
   expect(itemCorrecaoViagemSchema.parse({...base,kmFinalAnterior:null}).kmFinalAnterior).toBeNull();
+});
+
+test('contrato publicado exige ao menos um campo de quilometragem',()=>{
+  const schema=z.toJSONSchema(corrigirQuilometragemSchema);
+  expect(schema.anyOf).toBeDefined();
+  expect(schema.anyOf).toEqual(expect.arrayContaining([expect.objectContaining({required:expect.arrayContaining(['kmInicial'])}),expect.objectContaining({required:expect.arrayContaining(['kmFinal'])})]));
 });

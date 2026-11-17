@@ -33,6 +33,32 @@ export function checkCompatibility(previous: Document, current: Document) {
   for (const [path,methods] of Object.entries(previous.paths)) for (const [method,definition] of Object.entries(methods)) {
     const candidate = structuredClone(current.paths[path]?.[method]) as {responses?: Record<string,unknown>} | undefined;
     const old = definition as {responses?: Record<string,unknown>};
+    // Sprint 8: somente operacoes existentes e a troca exata do padrao do parametro id.
+    const viagensAssinadas = new Set([
+      'patch /api/viagens/{id}/encerrar','get /api/viagens/{id}/evidencias',
+      'get /api/viagens/evidencias/{id}','get /api/viagens/{id}',
+      'get /api/viagens/{id}/historico','patch /api/viagens/{id}/corrigir-quilometragem',
+      'get /api/viagens/{id}/correcoes','patch /api/viagens/{id}/validar',
+      'patch /api/viagens/{id}/iniciar','patch /api/viagens/{id}/concluir',
+    ]);
+    if (candidate && viagensAssinadas.has(method+' '+path)) {
+      type Parameter = {name?:string; in?:string; schema?:{pattern?:string}};
+      const before = (definition as {parameters?:Parameter[]}).parameters;
+      const after = (candidate as {parameters?:Parameter[]}).parameters;
+      if (before && after && before.length === after.length) {
+        for (let i=0;i<before.length;i++) {
+          const a=before[i], b=after[i];
+          if(a.name!=='id' || a.in!=='path' || a.schema?.pattern!=='^[0-9]+$' || b.schema?.pattern!=='^-?[0-9]+$') continue;
+          const expected=structuredClone(a); expected.schema!.pattern='^-?[0-9]+$';
+          if(JSON.stringify(expected)===JSON.stringify(b))after[i]=a;
+        }
+      }
+    }
+    // Somente a resposta 409 comum na operacao de abastecimento.
+    if (path==='/api/abastecimentos' && method==='post' && !old.responses?.[409] && candidate?.responses?.[409]) {
+      const expected={...(old.responses?.[500] as object),description:'Falha atual HTTP 409'};
+      if(JSON.stringify(candidate.responses[409])===JSON.stringify(expected))delete candidate.responses[409];
+    }
     // Migração autorizada dos 4xx: somente a troca exata do envelope legado pelo comum.
     // Status, headers, descrições, sucessos e componentes continuam protegidos pelo gate.
     for (const [status, previousResponse] of Object.entries(old.responses ?? {})) {
@@ -97,7 +123,15 @@ export function checkCompatibility(previous: Document, current: Document) {
     if (JSON.stringify(definition) !== JSON.stringify(candidate)) throw new Error(`Contrato existente alterado: ${method.toUpperCase()} ${path}. Planeje compatibilidade explicitamente.`);
   }
   for (const [name,schema] of Object.entries(previous.components.schemas)) {
-    const candidate = structuredClone(current.components.schemas[name as keyof typeof current.components.schemas]);
+    let candidate = structuredClone(current.components.schemas[name as keyof typeof current.components.schemas]);
+    // Transicao exata aprovada: o runtime ja exigia ao menos um km.
+    if(name==='CorrigirQuilometragem' && candidate) {
+      const km={type:'integer',minimum:0,maximum:2147483647};
+      const properties={kmInicial:km,kmFinal:km,confirmarOdometroAtual:{type:'boolean'},justificativa:{type:'string',minLength:1,maxLength:2000}};
+      const before={type:'object',properties,required:['justificativa'],additionalProperties:false};
+      const after={anyOf:[{type:'object',properties,required:['kmInicial','justificativa'],additionalProperties:false},{type:'object',properties,required:['kmFinal','justificativa'],additionalProperties:false}]};
+      if(JSON.stringify(schema)===JSON.stringify(before) && JSON.stringify(candidate)===JSON.stringify(after)) candidate=structuredClone(schema);
+    }
     // A forma legada permanece; apenas a descrição da correção autorizada muda.
     if (name === 'CriarAbastecimento' && candidate) candidate.description = schema.description;
     // Extens?o aditiva autorizada para combust?vel; os campos anteriores permanecem id?nticos.

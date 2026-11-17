@@ -1,7 +1,8 @@
-﻿import { describe,expect,test } from 'vitest';
+import {pngViagem,jpegViagem,pngViagemDeTamanho} from '../viagens-imagens.js';
+import { describe,expect,test } from 'vitest';
 import { evidenciaEntradaSchema } from '../../src/modules/viagens/viagens.evidencias.schemas.js';
-const png=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]);
-const jpeg=Buffer.from([255,216,255,1,2,3]);
+const png=pngViagem;
+const jpeg=jpegViagem;
 const entrada={momento:'INICIAL',nome:'odometro.png',tipo:'image/png',dadosBase64:png.toString('base64')};
 describe('validação independente de evidência fotográfica',()=>{
   test('aceita PNG e JPEG com bytes e tipo correspondentes',()=>{
@@ -16,7 +17,19 @@ describe('validação independente de evidência fotográfica',()=>{
     expect(evidenciaEntradaSchema.safeParse({...entrada,...patch}).success).toBe(false);
   });
   test('aceita o limite exato de 1 MiB',()=>{
-    const bytes=Buffer.alloc(1024*1024);png.copy(bytes);
+    const bytes=pngViagemDeTamanho(1024*1024);
     expect(evidenciaEntradaSchema.safeParse({...entrada,dadosBase64:bytes.toString('base64')}).success).toBe(true);
   });
+});
+
+test('rejeita arquivos contendo apenas assinatura de imagem',()=>{
+  for(const [tipo,bytes] of [['image/png',Buffer.from([137,80,78,71,13,10,26,10])],['image/jpeg',Buffer.from([255,216,255])]] as const) {
+    expect(evidenciaEntradaSchema.safeParse({...entrada,tipo,dadosBase64:bytes.toString('base64')}).success).toBe(false);
+  }
+});
+
+test('aceita JPEG valido com bytes apos fim e rejeita PNG sem IEND',()=>{
+  const jpegComDados=Buffer.concat([jpegViagem,Buffer.from([1,2,3])]);
+  expect(evidenciaEntradaSchema.safeParse({...entrada,tipo:'image/jpeg',dadosBase64:jpegComDados.toString('base64')}).success).toBe(true);
+  expect(evidenciaEntradaSchema.safeParse({...entrada,dadosBase64:pngViagem.subarray(0,-12).toString('base64')}).success).toBe(false);
 });

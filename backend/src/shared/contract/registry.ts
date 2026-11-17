@@ -203,7 +203,7 @@ export const operations: Operacao[] = [
   op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,500]}),
   op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
   op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
-  op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,413,415,500]}),
+  op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,409,413,415,500]}),
   op('documentos','get','/api/documentos','Documentos',gestor),
   op('documentos','get','/api/documentos/pendencias','PendenciasDocumentos',gestor),
   op('documentos','post','/api/documentos','RespostaDocumento',gestor,{body:'CriarDocumento'}),
@@ -211,7 +211,7 @@ export const operations: Operacao[] = [
 
 /** Mantém correspondência exata com os caminhos existentes, inclusive a barra opcional de usuários. */
 export function routePattern(operation: Operacao): RegExp {
-  const path = operation.path.replace(/\{id\}/g, '[0-9]+');
+  const path = operation.path.replace(/\{id\}/g, operation.modulo === 'viagens' ? '-?[0-9]+' : '[0-9]+');
   return new RegExp('^' + path + (operation.modulo === 'usuarios' && path.includes('[0-9]+') ? '/?' : '') + '$');
 }
 

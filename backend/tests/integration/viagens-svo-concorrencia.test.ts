@@ -1,4 +1,5 @@
-﻿import {afterAll,beforeAll,expect,test} from 'vitest';
+import {pngViagem} from '../viagens-imagens.js';
+import {afterAll,beforeAll,expect,test} from 'vitest';
 import type {AddressInfo} from 'node:net';
 import {verifiedSql} from '../../src/database/scripts/verify-test-db.js';
 import {createApp} from '../../src/app.js';
@@ -6,7 +7,7 @@ import {fecharBanco} from '../../src/database/connection.js';
 import {criarJwt} from '../../src/security/jwt.js';
 
 const sql=await verifiedSql(),admin=await verifiedSql(true),server=createApp();
-const foto={nome:'inicio.png',tipo:'image/png',dadosBase64:Buffer.from([137,80,78,71,13,10,26,10,1]).toString('base64')};
+const foto={nome:'inicio.png',tipo:'image/png',dadosBase64:pngViagem.toString('base64')};
 let base='',svo='',driverA='',driverB='',created=false;
 const casos=[{usuario:8910001,motorista:8910101,veiculo:8910111,pedido:8910201,viagem:8910301,ocorrencia:8910401,ordem:8910501},
   {usuario:8910002,motorista:8910102,veiculo:8910112,pedido:8910202,viagem:8910302,ocorrencia:8910402,ordem:8910502}];

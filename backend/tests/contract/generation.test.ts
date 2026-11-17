@@ -194,3 +194,38 @@ test('dashboard evoluído aplica schemas e deixa de ser exceção legada',()=>{
 test('gate exige formato aprovado dos campos novos de abastecimento',()=>{
   expect(independent("import {execFileSync} from 'node:child_process';import {parse} from 'yaml';import {openapi} from './backend/src/shared/contract/openapi.ts';import {checkCompatibility} from './scripts/generate-api.ts';const previous=parse(execFileSync('git',['show','HEAD:docs/api/openapi.yaml'],{encoding:'utf8'}));checkCompatibility(previous,openapi());for(const mutate of [d=>d.components.schemas.Abastecimento.properties.tanque_completo={type:'string'},d=>d.components.schemas.CriarAbastecimento.properties.comprovante={type:'string'},d=>d.components.schemas.RespostaAbastecimento.properties.data.properties.comprovante_nome={type:'number'}]){const current=openapi();mutate(current);try{checkCompatibility(previous,current);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
+
+test('Sprint 8 autoriza somente tres transicoes de contrato e preserva o gate',()=>{
+  expect(independent(`
+import {openapi} from './backend/src/shared/contract/openapi.ts';
+import {checkCompatibility} from './scripts/generate-api.ts';
+const current=openapi();const previous=structuredClone(current);
+for(const [path,methods] of Object.entries(previous.paths))if(path.startsWith('/api/viagens/'))for(const operation of Object.values(methods))for(const parameter of operation.parameters??[])if(parameter.name==='id'&&parameter.in==='path'&&parameter.schema?.pattern==='^-?[0-9]+$')parameter.schema.pattern='^[0-9]+$';
+const km={type:'integer',minimum:0,maximum:2147483647};
+previous.components.schemas.CorrigirQuilometragem={type:'object',properties:{kmInicial:km,kmFinal:km,confirmarOdometroAtual:{type:'boolean'},justificativa:{type:'string',minLength:1,maxLength:2000}},required:['justificativa'],additionalProperties:false};
+delete previous.paths['/api/abastecimentos'].post.responses[409];
+const ids=structuredClone(previous);
+for(const [path,methods] of Object.entries(ids.paths))if(path.startsWith('/api/viagens/'))for(const [method,operation] of Object.entries(methods)){const target=current.paths[path]?.[method];if(!target)continue;for(const parameter of operation.parameters??[]){const updated=target.parameters?.find(p=>p.name===parameter.name&&p.in===parameter.in);if(parameter.name==='id'&&parameter.in==='path'&&updated?.schema?.pattern==='^-?[0-9]+$')parameter.schema.pattern=updated.schema.pattern;}}
+checkCompatibility(previous,ids);
+const schema=structuredClone(previous);schema.components.schemas.CorrigirQuilometragem=structuredClone(current.components.schemas.CorrigirQuilometragem);checkCompatibility(previous,schema);
+const resposta=structuredClone(previous);resposta.paths['/api/abastecimentos'].post.responses[409]=structuredClone(current.paths['/api/abastecimentos'].post.responses[409]);checkCompatibility(previous,resposta);
+checkCompatibility(previous,current);
+const mutations=[
+ d=>delete d.paths['/api/viagens/{id}'],
+ d=>delete d.paths['/api/viagens/{id}'].get,
+ d=>d.paths['/api/viagens/{id}'].get['x-perfis']=['MOTORISTA'],
+ d=>d.paths['/api/viagens/{id}'].get.security=[],
+ d=>d.paths['/api/viagens/{id}'].get.parameters[0].required=false,
+ d=>d.paths['/api/viagens/{id}'].get.parameters[0].schema.pattern='.*',
+ d=>delete d.paths['/api/viagens/{id}'].get.responses[200],
+ d=>d.paths['/api/abastecimentos'].post.responses[409].content['application/json'].schema.$ref='#/components/schemas/Usuario',
+ d=>d.paths['/api/abastecimentos'].post.responses[409].headers['X-Request-Id'].schema.type='integer',
+ d=>d.components.schemas.CorrigirQuilometragem.anyOf[0].required=['justificativa'],
+ d=>d.components.schemas.CorrigirQuilometragem.anyOf[1].properties.kmFinal.maximum=999,
+ d=>d.components.schemas.CorrigirQuilometragem.anyOf[0].additionalProperties=true,
+ d=>d.components.schemas.Veiculo.properties.id.type='number'
+];
+for(const mutation of mutations){const candidate=structuredClone(current);mutation(candidate);let rejected=false;try{checkCompatibility(previous,candidate)}catch{rejected=true}if(!rejected)throw Error('alteracao adicional aceita');}
+console.log('ok');
+`)).toContain('ok');
+},15000);

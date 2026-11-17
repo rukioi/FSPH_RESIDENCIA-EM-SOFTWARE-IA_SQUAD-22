@@ -1,4 +1,5 @@
-﻿import { afterAll, beforeAll, expect, test } from 'vitest';
+import {pngViagem,jpegViagem} from '../viagens-imagens.js';
+import { afterAll, beforeAll, expect, test } from 'vitest';
 import type { AddressInfo } from 'node:net';
 import { verifiedSql } from '../../src/database/scripts/verify-test-db.js';
 import { criarJwt } from '../../src/security/jwt.js';
@@ -72,8 +73,8 @@ test('validação concorrente registra um ator e um evento e preserva execução
 
 
 test('gestor consulta quilometragens e fotos antes de validar com auditoria',async()=>{
-  const inicial=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]);
-  const final=Buffer.from([255,216,255,4,5,6]);
+  const inicial=pngViagem;
+  const final=jpegViagem;
   await sql.begin(async tx=>{
     await tx`INSERT INTO public.solicitacao_viagem (id,codigo,solicitante_id,origem,destino,finalidade,data_hora_saida,status,motorista_id,veiculo_id) VALUES (8860204,'S8-E4-204',-27003,'A','B','Teste','2026-01-01 08:00','CONCLUIDA',-27001,-27001)`;
     await tx`INSERT INTO public.viagem (id,solicitacao_id,motorista_id,veiculo_id,status,km_inicial,km_final,data_inicio,data_fim) VALUES (8860304,8860204,-27001,-27001,'CONCLUIDA',1000,1010,'2026-01-01 08:00','2026-01-01 09:00')`;

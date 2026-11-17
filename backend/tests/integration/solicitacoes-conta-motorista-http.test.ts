@@ -30,6 +30,14 @@ test.each(['8930102','8930103'])('conta inativa ou ausente impede agendamento %s
  const [row]=await sql`SELECT status::text,(SELECT count(*)::int FROM public.viagem WHERE solicitacao_id=8930201) AS viagens,(SELECT count(*)::int FROM public.log_atividade WHERE solicitacao_viagem_id=8930201) AS logs FROM public.solicitacao_viagem WHERE id=8930201`;
  expect(row).toMatchObject({status:'APROVADA',viagens:0,logs:0});
 });
+test('perfil incorreto impede agendamento e preserva estado',async()=>{
+  await sql`UPDATE public.usuario SET perfil='GESTOR_FROTA' WHERE id=8930001`;
+  try {
+    const r=await post('8930201','agendar',agendar);expect(r.status).toBe(409);
+    const [row]=await sql`SELECT status::text,(SELECT count(*)::int FROM public.viagem WHERE solicitacao_id=8930201) AS viagens,(SELECT count(*)::int FROM public.log_atividade WHERE solicitacao_viagem_id=8930201) AS logs FROM public.solicitacao_viagem WHERE id=8930201`;
+    expect(row).toMatchObject({status:'APROVADA',viagens:0,logs:0});
+  } finally {await sql`UPDATE public.usuario SET perfil='MOTORISTA' WHERE id=8930001`;}
+});
 test('agendamento e reagendamento com conta ativa preservam reserva quando motorista sem conta e recusado',async()=>{
  expect((await post('8930201','agendar',agendar)).status).toBe(200);
  const dados={...agendar,motoristaId:'8930103',dataHoraSaida:'2099-10-02T08:00:00-03:00',dataHoraRetornoPrevisto:'2099-10-02T12:00:00-03:00'};

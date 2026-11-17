@@ -1,9 +1,10 @@
-﻿import {afterAll,beforeAll,expect,test} from 'vitest';
+import {pngViagem} from '../viagens-imagens.js';
+import {afterAll,beforeAll,expect,test} from 'vitest';
 import {verifiedSql} from '../../src/database/scripts/verify-test-db.js';
 import {inserirVersaoEvidencia} from '../../src/modules/viagens/viagens.evidencias.repository.js';
 const sql=await verifiedSql(),admin=await verifiedSql(true);
 let created=false;
-const png=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]);
+const png=pngViagem;
 const entrada={momento:'INICIAL',nome:'odometro.png',tipo:'image/png',dadosBase64:png.toString('base64')};
 beforeAll(async()=>{
   await sql.begin(async tx=>{
@@ -28,9 +29,10 @@ test('grava bytes originais e versões concorrentes sem sobrescrever a anterior'
   const final=await sql.begin(tx=>inserirVersaoEvidencia(tx,'8890301','-27004',{...entrada,momento:'FINAL'}));expect(final.versao).toBe(1);
 });
 test('falha posterior reverte a inserção da evidência',async()=>{
+  const antes=await sql`SELECT versao FROM public.viagem_evidencia WHERE viagem_id=8890301 AND momento='INICIAL' ORDER BY versao`;
   await expect(sql.begin(async tx=>{await inserirVersaoEvidencia(tx,'8890301','-27004',entrada);throw new Error('rollback de teste');})).rejects.toThrow('rollback de teste');
   const rows=await sql`SELECT versao FROM public.viagem_evidencia WHERE viagem_id=8890301 AND momento='INICIAL' ORDER BY versao`;
-  expect(rows.map(row=>row.versao)).toEqual([1,2]);
+  expect(rows.map(row=>row.versao)).toEqual(antes.map(row=>row.versao));
 });
 test('recusa imagem inválida e viagem inexistente',async()=>{
   await expect(sql.begin(tx=>inserirVersaoEvidencia(tx,'8890301','-27004',{...entrada,dadosBase64:'AAAA'}))).rejects.toMatchObject({status:400});

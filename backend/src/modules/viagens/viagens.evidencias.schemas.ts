@@ -7,8 +7,8 @@ const camposFoto = {
 };
 function validarBytes(entrada:{tipo:string;dadosBase64:string},ctx:z.RefinementCtx) {
   const bytes=Buffer.from(entrada.dadosBase64,'base64');
-  const png=bytes.length>=8 && bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
-  const jpeg=bytes.length>=3 && bytes[0]===255 && bytes[1]===216 && bytes[2]===255;
+  const png=bytes.length>=33 && bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) && bytes.subarray(-12).equals(Buffer.from([0,0,0,0,73,69,78,68,174,66,96,130]));
+  const jpeg=bytes.length>4 && bytes[0]===255 && bytes[1]===216 && bytes[2]===255 && bytes.indexOf(Buffer.from([255,217]),3)!==-1;
   if(bytes.length===0 || bytes.length>1024*1024 || bytes.toString('base64')!==entrada.dadosBase64 || !(entrada.tipo==='image/png'?png:jpeg)) {
     ctx.addIssue({code:'custom',path:['dadosBase64'],message:'Envie uma imagem JPEG ou PNG válida de até 1 MiB.'});
   }

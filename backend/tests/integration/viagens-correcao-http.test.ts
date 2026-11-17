@@ -1,4 +1,5 @@
-﻿import {afterAll,beforeAll,expect,test} from 'vitest';
+import {pngViagem} from '../viagens-imagens.js';
+import {afterAll,beforeAll,expect,test} from 'vitest';
 import type {AddressInfo} from 'node:net';
 import {verifiedSql} from '../../src/database/scripts/verify-test-db.js';
 import {criarJwt} from '../../src/security/jwt.js';
@@ -6,7 +7,7 @@ import {createApp} from '../../src/app.js';
 import {fecharBanco} from '../../src/database/connection.js';
 import {viagensSchemas} from '../../src/modules/viagens/viagens.schemas.js';
 const sql=await verifiedSql(),admin=await verifiedSql(true),server=createApp();let base='',gestor='',adm='',motorista='',created=false;
-const foto=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]);
+const foto=pngViagem;
 function patch(id:string,body:unknown,token?:string){return fetch(`${base}/api/viagens/${id}/corrigir-quilometragem`,{method:'PATCH',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});}
 function get(path:string,token:string){return fetch(base+path,{headers:{Authorization:`Bearer ${token}`}});}
 beforeAll(async()=>{
@@ -55,6 +56,44 @@ test('leituras sem ordem comprovável ou odômetro divergente bloqueiam correç�
   expect((await patch('8920303',{kmFinal:1100,confirmarOdometroAtual:true,justificativa:'Teste'},gestor)).status).toBe(409);
   expect((await patch('8920304',{kmFinal:1100,confirmarOdometroAtual:true,justificativa:'Teste'},gestor)).status).toBe(409);
 });
+test('abastecimento no mesmo dia preserva confirmacao e permite correcao segura',async()=>{
+  const [antes]=await sql`SELECT v.km_final,ve.quilometragem_atual FROM public.viagem v JOIN public.veiculo ve ON ve.id=v.veiculo_id WHERE v.id=8920304`;
+  expect((await patch('8920304',{kmFinal:990,confirmarOdometroAtual:true,justificativa:'Conferencia'},gestor)).status).toBe(409);
+  const [depois]=await sql`SELECT v.km_final,ve.quilometragem_atual FROM public.viagem v JOIN public.veiculo ve ON ve.id=v.veiculo_id WHERE v.id=8920304`;expect(depois).toEqual(antes);
+  const resposta=await patch('8920304',{kmFinal:990,confirmarOdometroAtual:false,justificativa:'Conferencia'},gestor);
+  expect(resposta.status).toBe(200);expect(viagensSchemas.RespostaCorrecaoViagem.parse(await resposta.json()).data.odometroAtualizado).toBe(false);
+  const criar=(dia:string,km:number)=>fetch(base+'/api/abastecimentos',{method:'POST',headers:{Authorization:`Bearer ${gestor}`,'Content-Type':'application/json'},body:JSON.stringify({veiculo_id:8920104,motorista_id:-27001,litragem:10,valor_total:50,quilometragem:km,data_abastecimento:dia,posto:'Teste concorrencia 8920304'})});
+  try {expect((await criar('2026-01-01',950)).status).toBe(201);expect((await criar('2025-12-31',901)).status).toBe(409);}
+  finally {await sql`DELETE FROM public.abastecimento WHERE veiculo_id=8920104 AND posto='Teste concorrencia 8920304'`;}
+});
+test('correcao e abastecimento concorrentes respeitam ambas as ordens sem deadlock',async()=>{
+  for (const [index,primeiro] of [[1,'correcao'],[2,'abastecimento']] as const) {
+    const veiculo=8920700+index,pedido=8920800+index,viagem=8920900+index,posto=`concorrencia-${index}`;
+    await sql.begin(async tx=>{
+      await tx`INSERT INTO public.veiculo(id,placa,marca,modelo,ano,tipo,status,quilometragem_atual) VALUES (${veiculo},${'S8R000'+index},'Teste','Teste',2026,'PASSEIO','DISPONIVEL',1000)`;
+      await tx`INSERT INTO public.solicitacao_viagem(id,codigo,solicitante_id,origem,destino,finalidade,data_hora_saida,status,motorista_id,veiculo_id) VALUES (${pedido},${'S8-RACE-'+index},-27003,'A','B','Teste','2026-01-01 08:00','CONCLUIDA',-27001,${veiculo})`;
+      await tx`INSERT INTO public.viagem(id,solicitacao_id,motorista_id,veiculo_id,status,km_inicial,km_final,data_inicio,data_fim) VALUES (${viagem},${pedido},-27001,${veiculo},'CONCLUIDA',900,1000,'2026-01-01 08:00','2026-01-01 09:00')`;
+    });
+    let liberar!:()=>void,pronto!:()=>void;const liberado=new Promise<void>(r=>{liberar=r;});const bloqueado=new Promise<void>(r=>{pronto=r;});
+    const holding=sql.begin(async tx=>{await tx`SELECT id FROM public.veiculo WHERE id=${veiculo} FOR UPDATE`;pronto();await liberado;});
+    const aguardar=async(n:number)=>{const limite=Date.now()+5000;while(Date.now()<limite){const [r]=await admin`SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE '%FOR UPDATE%'`;if(r.n>=n)return;await new Promise(r=>setTimeout(r,30));}throw Error('Operacoes nao aguardaram o bloqueio esperado');};
+    try {
+      await bloqueado;
+      const executarCorrecao=()=>patch(String(viagem),{kmFinal:1050,confirmarOdometroAtual:true,justificativa:'Teste concorrente'},gestor);
+      const executarAbastecimento=()=>fetch(base+'/api/abastecimentos',{method:'POST',headers:{Authorization:`Bearer ${gestor}`,'Content-Type':'application/json'},body:JSON.stringify({veiculo_id:veiculo,motorista_id:-27001,litragem:10,valor_total:50,quilometragem:950,data_abastecimento:'2025-12-31',posto})});
+      const primeira=primeiro==='correcao'?executarCorrecao():executarAbastecimento();await aguardar(1);
+      const segunda=primeiro==='correcao'?executarAbastecimento():executarCorrecao();await aguardar(2);
+      liberar();await holding;const respostas=await Promise.all([primeira,segunda]);
+      expect(respostas.map(r=>r.status)).toEqual(primeiro==='correcao'?[200,409]:[201,409]);
+      const [estado]=await sql`SELECT v.km_final,ve.quilometragem_atual,(SELECT count(*)::int FROM public.viagem_correcao WHERE viagem_id=${viagem}) AS correcoes,(SELECT count(*)::int FROM public.abastecimento WHERE veiculo_id=${veiculo}) AS abastecimentos FROM public.viagem v JOIN public.veiculo ve ON ve.id=v.veiculo_id WHERE v.id=${viagem}`;
+      expect(estado).toMatchObject(primeiro==='correcao'?{km_final:1050,quilometragem_atual:1050,correcoes:1,abastecimentos:0}:{km_final:1000,quilometragem_atual:1000,correcoes:0,abastecimentos:1});
+    } finally {
+      liberar();await holding;
+      await admin`DELETE FROM public.viagem_correcao WHERE viagem_id=${viagem}`;
+      await sql.begin(async tx=>{await tx`DELETE FROM public.log_atividade WHERE solicitacao_viagem_id=${pedido}`;await tx`DELETE FROM public.abastecimento WHERE veiculo_id=${veiculo}`;await tx`DELETE FROM public.viagem WHERE id=${viagem}`;await tx`DELETE FROM public.solicitacao_viagem WHERE id=${pedido}`;await tx`DELETE FROM public.veiculo WHERE id=${veiculo}`;});
+    }
+  }
+},20000);
 test('ordem SVO ativa impede correção até a leitura ser conhecida',async()=>{
   await sql`INSERT INTO public.ordem_coleta(id,veiculo_id,motorista_id,status,quantidade_corpos) VALUES (8920602,8920103,-27001,'EM_TRANSPORTE',1)`;
   try {expect((await patch('8920303',{kmInicial:950,justificativa:'Teste'},gestor)).status).toBe(409);}
@@ -67,10 +106,11 @@ test('correção somente do km inicial não altera o odômetro',async()=>{
   expect((await patch('8920303',{kmInicial:1001,justificativa:'Inválida'},gestor)).status).toBe(400);
 });
 test('quilometragem inicial não pode contradizer leitura SVO anterior',async()=>{
+  const [leituraAntes]=await sql`SELECT km_inicial FROM public.viagem WHERE id=8920303`;
   await sql`INSERT INTO public.ordem_coleta(id,veiculo_id,motorista_id,status,quantidade_corpos,km_inicial,km_final,data_inicio,data_fim) VALUES (8920603,8920103,-27001,'CONCLUIDA',1,800,975,'2025-12-31 08:00','2025-12-31 09:00')`;
   try {
     expect((await patch('8920303',{kmInicial:960,justificativa:'Teste'},gestor)).status).toBe(409);
-    const [v]=await sql`SELECT km_inicial FROM public.viagem WHERE id=8920303`;expect(v.km_inicial).toBe(950);
+    const [v]=await sql`SELECT km_inicial FROM public.viagem WHERE id=8920303`;expect(v.km_inicial).toBe(leituraAntes.km_inicial);
   } finally {await sql`DELETE FROM public.ordem_coleta WHERE id=8920603`;}
 });
 test('correções concorrentes são versionadas, atualizam odômetro confirmado e preservam foto',async()=>{
@@ -86,8 +126,14 @@ test('correções concorrentes são versionadas, atualizam odômetro confirmado 
   expect((await get('/api/viagens/8920301/correcoes',motorista)).status).toBe(403);
 });
 test('última leitura confirmada também pode corrigir um valor informado acima do real',async()=>{
+  const [estadoAntes]=await sql`SELECT validada_por_gestor FROM public.viagem WHERE id=8920301`;
+  const [versaoAntes]=await sql`SELECT COALESCE(MAX(versao),0)::int AS versao FROM public.viagem_correcao WHERE viagem_id=8920301`;
+  if(estadoAntes.validada_por_gestor!==true) {
+    const validacao=await fetch(`${base}/api/viagens/8920301/validar`,{method:'PATCH',headers:{Authorization:`Bearer ${gestor}`}});
+    expect(validacao.status).toBe(200);
+  }
   const r=await patch('8920301',{kmFinal:950,confirmarOdometroAtual:true,justificativa:'Odômetro conferido'},gestor);expect(r.status).toBe(200);
-  expect(viagensSchemas.RespostaCorrecaoViagem.parse(await r.json()).data).toMatchObject({versao:3,kmFinal:950,odometroAtualizado:true});
+  expect(viagensSchemas.RespostaCorrecaoViagem.parse(await r.json()).data).toMatchObject({versao:versaoAntes.versao+1,kmFinal:950,odometroAtualizado:true});
   const [row]=await sql`SELECT v.status,v.validada_por_gestor,ve.quilometragem_atual FROM public.viagem v JOIN public.veiculo ve ON ve.id=v.veiculo_id WHERE v.id=8920301`;
   expect(row).toMatchObject({status:'CONCLUIDA',validada_por_gestor:true,quilometragem_atual:950});
 });
@@ -99,9 +145,10 @@ test('falha de auditoria reverte correção, odômetro e preserva versões e fot
     await admin.unsafe("CREATE FUNCTION public.test_s8_c_8920201() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.solicitacao_viagem_id=8920201 THEN RAISE EXCEPTION 'fixture audit failure'; END IF; RETURN NEW; END $$");funcao=true;
     await admin.unsafe('CREATE TRIGGER test_s8_c_8920201 BEFORE INSERT ON public.log_atividade FOR EACH ROW EXECUTE FUNCTION public.test_s8_c_8920201()');trigger=true;
     const [antes]=await sql`SELECT v.km_final,ve.quilometragem_atual FROM public.viagem v JOIN public.veiculo ve ON ve.id=v.veiculo_id WHERE v.id=8920301`;
+    const [versoesAntes]=await sql`SELECT count(*)::int AS total FROM public.viagem_correcao WHERE viagem_id=8920301`;
     expect((await patch('8920301',{kmFinal:1300,confirmarOdometroAtual:true,justificativa:'Falha'},gestor)).status).toBe(500);
     const [depois]=await sql`SELECT v.km_final,ve.quilometragem_atual FROM public.viagem v JOIN public.veiculo ve ON ve.id=v.veiculo_id WHERE v.id=8920301`;expect(depois).toEqual(antes);
-    const [n]=await sql`SELECT count(*)::int AS total FROM public.viagem_correcao WHERE viagem_id=8920301`;expect(n.total).toBe(3);
+    const [n]=await sql`SELECT count(*)::int AS total FROM public.viagem_correcao WHERE viagem_id=8920301`;expect(n.total).toBe(versoesAntes.total);
     const [e]=await sql`SELECT dados FROM public.viagem_evidencia WHERE id=8920401`;expect(e.dados).toEqual(foto);
   }finally{if(trigger)await admin.unsafe('DROP TRIGGER test_s8_c_8920201 ON public.log_atividade');if(funcao)await admin.unsafe('DROP FUNCTION public.test_s8_c_8920201()');}
 });

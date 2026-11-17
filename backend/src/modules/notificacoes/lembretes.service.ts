@@ -6,6 +6,7 @@ import { gerarLembretes } from './lembretes.repository.js';
 export function iniciarLembretes() {
   const antecedencia=inteiroAmbiente('LEMBRETE_ANTECEDENCIA_MINUTOS',30,10080);
   const intervalo=inteiroAmbiente('LEMBRETE_INTERVALO_SEGUNDOS',60,3600)*1000;
+  if(intervalo>=antecedencia*60_000) throw new Error('Intervalo de lembretes deve ser inferior à antecedência.');
   let parado=false;
   let timer:NodeJS.Timeout|undefined;
   let atual:Promise<void>|undefined;

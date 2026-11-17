@@ -161,3 +161,5 @@ sessão e os mesmos perfis ADM/GESTOR_FROTA, retorna bytes com Content-Type da
 imagem, ou 404 quando ausente. A imagem fica em tabela separada com RLS ativada
 sem grants aos papéis públicos; confirme o papel de execução do backend e a
 segurança da Data API antes de aplicar em ambiente remoto.
+
+O cadastro retorna 409 quando a quilometragem contradiz comprovadamente uma viagem corrigida do veículo. A coincidência de data, sem horário que determine a ordem, não impede o registro.

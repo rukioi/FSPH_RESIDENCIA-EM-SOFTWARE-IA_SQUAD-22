@@ -42,3 +42,12 @@ test('HTTP retorna somente viagens institucionais do motorista da sessão', asyn
   expect(filtradas.data.every(item => item.status === 'CONCLUIDA')).toBe(true);
   expect(dados.meta.total).toBe(reais.length);
 });
+
+test('detalhes de viagem legada com ID negativo respeitam autorizacao',async()=>{
+  const url=base.replace(/\/minhas$/,'')+'/-27001';
+  expect((await fetch(url)).status).toBe(401);
+  expect((await fetch(url,{headers:{Authorization:`Bearer ${motorista}`}})).status).toBe(200);
+  expect((await fetch(url,{headers:{Authorization:`Bearer ${gestor}`}})).status).toBe(200);
+  const outro=await criarJwt({id:'-27003',perfil:'SOLICITANTE_INTERNO'});
+  expect((await fetch(url,{headers:{Authorization:`Bearer ${outro}`}})).status).toBe(403);
+});

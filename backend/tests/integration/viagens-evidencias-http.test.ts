@@ -1,4 +1,5 @@
-﻿import {afterAll,beforeAll,expect,test} from 'vitest';
+import {pngViagem} from '../viagens-imagens.js';
+import {afterAll,beforeAll,expect,test} from 'vitest';
 import type {AddressInfo} from 'node:net';
 import {verifiedSql} from '../../src/database/scripts/verify-test-db.js';
 import {criarJwt} from '../../src/security/jwt.js';
@@ -6,7 +7,7 @@ import {createApp} from '../../src/app.js';
 import {fecharBanco} from '../../src/database/connection.js';
 const sql=await verifiedSql(),admin=await verifiedSql(true),server=createApp();
 let base='',gestor='',motorista='',outro='',solicitante='',created=false;
-const png=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]);
+const png=pngViagem;
 function get(path:string,token?:string){return fetch(base+'/api/viagens'+path,{headers:token?{Authorization:`Bearer ${token}`}:{}});}
 beforeAll(async()=>{
   await sql.begin(async tx=>{

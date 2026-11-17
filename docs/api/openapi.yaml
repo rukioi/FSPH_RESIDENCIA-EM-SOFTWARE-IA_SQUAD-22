@@ -404,7 +404,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       requestBody:
         required: true
@@ -567,7 +567,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       responses:
         "200":
@@ -674,7 +674,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       responses:
         "200":
@@ -786,7 +786,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       responses:
         "200":
@@ -907,7 +907,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       responses:
         "200":
@@ -1011,7 +1011,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       requestBody:
         required: true
@@ -1171,7 +1171,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       responses:
         "200":
@@ -1275,7 +1275,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       responses:
         "200":
@@ -1392,7 +1392,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       requestBody:
         required: true
@@ -1539,7 +1539,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[0-9]+$
+            pattern: ^-?[0-9]+$
           description: Identificador no caminho atual; limites numéricos variam por módulo.
       requestBody:
         required: true
@@ -9715,6 +9715,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
         "413":
           description: Falha atual HTTP 413
           headers:
@@ -10103,25 +10115,47 @@ components:
         - solicitacaoId
       additionalProperties: false
     CorrigirQuilometragem:
-      type: object
-      properties:
-        kmInicial:
-          type: integer
-          minimum: 0
-          maximum: 2147483647
-        kmFinal:
-          type: integer
-          minimum: 0
-          maximum: 2147483647
-        confirmarOdometroAtual:
-          type: boolean
-        justificativa:
-          type: string
-          minLength: 1
-          maxLength: 2000
-      required:
-        - justificativa
-      additionalProperties: false
+      anyOf:
+        - type: object
+          properties:
+            kmInicial:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            kmFinal:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            confirmarOdometroAtual:
+              type: boolean
+            justificativa:
+              type: string
+              minLength: 1
+              maxLength: 2000
+          required:
+            - kmInicial
+            - justificativa
+          additionalProperties: false
+        - type: object
+          properties:
+            kmInicial:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            kmFinal:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            confirmarOdometroAtual:
+              type: boolean
+            justificativa:
+              type: string
+              minLength: 1
+              maxLength: 2000
+          required:
+            - kmFinal
+            - justificativa
+          additionalProperties: false
     RespostaCorrecaoViagem:
       type: object
       properties:

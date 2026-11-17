@@ -7,6 +7,23 @@
 export type EvidenciaArquivo = string;
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CorrigirQuilometragem".
+ */
+export type CorrigirQuilometragem =
+  | {
+      kmInicial: number;
+      kmFinal?: number;
+      confirmarOdometroAtual?: boolean;
+      justificativa: string;
+    }
+  | {
+      kmInicial?: number;
+      kmFinal: number;
+      confirmarOdometroAtual?: boolean;
+      justificativa: string;
+    };
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "ErroUsuario".
  */
 export type ErroUsuario =
@@ -308,16 +325,6 @@ export interface ListaEvidenciasViagem {
  */
 export interface CriarViagem {
   solicitacaoId: string;
-}
-/**
- * This interface was referenced by `ApiSchemas`'s JSON-Schema
- * via the `definition` "CorrigirQuilometragem".
- */
-export interface CorrigirQuilometragem {
-  kmInicial?: number;
-  kmFinal?: number;
-  confirmarOdometroAtual?: boolean;
-  justificativa: string;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema

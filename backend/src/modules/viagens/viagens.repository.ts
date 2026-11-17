@@ -69,9 +69,10 @@ export async function executarViagem(id:string, usuarioId:string, acao:'iniciar'
     const [pedido] = await tx`SELECT status,motorista_id::text,veiculo_id::text FROM public.solicitacao_viagem WHERE id=${referencia.solicitacao_id} FOR UPDATE`;
     if (!pedido || !pedido.motorista_id || !pedido.veiculo_id) throw new ErroHttp(409,'ESTADO_INCOMPATIVEL','Solicitação sem recursos válidos.');
     const [motorista] = await tx`SELECT id FROM public.motorista WHERE id=${pedido.motorista_id} AND usuario_id=${usuarioId} FOR UPDATE`;
+    if (!motorista) throw new ErroHttp(404,'NAO_ENCONTRADO','Viagem n\u00e3o encontrada.');
     const [veiculo] = await tx`SELECT quilometragem_atual FROM public.veiculo WHERE id=${pedido.veiculo_id} FOR UPDATE`;
     const [viagem] = await tx`SELECT status,motorista_id::text,veiculo_id::text,km_inicial FROM public.viagem WHERE id=${id} AND solicitacao_id=${referencia.solicitacao_id} FOR UPDATE`;
-    if (!motorista || !veiculo || !viagem || viagem.motorista_id!==pedido.motorista_id || viagem.veiculo_id!==pedido.veiculo_id) throw new ErroHttp(409,'ESTADO_INCOMPATIVEL','Recursos da viagem incompatíveis.');
+    if (!veiculo || !viagem || viagem.motorista_id!==pedido.motorista_id || viagem.veiculo_id!==pedido.veiculo_id) throw new ErroHttp(409,'ESTADO_INCOMPATIVEL','Recursos da viagem incompatíveis.');
     if (acao==='iniciar' ? viagem.status!=='AGENDADA' || !['AGENDADA','PRONTA_PARA_INICIAR'].includes(pedido.status) : viagem.status!=='EM_TRANSPORTE' || pedido.status!=='EM_ANDAMENTO') throw new ErroHttp(409,'ESTADO_INCOMPATIVEL','A viagem não está no estado esperado.');
     if ((veiculo.quilometragem_atual != null && km < veiculo.quilometragem_atual) || (acao==='concluir' && (viagem.km_inicial==null || km < viagem.km_inicial))) throw new ErroHttp(400,'QUILOMETRAGEM_INVALIDA','Quilometragem inferior à registrada.');
     if (acao==='iniciar') {

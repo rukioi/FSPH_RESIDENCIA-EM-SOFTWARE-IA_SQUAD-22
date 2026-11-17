@@ -91,5 +91,5 @@ test('leitura em lote zera contador global mesmo na aba de avisos ja lidos', asy
   await expect(page.locator('.notificacoes__item')).toHaveCount(3);
   await page.getByRole('button', { name: 'Marcar todas como lidas' }).click();
   await expect(page.getByRole('button', { name: 'Abrir notificações: 0 não lidas', exact: true })).toBeVisible();
-  await expect(page.locator('.notificacoes__item')).toHaveCount(3);
+  await expect(page.locator('.notificacoes__item')).toHaveCount(5);
 });

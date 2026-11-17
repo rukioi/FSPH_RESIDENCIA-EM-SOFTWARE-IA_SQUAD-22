@@ -64,8 +64,8 @@ export async function editarSolicitacao(id: string, responsavelId: string, dados
 export async function validarContaMotorista(tx: postgres.TransactionSql, motoristaId: string): Promise<void> {
   const [motorista] = await tx`SELECT usuario_id::text FROM public.motorista WHERE id=${motoristaId} FOR UPDATE`;
   if (!motorista?.usuario_id) throw new ErroHttp(409, 'MOTORISTA_SEM_CONTA_ATIVA', 'O motorista selecionado n\u00e3o possui uma conta ativa no sistema.');
-  const [usuario] = await tx`SELECT ativo FROM public.usuario WHERE id=${motorista.usuario_id} FOR SHARE`;
-  if (!usuario || usuario.ativo !== true) throw new ErroHttp(409, 'MOTORISTA_SEM_CONTA_ATIVA', 'O motorista selecionado n\u00e3o possui uma conta ativa no sistema.');
+  const [usuario] = await tx`SELECT ativo,perfil FROM public.usuario WHERE id=${motorista.usuario_id} FOR SHARE`;
+  if (!usuario || usuario.ativo !== true || usuario.perfil !== 'MOTORISTA') throw new ErroHttp(409, 'MOTORISTA_SEM_CONTA_ATIVA', 'O motorista selecionado n\u00e3o possui uma conta ativa no sistema.');
 }
 
 /** Agenda somente pedido aprovado, serializando reservas com o despacho SVO. */

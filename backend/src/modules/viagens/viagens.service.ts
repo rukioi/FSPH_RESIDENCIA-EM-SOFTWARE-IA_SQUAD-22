@@ -3,6 +3,7 @@ import { corrigirQuilometragem } from './viagens.correcao.repository.js';
 import { evidenciaMetadadosSchema, evidenciaBinariaSchema } from './viagens.evidencias.schemas.js';
 import type { UsuarioAutenticado } from '../../security/jwt.js';
 import { ErroHttp } from '../../shared/http/errors.js';
+import { idRecursoSchema } from '../solicitacoes/solicitacoes.schemas.js';
 import { criarViagemSchema, consultaMinhasViagens, viagemMotorista, executarViagemSchema, execucaoViagemSchema, validacaoViagemSchema, consultaViagensSchema, consultaHistoricoViagemSchema, detalheViagemSchema, eventoViagemSchema } from './viagens.schemas.js';
 import { obterViagemPorSolicitacao, consultarMinhasViagens, executarViagem, validarViagem, listarViagens, detalharViagem, historicoViagem, listarCorrecoes, listarEvidencias, baixarEvidencia } from './viagens.repository.js';
 
@@ -27,18 +28,18 @@ export async function criarOuConsultar(body:unknown,usuario:UsuarioAutenticado) 
 export async function executar(id:string, acao:'iniciar'|'concluir', body:unknown, usuario:UsuarioAutenticado) {
   if(usuario.perfil!=='MOTORISTA') throw new ErroHttp(403,'ACESSO_NEGADO','Acesso não permitido.');
   const dados=executarViagemSchema.safeParse(body);
-  if(!dados.success || !/^[0-9]{1,19}$/.test(id) || BigInt(id)>9223372036854775807n) throw new ErroHttp(400,'DADOS_INVALIDOS','Revise os dados informados.');
+  if(!dados.success || !idRecursoSchema.safeParse(id).success) throw new ErroHttp(400,'DADOS_INVALIDOS','Revise os dados informados.');
   return execucaoViagemSchema.parse(await executarViagem(id,usuario.id,acao,dados.data.quilometragem,dados.data.foto));
 }
 
 /** Autoriza o responsável atual e valida o identificador antes da transação. */
 export async function validar(id:string,usuario:UsuarioAutenticado) {
   if(!['ADM','GESTOR_FROTA'].includes(usuario.perfil)) throw new ErroHttp(403,'ACESSO_NEGADO','Acesso não permitido.');
-  if(!/^[0-9]{1,19}$/.test(id)||BigInt(id)>9223372036854775807n) throw new ErroHttp(400,'DADOS_INVALIDOS','Identificador inválido.');
+  if(!idRecursoSchema.safeParse(id).success) throw new ErroHttp(400,'DADOS_INVALIDOS','Identificador inválido.');
   return validacaoViagemSchema.parse(await validarViagem(id,usuario.id));
 }
 
-function idConsulta(id:string) { if(!/^[0-9]{1,19}$/.test(id)||BigInt(id)>9223372036854775807n)throw new ErroHttp(400,'DADOS_INVALIDOS','Identificador inválido.');return id; }
+function idConsulta(id:string) { if(!idRecursoSchema.safeParse(id).success)throw new ErroHttp(400,'DADOS_INVALIDOS','Identificador inválido.');return id; }
 function escopo(usuario:UsuarioAutenticado) {if(!['ADM','GESTOR_FROTA','MOTORISTA'].includes(usuario.perfil))throw new ErroHttp(403,'ACESSO_NEGADO','Acesso não permitido.');return usuario.perfil==='MOTORISTA'?usuario.id:null;}
 /** Lista administrativa com filtros validados. */
 export async function listarAdministrativo(query:unknown,usuario:UsuarioAutenticado) {

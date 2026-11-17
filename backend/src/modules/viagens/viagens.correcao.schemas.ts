@@ -3,12 +3,13 @@
 const quilometragem=z.number().int().min(0).max(2147483647);
 const quilometragemAnterior=z.number().int().min(-2147483648).max(2147483647);
 /** Validação técnica da correção; a comparação com o registro ocorre na transação. */
-export const corrigirQuilometragemSchema=z.strictObject({
+const correcaoBase=z.strictObject({
   kmInicial:quilometragem.optional(),
   kmFinal:quilometragem.optional(),
   confirmarOdometroAtual:z.boolean().optional(),
   justificativa:z.string().trim().min(1).max(2000).refine(value=>!value.includes('\u0000'),'Texto incompatível com PostgreSQL.'),
-}).superRefine((value,ctx)=>{
+});
+export const corrigirQuilometragemSchema=z.union([correcaoBase.required({kmInicial:true}),correcaoBase.required({kmFinal:true})]).superRefine((value,ctx)=>{
   if(value.confirmarOdometroAtual===true&&value.kmFinal===undefined)ctx.addIssue({code:'custom',path:['confirmarOdometroAtual'],message:'Informe a quilometragem final confirmada.'});
   if(value.kmInicial===undefined&&value.kmFinal===undefined)ctx.addIssue({code:'custom',path:['kmInicial'],message:'Informe ao menos uma quilometragem.'});
   if(value.kmInicial!==undefined&&value.kmFinal!==undefined&&value.kmFinal<value.kmInicial)ctx.addIssue({code:'custom',path:['kmFinal'],message:'A quilometragem final não pode ser inferior à inicial.'});

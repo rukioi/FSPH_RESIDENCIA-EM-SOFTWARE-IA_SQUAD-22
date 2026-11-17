@@ -2,6 +2,7 @@
 import {sql} from '../../database/connection.js';
 import {ErroHttp} from '../../shared/http/errors.js';
 import {registrarAtividades} from '../auditoria/auditoria.service.js';
+import {conflitoAbastecimentoViagem} from './quilometragem-abastecimento.js';
 import type {corrigirQuilometragemSchema} from './viagens.correcao.schemas.js';
 
 type Leitura={inicio:string|null;fim:string|null;km_inicial:number|null;km_final:number|null;status:string};
@@ -36,15 +37,19 @@ export async function corrigirQuilometragem(id:string,autorId:string,dados:z.inf
         if(final>leitura.km_inicial)conflito('Quilometragem final superior a uma leitura posterior.');
       }else conflito('Há utilizações sobrepostas ou sem ordem verificável.');
     }
-    const abastecimentos=await tx<{dia:string;quilometragem:number}[]>`SELECT data_abastecimento::text AS dia,quilometragem FROM public.abastecimento WHERE veiculo_id=${ref.veiculo_id}`;
+    const abastecimentos=await tx<{dia:string;quilometragem:number|null}[]>`SELECT data_abastecimento::text AS dia,quilometragem FROM public.abastecimento WHERE veiculo_id=${ref.veiculo_id}`;
+    let ordemIndeterminada=false;
     for(const a of abastecimentos){
-      if(a.dia>=v.inicio.slice(0,10)&&a.dia<=v.fim.slice(0,10))conflito('Abastecimento no mesmo período não possui horário suficiente para ordenação.');
-      if(a.dia<v.inicio.slice(0,10)&&a.quilometragem>inicial)conflito('Quilometragem inicial inferior a abastecimento anterior.');
-      if(a.dia>v.fim.slice(0,10)){posterior=true;if(a.quilometragem<final)conflito('Quilometragem final superior a abastecimento posterior.');}
+      if(a.quilometragem===null)continue;
+      const inicio=v.inicio.slice(0,10),fim=v.fim.slice(0,10);
+      if(conflitoAbastecimentoViagem(a.dia,a.quilometragem,{inicio,fim,inicial,final}))conflito('Quilometragem incompatível com abastecimento existente.');
+      if(a.dia>fim)posterior=true;
+      if(a.dia===fim)ordemIndeterminada=true;
     }
     let odometroAtualizado=false;
     if(final!==v.km_final){
-      if(posterior){
+      if(ordemIndeterminada && dados.confirmarOdometroAtual===true)conflito('A ordem do abastecimento no mesmo dia é indeterminada; não é possível confirmar o odômetro atual.');
+      if(posterior || ordemIndeterminada){
         if(dados.confirmarOdometroAtual===true)conflito('Há leitura posterior; o odômetro não pode ser substituído pela viagem antiga.');
         if(veiculo.quilometragem_atual===null||final>veiculo.quilometragem_atual)conflito('Não foi possível comprovar coerência com o odômetro atual.');
       }else{

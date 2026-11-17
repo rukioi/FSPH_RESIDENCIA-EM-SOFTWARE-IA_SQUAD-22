@@ -25,3 +25,9 @@ test('aguarda processamento ativo antes de repetir ou encerrar',async()=>{
   let terminou=false;const encerramento=parar().then(()=>{terminou=true;});await Promise.resolve();expect(terminou).toBe(false);
   liberar(0);await encerramento;expect(terminou).toBe(true);await vi.advanceTimersByTimeAsync(5000);expect(mocks.gerar).toHaveBeenCalledTimes(1);
 });
+
+test('rejeita intervalo igual ou superior a janela de antecedencia',()=>{
+  vi.stubEnv('LEMBRETE_ANTECEDENCIA_MINUTOS','1');
+  for(const intervalo of ['60','61']) { vi.stubEnv('LEMBRETE_INTERVALO_SEGUNDOS',intervalo); expect(()=>iniciarLembretes()).toThrow(); }
+  expect(mocks.gerar).not.toHaveBeenCalled();
+});

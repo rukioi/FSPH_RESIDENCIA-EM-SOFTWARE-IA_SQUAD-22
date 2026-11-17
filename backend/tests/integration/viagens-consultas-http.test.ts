@@ -1,4 +1,5 @@
-﻿import {afterAll,beforeAll,expect,test} from 'vitest';
+import {pngViagem} from '../viagens-imagens.js';
+import {afterAll,beforeAll,expect,test} from 'vitest';
 import type {AddressInfo} from 'node:net';
 import {verifiedSql} from '../../src/database/scripts/verify-test-db.js';
 import {criarJwt} from '../../src/security/jwt.js';
@@ -106,7 +107,7 @@ test('viagem cancelada respeita consultas, filtro, autorizacao e bloqueio de tra
     expect(minhas.data.map(v=>v.id)).toContain('8870310');
     const outras=viagensSchemas.ListaMinhasViagens.parse(await (await get('/minhas?status=CANCELADA',b)).json());
     expect(outras.data.map(v=>v.id)).not.toContain('8870310');
-    const foto={nome:'odometro.png',tipo:'image/png',dadosBase64:Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64')};
+    const foto={nome:'odometro.png',tipo:'image/png',dadosBase64:pngViagem.toString('base64')};
     const patch=(acao:string,token?:string)=>fetch(base+'/api/viagens/8870310/'+acao,{method:'PATCH',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({quilometragem:1000,foto})});
     for(const acao of ['iniciar','concluir','encerrar']) {
       expect((await patch(acao,a)).status).toBe(409);

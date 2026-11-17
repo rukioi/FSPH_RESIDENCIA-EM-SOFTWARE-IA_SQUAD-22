@@ -1,4 +1,5 @@
-﻿import { afterAll, beforeAll, expect, test } from 'vitest';
+import {pngViagem,jpegViagem,pngViagemDeTamanho} from '../viagens-imagens.js';
+import { afterAll, beforeAll, expect, test } from 'vitest';
 import type { AddressInfo } from 'node:net';
 import { verifiedSql } from '../../src/database/scripts/verify-test-db.js';
 import { criarJwt } from '../../src/security/jwt.js';
@@ -9,8 +10,8 @@ const sql=await verifiedSql(),adminLimpeza=await verifiedSql(true);
 const server=createApp();
 let base='',motorista='',outro='',gestor='',created=false;
 const viagem='8840301';
-const bytesInicial=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]);
-const bytesFinal=Buffer.from([255,216,255,4,5,6]);
+const bytesInicial=pngViagem;
+const bytesFinal=jpegViagem;
 const fotoInicial={nome:'inicio.png',tipo:'image/png',dadosBase64:bytesInicial.toString('base64')};
 const fotoFinal={nome:'fim.jpg',tipo:'image/jpeg',dadosBase64:bytesFinal.toString('base64')};
 function patch(id:string,acao:string,body:unknown,token?:string) {
@@ -147,9 +148,38 @@ test('início concorrente, ocupação após retorno e conclusão com auditoria',
 });
 
 test('foto com exatamente 1 MiB é aceita e preservada integralmente',async()=>{
-  const bytes=Buffer.alloc(1024*1024);bytesInicial.copy(bytes);
+  const bytes=pngViagemDeTamanho(1024*1024);
   const response=await patch('8840302','iniciar',{quilometragem:1005,foto:{...fotoInicial,dadosBase64:bytes.toString('base64')}},motorista);
   expect(response.status).toBe(200);
   const [row]=await sql`SELECT dados FROM public.viagem_evidencia WHERE viagem_id=8840302 AND momento='INICIAL'`;
   expect(Buffer.isBuffer(row.dados)).toBe(true);expect(row.dados.equals(bytes)).toBe(true);
 });
+
+
+test('reatribuicao concorrente devolve 404 ao motorista anterior',async()=>{
+  await sql.begin(async tx=>{
+    await tx`INSERT INTO public.motorista(id,usuario_id,nome,cnh,categoria_cnh,validade_cnh,status) VALUES (8840102,8840002,'Motorista B','S8-E3-CNH-B','D','2099-12-31','DISPONIVEL')`;
+    await tx`INSERT INTO public.solicitacao_viagem(id,codigo,solicitante_id,origem,destino,finalidade,data_hora_saida,data_hora_retorno_previsto,status,motorista_id,veiculo_id) VALUES (8840203,'S8-E3-203',-27003,'A','B','Teste','2099-01-01 08:00','2099-01-01 12:00','AGENDADA',8840101,8840111)`;
+    await tx`INSERT INTO public.viagem(id,solicitacao_id,motorista_id,veiculo_id,status) VALUES (8840303,8840203,8840101,8840111,'AGENDADA')`;
+  });
+  let liberar:()=>void=()=>{};let pronto:()=>void=()=>{};
+  const portao=new Promise<void>(resolve=>{liberar=resolve;});const bloqueado=new Promise<void>(resolve=>{pronto=resolve;});
+  const troca=adminLimpeza.begin(async tx=>{
+    await tx`SELECT id FROM public.solicitacao_viagem WHERE id=8840203 FOR UPDATE`;pronto();await portao;
+    await tx`UPDATE public.solicitacao_viagem SET motorista_id=8840102 WHERE id=8840203`;
+    await tx`UPDATE public.viagem SET motorista_id=8840102 WHERE id=8840303`;
+  });
+  try {
+    await bloqueado;
+    const pedido=patch('8840303','iniciar',{quilometragem:1001,foto:fotoInicial},motorista);
+    try {
+      await expect.poll(async()=>{const [row]=await sql`SELECT count(*)::int AS total FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE '%SELECT status,motorista_id%solicitacao_viagem%'`;return row.total;},{timeout:5000}).toBeGreaterThan(0);
+    } finally {liberar();await troca;}
+    expect((await pedido).status).toBe(404);
+    const [row]=await sql`SELECT v.status::text,v.motorista_id::text,v.km_inicial,(SELECT count(*)::int FROM public.log_atividade WHERE solicitacao_viagem_id=8840203) AS logs,(SELECT count(*)::int FROM public.viagem_evidencia WHERE viagem_id=8840303) AS fotos FROM public.viagem v WHERE id=8840303`;
+    expect(row).toMatchObject({status:'AGENDADA',motorista_id:'8840102',km_inicial:null,logs:0,fotos:0});
+  } finally {
+    liberar();await troca;
+    await sql.begin(async tx=>{await tx`DELETE FROM public.viagem WHERE id=8840303`;await tx`DELETE FROM public.solicitacao_viagem WHERE id=8840203`;await tx`DELETE FROM public.motorista WHERE id=8840102`;});
+  }
+},12000);

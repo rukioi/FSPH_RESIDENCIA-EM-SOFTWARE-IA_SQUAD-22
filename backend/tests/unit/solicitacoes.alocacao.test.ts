@@ -18,7 +18,7 @@ beforeEach(() => {
   mocks.tx.mockImplementation(async parts => {
     const query = parts.join('?');
     if (query.includes('SELECT usuario_id::text FROM public.motorista')) return [{usuario_id:'99'}];
-    if (query.includes('SELECT ativo FROM public.usuario')) return [{ativo:true}];
+    if (query.includes('SELECT ativo,perfil FROM public.usuario')) return [{ativo:true,perfil:'MOTORISTA'}];
     if (query.includes('SELECT status,')) return [{status:'APROVADA',...intervalo,retorno_valido:true}];
     if (query.includes('FROM public.motorista') || query.includes('FROM public.veiculo')) return [{id:'12',status:'DISPONIVEL'}];
     if (query.includes('UPDATE public.solicitacao_viagem')) return [resultado];
