@@ -9,7 +9,6 @@
     {"method":"PUT","path":"/api/admin/usuarios/{id}","reason":"PUT parcial, objeto direto, erro string de ausência; barra final opcional."},
     {"method":"PATCH","path":"/api/admin/usuarios/{id}/status","reason":"Objeto direto; erro string de ausência; estado explícito da #29."},
     {"method":"GET","path":"/api/admin/auditoria/logs","reason":"Sem page/limit: array legado com email; paginado: DTO mínimo camelCase. Ambos preservados."},
-    {"method":"GET","path":"/api/dashboard","reason":"data vazio; widgets não constituem API de indicadores."},
     {"method":"GET","path":"/api/dashboard/pendencias","reason":"Projeções legadas de vencimento, sem paginação."},
     {"method":"GET","path":"/api/svo/ordens-coleta","reason":"Array snake_case; status público AGUARDANDO_DESPACHO difere do banco PENDENTE_ALOCACAO; erro/erro objeto."},
     {"method":"GET","path":"/api/svo/solicitacoes","reason":"Até 20 ocorrências recentes, apenas protocolo, estado e horário; filtro de triagem validado. Paginação/detalhe na SCRUM-146."},
