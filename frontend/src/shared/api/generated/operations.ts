@@ -336,6 +336,18 @@ export const apiOperations = {
     "method": "POST",
     "path": "/api/abastecimentos"
   },
+  "anexos_post__api_anexos": {
+    "method": "POST",
+    "path": "/api/anexos"
+  },
+  "anexos_get__api_anexos": {
+    "method": "GET",
+    "path": "/api/anexos"
+  },
+  "anexos_get__api_anexos_id_": {
+    "method": "GET",
+    "path": "/api/anexos/{id}"
+  },
   "documentos_get__api_documentos_consulta": {
     "method": "GET",
     "path": "/api/documentos/consulta"

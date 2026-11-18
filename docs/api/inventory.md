@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 91 operações.
+Gerado por api:generate; não editar manualmente. 94 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -88,6 +88,9 @@ Gerado por api:generate; não editar manualmente. 91 operações.
 | GET | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | sem corpo | 200 ComprovanteAbastecimento | 401, 403, 404, 500, 405 | legado | Imagem JPEG ou PNG como bytes; acesso autenticado. |
 | GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 Abastecimentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | POST | /api/abastecimentos | ADM, GESTOR_FROTA | CriarAbastecimento | 201 RespostaAbastecimento | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| POST | /api/anexos | ADM, GESTOR_FROTA, ATENDENTE_SVO, SOLICITANTE_INTERNO, MOTORISTA | CriarAnexo | 201 RespostaAnexo | 400, 401, 403, 404, 413, 415, 500, 405 | validado | Arquivo PDF/JPEG/PNG até 5 MiB, campo arquivo e vínculo tipoRegistro/registroId. RBAC e proprietário no servidor. Bytes/metadados/auditoria atômicos. Novo POST cria outro anexo imutável; sem URL pública ou chave de storage no DTO. |
+| GET | /api/anexos | ADM, GESTOR_FROTA, ATENDENTE_SVO, SOLICITANTE_INTERNO, MOTORISTA | sem corpo | 200 ListaAnexos | 400, 401, 403, 404, 500, 405 | validado | Metadados somente do registro autorizado; query estrita. Perfil negado:403; registro alheio/ausente:404. criadoEm DESC,id DESC. |
+| GET | /api/anexos/{id} | ADM, GESTOR_FROTA, ATENDENTE_SVO, SOLICITANTE_INTERNO, MOTORISTA | sem corpo | 200 ArquivoAnexo | 401, 403, 404, 500, 405 | validado | Download autenticado com scoping atual por registro. Bytes privados via streaming; attachment, nosniff, no-store. ID não concede acesso. |
 | GET | /api/documentos/consulta | ADM, GESTOR_FROTA | sem corpo | 200 ListaDocumental | 400, 401, 403, 500, 405 | validado | SCRUM-193: consulta paginada por tipo/veículo/motorista/validade. Situação vencido/hoje/futuro pela data civil do banco, sem escolher janela RF46. Legado /api/documentos preservado. |
 | GET | /api/documentos/{id} | ADM, GESTOR_FROTA | sem corpo | 200 DetalheDocumental | 400, 401, 403, 404, 500, 405 | validado | Tipo padrão DOCUMENTO_VEICULO; CNH_MOTORISTA identifica cadastro existente. Versão 0 significa ausência de histórico, sem autor retroativo. |
 | GET | /api/documentos/{id}/historico | ADM, GESTOR_FROTA | sem corpo | 200 HistoricoDocumental | 400, 401, 403, 404, 500, 405 | validado | Snapshots reais append-only com autor/instante; paginação decrescente. Histórico legado vazio não é reconstruído. |

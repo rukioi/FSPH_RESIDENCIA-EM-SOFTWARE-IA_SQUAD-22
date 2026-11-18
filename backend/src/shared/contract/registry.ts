@@ -1,4 +1,5 @@
 import { evidenciaMetadadosSchema } from '../../modules/viagens/viagens.evidencias.schemas.js';
+import { anexosSchemas, registroId, tipoRegistro } from '../../modules/anexos/anexos.schemas.js';
 import { z } from 'zod';
 import { viagensSchemas, statusViagemSchema } from '../../modules/viagens/viagens.schemas.js';
 import { relatoriosSchemas, consultaRelatorioSchema } from '../../modules/relatorios/relatorios.schemas.js';
@@ -21,16 +22,17 @@ import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas
 import { solicitacoesSchemas, statusSolicitacao, idRecursoSchema } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
-export const schemas = { ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
+export const schemas = { ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
   ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
-export type Modulo = 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
+export type Modulo = 'anexos'| 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
   id: string; modulo: Modulo; method: 'get'|'post'|'put'|'patch'|'delete'; path: string;
   perfis: string[]; response: SchemaName; status: number; body?: SchemaName;
-  errors: number[]; runtimeValidation?:boolean; errorSchema?: SchemaName; notes: string; query?: { name: string; required: boolean; schema: z.ZodType }[];
+  errors: number[]; runtimeValidation?:boolean;
+  multipart?: boolean; errorSchema?: SchemaName; notes: string; query?: { name: string; required: boolean; schema: z.ZodType }[];
 }
 const op = (modulo: Modulo, method: Operacao['method'], path: string, response: SchemaName,
   perfis: string[], options: Partial<Omit<Operacao,'modulo'|'method'|'path'|'response'|'perfis'>> = {}): Operacao => ({
@@ -205,6 +207,15 @@ export const operations: Operacao[] = [
   op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
   op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
   op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,409,413,415,500]}),
+  op('anexos','post','/api/anexos','RespostaAnexo',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    body:'CriarAnexo',multipart:true,runtimeValidation:true,errors:[400,401,403,404,413,415,500],
+    notes:'Arquivo PDF/JPEG/PNG até 5 MiB, campo arquivo e vínculo tipoRegistro/registroId. RBAC e proprietário no servidor. Bytes/metadados/auditoria atômicos. Novo POST cria outro anexo imutável; sem URL pública ou chave de storage no DTO.'}),
+  op('anexos','get','/api/anexos','ListaAnexos',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    runtimeValidation:true,errors:[400,401,403,404,500],notes:'Metadados somente do registro autorizado; query estrita. Perfil negado:403; registro alheio/ausente:404. criadoEm DESC,id DESC.',
+    query:[{name:'tipoRegistro',required:true,schema:tipoRegistro},{name:'registroId',required:true,schema:registroId},
+      {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('anexos','get','/api/anexos/{id}','ArquivoAnexo',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    runtimeValidation:true,errors:[401,403,404,500],notes:'Download autenticado com scoping atual por registro. Bytes privados via streaming; attachment, nosniff, no-store. ID não concede acesso.'}),
   op('documentos','get','/api/documentos/consulta','ListaDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,500],query:parametrosDocumentais,
     notes:'SCRUM-193: consulta paginada por tipo/veículo/motorista/validade. Situação vencido/hoje/futuro pela data civil do banco, sem escolher janela RF46. Legado /api/documentos preservado.'}),
   op('documentos','get','/api/documentos/{id}','DetalheDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],
