@@ -47,15 +47,20 @@ test('documentos são estado atual e não viram alertas RF46 inventados',async()
   if(process.env.CI) console.info('SCRUM-195 documentos', { api: depois.documentos.vencidos, sql: contagem.n, rf46: depois.documentos.alertas.estado });
 });
 
-test('fonte de indicadores de abastecimento permanece explicitamente indisponível',async()=>{
-  expect((await gestao()).abastecimentos).toEqual({
-    estado:'INDISPONIVEL',valor:null,motivo:'FONTE_SCRUM_188_PENDENTE',
-  });
+test('dashboard reaproveita os indicadores de abastecimento do dia civil',async()=>{
+  await fixture.sql`UPDATE abastecimento SET data_abastecimento='2098-01-01' WHERE id=92194`;
+  const direto = await get('/api/abastecimentos/indicadores?inicio=2098-01-01&fim=2098-01-01');
+  expect(direto.status).toBe(200);
+  const data = await gestao();
+  expect(data.abastecimentos).toEqual((await direto.json()).data);
+  expect(data.abastecimentos).toMatchObject({ quantidade:1, totalLitros:'10.00', totalCusto:'60.00',
+    consumoPorDistancia:{estado:'INDISPONIVEL',valor:null} });
 });
 
 test('período vazio retorna zeros reais sem apagar filas/documentos atuais',async()=>{
   const data=await gestao('?periodo=personalizado&inicio=2001-01-01T00:00:00-03:00&fim=2001-01-02T00:00:00-03:00');
   expect(data.viagens.quantidade).toBe(0);expect(data.viagens.porStatus).toEqual([]);
+  expect(data.abastecimentos).toMatchObject({ estado:'SEM_ABASTECIMENTOS', quantidade:0 });
   expect(data.documentos.vencidos).toBe((await gestao()).documentos.vencidos);
 });
 

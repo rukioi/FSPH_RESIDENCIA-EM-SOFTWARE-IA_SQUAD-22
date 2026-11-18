@@ -167,6 +167,7 @@ test('consultas legadas reais correspondem aos schemas sem exigir migração de 
   // Anexos e anotações exigem vínculo explícito e têm suítes de integração próprias.
   for (const operation of operations.filter(o=>o.method==='get' && !o.path.includes('{id}') && !['veiculos','solicitacoes','anexos','anotacoes'].includes(o.modulo))) {
     const query = operation.path==='/api/svo/ordens-coleta' ? '?status=AGUARDANDO_DESPACHO'
+      : operation.path==='/api/abastecimentos/indicadores' ? '?inicio=2099-01-01&fim=2099-01-31'
       : operation.path==='/api/relatorios' ? '?tipo=viagens&inicio=2099-01-01&fim=2099-01-31'
       : operation.path==='/api/svo/relatorios' ? '?inicio=2099-01-01&fim=2099-01-31' : '';
     const path = operation.path+query;

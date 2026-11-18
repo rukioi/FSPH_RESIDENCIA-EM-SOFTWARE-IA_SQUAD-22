@@ -13,7 +13,7 @@ import { authSchemas } from '../../modules/auth/auth.schemas.js';
 import { usuariosSchemas } from '../../modules/usuarios/usuarios.schemas.js';
 import { auditoriaSchemas } from '../../modules/auditoria/auditoria.schemas.js';
 import { motoristasSchemas } from '../../modules/motoristas/motoristas.schemas.js';
-import { abastecimentosSchemas } from '../../modules/abastecimentos/abastecimentos.schemas.js';
+import { abastecimentosSchemas, parametrosIndicadoresAbastecimentos } from '../../modules/abastecimentos/abastecimentos.schemas.js';
 import { gestaoDocumentalSchemas, parametrosDocumentais, tipoDocumental } from '../../modules/documentos/documentos.gestao.schemas.js';
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
 import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
@@ -209,6 +209,9 @@ export const operations: Operacao[] = [
   ...(['put','patch'] as const).map(method=>op('motoristas',method,'/api/motoristas/{id}','RespostaMotorista',gestor,{body:'EditarMotorista',errors:[400,401,403,404,409,413,415,500]})),
   op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,500]}),
   op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
+  op('abastecimentos','get','/api/abastecimentos/indicadores','IndicadoresAbastecimentos',gestor,{
+    runtimeValidation:true,query:parametrosIndicadoresAbastecimentos,errors:[400,401,403,404,500],
+    notes:'SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo por distância indisponível até definição da regra.'}),
   op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
   op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,409,413,415,500]}),
   op('anotacoes','post','/api/anotacoes','RespostaAnotacao',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
