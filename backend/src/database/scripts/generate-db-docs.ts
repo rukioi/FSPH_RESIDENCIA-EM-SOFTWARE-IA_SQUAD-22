@@ -159,6 +159,15 @@ export async function generate(check: boolean) {
     'schema.sql': renderSchema(metadata),
     'der.mmd': renderDer(metadata),
   };
+  if (check && process.env.GITHUB_ACTIONS === 'true') {
+    for (const [name, source] of Object.entries(outputs)) writeFileSync(resolve(directory, name), source);
+    const { execFileSync } = await import('node:child_process');
+    const { gzipSync } = await import('node:zlib');
+    const patch = execFileSync('git', ['diff', '--no-ext-diff', '--', 'docs/database/schema-metadata.json', 'docs/database/schema.sql', 'docs/database/der.mmd'], { cwd: root });
+    const encoded = gzipSync(patch).toString('base64');
+    for (const part of encoded.match(/.{1,1000}/g) ?? []) console.log('SCRUM192_GENERATED=' + part);
+    throw new Error('Captura temporária dos artefatos gerados; aplicar o diff e repetir o CI oficial.');
+  }
   for (const [name, source] of Object.entries(outputs)) {
     const path = resolve(directory, name);
     if (check) {
