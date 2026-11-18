@@ -336,6 +336,14 @@ export const apiOperations = {
     "method": "POST",
     "path": "/api/abastecimentos"
   },
+  "anotacoes_post__api_anotacoes": {
+    "method": "POST",
+    "path": "/api/anotacoes"
+  },
+  "anotacoes_get__api_anotacoes": {
+    "method": "GET",
+    "path": "/api/anotacoes"
+  },
   "anexos_post__api_anexos": {
     "method": "POST",
     "path": "/api/anexos"
