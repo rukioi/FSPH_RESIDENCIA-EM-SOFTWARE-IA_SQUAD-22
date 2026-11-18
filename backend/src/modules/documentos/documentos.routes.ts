@@ -2,6 +2,9 @@ import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import { autenticarRequisicao } from '../../security/session.js';
 import { autorizarPerfis } from '../../security/authorization.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { consultarDocumentos,detalharDocumento,editarDocumento } from './documentos.gestao.js';
+import { lerCorpoJson } from '../../shared/http/body.js';
+import { tratarErroTecnico } from '../../shared/http/errors.js';
 
 import {
   buscarPendenciasDocumentos,
@@ -30,9 +33,19 @@ export async function documentosRoute(
   const pathname = url.pathname;
   const method = req.method;
 
+  const detalhe=/^\/api\/documentos\/(\d+)(\/historico)?$/.exec(pathname);
+  if(pathname==='/api/documentos/consulta'||detalhe){
+    try{
+      if(pathname==='/api/documentos/consulta')jsonCompartilhado(res,200,await consultarDocumentos(url.searchParams));
+      else if(detalhe&&method==='PATCH')jsonCompartilhado(res,200,await editarDocumento(detalhe[1],url.searchParams,await lerCorpoJson(req),usuario.id));
+      else if(detalhe)jsonCompartilhado(res,200,await detalharDocumento(detalhe[1],url.searchParams,!!detalhe[2]));
+    }catch(error){req.resume();tratarErroTecnico(res,error);}
+    return;
+  }
+
   // Cadastro de documentos de veículos.
   if (method === 'POST' && pathname === '/api/documentos') {
-    await criarDocumento(req, res);
+    await criarDocumento(req, res, usuario.id);
     return;
   }
 
