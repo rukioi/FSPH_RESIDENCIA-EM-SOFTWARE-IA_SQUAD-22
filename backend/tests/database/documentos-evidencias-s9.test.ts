@@ -68,7 +68,9 @@ test.each(alvos)('anexo conserva bytes e metadados com FK real: %s', async alvo 
     expect(arquivo.chave).toMatch(/^[a-f0-9-]{36}$/);
     expect(arquivo.criado_em).toBeInstanceOf(Date);
   })).toBe(rollback);
-  expect(await ensaio(tx => anexo(tx, alvo, { [alvo]: -919299 }))).toMatchObject({ code: '23503' });
+  const fkInvalida = await ensaio(tx => anexo(tx, alvo, { [alvo]: -919299 }));
+  expect(fkInvalida).toMatchObject({ code: '23503' });
+  if (alvo === 'veiculo_id') console.log('EVIDENCIA SCRUM-192 | FK invalida:', (fkInvalida as {code: string}).code);
 });
 
 test('vínculo exige exatamente um registro, inclusive quando os mesmos IDs existem em tabelas distintas', async () => {
@@ -84,6 +86,10 @@ test('mesmos bytes em dois registros mantêm vínculos e chaves separados, sem d
   expect(await ensaio(async tx => {
     const [primeiro] = await anexo(tx, 'veiculo_id');
     const [segundo] = await anexo(tx, 'motorista_id', { id: -919204 });
+    const linhas = await tx`SELECT id, veiculo_id, motorista_id, tamanho FROM public.anexo ORDER BY id`;
+    console.log('EVIDENCIA SCRUM-192 | mesmos bytes em registros distintos');
+    console.table(linhas);
+    console.log('Mesmo SHA-256:', primeiro.sha256 === segundo.sha256, '| chaves distintas:', primeiro.chave !== segundo.chave);
     expect(primeiro.sha256).toBe(segundo.sha256);
     expect(primeiro.chave).not.toBe(segundo.chave);
     expect(await tx`SELECT id FROM public.anexo WHERE veiculo_id=-27001`).toContainEqual({ id: '-919201' });
@@ -119,6 +125,7 @@ test('versões documental/CNH e datas civis ficam preservadas sem sobrescrever o
       WHERE documento_veiculo_id=-27001 ORDER BY versao`).toEqual([
       { versao: 1, data_vencimento: '2028-02-29' }, { versao: 2, data_vencimento: '2030-03-31' },
     ]);
+    console.log('EVIDENCIA SCRUM-192 | data civil bissexta registrada:', (await tx`SELECT data_vencimento::text FROM public.documento_historico WHERE id=-919202`)[0].data_vencimento);
     expect((await tx`SELECT cnh, categoria_cnh, validade_cnh FROM public.motorista WHERE id=-27001`)[0]).toEqual(antes);
   })).toBe(rollback);
   expect(await ensaio(async tx => { await historico(tx); await historico(tx, { id: -919205 }); }))
@@ -162,10 +169,12 @@ test('nota preserva autor/texto/instante e exige um registro válido', async () 
 
 test.each(tabelas)('Data API não lê %s e o papel backend não reescreve nem apaga histórico', async tabela => {
   for (const papel of ['anon', 'authenticated']) {
-    expect(await ensaio(async tx => {
+    const leitura = await ensaio(async tx => {
       await tx.unsafe('SET LOCAL ROLE ' + papel);
       await tx`SELECT id FROM ${tx('public.' + tabela)}`;
-    }, admin)).toMatchObject({ code: '42501' });
+    }, admin);
+    expect(leitura).toMatchObject({ code: '42501' });
+    console.log('EVIDENCIA SCRUM-192 | SELECT', tabela, '| papel', papel, '| SQLSTATE', (leitura as {code: string}).code);
   }
   for (const verbo of ['UPDATE', 'DELETE']) {
     expect(await ensaio(async tx => {
@@ -176,12 +185,14 @@ test.each(tabelas)('Data API não lê %s e o papel backend não reescreve nem ap
 });
 
 test.each(tabelas)('rollback recusa perda de dados em %s', async tabela => {
-  expect(await ensaio(async tx => {
+  const reversao = await ensaio(async tx => {
     if (tabela === 'anexo') await anexo(tx);
     else if (tabela === 'documento_historico') await historico(tx);
     else await nota(tx);
     await tx.unsafe(backward);
-  }, admin)).toMatchObject({ message: expect.stringContaining('Rollback SCRUM-192 recusado') });
+  }, admin);
+  expect(reversao).toMatchObject({ message: expect.stringContaining('Rollback SCRUM-192 recusado') });
+  console.log('EVIDENCIA SCRUM-192 |', tabela, '|', (reversao as Error).message);
 });
 
 test('rollback vazio e reaplicação preservam esquema/linhas anteriores; nenhum backfill fictício', async () => {
@@ -193,7 +204,9 @@ test('rollback vazio e reaplicação preservam esquema/linhas anteriores; nenhum
     const revertido = await metadados(tx);
     expect(revertido.tables.map(t => t.name)).toEqual(antes.tables.filter(t => !tabelas.includes(t.name)).map(t => t.name));
     await tx.unsafe(forward);
-    expect(await metadados(tx)).toEqual(antes);
+    const reaplicado = await metadados(tx);
+    expect(reaplicado).toEqual(antes);
+    console.log('EVIDENCIA SCRUM-192 | tabelas antes / apos rollback / apos reaplicacao:', antes.tables.length, revertido.tables.length, reaplicado.tables.length);
     expect(await tx`SELECT * FROM public.documento_veiculo ORDER BY id`).toEqual(documentos);
     expect(await tx`SELECT id,cnh,categoria_cnh,validade_cnh FROM public.motorista ORDER BY id`).toEqual(motoristas);
     for (const tabela of tabelas) expect(await tx`SELECT id FROM ${tx('public.' + tabela)}`).toEqual([]);

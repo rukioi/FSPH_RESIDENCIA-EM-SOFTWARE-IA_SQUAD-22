@@ -9,6 +9,7 @@ export default defineConfig(async () => {
     test: {
       include: ['backend/**/*.test.ts', 'frontend/**/*.test.ts', 'frontend/**/*.test.tsx'],
       environment: 'node',
+      reporters: ['verbose'],
       fileParallelism: false,
       env: {
         NODE_ENV: 'test',
