@@ -42,7 +42,7 @@ test('inventory preserves 94 operations and pathname limits',()=>{
   }
 });
 
-test('inventory preserves previous operations and adds document history operations',()=>{
+test('inventory preserves previous operations and includes document and attachment routes',()=>{
   // Operações da base 1e5f2bb e as quatro rotas documentais da SCRUM-193.
   const anterior = [
     "delete /api/motoristas/{id}",
@@ -51,9 +51,9 @@ test('inventory preserves previous operations and adds document history operatio
     "get /api/abastecimentos/{id}/comprovante",
     "get /api/admin/auditoria/logs",
     "get /api/admin/usuarios",
-    "get /api/auth/sessao",
     "get /api/anexos",
     "get /api/anexos/{id}",
+    "get /api/auth/sessao",
     "get /api/dashboard",
     "get /api/dashboard/gestor",
     "get /api/dashboard/graficos",
