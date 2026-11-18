@@ -3,6 +3,7 @@ import type {AddressInfo} from 'node:net';
 import {createApp} from '../../src/app.js';
 import {prepararAnexos} from '../helpers/anexos-fixture.js';
 import {dashboardConsolidadoSchemas} from '../../src/modules/dashboard/dashboard.consolidado.schemas.js';
+import { svoSchemas } from '../../src/modules/svo/svo.schemas.js';
 const server=createApp();let fixture:Awaited<ReturnType<typeof prepararAnexos>>;let base:string;
 beforeAll(async()=>{fixture=await prepararAnexos();await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;});
 afterAll(async()=>{await new Promise<void>(r=>server.close(()=>r()));await fixture?.limpar();});
@@ -74,6 +75,101 @@ test('SVO reutiliza SCRUM-149, não expõe gestão/documentos/CNH e não amplia 
   expect(data.filas).toEqual(await(await get('/api/svo/dashboard/filas','ATENDENTE_SVO')).json());
   expect(JSON.stringify(data)).not.toMatch(/numeroCnh|abastecimentos|senha|cpf|observacoes_medicas/);
   for(const path of ['/api/dashboard/gestor','/api/dashboard/graficos','/api/dashboard/pendencias'])expect((await get(path,'ATENDENTE_SVO')).status).toBe(403);
+});
+
+test('IND-10 a IND-14 refletem cadastro, triagem e ordem de coleta persistidos pela API', async () => {
+  const ator = 'ATENDENTE_SVO';
+  const solicitacoes: string[] = [];
+  const post = (path: string, payload: object) => fetch(base + path, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + fixture.tokens[ator], 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const painel = async () => {
+    const response = await get('/api/dashboard?periodo=7d', ator);
+    expect(response.status).toBe(200);
+    const { data } = dashboardConsolidadoSchemas.DashboardConsolidado.parse(await response.json());
+    if (data.visao !== 'SVO') throw new Error('Visão incorreta');
+    return data;
+  };
+
+  const antes = await painel();
+  try {
+    for (const nome of ['Cenário SVO isolado', 'Cenário IML isolado']) {
+      const response = await post('/api/svo/solicitacoes', {
+        localFalecimento: 'Local de teste', enderecoRemocao: 'Endereço de teste', solicitanteNome: nome,
+      });
+      expect(response.status).toBe(201);
+      const { solicitacao } = svoSchemas.SolicitacaoSvo.parse(await response.json());
+      solicitacoes.push(solicitacao.id);
+    }
+
+    const cadastradas = await painel();
+    expect(cadastradas.operacional.indicadores.aguardandoTriagem).toBe(antes.operacional.indicadores.aguardandoTriagem + 2);
+
+    const confirmada = await post('/api/svo/solicitacoes/' + solicitacoes[0] + '/triagem', {
+      decisao: 'CONFIRMADA_SVO', quantidadeCorpos: 1, triagemObservacoes: 'Triagem de teste SVO',
+    });
+    expect(confirmada.status).toBe(200);
+    const confirmacao = svoSchemas.TriagemFinalSvo.parse(await confirmada.json());
+    const encaminhada = await post('/api/svo/solicitacoes/' + solicitacoes[1] + '/triagem', {
+      decisao: 'ENCAMINHADA_IML', triagemObservacoes: 'Triagem de teste IML',
+    });
+    expect(encaminhada.status).toBe(200);
+    expect(svoSchemas.TriagemFinalSvo.parse(await encaminhada.json()).ordemColeta).toBeNull();
+
+    const { inicio, fim } = antes.operacional;
+    const registros = await fixture.sql`
+      SELECT so.id::text AS id, so.status_triagem, so.triado_em IS NOT NULL AS triada,
+        oc.id::text AS "ordemId", oc.status AS "ordemStatus",
+        so.criado_em >= ${inicio}::date AND so.criado_em < ${fim}::date + 1 AS "criadaNoPeriodo",
+        so.triado_em >= ${inicio}::date AND so.triado_em < ${fim}::date + 1 AS "triadaNoPeriodo"
+      FROM public.solicitacao_obito so
+      LEFT JOIN public.ordem_coleta oc ON oc.solicitacao_obito_id = so.id
+      WHERE so.id = ANY(${solicitacoes}::bigint[])
+      ORDER BY so.id
+    `;
+    expect(confirmacao.ordemColeta).not.toBeNull();
+    expect(registros).toMatchObject([
+      { id: solicitacoes[0], status_triagem: 'CONFIRMADA_SVO', triada: true,
+        ordemId: confirmacao.ordemColeta?.id, ordemStatus: 'PENDENTE_ALOCACAO' },
+      { id: solicitacoes[1], status_triagem: 'ENCAMINHADA_IML', triada: true, ordemId: null, ordemStatus: null },
+    ]);
+
+    const depois = await painel();
+    const indicadores = antes.operacional.indicadores;
+    const coorte = antes.operacional.visaoGeral;
+    const [svo, iml] = registros;
+    // A consulta usa datas civis persistidas, inclusive nas horas em que UTC e Maceió divergem.
+    const criadas = Number(svo.criadaNoPeriodo) + Number(iml.criadaNoPeriodo);
+    expect(cadastradas.operacional.visaoGeral.aguardandoTriagem).toBe(coorte.aguardandoTriagem + criadas);
+    expect(depois.operacional.indicadores).toEqual({
+      aguardandoTriagem: indicadores.aguardandoTriagem,
+      confirmadasSvo: indicadores.confirmadasSvo + Number(svo.triadaNoPeriodo),
+      ordensColeta: indicadores.ordensColeta + Number(svo.triadaNoPeriodo),
+      encaminhadasIml: indicadores.encaminhadasIml + Number(iml.triadaNoPeriodo),
+    });
+    expect(depois.operacional.visaoGeral).toEqual({
+      ...coorte,
+      confirmadasSvo: coorte.confirmadasSvo + Number(svo.criadaNoPeriodo),
+      encaminhadasIml: coorte.encaminhadasIml + Number(iml.criadaNoPeriodo),
+    });
+    expect(depois.filas.aguardandoTriagem.total).toBe(antes.filas.aguardandoTriagem.total);
+    expect(depois.filas.aguardandoDespacho.total).toBe(antes.filas.aguardandoDespacho.total + 1);
+    expect(depois.atividades.some(atividade => atividade.descricao ===
+      'Ordem de coleta ' + confirmacao.ordemColeta?.codigo + ' gerada para ' + confirmacao.solicitacao.codigo)).toBe(true);
+    if (process.env.CI) console.info('SCRUM-195 IND-10–14 HTTP/SQL', {
+      cadastroHttp: 201, triagemHttp: 200, dashboardHttp: 200, registros,
+      antes: indicadores, aposCadastro: cadastradas.operacional.indicadores, depois: depois.operacional.indicadores,
+    });
+  } finally {
+    if (solicitacoes.length) {
+      await fixture.admin.begin(async tx => {
+        await tx`DELETE FROM public.ordem_coleta WHERE solicitacao_obito_id = ANY(${solicitacoes}::bigint[])`;
+        await tx`DELETE FROM public.solicitacao_obito WHERE id = ANY(${solicitacoes}::bigint[])`;
+      });
+    }
+  }
 });
 
 test('400/401/403 seguem contratos reais sem responder sucesso vazio',async()=>{
