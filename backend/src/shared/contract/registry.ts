@@ -1,5 +1,6 @@
 import { evidenciaMetadadosSchema } from '../../modules/viagens/viagens.evidencias.schemas.js';
 import { anexosSchemas, registroId, tipoRegistro } from '../../modules/anexos/anexos.schemas.js';
+import { anotacoesSchemas, tipoNota } from '../../modules/anotacoes/anotacoes.schemas.js';
 import { z } from 'zod';
 import { viagensSchemas, statusViagemSchema } from '../../modules/viagens/viagens.schemas.js';
 import { relatoriosSchemas, consultaRelatorioSchema } from '../../modules/relatorios/relatorios.schemas.js';
@@ -22,12 +23,12 @@ import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas
 import { solicitacoesSchemas, statusSolicitacao, idRecursoSchema } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
-export const schemas = { ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
+export const schemas = { ...anotacoesSchemas, ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
   ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
-export type Modulo = 'anexos'| 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
+export type Modulo = 'anotacoes'| 'anexos'| 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
   id: string; modulo: Modulo; method: 'get'|'post'|'put'|'patch'|'delete'; path: string;
   perfis: string[]; response: SchemaName; status: number; body?: SchemaName;
@@ -207,6 +208,13 @@ export const operations: Operacao[] = [
   op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
   op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
   op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,409,413,415,500]}),
+  op('anotacoes','post','/api/anotacoes','RespostaAnotacao',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    body:'CriarAnotacao',runtimeValidation:true,errors:[400,401,403,404,413,415,500],
+    notes:'RF48: texto privado de 1–2000 caracteres, vínculo único autorizado, autoria/instante do servidor e auditoria atômica. Texto simples, nunca HTML; não altera decisão/status e não tem edição/exclusão.'}),
+  op('anotacoes','get','/api/anotacoes','ListaAnotacoes',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    runtimeValidation:true,errors:[400,401,403,404,500],notes:'Somente registro autorizado, mesma matriz dos anexos; solicitante/equipe só recursos próprios. Query estrita; total e página consistentes.',
+    query:[{name:'tipoRegistro',required:true,schema:tipoNota},{name:'registroId',required:true,schema:registroId},
+      {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
   op('anexos','post','/api/anexos','RespostaAnexo',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
     body:'CriarAnexo',multipart:true,runtimeValidation:true,errors:[400,401,403,404,413,415,500],
     notes:'Arquivo PDF/JPEG/PNG até 5 MiB, campo arquivo e vínculo tipoRegistro/registroId. RBAC e proprietário no servidor. Bytes/metadados/auditoria atômicos. Novo POST cria outro anexo imutável; sem URL pública ou chave de storage no DTO.'}),

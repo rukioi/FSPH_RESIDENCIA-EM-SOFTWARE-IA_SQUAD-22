@@ -200,6 +200,10 @@ export type FinalizarTriagemSvo =
     };
 
 export interface ApiSchemas {
+  CriarAnotacao: CriarAnotacao;
+  Anotacao: Anotacao;
+  RespostaAnotacao: RespostaAnotacao;
+  ListaAnotacoes: ListaAnotacoes;
   CriarAnexo: CriarAnexo;
   MetadadosAnexo: MetadadosAnexo;
   RespostaAnexo: RespostaAnexo;
@@ -315,6 +319,78 @@ export interface ApiSchemas {
   ReagendarSolicitacaoViagem: ReagendarSolicitacaoViagem;
   RespostaAgendaViagem: RespostaAgendaViagem;
   RespostaDisponibilidadeViagem: RespostaDisponibilidadeViagem;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CriarAnotacao".
+ */
+export interface CriarAnotacao {
+  tipoRegistro: 'SOLICITACAO_VIAGEM' | 'SOLICITACAO_SVO' | 'VIAGEM' | 'ORDEM_SVO' | 'VEICULO';
+  registroId: string;
+  texto: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "Anotacao".
+ */
+export interface Anotacao {
+  tipoRegistro: 'SOLICITACAO_VIAGEM' | 'SOLICITACAO_SVO' | 'VIAGEM' | 'ORDEM_SVO' | 'VEICULO';
+  registroId: string;
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  texto: string;
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  autorId: string;
+  criadoEm: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaAnotacao".
+ */
+export interface RespostaAnotacao {
+  data: {
+    tipoRegistro: 'SOLICITACAO_VIAGEM' | 'SOLICITACAO_SVO' | 'VIAGEM' | 'ORDEM_SVO' | 'VEICULO';
+    registroId: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    texto: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaAnotacoes".
+ */
+export interface ListaAnotacoes {
+  data: {
+    tipoRegistro: 'SOLICITACAO_VIAGEM' | 'SOLICITACAO_SVO' | 'VIAGEM' | 'ORDEM_SVO' | 'VEICULO';
+    registroId: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    texto: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -2485,6 +2561,8 @@ export interface ApiOperations {
   'abastecimentos_get__api_abastecimentos_id_comprovante': { body: undefined; response: Blob };
   'abastecimentos_get__api_abastecimentos': { body: undefined; response: ApiSchemas['Abastecimentos'] };
   'abastecimentos_post__api_abastecimentos': { body: ApiSchemas['CriarAbastecimento']; response: ApiSchemas['RespostaAbastecimento'] };
+  'anotacoes_post__api_anotacoes': { body: ApiSchemas['CriarAnotacao']; response: ApiSchemas['RespostaAnotacao'] };
+  'anotacoes_get__api_anotacoes': { body: undefined; response: ApiSchemas['ListaAnotacoes'] };
   'anexos_post__api_anexos': { body: FormData; response: ApiSchemas['RespostaAnexo'] };
   'anexos_get__api_anexos': { body: undefined; response: ApiSchemas['ListaAnexos'] };
   'anexos_get__api_anexos_id_': { body: undefined; response: Blob };

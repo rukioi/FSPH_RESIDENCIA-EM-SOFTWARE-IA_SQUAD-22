@@ -9763,6 +9763,272 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
+  /api/anotacoes:
+    post:
+      operationId: anotacoes_post__api_anotacoes
+      tags:
+        - anotacoes
+      description: "RF48: texto privado de 1–2000 caracteres, vínculo único autorizado, autoria/instante do servidor e auditoria atômica. Texto simples, nunca HTML; não altera decisão/status e não tem edição/exclusão."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+        - GESTOR_FROTA
+        - ATENDENTE_SVO
+        - SOLICITANTE_INTERNO
+        - MOTORISTA
+      x-runtime-validation: true
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CriarAnotacao"
+      responses:
+        "201":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaAnotacao"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    get:
+      operationId: anotacoes_get__api_anotacoes
+      tags:
+        - anotacoes
+      description: Somente registro autorizado, mesma matriz dos anexos; solicitante/equipe só recursos próprios. Query estrita; total e página consistentes.
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+        - GESTOR_FROTA
+        - ATENDENTE_SVO
+        - SOLICITANTE_INTERNO
+        - MOTORISTA
+      x-runtime-validation: true
+      parameters:
+        - name: tipoRegistro
+          in: query
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - SOLICITACAO_VIAGEM
+              - SOLICITACAO_SVO
+              - VIAGEM
+              - ORDEM_SVO
+              - VEICULO
+        - name: registroId
+          in: query
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d{0,18}$
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaAnotacoes"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
   /api/anexos:
     post:
       operationId: anexos_post__api_anexos
@@ -10990,6 +11256,175 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    CriarAnotacao:
+      type: object
+      properties:
+        tipoRegistro:
+          type: string
+          enum:
+            - SOLICITACAO_VIAGEM
+            - SOLICITACAO_SVO
+            - VIAGEM
+            - ORDEM_SVO
+            - VEICULO
+        registroId:
+          type: string
+          pattern: ^[1-9]\d{0,18}$
+        texto:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - tipoRegistro
+        - registroId
+        - texto
+      additionalProperties: false
+    Anotacao:
+      type: object
+      properties:
+        tipoRegistro:
+          type: string
+          enum:
+            - SOLICITACAO_VIAGEM
+            - SOLICITACAO_SVO
+            - VIAGEM
+            - ORDEM_SVO
+            - VEICULO
+        registroId:
+          type: string
+          pattern: ^[1-9]\d{0,18}$
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        texto:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        autorId:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        criadoEm:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - tipoRegistro
+        - registroId
+        - id
+        - texto
+        - autorId
+        - criadoEm
+      additionalProperties: false
+    RespostaAnotacao:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            tipoRegistro:
+              type: string
+              enum:
+                - SOLICITACAO_VIAGEM
+                - SOLICITACAO_SVO
+                - VIAGEM
+                - ORDEM_SVO
+                - VEICULO
+            registroId:
+              type: string
+              pattern: ^[1-9]\d{0,18}$
+            id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            texto:
+              type: string
+              minLength: 1
+              maxLength: 2000
+            autorId:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            criadoEm:
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+          required:
+            - tipoRegistro
+            - registroId
+            - id
+            - texto
+            - autorId
+            - criadoEm
+          additionalProperties: false
+      required:
+        - data
+    ListaAnotacoes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              tipoRegistro:
+                type: string
+                enum:
+                  - SOLICITACAO_VIAGEM
+                  - SOLICITACAO_SVO
+                  - VIAGEM
+                  - ORDEM_SVO
+                  - VEICULO
+              registroId:
+                type: string
+                pattern: ^[1-9]\d{0,18}$
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              texto:
+                type: string
+                minLength: 1
+                maxLength: 2000
+              autorId:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              criadoEm:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+            required:
+              - tipoRegistro
+              - registroId
+              - id
+              - texto
+              - autorId
+              - criadoEm
+            additionalProperties: false
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+      required:
+        - data
+        - meta
     CriarAnexo:
       type: object
       properties:
