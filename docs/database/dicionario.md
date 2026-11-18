@@ -52,3 +52,16 @@ notificações de 09/11 passaram a constar do snapshot regenerado.
 
 Os timestamptz novos registram instantes do servidor. As colunas antigas de
 viagem continuam timestamp sem fuso (D4), sem conversão do histórico.
+
+## Sprint 9 — DB-S9-02 (SCRUM-192)
+
+Veja a [base documental e de evidências](./sprint9-documentos-evidencias.md).
+
+| Tabela | Estrutura |
+| --- | --- |
+| anexo | BYTEA privado com chave UUID, MIME, tamanho, SHA-256, autor e instante. Exatamente uma FK de vínculo. |
+| documento_historico | Versão única por documento ou motorista, validade civil, autor e instante. FKs compostas preservam a associação do anexo ao mesmo cadastro. |
+| anotacao | Texto de até 2.000 caracteres, uma FK de vínculo, autor e instante. |
+
+As três tabelas têm RLS e grants restritos. A migration acrescenta índices
+sobre a validade dos documentos e das CNHs nas tabelas de cadastro.
