@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { dados,id } from '../../shared/contract/schemas.js';
 import { dashboardSchemas } from './dashboard.schemas.js';
 import { svoDashboardSchemas } from '../svo/svo.dashboard.schemas.js';
+import { periodoDashboardSchema } from './dashboard.indicadores.schemas.js';
 const quantidade=z.number().int().nonnegative();
 const alertaAnterior=z.object({estado:z.literal('INDISPONIVEL'),valor:z.null(),motivo:z.literal('REGRA_RF46_PENDENTE')});
 const gestao=z.object({visao:z.literal('GESTAO'),gestao:dashboardSchemas.DashboardGestorIndicadores.shape.data,
@@ -12,7 +13,13 @@ const gestao=z.object({visao:z.literal('GESTAO'),gestao:dashboardSchemas.Dashboa
   documentos:z.object({criterio:z.literal('ESTADO_ATUAL'),vencidos:quantidade,vencemHoje:quantidade,alertas:z.object({estado:z.literal('DISPONIVEL'),valor:quantidade})})});
 const svo=z.object({visao:z.literal('SVO'),operacional:svoDashboardSchemas.DashboardOperacionalSvo,
   filas:svoDashboardSchemas.FilasOperacionaisSvo,atividades:svoDashboardSchemas.AtividadesRecentesSvo.shape.data});
-export const dashboardConsolidadoSchemas={DashboardConsolidado:dados(z.discriminatedUnion('visao',[gestao,svo]))};
+export const dashboardConsolidadoAntesPeriodoSvo = dados(z.discriminatedUnion('visao', [gestao, svo]));
+const svoComPeriodoPersonalizado = svo.extend({
+  operacional: svoDashboardSchemas.DashboardOperacionalSvo.extend({ periodo: periodoDashboardSchema }),
+});
+export const dashboardConsolidadoSchemas = {
+  DashboardConsolidado: dados(z.discriminatedUnion('visao', [gestao, svoComPeriodoPersonalizado])),
+};
 // Forma anterior, usada apenas pelo gate para reconhecer a troca exata da fonte de abastecimentos.
 const gestaoAntesDeConsumo = gestao.extend({ abastecimentos: indicadoresAbastecimentosAntesDeConsumo.shape.data });
 export const dashboardConsolidadoAntesDeConsumo = dados(z.discriminatedUnion('visao', [gestaoAntesDeConsumo, svo]));
@@ -29,4 +36,7 @@ export const notaDashboardAntesRf46 = notaDashboardAntesDeAbastecimentos.replace
 export const notaDashboardAntesDeConsumo = notaDashboardAntesRf46.replace(
   'RF46 e consumo por distância pendentes.', 'Documentos a vencer pela janela RF46. Consumo por distância pendente.',
 );
-export const notaDashboardConsolidado = notaDashboardAntesDeConsumo.replace('Consumo por distância pendente.', 'Consumo cheio a cheio em km/L.');
+export const notaDashboardAntesPeriodoSvo = notaDashboardAntesDeConsumo.replace('Consumo por distância pendente.', 'Consumo cheio a cheio em km/L.');
+export const notaDashboardConsolidado = notaDashboardAntesPeriodoSvo.replace(
+  'SVO: hoje/7d/30d.', 'SVO: hoje/7d/30d/personalizado; inicio/fim ISO com offset e até 31 dias no personalizado.',
+);

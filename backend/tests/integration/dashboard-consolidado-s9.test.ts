@@ -172,9 +172,58 @@ test('IND-10 a IND-14 refletem cadastro, triagem e ordem de coleta persistidos p
   }
 });
 
+test('SVO consolidado filtra o intervalo personalizado sem alterar filas ou o contrato SVO legado', async () => {
+  const ator = 'ATENDENTE_SVO';
+  const inicio = '2099-02-01T11:00:00Z';
+  const fim = '2099-02-01T12:00:00Z';
+  const query = '?' + new URLSearchParams({ periodo: 'personalizado', inicio, fim });
+  const anterior = await get('/api/dashboard?periodo=hoje', ator);
+  expect(anterior.status).toBe(200);
+  const antes = dashboardConsolidadoSchemas.DashboardConsolidado.parse(await anterior.json()).data;
+  if (antes.visao !== 'SVO') throw new Error('Visão incorreta');
+
+  await fixture.sql`
+    UPDATE public.solicitacao_obito
+    SET criado_em = CASE id WHEN 92194 THEN TIMESTAMP '2099-02-01 08:00:00' ELSE TIMESTAMP '2099-02-01 09:00:00' END,
+      triado_em = CASE id WHEN 92194 THEN TIMESTAMP '2099-02-01 08:00:00' ELSE TIMESTAMP '2099-02-01 09:00:00' END
+    WHERE id IN (92194, 92195)
+  `;
+  const response = await get('/api/dashboard' + query, ator);
+  expect(response.status).toBe(200);
+  const { data } = dashboardConsolidadoSchemas.DashboardConsolidado.parse(await response.json());
+  if (data.visao !== 'SVO') throw new Error('Visão incorreta');
+
+  const [persistido] = await fixture.sql`
+    SELECT so.id::text AS "solicitacaoId", oc.id::text AS "ordemId"
+    FROM public.solicitacao_obito so
+    JOIN public.ordem_coleta oc ON oc.solicitacao_obito_id = so.id
+    WHERE so.triado_em >= TIMESTAMP '2099-02-01 08:00:00'
+      AND so.triado_em < TIMESTAMP '2099-02-01 09:00:00'
+  `;
+  expect(persistido).toEqual({ solicitacaoId: '92194', ordemId: '92194' });
+  expect(data.operacional).toMatchObject({
+    periodo: 'personalizado', inicio, fim,
+    indicadores: { confirmadasSvo: 1, ordensColeta: 1, encaminhadasIml: 0 },
+    visaoGeral: { confirmadasSvo: 1, encaminhadasIml: 0 },
+  });
+  expect(data.filas).toEqual(antes.filas);
+  expect(data.atividades).toEqual(antes.atividades);
+  const legado = await get('/api/svo/dashboard' + query, ator);
+  expect(legado.status).toBe(400);
+  if (process.env.CI) console.info('SCRUM-195 SVO personalizado HTTP/SQL', {
+    http: response.status, legado: legado.status, persistido, operacional: data.operacional,
+    filaAtual: data.filas.aguardandoTriagem.total,
+  });
+});
+
 test('400/401/403 seguem contratos reais sem responder sucesso vazio',async()=>{
   expect((await get('/api/dashboard',null)).status).toBe(401);
   for(const perfil of ['MOTORISTA','SOLICITANTE_INTERNO'])expect((await get('/api/dashboard',perfil)).status).toBe(403);
   for(const query of ['?periodo=invalido','?periodo=hoje&periodo=7d','?inicio=2026-01-01','?extra=x'])expect((await get('/api/dashboard'+query)).status).toBe(400);
-  expect((await get('/api/dashboard'+periodo,'ATENDENTE_SVO')).status).toBe(400);
+  for (const query of [
+    '?periodo=personalizado', '?periodo=7d&inicio=2099-02-01T11:00:00Z',
+    '?periodo=personalizado&inicio=2099-02-01T12:00:00Z&fim=2099-02-01T11:00:00Z',
+    '?periodo=personalizado&inicio=2099-02-01T11:00:00Z&fim=2099-04-01T11:00:00Z',
+    '?periodo=hoje&periodo=7d', '?extra=x',
+  ]) expect((await get('/api/dashboard' + query, 'ATENDENTE_SVO')).status).toBe(400);
 });
