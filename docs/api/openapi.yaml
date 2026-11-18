@@ -5001,7 +5001,7 @@ paths:
       operationId: dashboard_get__api_dashboard
       tags:
         - dashboard
-      description: "SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d. Filas e documentos são estado atual. Abastecimentos por dias civis abrangidos. Documentos a vencer pela janela RF46. Consumo por distância pendente."
+      description: "SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d. Filas e documentos são estado atual. Abastecimentos por dias civis abrangidos. Documentos a vencer pela janela RF46. Consumo cheio a cheio em km/L."
       security:
         - bearerAuth: []
       x-perfis:
@@ -9621,7 +9621,7 @@ paths:
       operationId: abastecimentos_get__api_abastecimentos_indicadores
       tags:
         - abastecimentos
-      description: "SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo por distância indisponível até definição da regra."
+      description: "SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo cheio a cheio em km/L, com insuficiência explícita."
       security:
         - bearerAuth: []
       x-perfis: *a1
@@ -12034,20 +12034,156 @@ components:
                           - menorKm
                           - maiorKm
                     consumoPorDistancia:
-                      type: object
-                      properties:
-                        valor:
-                          type: "null"
-                        estado:
-                          type: string
-                          const: INDISPONIVEL
-                        motivo:
-                          type: string
-                          const: REGRA_DE_NEGOCIO_PENDENTE
-                      required:
-                        - valor
-                        - estado
-                        - motivo
+                      oneOf:
+                        - type: object
+                          properties:
+                            estado:
+                              type: string
+                              const: DISPONIVEL
+                            valor:
+                              type: string
+                              description: NUMERIC serializado pelo driver como string, preservando precisão.
+                            motivo:
+                              type: "null"
+                            trechosValidos:
+                              type: integer
+                              minimum: 0
+                              maximum: 9007199254740991
+                            unidade:
+                              type: string
+                              const: km/L
+                            porVeiculo:
+                              type: array
+                              items:
+                                oneOf:
+                                  - type: object
+                                    properties:
+                                      estado:
+                                        type: string
+                                        const: DISPONIVEL
+                                      valor:
+                                        type: string
+                                        description: NUMERIC serializado pelo driver como string, preservando precisão.
+                                      motivo:
+                                        type: "null"
+                                      trechosValidos:
+                                        type: integer
+                                        minimum: 0
+                                        maximum: 9007199254740991
+                                      veiculoId:
+                                        type: string
+                                        pattern: ^-?\d+$
+                                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                                    required:
+                                      - estado
+                                      - valor
+                                      - motivo
+                                      - trechosValidos
+                                      - veiculoId
+                                  - type: object
+                                    properties:
+                                      estado:
+                                        type: string
+                                        const: DADOS_INSUFICIENTES
+                                      valor:
+                                        type: "null"
+                                      motivo:
+                                        type: string
+                                        const: SEM_TRECHO_VALIDO
+                                      trechosValidos:
+                                        type: number
+                                        const: 0
+                                      veiculoId:
+                                        type: string
+                                        pattern: ^-?\d+$
+                                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                                    required:
+                                      - estado
+                                      - valor
+                                      - motivo
+                                      - trechosValidos
+                                      - veiculoId
+                          required:
+                            - estado
+                            - valor
+                            - motivo
+                            - trechosValidos
+                            - unidade
+                            - porVeiculo
+                        - type: object
+                          properties:
+                            estado:
+                              type: string
+                              const: DADOS_INSUFICIENTES
+                            valor:
+                              type: "null"
+                            motivo:
+                              type: string
+                              const: SEM_TRECHO_VALIDO
+                            trechosValidos:
+                              type: number
+                              const: 0
+                            unidade:
+                              type: string
+                              const: km/L
+                            porVeiculo:
+                              type: array
+                              items:
+                                oneOf:
+                                  - type: object
+                                    properties:
+                                      estado:
+                                        type: string
+                                        const: DISPONIVEL
+                                      valor:
+                                        type: string
+                                        description: NUMERIC serializado pelo driver como string, preservando precisão.
+                                      motivo:
+                                        type: "null"
+                                      trechosValidos:
+                                        type: integer
+                                        minimum: 0
+                                        maximum: 9007199254740991
+                                      veiculoId:
+                                        type: string
+                                        pattern: ^-?\d+$
+                                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                                    required:
+                                      - estado
+                                      - valor
+                                      - motivo
+                                      - trechosValidos
+                                      - veiculoId
+                                  - type: object
+                                    properties:
+                                      estado:
+                                        type: string
+                                        const: DADOS_INSUFICIENTES
+                                      valor:
+                                        type: "null"
+                                      motivo:
+                                        type: string
+                                        const: SEM_TRECHO_VALIDO
+                                      trechosValidos:
+                                        type: number
+                                        const: 0
+                                      veiculoId:
+                                        type: string
+                                        pattern: ^-?\d+$
+                                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                                    required:
+                                      - estado
+                                      - valor
+                                      - motivo
+                                      - trechosValidos
+                                      - veiculoId
+                          required:
+                            - estado
+                            - valor
+                            - motivo
+                            - trechosValidos
+                            - unidade
+                            - porVeiculo
                   required:
                     - estado
                     - quantidade
@@ -14885,20 +15021,156 @@ components:
                   - menorKm
                   - maiorKm
             consumoPorDistancia:
-              type: object
-              properties:
-                valor:
-                  type: "null"
-                estado:
-                  type: string
-                  const: INDISPONIVEL
-                motivo:
-                  type: string
-                  const: REGRA_DE_NEGOCIO_PENDENTE
-              required:
-                - valor
-                - estado
-                - motivo
+              oneOf:
+                - type: object
+                  properties:
+                    estado:
+                      type: string
+                      const: DISPONIVEL
+                    valor:
+                      type: string
+                      description: NUMERIC serializado pelo driver como string, preservando precisão.
+                    motivo:
+                      type: "null"
+                    trechosValidos:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    unidade:
+                      type: string
+                      const: km/L
+                    porVeiculo:
+                      type: array
+                      items:
+                        oneOf:
+                          - type: object
+                            properties:
+                              estado:
+                                type: string
+                                const: DISPONIVEL
+                              valor:
+                                type: string
+                                description: NUMERIC serializado pelo driver como string, preservando precisão.
+                              motivo:
+                                type: "null"
+                              trechosValidos:
+                                type: integer
+                                minimum: 0
+                                maximum: 9007199254740991
+                              veiculoId:
+                                type: string
+                                pattern: ^-?\d+$
+                                description: BIGINT serializado pelo postgres como string; não converter para Number.
+                            required:
+                              - estado
+                              - valor
+                              - motivo
+                              - trechosValidos
+                              - veiculoId
+                          - type: object
+                            properties:
+                              estado:
+                                type: string
+                                const: DADOS_INSUFICIENTES
+                              valor:
+                                type: "null"
+                              motivo:
+                                type: string
+                                const: SEM_TRECHO_VALIDO
+                              trechosValidos:
+                                type: number
+                                const: 0
+                              veiculoId:
+                                type: string
+                                pattern: ^-?\d+$
+                                description: BIGINT serializado pelo postgres como string; não converter para Number.
+                            required:
+                              - estado
+                              - valor
+                              - motivo
+                              - trechosValidos
+                              - veiculoId
+                  required:
+                    - estado
+                    - valor
+                    - motivo
+                    - trechosValidos
+                    - unidade
+                    - porVeiculo
+                - type: object
+                  properties:
+                    estado:
+                      type: string
+                      const: DADOS_INSUFICIENTES
+                    valor:
+                      type: "null"
+                    motivo:
+                      type: string
+                      const: SEM_TRECHO_VALIDO
+                    trechosValidos:
+                      type: number
+                      const: 0
+                    unidade:
+                      type: string
+                      const: km/L
+                    porVeiculo:
+                      type: array
+                      items:
+                        oneOf:
+                          - type: object
+                            properties:
+                              estado:
+                                type: string
+                                const: DISPONIVEL
+                              valor:
+                                type: string
+                                description: NUMERIC serializado pelo driver como string, preservando precisão.
+                              motivo:
+                                type: "null"
+                              trechosValidos:
+                                type: integer
+                                minimum: 0
+                                maximum: 9007199254740991
+                              veiculoId:
+                                type: string
+                                pattern: ^-?\d+$
+                                description: BIGINT serializado pelo postgres como string; não converter para Number.
+                            required:
+                              - estado
+                              - valor
+                              - motivo
+                              - trechosValidos
+                              - veiculoId
+                          - type: object
+                            properties:
+                              estado:
+                                type: string
+                                const: DADOS_INSUFICIENTES
+                              valor:
+                                type: "null"
+                              motivo:
+                                type: string
+                                const: SEM_TRECHO_VALIDO
+                              trechosValidos:
+                                type: number
+                                const: 0
+                              veiculoId:
+                                type: string
+                                pattern: ^-?\d+$
+                                description: BIGINT serializado pelo postgres como string; não converter para Number.
+                            required:
+                              - estado
+                              - valor
+                              - motivo
+                              - trechosValidos
+                              - veiculoId
+                  required:
+                    - estado
+                    - valor
+                    - motivo
+                    - trechosValidos
+                    - unidade
+                    - porVeiculo
           required:
             - estado
             - quantidade
