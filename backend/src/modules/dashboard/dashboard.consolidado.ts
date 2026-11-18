@@ -2,8 +2,7 @@ import { vencimentosRf46 } from '../documentos/documentos.rf46.js';
 import { obterIndicadoresAbastecimentosDoDashboard } from '../abastecimentos/abastecimentos.indicadores.js';
 import { sql } from '../../database/connection.js';
 import { ErroHttp } from '../../shared/http/errors.js';
-import { obterIndicadores } from './dashboard.service.js';
-import { dashboardSchemas } from './dashboard.schemas.js';
+import { obterIndicadoresConsolidados } from './dashboard.service.js';
 import { dashboardConsolidadoSchemas } from './dashboard.consolidado.schemas.js';
 import { comValidacaoTemporal } from '../solicitacoes/solicitacoes.erros.js';
 import { parametrosSolicitacoes } from '../solicitacoes/solicitacoes.schemas.js';
@@ -28,7 +27,7 @@ export async function obterDashboardConsolidado(perfil:string,params:URLSearchPa
     return dashboardConsolidadoSchemas.DashboardConsolidado.parse({data:{visao:'SVO',operacional,filas,atividades:atividades.data}});
   }
   if(!['ADM','GESTOR_FROTA'].includes(perfil))throw new ErroHttp(403,'ACESSO_NEGADO','Acesso não permitido.');
-  const gestao=dashboardSchemas.DashboardGestorIndicadores.parse(await obterIndicadores(params,true)).data;
+  const { gestao, motoristasCandidatos } = await obterIndicadoresConsolidados(params);
   const periodo=gestao.periodo;
   const complemento=await sql.begin('isolation level repeatable read read only',async tx=>{
     const porStatus = await tx<{status:string|null;total:number}[]>`
@@ -52,5 +51,10 @@ export async function obterDashboardConsolidado(perfil:string,params:URLSearchPa
   const abastecimentos = await obterIndicadoresAbastecimentosDoDashboard(periodo);
   gestao.indicadores.indicadoresIndisponiveis = gestao.indicadores.indicadoresIndisponiveis.filter(item => !['IND-02', 'IND-08', 'IND-09'].includes(item.indicador));
   return dashboardConsolidadoSchemas.DashboardConsolidado.parse({data:{visao:'GESTAO',gestao,
-    viagens:complemento.viagens,documentos:complemento.documentos,abastecimentos:abastecimentos.data}});
+    viagens:complemento.viagens,documentos:complemento.documentos,abastecimentos:abastecimentos.data,
+    disponibilidadeMotoristas: {
+      estado: 'PROVISORIA',
+      candidatos: motoristasCandidatos,
+      motivo: 'SEM_ESCALA_E_MATRIZ_CNH',
+    }}});
 }

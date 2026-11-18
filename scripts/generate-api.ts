@@ -1,5 +1,5 @@
 import { indicadoresAbastecimentos, indicadoresAbastecimentosAntesDeConsumo, notaIndicadoresAbastecimentos, notaIndicadoresAntesDeConsumo } from '../backend/src/modules/abastecimentos/abastecimentos.schemas.js';
-import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoAntesDeConsumo, dashboardConsolidadoAntesPeriodoSvo, dashboardConsolidadoAntesRf46, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo, notaDashboardAntesRf46, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
+import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoAntesDeCandidatos, dashboardConsolidadoAntesDeConsumo, dashboardConsolidadoAntesPeriodoSvo, dashboardConsolidadoAntesRf46, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardAntesDeCandidatos, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo, notaDashboardAntesRf46, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -83,7 +83,7 @@ export function checkCompatibility(previous: Document, current: Document) {
     if (path === '/api/dashboard' && method === 'get' && candidate) {
       const anterior = definition as { description?: string };
       const atual = candidate as { description?: string };
-      if (([notaDashboardAntesDeAbastecimentos, notaDashboardAntesRf46, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo].includes(anterior.description ?? '')) && atual.description === notaDashboardConsolidado) {
+      if (([notaDashboardAntesDeAbastecimentos, notaDashboardAntesRf46, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo, notaDashboardAntesDeCandidatos].includes(anterior.description ?? '')) && atual.description === notaDashboardConsolidado) {
         atual.description = anterior.description;
       }
     }
@@ -182,7 +182,9 @@ export function checkCompatibility(previous: Document, current: Document) {
       void consumoDialect;
       const { $schema: periodoDialect, ...antesPeriodoSvo } = z.toJSONSchema(dashboardConsolidadoAntesPeriodoSvo, { io: 'input' });
       void periodoDialect;
-      const anteriorReconhecido = [anterior, antesRf46, antesConsumo, antesPeriodoSvo].some(legado => JSON.stringify(legado) === JSON.stringify(schema));
+      const { $schema: candidatosDialect, ...antesDeCandidatos } = z.toJSONSchema(dashboardConsolidadoAntesDeCandidatos, { io: 'input' });
+      void candidatosDialect;
+      const anteriorReconhecido = [anterior, antesRf46, antesConsumo, antesPeriodoSvo, antesDeCandidatos].some(legado => JSON.stringify(legado) === JSON.stringify(schema));
       if (anteriorReconhecido && JSON.stringify(candidate) === JSON.stringify(atual)) {
         candidate = structuredClone(schema);
       }

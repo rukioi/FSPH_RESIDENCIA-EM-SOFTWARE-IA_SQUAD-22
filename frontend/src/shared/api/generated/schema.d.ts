@@ -560,6 +560,17 @@ export interface DashboardConsolidado {
             valor: number;
           };
         };
+        /**
+         * Contagem indicativa de candidatos para consulta da gestão, sem confirmação de escala ou aptidão por veículo.
+         */
+        disponibilidadeMotoristas: {
+          estado: 'PROVISORIA';
+          /**
+           * Motoristas com cadastro disponível, conta ativa e CNH vigente, sem bloqueio registrado na janela.
+           */
+          candidatos: number;
+          motivo: 'SEM_ESCALA_E_MATRIZ_CNH';
+        };
       }
     | {
         visao: 'SVO';
