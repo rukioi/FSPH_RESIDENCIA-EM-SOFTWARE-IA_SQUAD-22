@@ -179,6 +179,19 @@ são transportados como strings decimais. Período vazio retorna
 registrado é uma leitura. Km mínimo e máximo descrevem as leituras e não
 representam distância percorrida.
 
-O consumo por distância retorna `INDISPONIVEL` com valor nulo até a definição
-da regra de associação entre litros e leituras. A SCRUM-186 continua responsável
-pela API de histórico por veículo e pelo cadastro RF40.
+O consumo usa o método cheio a cheio, em `km/L`. Cada trecho vai de um
+registro de tanque completo até o próximo do mesmo veículo. Os dois marcos
+precisam estar no período consultado. Divide-se a diferença de odômetro pela
+soma dos litros posteriores à abertura até o fechamento, incluindo parciais.
+
+A ordem é data do abastecimento, instante de cadastro quando disponível e ID.
+Leituras ausentes ou regressivas dentro do trecho, distância zero e litros não
+positivos descartam o trecho. O odômetro repetido dentro de um trecho ainda
+permite o cálculo se os marcos tiverem diferença positiva e não houver regressão.
+Trechos abertos e abastecimentos anteriores ao primeiro tanque completo não
+entram na conta. Sem trecho válido, o estado é `DADOS_INSUFICIENTES`, com
+valor nulo. Com trecho válido, o estado é `DISPONIVEL` e o valor é uma string
+decimal de quatro casas. A resposta traz o agregado por veículo e, no total,
+a divisão entre a soma dos quilômetros e a soma dos litros dos trechos válidos.
+
+A SCRUM-186 é responsável pela API de histórico por veículo e pelo cadastro RF40.

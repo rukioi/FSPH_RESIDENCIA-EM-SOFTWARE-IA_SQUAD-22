@@ -482,11 +482,74 @@ export interface DashboardConsolidado {
             menorKm: number | null;
             maiorKm: number | null;
           }[];
-          consumoPorDistancia: {
-            valor: null;
-            estado: 'INDISPONIVEL';
-            motivo: 'REGRA_DE_NEGOCIO_PENDENTE';
-          };
+          consumoPorDistancia:
+            | {
+                estado: 'DISPONIVEL';
+                /**
+                 * NUMERIC serializado pelo driver como string, preservando precisão.
+                 */
+                valor: string;
+                motivo: null;
+                trechosValidos: number;
+                unidade: 'km/L';
+                porVeiculo: (
+                  | {
+                      estado: 'DISPONIVEL';
+                      /**
+                       * NUMERIC serializado pelo driver como string, preservando precisão.
+                       */
+                      valor: string;
+                      motivo: null;
+                      trechosValidos: number;
+                      /**
+                       * BIGINT serializado pelo postgres como string; não converter para Number.
+                       */
+                      veiculoId: string;
+                    }
+                  | {
+                      estado: 'DADOS_INSUFICIENTES';
+                      valor: null;
+                      motivo: 'SEM_TRECHO_VALIDO';
+                      trechosValidos: 0;
+                      /**
+                       * BIGINT serializado pelo postgres como string; não converter para Number.
+                       */
+                      veiculoId: string;
+                    }
+                )[];
+              }
+            | {
+                estado: 'DADOS_INSUFICIENTES';
+                valor: null;
+                motivo: 'SEM_TRECHO_VALIDO';
+                trechosValidos: 0;
+                unidade: 'km/L';
+                porVeiculo: (
+                  | {
+                      estado: 'DISPONIVEL';
+                      /**
+                       * NUMERIC serializado pelo driver como string, preservando precisão.
+                       */
+                      valor: string;
+                      motivo: null;
+                      trechosValidos: number;
+                      /**
+                       * BIGINT serializado pelo postgres como string; não converter para Number.
+                       */
+                      veiculoId: string;
+                    }
+                  | {
+                      estado: 'DADOS_INSUFICIENTES';
+                      valor: null;
+                      motivo: 'SEM_TRECHO_VALIDO';
+                      trechosValidos: 0;
+                      /**
+                       * BIGINT serializado pelo postgres como string; não converter para Number.
+                       */
+                      veiculoId: string;
+                    }
+                )[];
+              };
         };
         documentos: {
           criterio: 'ESTADO_ATUAL';
@@ -1423,11 +1486,74 @@ export interface IndicadoresAbastecimentos {
       menorKm: number | null;
       maiorKm: number | null;
     }[];
-    consumoPorDistancia: {
-      valor: null;
-      estado: 'INDISPONIVEL';
-      motivo: 'REGRA_DE_NEGOCIO_PENDENTE';
-    };
+    consumoPorDistancia:
+      | {
+          estado: 'DISPONIVEL';
+          /**
+           * NUMERIC serializado pelo driver como string, preservando precisão.
+           */
+          valor: string;
+          motivo: null;
+          trechosValidos: number;
+          unidade: 'km/L';
+          porVeiculo: (
+            | {
+                estado: 'DISPONIVEL';
+                /**
+                 * NUMERIC serializado pelo driver como string, preservando precisão.
+                 */
+                valor: string;
+                motivo: null;
+                trechosValidos: number;
+                /**
+                 * BIGINT serializado pelo postgres como string; não converter para Number.
+                 */
+                veiculoId: string;
+              }
+            | {
+                estado: 'DADOS_INSUFICIENTES';
+                valor: null;
+                motivo: 'SEM_TRECHO_VALIDO';
+                trechosValidos: 0;
+                /**
+                 * BIGINT serializado pelo postgres como string; não converter para Number.
+                 */
+                veiculoId: string;
+              }
+          )[];
+        }
+      | {
+          estado: 'DADOS_INSUFICIENTES';
+          valor: null;
+          motivo: 'SEM_TRECHO_VALIDO';
+          trechosValidos: 0;
+          unidade: 'km/L';
+          porVeiculo: (
+            | {
+                estado: 'DISPONIVEL';
+                /**
+                 * NUMERIC serializado pelo driver como string, preservando precisão.
+                 */
+                valor: string;
+                motivo: null;
+                trechosValidos: number;
+                /**
+                 * BIGINT serializado pelo postgres como string; não converter para Number.
+                 */
+                veiculoId: string;
+              }
+            | {
+                estado: 'DADOS_INSUFICIENTES';
+                valor: null;
+                motivo: 'SEM_TRECHO_VALIDO';
+                trechosValidos: 0;
+                /**
+                 * BIGINT serializado pelo postgres como string; não converter para Number.
+                 */
+                veiculoId: string;
+              }
+          )[];
+        };
   };
 }
 /**

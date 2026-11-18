@@ -312,3 +312,27 @@ for(const mutate of [d=>d.paths['/api/motoristas/{id}'].delete.security=[],d=>d.
 console.log('ok');
 `)).toContain('ok');
 });
+
+test('SCRUM-188 habilita somente o consumo cheio a cheio nos contratos de abastecimentos e dashboard',()=>{
+  expect(independent(`
+import {z} from 'zod';
+import {openapi} from './backend/src/shared/contract/openapi.ts';
+import {checkCompatibility} from './scripts/generate-api.ts';
+import {dashboardConsolidadoAntesDeConsumo,notaDashboardAntesDeConsumo} from './backend/src/modules/dashboard/dashboard.consolidado.schemas.ts';
+import {indicadoresAbastecimentosAntesDeConsumo,notaIndicadoresAntesDeConsumo} from './backend/src/modules/abastecimentos/abastecimentos.schemas.ts';
+const current=openapi(), previous=structuredClone(current);
+const { $schema: dashboardDialect, ...dashboard }=z.toJSONSchema(dashboardConsolidadoAntesDeConsumo,{io:'input'});
+const { $schema: abastecimentosDialect, ...abastecimentos }=z.toJSONSchema(indicadoresAbastecimentosAntesDeConsumo,{io:'input'});
+previous.components.schemas.DashboardConsolidado=dashboard;
+previous.components.schemas.IndicadoresAbastecimentos=abastecimentos;
+previous.paths['/api/dashboard'].get.description=notaDashboardAntesDeConsumo;
+previous.paths['/api/abastecimentos/indicadores'].get.description=notaIndicadoresAntesDeConsumo;
+checkCompatibility(previous,current);
+for(const mutate of [d=>d.paths['/api/abastecimentos/indicadores'].get.security=[],d=>d.paths['/api/dashboard'].get['x-perfis'].push('MOTORISTA')]){
+  const candidate=structuredClone(current);mutate(candidate);let rejected=false;
+  try{checkCompatibility(previous,candidate)}catch{rejected=true}
+  if(!rejected)throw Error('alteração adicional aceita');
+}
+console.log('ok');
+`)).toContain('ok');
+});
