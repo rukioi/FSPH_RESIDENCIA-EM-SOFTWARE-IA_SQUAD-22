@@ -35,7 +35,7 @@ export async function obterDashboardConsolidado(perfil:string,params:URLSearchPa
     return {viagens:{criterio:'dataInicio',quantidade:porStatus.reduce((n,r)=>n+r.total,0),porStatus,proximas},
       documentos:{criterio:'ESTADO_ATUAL',vencidos:docs.vencidos,vencemHoje:docs.hoje,alertas:{estado:'INDISPONIVEL',valor:null,motivo:'REGRA_RF46_PENDENTE'}}};
   });
-  gestao.indicadores.indicadoresIndisponiveis = gestao.indicadores.indicadoresIndisponiveis.filter(item => item.indicador === 'IND-09');
+  gestao.indicadores.indicadoresIndisponiveis = gestao.indicadores.indicadoresIndisponiveis.filter(item => item.indicador !== 'IND-02' && item.indicador !== 'IND-08');
   return dashboardConsolidadoSchemas.DashboardConsolidado.parse({data:{visao:'GESTAO',gestao,
     viagens:complemento.viagens,documentos:complemento.documentos,abastecimentos:{estado:'INDISPONIVEL',valor:null,motivo:'FONTE_SCRUM_188_PENDENTE'}}});
 }
