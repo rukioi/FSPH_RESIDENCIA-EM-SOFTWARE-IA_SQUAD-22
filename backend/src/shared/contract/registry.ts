@@ -14,7 +14,7 @@ import { usuariosSchemas } from '../../modules/usuarios/usuarios.schemas.js';
 import { auditoriaSchemas } from '../../modules/auditoria/auditoria.schemas.js';
 import { motoristasSchemas } from '../../modules/motoristas/motoristas.schemas.js';
 import { abastecimentosSchemas, parametrosIndicadoresAbastecimentos } from '../../modules/abastecimentos/abastecimentos.schemas.js';
-import { gestaoDocumentalSchemas, parametrosDocumentais, tipoDocumental } from '../../modules/documentos/documentos.gestao.schemas.js';
+import { alertasDocumentais, gestaoDocumentalSchemas, parametrosDocumentais, tipoDocumental } from '../../modules/documentos/documentos.gestao.schemas.js';
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
 import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
 import { svoSchemas } from '../../modules/svo/svo.schemas.js';
@@ -27,7 +27,7 @@ import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicita
 export const schemas = { ...dashboardConsolidadoSchemas, ...anotacoesSchemas, ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
-  ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
+  ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, AlertasDocumentais: alertasDocumentais, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
 export type Modulo = 'anotacoes'| 'anexos'| 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
@@ -207,7 +207,7 @@ export const operations: Operacao[] = [
   op('motoristas','get','/api/motoristas','Motoristas',consultaFrota),
   op('motoristas','post','/api/motoristas','RespostaMotorista',gestor,{body:'CriarMotorista',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('motoristas',method,'/api/motoristas/{id}','RespostaMotorista',gestor,{body:'EditarMotorista',errors:[400,401,403,404,409,413,415,500]})),
-  op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,500]}),
+  op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,409,500]}),
   op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
   op('abastecimentos','get','/api/abastecimentos/indicadores','IndicadoresAbastecimentos',gestor,{
     runtimeValidation:true,query:parametrosIndicadoresAbastecimentos,errors:[400,401,403,404,500],
@@ -239,6 +239,10 @@ export const operations: Operacao[] = [
   op('documentos','patch','/api/documentos/{id}','DetalheDocumental',gestor,{body:'AlterarDocumento',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],
     query:[{name:'tipo',required:false,schema:tipoDocumental}],notes:'SCRUM-193: versão obrigatória e data civil válida. Lock do cadastro, histórico e auditoria atômicos; 409 versão antiga. Motorista não edita CNH. Anexo opcional deve pertencer ao mesmo documento/motorista.'}),
   op('documentos','get','/api/documentos','Documentos',gestor),
+  op('documentos','get','/api/documentos/alertas','AlertasDocumentais',gestor,{
+    runtimeValidation:true,errors:[400,401,403,500],
+    query:parametrosDocumentais.filter(p=>['tipo','page','limit'].includes(p.name)),
+    notes:'SCRUM-193 RF46: fases no fuso America/Maceio por mês-calendário, sete dias e dia da validade. Lista paginada com responsável mínimo e vencidos; leitura sem efeitos.'}),
   op('documentos','get','/api/documentos/pendencias','PendenciasDocumentos',gestor),
   op('documentos','post','/api/documentos','RespostaDocumento',gestor,{body:'CriarDocumento'}),
 ];

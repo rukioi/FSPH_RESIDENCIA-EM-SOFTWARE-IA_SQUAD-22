@@ -31,3 +31,13 @@ export const parametrosDocumentais=[{name:'tipo',required:false,schema:tipoDocum
   {name:'inicio',required:false,schema:dataCivil},{name:'fim',required:false,schema:dataCivil},
   {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
   {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}];
+
+export const filtroAlertasDocumentais = z.strictObject({
+  tipo: tipoDocumental.optional(),
+  ...paginacao.shape,
+});
+export const alertasDocumentais = dados(z.array(z.object({
+  id, tipo: tipoDocumental, registroId: id.nullable(),
+  descricao: z.string(), responsavel: z.string().nullable(), dataValidade: dataCivil,
+  diasRestantes: z.number().int(), fase: z.enum(['VENCIDO', 'HOJE', 'SEMANA', 'MES']),
+}))).extend({ meta });

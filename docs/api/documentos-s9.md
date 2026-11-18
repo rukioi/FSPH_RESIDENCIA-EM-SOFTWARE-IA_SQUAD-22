@@ -48,13 +48,27 @@ texto. Não há backfill ou reparo automático de arquivos históricos.
 Todas essas operações exigem **ADM/GESTOR_FROTA** atual. Motorista/solicitante/SVO:
 403; sem sessão válida: 401. Motorista não edita sua própria CNH.
 
-## Bloqueio restante
+## Alertas RF46
 
-**SCRUM-193 não está concluída.** RF46 ainda não define “1 mês”, fuso e frequência/
-deduplicação. Não foi criado `/api/documentos/alertas`, scheduler ou novo disparo.
-Preservadas notificações/pendências legadas. Após decisão aprovada, implementar
-somente a regra restante e provar os limiares/dedupe no isolado.
+`GET /api/documentos/alertas?tipo=&page=1&limit=20` retorna a fase vigente
+por validade para ADM e GESTOR_FROTA. Os tipos são DOCUMENTO_VEICULO e
+CNH_MOTORISTA. A resposta inclui validade, dias restantes, tipo, vínculo e
+responsável mínimo (placa ou nome), sem número de CNH. A lista inclui
+vencidos e é somente leitura.
 
-Prova atual: `documentos-s9.test.ts` (14 testes reais), mais os consumidores
-legados de documentos/motoristas. Comprova persistência, SQL, dois tipos,
-concorrência 200/409, arquivos cruzados, bytes, datas inválidas e rollback.
+A data civil usa America/Maceio. O início da janela mensal é a data de
+validade menos um mês de calendário, limitado ao último dia do mês anterior.
+A fase muda para SEMANA a sete dias, para HOJE na data de validade e para
+VENCIDO após ela. A sincronização existente grava uma notificação por fase
+vigente, validade, documento e destinatário da gestão. Se o destinatário
+sincronizar pela primeira vez depois da abertura de uma fase, recebe a fase
+vigente. Fases anteriores que passaram sem sincronização não são reemitidas.
+A restrição única do banco deduplica sincronizações repetidas ou concorrentes.
+O histórico de notificações anteriores continua acessível.
+
+O painel usa a mesma coorte para contar as validades nas fases MES, SEMANA
+e HOJE. O GET legado `/api/documentos/pendencias` preserva a janela de 30 dias
+e o formato utilizado por consumidores antigos.
+
+Remover um motorista com histórico de CNH retorna `409 HISTORICO_CNH_EXISTENTE`.
+O cadastro e todas as versões ficam preservados.

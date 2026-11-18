@@ -36,15 +36,13 @@ informações sensíveis. Mudança efetiva do veículo para EM_MANUTENCAO avisa 
 Avisos e operação confirmam/revertem na mesma transação. Não há backfill de eventos
 históricos nem notificações para contas inativas; destinatários são os atuais no evento.
 
-A sincronização materializa CNHs/documentos com vencimento em até **30 dias**, incluindo
-vencidos, somente para a própria caixa ADM/Gestor. Para outros perfis é sucesso com
-zero alterações. A data de referência usa America/Maceio. Unicidade por destinatário,
-recurso, validade e faixa (próximo/vencido) evita repetição e permite novo aviso ao
-vencer/renovar. Alertas antigos permanecem como histórico, mesmo após renovação.
-Não há scheduler, email, push ou websocket: a aplicação sincroniza ao consultar a
-caixa, após operações confirmadas no cliente comum, ao recuperar foco e a cada 60s
-enquanto visível. Janela de 30 dias é o critério
-inicial desta entrega, pois o documento de requisitos não define antecedência.
+A sincronização documental segue a [janela RF46](./documentos-s9.md#alertas-rf46).
+Ela grava a fase vigente (mês-calendário, semana, dia ou vencido) na caixa do
+destinatário ADM/Gestor. A data de referência usa America/Maceio. A unicidade por
+destinatário, vínculo, validade e fase evita repetição em sincronizações concorrentes.
+Outros perfis recebem sucesso com zero alterações. O cliente sincroniza a caixa
+ao consultar, após operações confirmadas, ao recuperar foco e a cada 60s enquanto
+visível. O mecanismo documental continua acionado pelo cliente.
 
 ## Rollout e aceite
 

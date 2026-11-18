@@ -1,3 +1,4 @@
+import { listarAlertasDocumentais } from './documentos.rf46.js';
 import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import { autenticarRequisicao } from '../../security/session.js';
 import { autorizarPerfis } from '../../security/authorization.js';
@@ -32,6 +33,11 @@ export async function documentosRoute(
 
   const pathname = url.pathname;
   const method = req.method;
+
+  if (method === 'GET' && pathname === '/api/documentos/alertas') {
+    jsonCompartilhado(res, 200, await listarAlertasDocumentais(url.searchParams));
+    return;
+  }
 
   const detalhe=/^\/api\/documentos\/(\d+)(\/historico)?$/.exec(pathname);
   if(pathname==='/api/documentos/consulta'||detalhe){

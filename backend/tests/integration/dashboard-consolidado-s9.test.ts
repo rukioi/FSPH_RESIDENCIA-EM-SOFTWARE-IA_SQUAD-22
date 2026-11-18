@@ -36,14 +36,16 @@ test('IND-02 usa início real e IND-08 usa saída prevista de viagem agendada', 
   });
 });
 
-test('documentos são estado atual e não viram alertas RF46 inventados',async()=>{
+test('documentos são estado atual e o IND-09 compartilha a coorte RF46',async()=>{
   const antes=await gestao();
-  await fixture.sql`UPDATE documento_veiculo SET data_vencimento=CURRENT_DATE-1 WHERE id=92194`;
+  await fixture.sql`UPDATE documento_veiculo SET data_vencimento=(transaction_timestamp() AT TIME ZONE 'America/Maceio')::date-1 WHERE id=92194`;
   const depois=await gestao();expect(depois.documentos.vencidos).toBe(antes.documentos.vencidos+1);
-  expect(depois.documentos.alertas).toEqual({estado:'INDISPONIVEL',valor:null,motivo:'REGRA_RF46_PENDENTE'});
+
   const [contagem]=await fixture.sql`SELECT count(*)::int AS n FROM
-    (SELECT data_vencimento AS validade FROM documento_veiculo UNION ALL SELECT validade_cnh FROM motorista) d WHERE validade<CURRENT_DATE`;
+    (SELECT data_vencimento AS validade FROM documento_veiculo UNION ALL SELECT validade_cnh FROM motorista) d WHERE validade<(transaction_timestamp() AT TIME ZONE 'America/Maceio')::date`;
   expect(depois.documentos.vencidos).toBe(contagem.n);
+  const alertas = await (await get('/api/documentos/alertas?limit=100')).json();
+  expect(depois.documentos.alertas).toEqual({estado:'DISPONIVEL', valor:alertas.data.filter((r:{fase:string})=>r.fase!=='VENCIDO').length});
   if(process.env.CI) console.info('SCRUM-195 documentos', { api: depois.documentos.vencidos, sql: contagem.n, rf46: depois.documentos.alertas.estado });
 });
 

@@ -1,4 +1,4 @@
-import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
+import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoAntesRf46, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardAntesRf46, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -82,9 +82,14 @@ export function checkCompatibility(previous: Document, current: Document) {
     if (path === '/api/dashboard' && method === 'get' && candidate) {
       const anterior = definition as { description?: string };
       const atual = candidate as { description?: string };
-      if (anterior.description === notaDashboardAntesDeAbastecimentos && atual.description === notaDashboardConsolidado) {
+      if ((anterior.description === notaDashboardAntesDeAbastecimentos || anterior.description === notaDashboardAntesRf46) && atual.description === notaDashboardConsolidado) {
         atual.description = anterior.description;
       }
+    }
+    // SCRUM-193 reconhece apenas a resposta de conflito de histórico de CNH.
+    if (path === '/api/motoristas/{id}' && method === 'delete' && !old.responses?.[409] && candidate?.responses?.[409]) {
+      const esperado = { ...(old.responses?.[500] as object), description: 'Falha atual HTTP 409' };
+      if (JSON.stringify(candidate.responses[409]) === JSON.stringify(esperado)) delete candidate.responses[409];
     }
     // Migração autorizada dos 4xx: somente a troca exata do envelope legado pelo comum.
     // Status, headers, descrições, sucessos e componentes continuam protegidos pelo gate.
@@ -155,7 +160,10 @@ export function checkCompatibility(previous: Document, current: Document) {
       const { $schema: anteriorDialect, ...anterior } = z.toJSONSchema(dashboardConsolidadoAntesDeAbastecimentos, { io: 'input' });
       const { $schema: atualDialect, ...atual } = z.toJSONSchema(dashboardConsolidadoSchemas.DashboardConsolidado, { io: 'input' });
       void anteriorDialect; void atualDialect;
-      if (JSON.stringify(schema) === JSON.stringify(anterior) && JSON.stringify(candidate) === JSON.stringify(atual)) {
+      const { $schema: rf46Dialect, ...antesRf46 } = z.toJSONSchema(dashboardConsolidadoAntesRf46, { io: 'input' });
+      void rf46Dialect;
+      const anteriorReconhecido = [anterior, antesRf46].some(legado => JSON.stringify(legado) === JSON.stringify(schema));
+      if (anteriorReconhecido && JSON.stringify(candidate) === JSON.stringify(atual)) {
         candidate = structuredClone(schema);
       }
     }

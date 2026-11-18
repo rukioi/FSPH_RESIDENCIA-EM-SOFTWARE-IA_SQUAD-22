@@ -12,7 +12,7 @@ A contagem de viagens executadas inclui registros cujo início real cai no perí
 
 ## Pendências de aceite
 
-- IND-09. Os vencidos e vencimentos do dia estão disponíveis. A janela de documentos a vencer e alertas depende da decisão RF46 da SCRUM-193.
+- IND-09. Documentos de veículo e CNHs a vencer incluem as fases MES, SEMANA e HOJE da janela RF46. O total exclui vencidos, que têm contagem própria. O período histórico de viagens não interfere na posição documental atual.
 - Disponibilidade de motoristas. O indicador legado mantém a indisponibilidade quando falta escala/jornada confiável.
 - Abastecimentos. A visão Gestão reutiliza os [indicadores da SCRUM-188](./abastecimentos.md#indicadores-de-abastecimentos--scrum-188) nos dias civis abrangidos pela seleção, em America/Maceio. A regra de consumo por distância continua pendente na SCRUM-188.
 - A adoção no frontend está na SCRUM-199. A visão consolidada acrescenta campos ao antigo envelope vazio de `/api/dashboard`.

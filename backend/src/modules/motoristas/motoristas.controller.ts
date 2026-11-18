@@ -541,6 +541,11 @@ export async function deletarMotorista(
 
     enviarJson(res, 200, { data: { success: true } });
   } catch (err) {
+    if (err && typeof err === 'object' && 'code' in err && err.code === '23503'
+      && 'constraint_name' in err && err.constraint_name === 'documento_historico_motorista_id_fkey') {
+      return enviarErro(res, 409, 'HISTORICO_CNH_EXISTENTE',
+        'Não é possível remover o motorista porque ele possui histórico de CNH.');
+    }
     tratarErro(res, err, 'Falha ao remover motorista.');
   }
 }

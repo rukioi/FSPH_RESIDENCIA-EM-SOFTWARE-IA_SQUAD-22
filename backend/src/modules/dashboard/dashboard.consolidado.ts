@@ -1,3 +1,4 @@
+import { vencimentosRf46 } from '../documentos/documentos.rf46.js';
 import { obterIndicadoresAbastecimentosDoDashboard } from '../abastecimentos/abastecimentos.indicadores.js';
 import { sql } from '../../database/connection.js';
 import { ErroHttp } from '../../shared/http/errors.js';
@@ -31,13 +32,15 @@ export async function obterDashboardConsolidado(perfil:string,params:URLSearchPa
       AND s.data_hora_saida>=(${periodo.inicio}::text::timestamptz AT TIME ZONE 'America/Maceio') AND s.data_hora_saida<(${periodo.fim}::text::timestamptz AT TIME ZONE 'America/Maceio')
       AND s.data_hora_saida>=CURRENT_TIMESTAMP AT TIME ZONE 'America/Maceio'
       ORDER BY s.data_hora_saida,v.id LIMIT 10`;
-    const [docs]=await tx`WITH validades AS (SELECT data_vencimento AS validade FROM public.documento_veiculo UNION ALL SELECT validade_cnh FROM public.motorista)
-      SELECT count(*) FILTER(WHERE validade<CURRENT_DATE)::int AS vencidos,count(*) FILTER(WHERE validade=CURRENT_DATE)::int AS hoje FROM validades`;
+    const [docs] = await tx`SELECT count(*) FILTER (WHERE fase = 'VENCIDO')::int AS vencidos,
+      count(*) FILTER (WHERE fase = 'HOJE')::int AS hoje,
+      count(*) FILTER (WHERE fase <> 'VENCIDO')::int AS alertas
+      FROM (${vencimentosRf46(tx)}) alertas`;
     return {viagens:{criterio:'dataInicio',quantidade:porStatus.reduce((n,r)=>n+r.total,0),porStatus,proximas},
-      documentos:{criterio:'ESTADO_ATUAL',vencidos:docs.vencidos,vencemHoje:docs.hoje,alertas:{estado:'INDISPONIVEL',valor:null,motivo:'REGRA_RF46_PENDENTE'}}};
+      documentos:{criterio:'ESTADO_ATUAL',vencidos:docs.vencidos,vencemHoje:docs.hoje,alertas:{estado:'DISPONIVEL',valor:docs.alertas}}};
   });
   const abastecimentos = await obterIndicadoresAbastecimentosDoDashboard(periodo);
-  gestao.indicadores.indicadoresIndisponiveis = gestao.indicadores.indicadoresIndisponiveis.filter(item => item.indicador !== 'IND-02' && item.indicador !== 'IND-08');
+  gestao.indicadores.indicadoresIndisponiveis = gestao.indicadores.indicadoresIndisponiveis.filter(item => !['IND-02', 'IND-08', 'IND-09'].includes(item.indicador));
   return dashboardConsolidadoSchemas.DashboardConsolidado.parse({data:{visao:'GESTAO',gestao,
     viagens:complemento.viagens,documentos:complemento.documentos,abastecimentos:abastecimentos.data}});
 }
