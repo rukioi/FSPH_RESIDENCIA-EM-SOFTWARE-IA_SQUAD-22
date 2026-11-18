@@ -384,6 +384,10 @@ export const apiOperations = {
     "method": "POST",
     "path": "/api/documentos"
   },
+  "documentos_get__api_documentos_alertas": {
+    "method": "GET",
+    "path": "/api/documentos/alertas"
+  },
   "documentos_get__api_documentos_pendencias": {
     "method": "GET",
     "path": "/api/documentos/pendencias"

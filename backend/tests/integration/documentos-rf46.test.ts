@@ -83,6 +83,10 @@ test('API e caixa usam fases reais no SVO e deduplicam por destinatário e fase'
     (chave LIKE 'documento:92194:%' OR chave LIKE 'documento:92195:%' OR chave LIKE 'cnh:92199:%')
     GROUP BY fase ORDER BY fase`;
   expect(gravadas).toEqual([{fase:'hoje',total:1},{fase:'mes',total:1},{fase:'semana',total:1}]);
+  expect((await call('/api/notificacoes/sincronizar', 'GESTOR_FROTA', 'POST')).status).toBe(200);
+  const [segundoDestinatario] = await fixture.sql`SELECT count(*)::int AS quantidade
+    FROM public.notificacao WHERE usuario_id=92195 AND chave LIKE 'documento:92194:%:hoje'`;
+  expect(segundoDestinatario.quantidade).toBe(1);
   expect((await call('/api/notificacoes/sincronizar', 'MOTORISTA', 'POST')).status).toBe(200);
   const alheias = await fixture.sql`SELECT id FROM public.notificacao WHERE usuario_id=92199 AND chave LIKE 'cnh:%'`;
   expect(alheias).toHaveLength(0);

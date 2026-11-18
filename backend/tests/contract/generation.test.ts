@@ -289,3 +289,26 @@ if(!rejected)throw Error('alteração adicional aceita');
 console.log('ok');
 `)).toContain('ok');
 });
+
+test('SCRUM-193 autoriza somente a evolução RF46 e o conflito de CNH no DELETE',()=>{
+  expect(independent(`
+import {z} from 'zod';
+import {openapi} from './backend/src/shared/contract/openapi.ts';
+import {checkCompatibility} from './scripts/generate-api.ts';
+import {dashboardConsolidadoAntesRf46,notaDashboardAntesRf46} from './backend/src/modules/dashboard/dashboard.consolidado.schemas.ts';
+const current=openapi(), previous=structuredClone(current);
+const {$schema, ...anterior}=z.toJSONSchema(dashboardConsolidadoAntesRf46,{io:'input'});
+previous.components.schemas.DashboardConsolidado=anterior;
+previous.paths['/api/dashboard'].get.description=notaDashboardAntesRf46;
+delete previous.paths['/api/motoristas/{id}'].delete.responses[409];
+delete previous.paths['/api/documentos/alertas'];
+delete previous.components.schemas.AlertasDocumentais;
+checkCompatibility(previous,current);
+for(const mutate of [d=>d.paths['/api/motoristas/{id}'].delete.security=[],d=>d.paths['/api/dashboard'].get['x-perfis'].push('MOTORISTA')]){
+  const candidate=structuredClone(current);mutate(candidate);let rejected=false;
+  try{checkCompatibility(previous,candidate)}catch{rejected=true}
+  if(!rejected)throw Error('alteração adicional aceita');
+}
+console.log('ok');
+`)).toContain('ok');
+});

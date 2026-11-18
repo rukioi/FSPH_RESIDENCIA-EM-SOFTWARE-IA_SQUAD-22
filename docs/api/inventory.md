@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 97 operações.
+Gerado por api:generate; não editar manualmente. 98 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -46,7 +46,7 @@ Gerado por api:generate; não editar manualmente. 97 operações.
 | PUT | /api/admin/usuarios/{id} | ADM | EditarUsuario | 200 Usuario | 400, 401, 403, 404, 413, 415, 500, 405 | legado | PUT parcial. Barra final opcional. |
 | PATCH | /api/admin/usuarios/{id}/status | ADM | StatusUsuario | 200 UsuarioStatus | 400, 401, 403, 404, 413, 415, 500, 405 | legado | Estado explícito idempotente; barra final opcional. |
 | GET | /api/admin/auditoria/logs | ADM | sem corpo | 200 Auditoria | 400, 401, 403, 500, 405 | legado | Sem page/limit retorna array legado com email. Com qualquer parâmetro de paginação retorna DTO mínimo; defaults page=1, limit=20, max=100. Duplicatas/offset inseguro:400. |
-| GET | /api/dashboard | ADM, GESTOR_FROTA, ATENDENTE_SVO | sem corpo | 200 DashboardConsolidado | 400, 401, 403, 500, 405 | validado | SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d. Filas e documentos são estado atual. Abastecimentos por dias civis abrangidos. RF46 e consumo por distância pendentes. |
+| GET | /api/dashboard | ADM, GESTOR_FROTA, ATENDENTE_SVO | sem corpo | 200 DashboardConsolidado | 400, 401, 403, 500, 405 | validado | SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d. Filas e documentos são estado atual. Abastecimentos por dias civis abrangidos. Documentos a vencer pela janela RF46. Consumo por distância pendente. |
 | GET | /api/dashboard/graficos | ADM, GESTOR_FROTA | sem corpo | 200 GraficosPeriodo | 400, 401, 403, 500, 405 | validado | SCRUM-164: periodo=hoje|7d|30d|personalizado (padrão hoje). Personalizado exige inicio/fim ISO com offset, até 31 dias; demais períodos recusam inicio/fim. Query estrita. Período filtra saída institucional; fila pendente é atual, sem filtro temporal. Datas de auditoria são civis sem offset, não UTC. Motoristas indeterminados sem jornada/escala; nunca contar todos ou retornar zero fictício. |
 | GET | /api/dashboard/pendencias | ADM, GESTOR_FROTA | sem corpo | 200 PendenciasDashboard | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/dashboard/gestor | ADM, GESTOR_FROTA | sem corpo | 200 DashboardGestorIndicadores | 400, 401, 403, 500, 405 | validado | SCRUM-164: periodo=hoje|7d|30d|personalizado (padrão hoje). Personalizado exige inicio/fim ISO com offset, até 31 dias; demais períodos recusam inicio/fim. Query estrita. Período filtra saída institucional; fila pendente é atual, sem filtro temporal. Datas de auditoria são civis sem offset, não UTC. Motoristas indeterminados sem jornada/escala; nunca contar todos ou retornar zero fictício. |
@@ -84,7 +84,7 @@ Gerado por api:generate; não editar manualmente. 97 operações.
 | POST | /api/motoristas | ADM, GESTOR_FROTA | CriarMotorista | 201 RespostaMotorista | 400, 401, 403, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | PUT | /api/motoristas/{id} | ADM, GESTOR_FROTA | EditarMotorista | 200 RespostaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | PATCH | /api/motoristas/{id} | ADM, GESTOR_FROTA | EditarMotorista | 200 RespostaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
-| DELETE | /api/motoristas/{id} | ADM, GESTOR_FROTA | sem corpo | 200 Exclusao | 401, 403, 404, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| DELETE | /api/motoristas/{id} | ADM, GESTOR_FROTA | sem corpo | 200 Exclusao | 401, 403, 404, 409, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | sem corpo | 200 ComprovanteAbastecimento | 401, 403, 404, 500, 405 | legado | Imagem JPEG ou PNG como bytes; acesso autenticado. |
 | GET | /api/abastecimentos/indicadores | ADM, GESTOR_FROTA | sem corpo | 200 IndicadoresAbastecimentos | 400, 401, 403, 404, 500, 405 | validado | SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo por distância indisponível até definição da regra. |
 | GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 Abastecimentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
@@ -99,6 +99,7 @@ Gerado por api:generate; não editar manualmente. 97 operações.
 | GET | /api/documentos/{id}/historico | ADM, GESTOR_FROTA | sem corpo | 200 HistoricoDocumental | 400, 401, 403, 404, 500, 405 | validado | Snapshots reais append-only com autor/instante; paginação decrescente. Histórico legado vazio não é reconstruído. |
 | PATCH | /api/documentos/{id} | ADM, GESTOR_FROTA | AlterarDocumento | 200 DetalheDocumental | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | SCRUM-193: versão obrigatória e data civil válida. Lock do cadastro, histórico e auditoria atômicos; 409 versão antiga. Motorista não edita CNH. Anexo opcional deve pertencer ao mesmo documento/motorista. |
 | GET | /api/documentos | ADM, GESTOR_FROTA | sem corpo | 200 Documentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| GET | /api/documentos/alertas | ADM, GESTOR_FROTA | sem corpo | 200 AlertasDocumentais | 400, 401, 403, 500, 405 | validado | SCRUM-193 RF46: fases no fuso America/Maceio por mês-calendário, sete dias e dia da validade. Lista paginada com responsável mínimo e vencidos; leitura sem efeitos. |
 | GET | /api/documentos/pendencias | ADM, GESTOR_FROTA | sem corpo | 200 PendenciasDocumentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | POST | /api/documentos | ADM, GESTOR_FROTA | CriarDocumento | 201 RespostaDocumento | 400, 413, 415, 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 
