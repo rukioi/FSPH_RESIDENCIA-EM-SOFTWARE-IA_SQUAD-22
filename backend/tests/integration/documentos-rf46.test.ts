@@ -106,3 +106,16 @@ test('remoção de motorista com histórico de CNH retorna 409 e mantém versõe
   expect((await call('/api/documentos/92199?tipo=CNH_MOTORISTA')).status).toBe(200);
   if(process.env.CI) console.info('SCRUM-193 remoção protegida', removido.status, row);
 });
+
+test('remoção física de cadastro sem histórico e sem vínculos mantém o sucesso e a ausência 404', async () => {
+  await fixture.sql`INSERT INTO public.motorista (id,nome,cnh,categoria_cnh,validade_cnh)
+    VALUES (92201,'Fixture de remoção RF46','RF46-REMOVER-92201','B','2031-06-30')`;
+  try {
+    const response = await call('/api/motoristas/92201', 'ADM', 'DELETE');
+    expect(response.status).toBe(200);
+    expect((await response.json()).data.success).toBe(true);
+    expect((await call('/api/motoristas/92201', 'ADM', 'DELETE')).status).toBe(404);
+  } finally {
+    await fixture.sql`DELETE FROM public.motorista WHERE id=92201`;
+  }
+});
