@@ -14,5 +14,5 @@ A contagem de viagens executadas inclui registros cujo início real cai no perí
 
 - IND-09. Documentos de veículo e CNHs a vencer incluem as fases MES, SEMANA e HOJE da janela RF46. O total exclui vencidos, que têm contagem própria. O período histórico de viagens não interfere na posição documental atual.
 - Disponibilidade de motoristas. O indicador legado mantém a indisponibilidade quando falta escala/jornada confiável.
-- Abastecimentos. A visão Gestão reutiliza os [indicadores da SCRUM-188](./abastecimentos.md#indicadores-de-abastecimentos--scrum-188) nos dias civis abrangidos pela seleção, em America/Maceio. A regra de consumo por distância continua pendente na SCRUM-188.
+- Abastecimentos. A visão Gestão reutiliza os [indicadores da SCRUM-188](./abastecimentos.md#indicadores-de-abastecimentos--scrum-188) nos dias civis abrangidos pela seleção, em America/Maceio. O consumo usa trechos cheio a cheio em km/L e informa dados insuficientes quando a janela não contém um trecho válido.
 - A adoção no frontend está na SCRUM-199. A visão consolidada acrescenta campos ao antigo envelope vazio de `/api/dashboard`.

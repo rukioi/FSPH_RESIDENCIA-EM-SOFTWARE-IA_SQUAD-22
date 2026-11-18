@@ -1,4 +1,4 @@
-import { indicadoresAbastecimentos } from '../abastecimentos/abastecimentos.schemas.js';
+import { indicadoresAbastecimentos, indicadoresAbastecimentosAntesDeConsumo } from '../abastecimentos/abastecimentos.schemas.js';
 import { z } from 'zod';
 import { dados,id } from '../../shared/contract/schemas.js';
 import { dashboardSchemas } from './dashboard.schemas.js';
@@ -14,7 +14,9 @@ const svo=z.object({visao:z.literal('SVO'),operacional:svoDashboardSchemas.Dashb
   filas:svoDashboardSchemas.FilasOperacionaisSvo,atividades:svoDashboardSchemas.AtividadesRecentesSvo.shape.data});
 export const dashboardConsolidadoSchemas={DashboardConsolidado:dados(z.discriminatedUnion('visao',[gestao,svo]))};
 // Forma anterior, usada apenas pelo gate para reconhecer a troca exata da fonte de abastecimentos.
-const gestaoAntesRf46 = gestao.extend({
+const gestaoAntesDeConsumo = gestao.extend({ abastecimentos: indicadoresAbastecimentosAntesDeConsumo.shape.data });
+export const dashboardConsolidadoAntesDeConsumo = dados(z.discriminatedUnion('visao', [gestaoAntesDeConsumo, svo]));
+const gestaoAntesRf46 = gestaoAntesDeConsumo.extend({
   documentos: gestao.shape.documentos.extend({ alertas: alertaAnterior }),
 });
 export const dashboardConsolidadoAntesRf46 = dados(z.discriminatedUnion('visao', [gestaoAntesRf46, svo]));
@@ -24,6 +26,7 @@ export const dashboardConsolidadoAntesDeAbastecimentos = dados(z.discriminatedUn
 ]));
 export const notaDashboardAntesDeAbastecimentos='SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d. Filas e documentos são estado atual. RF46 e fonte SCRUM-188 pendentes.';
 export const notaDashboardAntesRf46 = notaDashboardAntesDeAbastecimentos.replace('RF46 e fonte SCRUM-188 pendentes.', 'Abastecimentos por dias civis abrangidos. RF46 e consumo por distância pendentes.');
-export const notaDashboardConsolidado = notaDashboardAntesRf46.replace(
+export const notaDashboardAntesDeConsumo = notaDashboardAntesRf46.replace(
   'RF46 e consumo por distância pendentes.', 'Documentos a vencer pela janela RF46. Consumo por distância pendente.',
 );
+export const notaDashboardConsolidado = notaDashboardAntesDeConsumo.replace('Consumo por distância pendente.', 'Consumo cheio a cheio em km/L.');

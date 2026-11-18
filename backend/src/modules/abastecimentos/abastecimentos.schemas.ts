@@ -19,7 +19,7 @@ export const parametrosIndicadoresAbastecimentos = [
   { name: 'fim', required: false, schema: dataCivilIndicadores },
 ];
 
-export const indicadoresAbastecimentos = dados(z.object({
+export const indicadoresAbastecimentosAntesDeConsumo = dados(z.object({
   estado: z.enum(['DISPONIVEL', 'SEM_ABASTECIMENTOS']),
   quantidade, totalLitros: decimal, totalCusto: decimal, custoPorLitro: decimal.nullable(),
   periodoObservado: z.object({ inicio: dataCivilIndicadores.nullable(), fim: dataCivilIndicadores.nullable() }),
@@ -31,6 +31,30 @@ export const indicadoresAbastecimentos = dados(z.object({
     valor: z.null(), estado: z.literal('INDISPONIVEL'), motivo: z.literal('REGRA_DE_NEGOCIO_PENDENTE'),
   }),
 }));
+
+const consumoMedido = z.object({
+  estado: z.literal('DISPONIVEL'), valor: decimal, motivo: z.null(),
+  trechosValidos: quantidade,
+});
+const consumoInsuficiente = z.object({
+  estado: z.literal('DADOS_INSUFICIENTES'), valor: z.null(), motivo: z.literal('SEM_TRECHO_VALIDO'),
+  trechosValidos: z.literal(0),
+});
+const porVeiculo = z.array(z.discriminatedUnion('estado', [
+  consumoMedido.extend({ veiculoId: id }),
+  consumoInsuficiente.extend({ veiculoId: id }),
+]));
+const consumoPorDistancia = z.discriminatedUnion('estado', [
+  consumoMedido.extend({ unidade: z.literal('km/L'), porVeiculo }),
+  consumoInsuficiente.extend({ unidade: z.literal('km/L'), porVeiculo }),
+]);
+
+export const indicadoresAbastecimentos = indicadoresAbastecimentosAntesDeConsumo.extend({
+  data: indicadoresAbastecimentosAntesDeConsumo.shape.data.extend({ consumoPorDistancia }),
+});
+
+export const notaIndicadoresAntesDeConsumo = 'SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo por distância indisponível até definição da regra.';
+export const notaIndicadoresAbastecimentos = 'SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo cheio a cheio em km/L, com insuficiência explícita.';
 
 export const abastecimentosSchemas = {
   IndicadoresAbastecimentos: indicadoresAbastecimentos,

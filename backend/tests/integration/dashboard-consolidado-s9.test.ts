@@ -56,7 +56,7 @@ test('dashboard reaproveita os indicadores de abastecimento do dia civil',async(
   const data = await gestao();
   expect(data.abastecimentos).toEqual((await direto.json()).data);
   expect(data.abastecimentos).toMatchObject({ quantidade:1, totalLitros:'10.00', totalCusto:'60.00',
-    consumoPorDistancia:{estado:'INDISPONIVEL',valor:null} });
+    consumoPorDistancia:{estado:'DADOS_INSUFICIENTES',valor:null} });
 });
 
 test('período vazio retorna zeros reais sem apagar filas/documentos atuais',async()=>{
