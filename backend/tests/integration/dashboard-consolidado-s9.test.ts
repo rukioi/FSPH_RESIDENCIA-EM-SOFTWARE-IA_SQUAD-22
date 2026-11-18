@@ -106,7 +106,6 @@ test('IND-10 a IND-14 refletem cadastro, triagem e ordem de coleta persistidos p
 
     const cadastradas = await painel();
     expect(cadastradas.operacional.indicadores.aguardandoTriagem).toBe(antes.operacional.indicadores.aguardandoTriagem + 2);
-    expect(cadastradas.operacional.visaoGeral.aguardandoTriagem).toBe(antes.operacional.visaoGeral.aguardandoTriagem + 2);
 
     const confirmada = await post('/api/svo/solicitacoes/' + solicitacoes[0] + '/triagem', {
       decisao: 'CONFIRMADA_SVO', quantidadeCorpos: 1, triagemObservacoes: 'Triagem de teste SVO',
@@ -119,16 +118,19 @@ test('IND-10 a IND-14 refletem cadastro, triagem e ordem de coleta persistidos p
     expect(encaminhada.status).toBe(200);
     expect(svoSchemas.TriagemFinalSvo.parse(await encaminhada.json()).ordemColeta).toBeNull();
 
+    const { inicio, fim } = antes.operacional;
     const registros = await fixture.sql`
       SELECT so.id::text AS id, so.status_triagem, so.triado_em IS NOT NULL AS triada,
-        oc.id::text AS "ordemId", oc.status AS "ordemStatus"
+        oc.id::text AS "ordemId", oc.status AS "ordemStatus",
+        so.criado_em >= ${inicio}::date AND so.criado_em < ${fim}::date + 1 AS "criadaNoPeriodo",
+        so.triado_em >= ${inicio}::date AND so.triado_em < ${fim}::date + 1 AS "triadaNoPeriodo"
       FROM public.solicitacao_obito so
       LEFT JOIN public.ordem_coleta oc ON oc.solicitacao_obito_id = so.id
       WHERE so.id = ANY(${solicitacoes}::bigint[])
       ORDER BY so.id
     `;
     expect(confirmacao.ordemColeta).not.toBeNull();
-    expect(registros).toEqual([
+    expect(registros).toMatchObject([
       { id: solicitacoes[0], status_triagem: 'CONFIRMADA_SVO', triada: true,
         ordemId: confirmacao.ordemColeta?.id, ordemStatus: 'PENDENTE_ALOCACAO' },
       { id: solicitacoes[1], status_triagem: 'ENCAMINHADA_IML', triada: true, ordemId: null, ordemStatus: null },
@@ -137,14 +139,20 @@ test('IND-10 a IND-14 refletem cadastro, triagem e ordem de coleta persistidos p
     const depois = await painel();
     const indicadores = antes.operacional.indicadores;
     const coorte = antes.operacional.visaoGeral;
+    const [svo, iml] = registros;
+    // A consulta usa datas civis persistidas, inclusive nas horas em que UTC e Maceió divergem.
+    const criadas = Number(svo.criadaNoPeriodo) + Number(iml.criadaNoPeriodo);
+    expect(cadastradas.operacional.visaoGeral.aguardandoTriagem).toBe(coorte.aguardandoTriagem + criadas);
     expect(depois.operacional.indicadores).toEqual({
       aguardandoTriagem: indicadores.aguardandoTriagem,
-      confirmadasSvo: indicadores.confirmadasSvo + 1,
-      ordensColeta: indicadores.ordensColeta + 1,
-      encaminhadasIml: indicadores.encaminhadasIml + 1,
+      confirmadasSvo: indicadores.confirmadasSvo + Number(svo.triadaNoPeriodo),
+      ordensColeta: indicadores.ordensColeta + Number(svo.triadaNoPeriodo),
+      encaminhadasIml: indicadores.encaminhadasIml + Number(iml.triadaNoPeriodo),
     });
     expect(depois.operacional.visaoGeral).toEqual({
-      ...coorte, confirmadasSvo: coorte.confirmadasSvo + 1, encaminhadasIml: coorte.encaminhadasIml + 1,
+      ...coorte,
+      confirmadasSvo: coorte.confirmadasSvo + Number(svo.criadaNoPeriodo),
+      encaminhadasIml: coorte.encaminhadasIml + Number(iml.criadaNoPeriodo),
     });
     expect(depois.filas.aguardandoTriagem.total).toBe(antes.filas.aguardandoTriagem.total);
     expect(depois.filas.aguardandoDespacho.total).toBe(antes.filas.aguardandoDespacho.total + 1);
