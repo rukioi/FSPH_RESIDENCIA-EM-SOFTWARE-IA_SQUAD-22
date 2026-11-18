@@ -17,8 +17,16 @@ export const dashboardConsolidadoAntesPeriodoSvo = dados(z.discriminatedUnion('v
 const svoComPeriodoPersonalizado = svo.extend({
   operacional: svoDashboardSchemas.DashboardOperacionalSvo.extend({ periodo: periodoDashboardSchema }),
 });
+export const dashboardConsolidadoAntesDeCandidatos = dados(z.discriminatedUnion('visao', [gestao, svoComPeriodoPersonalizado]));
+const gestaoComCandidatos = gestao.extend({
+  disponibilidadeMotoristas: z.object({
+    estado: z.literal('PROVISORIA'),
+    candidatos: quantidade.describe('Motoristas com cadastro disponível, conta ativa e CNH vigente, sem bloqueio registrado na janela.'),
+    motivo: z.literal('SEM_ESCALA_E_MATRIZ_CNH'),
+  }).describe('Contagem indicativa de candidatos para consulta da gestão, sem confirmação de escala ou aptidão por veículo.'),
+});
 export const dashboardConsolidadoSchemas = {
-  DashboardConsolidado: dados(z.discriminatedUnion('visao', [gestao, svoComPeriodoPersonalizado])),
+  DashboardConsolidado: dados(z.discriminatedUnion('visao', [gestaoComCandidatos, svoComPeriodoPersonalizado])),
 };
 // Forma anterior, usada apenas pelo gate para reconhecer a troca exata da fonte de abastecimentos.
 const gestaoAntesDeConsumo = gestao.extend({ abastecimentos: indicadoresAbastecimentosAntesDeConsumo.shape.data });
@@ -37,6 +45,7 @@ export const notaDashboardAntesDeConsumo = notaDashboardAntesRf46.replace(
   'RF46 e consumo por distância pendentes.', 'Documentos a vencer pela janela RF46. Consumo por distância pendente.',
 );
 export const notaDashboardAntesPeriodoSvo = notaDashboardAntesDeConsumo.replace('Consumo por distância pendente.', 'Consumo cheio a cheio em km/L.');
-export const notaDashboardConsolidado = notaDashboardAntesPeriodoSvo.replace(
+export const notaDashboardAntesDeCandidatos = notaDashboardAntesPeriodoSvo.replace(
   'SVO: hoje/7d/30d.', 'SVO: hoje/7d/30d/personalizado; inicio/fim ISO com offset e até 31 dias no personalizado.',
 );
+export const notaDashboardConsolidado = notaDashboardAntesDeCandidatos + ' Gestão inclui a contagem provisória de motoristas candidatos.';

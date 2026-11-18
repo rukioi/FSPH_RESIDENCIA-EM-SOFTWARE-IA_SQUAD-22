@@ -216,6 +216,60 @@ test('SVO consolidado filtra o intervalo personalizado sem alterar filas ou o co
   });
 });
 
+test('Gestão conta candidatos provisórios com CNH vigente, conta ativa e sem conflito registrado', async () => {
+  await fixture.sql`UPDATE public.motorista SET status = 'DISPONIVEL', validade_cnh = '2098-01-01' WHERE id = 92199`;
+  const bloqueadoSvo = (await gestao()).disponibilidadeMotoristas;
+  expect(bloqueadoSvo).toMatchObject({ estado: 'PROVISORIA', motivo: 'SEM_ESCALA_E_MATRIZ_CNH' });
+
+  await fixture.sql`UPDATE public.ordem_coleta SET status = 'CANCELADA' WHERE id = 92194`;
+  const livre = await gestao();
+  expect(livre.disponibilidadeMotoristas.candidatos).toBe(bloqueadoSvo.candidatos + 1);
+  expect(livre.gestao.motoristasDisponiveis).toBeNull();
+
+  await fixture.sql`UPDATE public.motorista SET validade_cnh = '2097-12-31' WHERE id = 92199`;
+  const cnhVencidaNaJanela = (await gestao()).disponibilidadeMotoristas.candidatos;
+  expect(cnhVencidaNaJanela).toBe(bloqueadoSvo.candidatos);
+  await fixture.sql`UPDATE public.motorista SET validade_cnh = '2098-01-01', status = 'FOLGA' WHERE id = 92199`;
+  expect((await gestao()).disponibilidadeMotoristas.candidatos).toBe(bloqueadoSvo.candidatos);
+  await fixture.sql`UPDATE public.motorista SET status = 'DISPONIVEL' WHERE id = 92199`;
+  await fixture.sql`UPDATE public.usuario SET ativo = false WHERE id = 92199`;
+  const contaInativa = (await gestao()).disponibilidadeMotoristas.candidatos;
+  expect(contaInativa).toBe(bloqueadoSvo.candidatos);
+  await fixture.sql`UPDATE public.usuario SET ativo = true WHERE id = 92199`;
+
+  await fixture.sql`
+    UPDATE public.solicitacao_viagem
+    SET status = 'AGENDADA', motorista_id = 92199,
+      data_hora_saida = '2098-01-01 12:00:00', data_hora_retorno_previsto = '2098-01-01 13:00:00'
+    WHERE id = 92194
+  `;
+  const reservaSobreposta = (await gestao()).disponibilidadeMotoristas.candidatos;
+  expect(reservaSobreposta).toBe(bloqueadoSvo.candidatos);
+  await fixture.sql`
+    UPDATE public.solicitacao_viagem
+    SET data_hora_saida = '2098-01-02 00:00:00', data_hora_retorno_previsto = '2098-01-02 01:00:00'
+    WHERE id = 92194
+  `;
+  const gestor = await get('/api/dashboard' + periodo, 'GESTOR_FROTA');
+  expect(gestor.status).toBe(200);
+  const { data } = dashboardConsolidadoSchemas.DashboardConsolidado.parse(await gestor.json());
+  if (data.visao !== 'GESTAO') throw new Error('Visão incorreta');
+  expect(data.disponibilidadeMotoristas).toEqual(livre.disponibilidadeMotoristas);
+  const legado = await get('/api/dashboard/gestor' + periodo);
+  expect(legado.status).toBe(200);
+  expect((await legado.json()).data).not.toHaveProperty('disponibilidadeMotoristas');
+  const svo = await get('/api/dashboard', 'ATENDENTE_SVO');
+  expect(svo.status).toBe(200);
+  expect((await svo.json()).data).not.toHaveProperty('disponibilidadeMotoristas');
+
+  if (process.env.CI) console.info('SCRUM-195 motoristas candidatos HTTP/SQL', {
+    estado: livre.disponibilidadeMotoristas.estado,
+    bloqueadoSvo: bloqueadoSvo.candidatos, livre: livre.disponibilidadeMotoristas.candidatos,
+    cnhVencidaNaJanela, contaInativa, reservaSobreposta,
+    reservaForaDaJanela: data.disponibilidadeMotoristas.candidatos, gestorHttp: gestor.status,
+  });
+});
+
 test('400/401/403 seguem contratos reais sem responder sucesso vazio',async()=>{
   expect((await get('/api/dashboard',null)).status).toBe(401);
   for(const perfil of ['MOTORISTA','SOLICITANTE_INTERNO'])expect((await get('/api/dashboard',perfil)).status).toBe(403);

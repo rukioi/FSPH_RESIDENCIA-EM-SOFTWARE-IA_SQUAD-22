@@ -5001,7 +5001,7 @@ paths:
       operationId: dashboard_get__api_dashboard
       tags:
         - dashboard
-      description: "SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d/personalizado; inicio/fim ISO com offset e até 31 dias no personalizado. Filas e documentos são estado atual. Abastecimentos por dias civis abrangidos. Documentos a vencer pela janela RF46. Consumo cheio a cheio em km/L."
+      description: "SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d/personalizado; inicio/fim ISO com offset e até 31 dias no personalizado. Filas e documentos são estado atual. Abastecimentos por dias civis abrangidos. Documentos a vencer pela janela RF46. Consumo cheio a cheio em km/L. Gestão inclui a contagem provisória de motoristas candidatos."
       security:
         - bearerAuth: []
       x-perfis:
@@ -12225,12 +12225,32 @@ components:
                     - vencidos
                     - vencemHoje
                     - alertas
+                disponibilidadeMotoristas:
+                  type: object
+                  properties:
+                    estado:
+                      type: string
+                      const: PROVISORIA
+                    candidatos:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                      description: Motoristas com cadastro disponível, conta ativa e CNH vigente, sem bloqueio registrado na janela.
+                    motivo:
+                      type: string
+                      const: SEM_ESCALA_E_MATRIZ_CNH
+                  required:
+                    - estado
+                    - candidatos
+                    - motivo
+                  description: Contagem indicativa de candidatos para consulta da gestão, sem confirmação de escala ou aptidão por veículo.
               required:
                 - visao
                 - gestao
                 - viagens
                 - abastecimentos
                 - documentos
+                - disponibilidadeMotoristas
             - type: object
               properties:
                 visao:
