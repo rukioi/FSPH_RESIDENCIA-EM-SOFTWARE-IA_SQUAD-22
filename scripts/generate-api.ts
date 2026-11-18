@@ -1,4 +1,4 @@
-import { dashboardConsolidadoSchemas, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
+import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -78,6 +78,14 @@ export function checkCompatibility(previous: Document, current: Document) {
           &&Object.entries(expected.responses).every(([key,value])=>JSON.stringify(candidate!.responses?.[key])===JSON.stringify(value)))candidate=structuredClone(old);
       }
     }
+    // A integração de combustível atualiza somente a descrição da operação raiz.
+    if (path === '/api/dashboard' && method === 'get' && candidate) {
+      const anterior = definition as { description?: string };
+      const atual = candidate as { description?: string };
+      if (anterior.description === notaDashboardAntesDeAbastecimentos && atual.description === notaDashboardConsolidado) {
+        atual.description = anterior.description;
+      }
+    }
     // Migração autorizada dos 4xx: somente a troca exata do envelope legado pelo comum.
     // Status, headers, descrições, sucessos e componentes continuam protegidos pelo gate.
     for (const [status, previousResponse] of Object.entries(old.responses ?? {})) {
@@ -143,6 +151,14 @@ export function checkCompatibility(previous: Document, current: Document) {
   }
   for (const [name,schema] of Object.entries(previous.components.schemas)) {
     let candidate = structuredClone(current.components.schemas[name as keyof typeof current.components.schemas]);
+    if (name === 'DashboardConsolidado' && candidate) {
+      const { $schema: anteriorDialect, ...anterior } = z.toJSONSchema(dashboardConsolidadoAntesDeAbastecimentos, { io: 'input' });
+      const { $schema: atualDialect, ...atual } = z.toJSONSchema(dashboardConsolidadoSchemas.DashboardConsolidado, { io: 'input' });
+      void anteriorDialect; void atualDialect;
+      if (JSON.stringify(schema) === JSON.stringify(anterior) && JSON.stringify(candidate) === JSON.stringify(atual)) {
+        candidate = structuredClone(schema);
+      }
+    }
     // Transicao exata aprovada: o runtime ja exigia ao menos um km.
     if(name==='CorrigirQuilometragem' && candidate) {
       const km={type:'integer',minimum:0,maximum:2147483647};
