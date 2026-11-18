@@ -207,10 +207,7 @@ export async function criarDocumento(
   const arquivoNome = arquivoDocumento?.nome ?? null;
   const arquivoTipo = arquivoDocumento?.tipo ?? null;
 
-  // O PostgreSQL aceita BYTEA no formato hexadecimal \x...
-  const arquivoDados = arquivoDocumento
-    ? `\\x${arquivoDocumento.conteudo.toString('hex')}`
-    : null;
+  const arquivoDados = arquivoDocumento?.conteudo ?? null;
 
   try {
     const [documento] = await sql`
