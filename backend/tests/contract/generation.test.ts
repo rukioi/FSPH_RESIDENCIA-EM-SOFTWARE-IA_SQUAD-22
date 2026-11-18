@@ -238,3 +238,30 @@ for(const mutation of mutations){const candidate=structuredClone(current);mutati
 console.log('ok');
 `)).toContain('ok');
 },15000);
+test('SCRUM-195 autoriza a nova resposta do dashboard raiz e preserva a proteção',()=>{
+  expect(independent(`
+import {openapi} from './backend/src/shared/contract/openapi.ts';
+import {checkCompatibility} from './scripts/generate-api.ts';
+const current=openapi(), previous=structuredClone(current);
+const antiga=previous.paths['/api/dashboard'].get;
+antiga.description='Formato atual preservado; query params não declarados são ignorados.';
+antiga['x-perfis']=['ADM','GESTOR_FROTA'];
+antiga['x-runtime-validation']=false;
+antiga.parameters=[];
+antiga.responses[200].content['application/json'].schema.$ref='#/components/schemas/Dashboard';
+delete antiga.responses[400];
+delete previous.components.schemas.DashboardConsolidado;
+checkCompatibility(previous,current);
+for(const mutate of [
+  d=>d.paths['/api/dashboard'].get.security=[],
+  d=>d.paths['/api/dashboard'].get['x-perfis'].push('MOTORISTA'),
+  d=>d.paths['/api/dashboard/gestor'].get.security=[],
+]){
+  const candidate=structuredClone(current);mutate(candidate);
+  let rejected=false;
+  try{checkCompatibility(previous,candidate)}catch{rejected=true}
+  if(!rejected)throw Error('alteração adicional aceita');
+}
+console.log('ok');
+`)).toContain('ok');
+});

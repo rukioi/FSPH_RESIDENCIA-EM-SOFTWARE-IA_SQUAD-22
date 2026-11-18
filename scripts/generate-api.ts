@@ -1,3 +1,4 @@
+import { dashboardConsolidadoSchemas, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -31,7 +32,7 @@ type Document = ReturnType<typeof openapi>;
 /** Gate conservador: qualquer alteração de contrato existente exige migração explícita; permite somente componentes e operações adicionais. */
 export function checkCompatibility(previous: Document, current: Document) {
   for (const [path,methods] of Object.entries(previous.paths)) for (const [method,definition] of Object.entries(methods)) {
-    const candidate = structuredClone(current.paths[path]?.[method]) as {responses?: Record<string,unknown>} | undefined;
+    let candidate = structuredClone(current.paths[path]?.[method]) as {responses?: Record<string,unknown>} | undefined;
     const old = definition as {responses?: Record<string,unknown>};
     // Sprint 8: somente operacoes existentes e a troca exata do padrao do parametro id.
     const viagensAssinadas = new Set([
@@ -58,6 +59,24 @@ export function checkCompatibility(previous: Document, current: Document) {
     if (path==='/api/abastecimentos' && method==='post' && !old.responses?.[409] && candidate?.responses?.[409]) {
       const expected={...(old.responses?.[500] as object),description:'Falha atual HTTP 409'};
       if(JSON.stringify(candidate.responses[409])===JSON.stringify(expected))delete candidate.responses[409];
+    }
+    // SCRUM-195 autoriza somente substituir o painel vazio por estas visões tipadas.
+    if(path==='/api/dashboard'&&method==='get'&&candidate){
+      const previous=definition as {responses:Record<string,{content?:{'application/json'?:{schema?:{$ref?:string}}}}>};
+      if(previous.responses[200]?.content?.['application/json']?.schema?.$ref==='#/components/schemas/Dashboard'){
+        const expected={...structuredClone(definition as Record<string,unknown>),description:notaDashboardConsolidado,
+          'x-perfis':['ADM','GESTOR_FROTA','ATENDENTE_SVO'],'x-runtime-validation':true,
+          parameters:parametrosPeriodoDashboard.map(q=>({name:q.name,in:'query',required:q.required,schema:z.toJSONSchema(q.schema)})),
+          responses:structuredClone(previous.responses)};
+        expected.responses[200].content!['application/json']!.schema!.$ref='#/components/schemas/DashboardConsolidado';
+        expected.responses[400]={...expected.responses[500],description:'Falha atual HTTP 400'} as typeof expected.responses[string];
+        const {$schema:dialect,...shape}=z.toJSONSchema(dashboardConsolidadoSchemas.DashboardConsolidado,{io:'input'});void dialect;
+        if(JSON.stringify(current.components.schemas.DashboardConsolidado)!==JSON.stringify(shape))throw new Error('Dashboard consolidado fora do contrato aprovado.');
+        // Ordem de chaves não tem semântica contratual; preserve a ordem do documento derivado.
+        if(JSON.stringify({...candidate,responses:undefined})===JSON.stringify({...expected,responses:undefined})
+          &&Object.keys(expected.responses).length===Object.keys(candidate.responses??{}).length
+          &&Object.entries(expected.responses).every(([key,value])=>JSON.stringify(candidate!.responses?.[key])===JSON.stringify(value)))candidate=structuredClone(old);
+      }
     }
     // Migração autorizada dos 4xx: somente a troca exata do envelope legado pelo comum.
     // Status, headers, descrições, sucessos e componentes continuam protegidos pelo gate.

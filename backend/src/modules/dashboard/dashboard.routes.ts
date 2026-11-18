@@ -19,12 +19,13 @@ export async function dashboardRoute(
     return;
   }
 
-  if (!autorizarPerfis(usuario, ['ADM', 'GESTOR_FROTA'], response)) return;
 
   const caminho = new URL(
     request.url ?? '',
     `http://${request.headers.host ?? 'localhost'}`
   ).pathname;
+  const perfis = caminho === '/api/dashboard' ? ['ADM','GESTOR_FROTA','ATENDENTE_SVO'] : ['ADM','GESTOR_FROTA'];
+  if (!autorizarPerfis(usuario, perfis, response)) return;
 
   if (caminho === '/api/dashboard/graficos') {
     await dashboardGraficosController(response,new URL(request.url??'', 'http://localhost').searchParams);
@@ -41,5 +42,5 @@ export async function dashboardRoute(
     return;
   }
 
-  dashboardController(response);
+  await dashboardController(response,usuario.perfil,new URL(request.url??'','http://localhost').searchParams);
 }

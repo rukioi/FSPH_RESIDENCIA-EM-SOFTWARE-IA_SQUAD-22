@@ -72,7 +72,7 @@ test.each(['ADMINISTRADOR', 'GESTOR_FROTA'])(
     });
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ data: {} });
+    expect(await response.json()).toMatchObject({ data: { visao: 'GESTAO', viagens: { criterio: 'dataInicio' } } });
   }
 );
 

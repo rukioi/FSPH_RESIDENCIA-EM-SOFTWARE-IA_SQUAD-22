@@ -28,9 +28,9 @@ dados demonstrativos na página do gestor.
 
 ## Acesso e rotas
 
-JWT/sessão atual e perfis ADM ou GESTOR_FROTA em todos os GETs existentes:
+Todos os GETs exigem JWT e sessão atual. Os caminhos de gestão exigem ADM ou GESTOR_FROTA:
 
-- `/api/dashboard`: envelope legado `{data:{}}`, sem indicadores operacionais.
+- `/api/dashboard`: [visões consolidadas da SCRUM-195](./dashboard-consolidado-s9.md), incluindo Atendente SVO.
 - `/api/dashboard/pendencias`: consulta legada de documentos/CNH, preservada.
 - `/api/dashboard/gestor`: resumo institucional, fila e atividades persistidas.
 - `/api/dashboard/graficos`: distribuição por status e período.

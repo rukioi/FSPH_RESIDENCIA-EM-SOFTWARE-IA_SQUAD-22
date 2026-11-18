@@ -1,6 +1,7 @@
 import { evidenciaMetadadosSchema } from '../../modules/viagens/viagens.evidencias.schemas.js';
 import { anexosSchemas, registroId, tipoRegistro } from '../../modules/anexos/anexos.schemas.js';
 import { anotacoesSchemas, tipoNota } from '../../modules/anotacoes/anotacoes.schemas.js';
+import { dashboardConsolidadoSchemas, notaDashboardConsolidado } from '../../modules/dashboard/dashboard.consolidado.schemas.js';
 import { z } from 'zod';
 import { viagensSchemas, statusViagemSchema } from '../../modules/viagens/viagens.schemas.js';
 import { relatoriosSchemas, consultaRelatorioSchema } from '../../modules/relatorios/relatorios.schemas.js';
@@ -23,7 +24,7 @@ import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas
 import { solicitacoesSchemas, statusSolicitacao, idRecursoSchema } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
-export const schemas = { ...anotacoesSchemas, ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
+export const schemas = { ...dashboardConsolidadoSchemas, ...anotacoesSchemas, ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
   ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
@@ -122,10 +123,12 @@ export const operations: Operacao[] = [
   op('usuarios','patch','/api/admin/usuarios/{id}/status','UsuarioStatus',['ADM'],{body:'StatusUsuario',errors:[400,401,403,404,413,415,500],errorSchema:'ErroUsuario',notes:'Estado explícito idempotente; barra final opcional.'}),
   op('auditoria','get','/api/admin/auditoria/logs','Auditoria',['ADM'],{errors:[400,401,403,500],notes:'Sem page/limit retorna array legado com email. Com qualquer parâmetro de paginação retorna DTO mínimo; defaults page=1, limit=20, max=100. Duplicatas/offset inseguro:400.',query:[
     {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)}, {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
-  ...(['Dashboard','Graficos','PendenciasDashboard','DashboardGestor'] as const).map((s,i)=>op('dashboard','get',
-    ['/api/dashboard','/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],
-    i===1?'GraficosPeriodo':i===3?'DashboardGestorIndicadores':s,gestor,
-    i===1||i===3?{runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notasDashboardPeriodo}:{})),
+  op('dashboard','get','/api/dashboard','DashboardConsolidado',['ADM','GESTOR_FROTA','ATENDENTE_SVO'],{
+    runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notaDashboardConsolidado}),
+  ...(['Graficos','PendenciasDashboard','DashboardGestor'] as const).map((s,i)=>op('dashboard','get',
+    ['/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],
+    i===0?'GraficosPeriodo':i===2?'DashboardGestorIndicadores':s,gestor,
+    i!==1?{runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notasDashboardPeriodo}:{})),
   // SCRUM-132/145/147/148 — capacidades, vínculo por motorista e execução auditada.
   op('svo','get','/api/svo/recursos-disponiveis','RecursosDisponiveisSvo',['ATENDENTE_SVO'],{
     errors:[400,401,403,500],notes:'Disponibilidade informativa: S10 própria Chevrolet com cadastro coerente, lotação ativa 0/4..4/4; CNH válida, motorista autenticável, documentos vencidos e reservas bloqueiam. Revalidar no PATCH de despacho.'}),
