@@ -83,9 +83,9 @@ Inclui `Allow` com os métodos da linha correspondente na tabela de rotas.
 {"error": {"code": "METODO_NAO_PERMITIDO", "message": "Método não permitido."}}
 ```
 
-### 409 — Duplicidade
+### 409 — Conflito
 
-Exemplo de conflito; as validações existentes mantêm suas mensagens específicas.
+As validações de duplicidade mantêm suas mensagens específicas. O DELETE de motorista vinculado a histórico de CNH retorna `HISTORICO_CNH_EXISTENTE` e preserva o cadastro e as versões.
 
 ```json
 {"error": {"code": "CPF_DUPLICADO", "message": "Este CPF já está cadastrado."}}

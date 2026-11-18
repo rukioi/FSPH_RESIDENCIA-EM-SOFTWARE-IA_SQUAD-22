@@ -272,6 +272,7 @@ export interface ApiSchemas {
   DetalheDocumental: DetalheDocumental;
   HistoricoDocumental: HistoricoDocumental;
   AlterarDocumento: AlterarDocumento;
+  AlertasDocumentais: AlertasDocumentais;
   GraficosPeriodo: GraficosPeriodo;
   DashboardGestorIndicadores: DashboardGestorIndicadores;
   Dashboard: Dashboard;
@@ -492,9 +493,8 @@ export interface DashboardConsolidado {
           vencidos: number;
           vencemHoje: number;
           alertas: {
-            estado: 'INDISPONIVEL';
-            valor: null;
-            motivo: 'REGRA_RF46_PENDENTE';
+            estado: 'DISPONIVEL';
+            valor: number;
           };
         };
       }
@@ -1743,6 +1743,30 @@ export interface AlterarDocumento {
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "AlertasDocumentais".
+ */
+export interface AlertasDocumentais {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    tipo: 'DOCUMENTO_VEICULO' | 'CNH_MOTORISTA';
+    registroId: string | null;
+    descricao: string;
+    responsavel: string | null;
+    dataValidade: string;
+    diasRestantes: number;
+    fase: 'VENCIDO' | 'HOJE' | 'SEMANA' | 'MES';
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "GraficosPeriodo".
  */
 export interface GraficosPeriodo {
@@ -2845,5 +2869,6 @@ export interface ApiOperations {
   'documentos_get__api_documentos_id_historico': { body: undefined; response: ApiSchemas['HistoricoDocumental'] };
   'documentos_get__api_documentos': { body: undefined; response: ApiSchemas['Documentos'] };
   'documentos_post__api_documentos': { body: ApiSchemas['CriarDocumento']; response: ApiSchemas['RespostaDocumento'] };
+  'documentos_get__api_documentos_alertas': { body: undefined; response: ApiSchemas['AlertasDocumentais'] };
   'documentos_get__api_documentos_pendencias': { body: undefined; response: ApiSchemas['PendenciasDocumentos'] };
 }

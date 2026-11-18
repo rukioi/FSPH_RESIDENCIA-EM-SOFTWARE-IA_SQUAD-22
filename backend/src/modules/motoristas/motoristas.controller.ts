@@ -519,27 +519,34 @@ export async function atualizarMotorista(
   }
 }
 
-/** Remove um motorista pelo identificador. */
+/** Remove cadastros sem histórico de CNH e preserva versões já registradas. */
 export async function deletarMotorista(
   _req: IncomingMessage,
   res: ServerResponse,
   id: string,
 ) {
   try {
-    const [deletado] = await sql`
-      DELETE FROM motorista WHERE id = ${id} RETURNING id
-    `;
+    const resultado = await sql.begin(async tx => {
+      const [motorista] = await tx`SELECT id FROM public.motorista WHERE id = ${id} FOR UPDATE`;
+      if (!motorista) return 'AUSENTE';
 
-    if (!deletado) {
-      return enviarErro(
-        res,
-        404,
-        'NAO_ENCONTRADO',
-        'Motorista não encontrado.',
-      );
+      const [historico] = await tx`SELECT EXISTS (
+        SELECT 1 FROM public.documento_historico WHERE motorista_id = ${id}
+      ) AS existe`;
+      if (historico.existe) return 'HISTORICO';
+
+      await tx`DELETE FROM public.motorista WHERE id = ${id}`;
+      return 'REMOVIDO';
+    });
+
+    if (resultado === 'AUSENTE') {
+      return enviarErro(res, 404, 'NAO_ENCONTRADO', 'Motorista não encontrado.');
     }
-
-    enviarJson(res, 200, { data: { success: true } });
+    if (resultado === 'HISTORICO') {
+      return enviarErro(res, 409, 'HISTORICO_CNH_EXISTENTE',
+        'Não é possível remover o motorista porque ele possui histórico de CNH.');
+    }
+    enviarJson(res, 200, { success: true });
   } catch (err) {
     tratarErro(res, err, 'Falha ao remover motorista.');
   }
