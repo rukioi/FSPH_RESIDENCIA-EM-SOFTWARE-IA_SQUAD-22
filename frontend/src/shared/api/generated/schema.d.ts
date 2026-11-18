@@ -1,6 +1,13 @@
 /* Gerado por client:generate de docs/api/openapi.yaml. Não editar. */
 
 /**
+ * Bytes PDF/JPEG/PNG somente após autenticação e autorização por registro.
+ *
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ArquivoAnexo".
+ */
+export type ArquivoAnexo = string;
+/**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "EvidenciaArquivo".
  */
@@ -193,6 +200,11 @@ export type FinalizarTriagemSvo =
     };
 
 export interface ApiSchemas {
+  CriarAnexo: CriarAnexo;
+  MetadadosAnexo: MetadadosAnexo;
+  RespostaAnexo: RespostaAnexo;
+  ListaAnexos: ListaAnexos;
+  ArquivoAnexo: ArquivoAnexo;
   ListaEvidenciasViagem: ListaEvidenciasViagem;
   EvidenciaArquivo: EvidenciaArquivo;
   CriarViagem: CriarViagem;
@@ -303,6 +315,118 @@ export interface ApiSchemas {
   ReagendarSolicitacaoViagem: ReagendarSolicitacaoViagem;
   RespostaAgendaViagem: RespostaAgendaViagem;
   RespostaDisponibilidadeViagem: RespostaDisponibilidadeViagem;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CriarAnexo".
+ */
+export interface CriarAnexo {
+  tipoRegistro:
+    | 'SOLICITACAO_VIAGEM'
+    | 'SOLICITACAO_SVO'
+    | 'VIAGEM'
+    | 'ORDEM_SVO'
+    | 'ABASTECIMENTO'
+    | 'VEICULO'
+    | 'MOTORISTA'
+    | 'DOCUMENTO_VEICULO';
+  registroId: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "MetadadosAnexo".
+ */
+export interface MetadadosAnexo {
+  tipoRegistro:
+    | 'SOLICITACAO_VIAGEM'
+    | 'SOLICITACAO_SVO'
+    | 'VIAGEM'
+    | 'ORDEM_SVO'
+    | 'ABASTECIMENTO'
+    | 'VEICULO'
+    | 'MOTORISTA'
+    | 'DOCUMENTO_VEICULO';
+  registroId: string;
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  nome: string;
+  tipo: 'application/pdf' | 'image/jpeg' | 'image/png';
+  tamanho: number;
+  sha256: string;
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  autorId: string;
+  criadoEm: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaAnexo".
+ */
+export interface RespostaAnexo {
+  data: {
+    tipoRegistro:
+      | 'SOLICITACAO_VIAGEM'
+      | 'SOLICITACAO_SVO'
+      | 'VIAGEM'
+      | 'ORDEM_SVO'
+      | 'ABASTECIMENTO'
+      | 'VEICULO'
+      | 'MOTORISTA'
+      | 'DOCUMENTO_VEICULO';
+    registroId: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    nome: string;
+    tipo: 'application/pdf' | 'image/jpeg' | 'image/png';
+    tamanho: number;
+    sha256: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaAnexos".
+ */
+export interface ListaAnexos {
+  data: {
+    tipoRegistro:
+      | 'SOLICITACAO_VIAGEM'
+      | 'SOLICITACAO_SVO'
+      | 'VIAGEM'
+      | 'ORDEM_SVO'
+      | 'ABASTECIMENTO'
+      | 'VEICULO'
+      | 'MOTORISTA'
+      | 'DOCUMENTO_VEICULO';
+    registroId: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    nome: string;
+    tipo: 'application/pdf' | 'image/jpeg' | 'image/png';
+    tamanho: number;
+    sha256: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -2361,6 +2485,9 @@ export interface ApiOperations {
   'abastecimentos_get__api_abastecimentos_id_comprovante': { body: undefined; response: Blob };
   'abastecimentos_get__api_abastecimentos': { body: undefined; response: ApiSchemas['Abastecimentos'] };
   'abastecimentos_post__api_abastecimentos': { body: ApiSchemas['CriarAbastecimento']; response: ApiSchemas['RespostaAbastecimento'] };
+  'anexos_post__api_anexos': { body: FormData; response: ApiSchemas['RespostaAnexo'] };
+  'anexos_get__api_anexos': { body: undefined; response: ApiSchemas['ListaAnexos'] };
+  'anexos_get__api_anexos_id_': { body: undefined; response: Blob };
   'documentos_get__api_documentos_consulta': { body: undefined; response: ApiSchemas['ListaDocumental'] };
   'documentos_get__api_documentos_id_': { body: undefined; response: ApiSchemas['DetalheDocumental'] };
   'documentos_patch__api_documentos_id_': { body: ApiSchemas['AlterarDocumento']; response: ApiSchemas['DetalheDocumental'] };

@@ -71,7 +71,9 @@ test.each(['application/pdf', 'image/jpeg', 'image/png'])('MIME %s validado por 
   const bytes = tipo === 'application/pdf' ? Buffer.from('%PDF-1.7\nfixture')
     : tipo === 'image/jpeg' ? Buffer.from('ffd8ff01', 'hex') : pngAnexo;
   expect((await upload('VEICULO','92194','ADM', bytes, tipo)).status).toBe(201);
-  expect((await upload('VEICULO','92194','ADM', Buffer.from('arquivo falsificado'), tipo)).status).toBe(415);
+  const rejeitado = await upload('VEICULO','92194','ADM', Buffer.from('arquivo falsificado'), tipo);
+  expect(rejeitado.status).toBe(415);
+  if (process.env.CI) console.info('SCRUM-194 assinatura falsa', tipo, rejeitado.status);
 });
 
 test('sessão atual: 401 sem token/inativo, 403 perfil revogado e download sem bypass por ID', async () => {
@@ -138,7 +140,9 @@ test('nome/caminho, tipo indevido e limites são rejeitados antes de persistir',
   expect((await upload('VEICULO','92194','ADM',pngAnexo,'text/plain')).status).toBe(415);
   const bytes = Buffer.alloc(5242880, 1); pngAnexo.copy(bytes);
   expect((await upload('VEICULO','92194','ADM',bytes)).status).toBe(201);
-  expect((await upload('VEICULO','92194','ADM',Buffer.concat([bytes,Buffer.from([1])]))).status).toBe(413);
+  const excedente = await upload('VEICULO','92194','ADM',Buffer.concat([bytes,Buffer.from([1])]));
+  expect(excedente.status).toBe(413);
+  if (process.env.CI) console.info('SCRUM-194 arquivo acima de 5 MiB', excedente.status);
   expect((await get(consulta())).status).toBe(200);
   expect((await (await get(consulta())).json()).meta.total).toBe(1);
 });
@@ -161,8 +165,13 @@ test('falha real da auditoria reverte bytes e metadados; nenhum conteúdo privad
     const response = await upload('VEICULO','92194','ADM',pngAnexo,'image/png','dado-privado-sentinela.png');
     expect(response.status).toBe(500);
     expect(await response.text()).not.toMatch(/sentinela|SQL|INSERT|fixture_anexo|stack/i);
-    expect(await fixture.sql`SELECT id FROM anexo WHERE autor_id=92194`).toHaveLength(0);
-    expect(await fixture.sql`SELECT id FROM log_atividade WHERE usuario_id=92194`).toHaveLength(0);
+    const anexos = await fixture.sql`SELECT id FROM anexo WHERE autor_id=92194`;
+    const atividades = await fixture.sql`SELECT id FROM log_atividade WHERE usuario_id=92194`;
+    expect(anexos).toHaveLength(0);
+    expect(atividades).toHaveLength(0);
+    if (process.env.CI) console.info('SCRUM-194 rollback', response.status, {
+      anexosPersistidos: anexos.length, atividadesPersistidas: atividades.length,
+    });
   });
   const { data } = await (await upload()).json();
   expect((await fetch(base + '/api/anexos/' + data.id, {method:'DELETE',headers:headers('ADM')})).status).toBe(405);
