@@ -336,6 +336,22 @@ export const apiOperations = {
     "method": "POST",
     "path": "/api/abastecimentos"
   },
+  "documentos_get__api_documentos_consulta": {
+    "method": "GET",
+    "path": "/api/documentos/consulta"
+  },
+  "documentos_get__api_documentos_id_": {
+    "method": "GET",
+    "path": "/api/documentos/{id}"
+  },
+  "documentos_patch__api_documentos_id_": {
+    "method": "PATCH",
+    "path": "/api/documentos/{id}"
+  },
+  "documentos_get__api_documentos_id_historico": {
+    "method": "GET",
+    "path": "/api/documentos/{id}/historico"
+  },
   "documentos_get__api_documentos": {
     "method": "GET",
     "path": "/api/documentos"

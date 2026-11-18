@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 87 operações.
+Gerado por api:generate; não editar manualmente. 91 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -88,6 +88,10 @@ Gerado por api:generate; não editar manualmente. 87 operações.
 | GET | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | sem corpo | 200 ComprovanteAbastecimento | 401, 403, 404, 500, 405 | legado | Imagem JPEG ou PNG como bytes; acesso autenticado. |
 | GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 Abastecimentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | POST | /api/abastecimentos | ADM, GESTOR_FROTA | CriarAbastecimento | 201 RespostaAbastecimento | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| GET | /api/documentos/consulta | ADM, GESTOR_FROTA | sem corpo | 200 ListaDocumental | 400, 401, 403, 500, 405 | validado | SCRUM-193: consulta paginada por tipo/veículo/motorista/validade. Situação vencido/hoje/futuro pela data civil do banco, sem escolher janela RF46. Legado /api/documentos preservado. |
+| GET | /api/documentos/{id} | ADM, GESTOR_FROTA | sem corpo | 200 DetalheDocumental | 400, 401, 403, 404, 500, 405 | validado | Tipo padrão DOCUMENTO_VEICULO; CNH_MOTORISTA identifica cadastro existente. Versão 0 significa ausência de histórico, sem autor retroativo. |
+| GET | /api/documentos/{id}/historico | ADM, GESTOR_FROTA | sem corpo | 200 HistoricoDocumental | 400, 401, 403, 404, 500, 405 | validado | Snapshots reais append-only com autor/instante; paginação decrescente. Histórico legado vazio não é reconstruído. |
+| PATCH | /api/documentos/{id} | ADM, GESTOR_FROTA | AlterarDocumento | 200 DetalheDocumental | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | SCRUM-193: versão obrigatória e data civil válida. Lock do cadastro, histórico e auditoria atômicos; 409 versão antiga. Motorista não edita CNH. Anexo opcional deve pertencer ao mesmo documento/motorista. |
 | GET | /api/documentos | ADM, GESTOR_FROTA | sem corpo | 200 Documentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | GET | /api/documentos/pendencias | ADM, GESTOR_FROTA | sem corpo | 200 PendenciasDocumentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | POST | /api/documentos | ADM, GESTOR_FROTA | CriarDocumento | 201 RespostaDocumento | 400, 413, 415, 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |

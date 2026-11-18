@@ -11,6 +11,7 @@ import { usuariosSchemas } from '../../modules/usuarios/usuarios.schemas.js';
 import { auditoriaSchemas } from '../../modules/auditoria/auditoria.schemas.js';
 import { motoristasSchemas } from '../../modules/motoristas/motoristas.schemas.js';
 import { abastecimentosSchemas } from '../../modules/abastecimentos/abastecimentos.schemas.js';
+import { gestaoDocumentalSchemas, parametrosDocumentais, tipoDocumental } from '../../modules/documentos/documentos.gestao.schemas.js';
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
 import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
 import { svoSchemas } from '../../modules/svo/svo.schemas.js';
@@ -23,7 +24,7 @@ import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicita
 export const schemas = { ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
-  ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
+  ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
 export type Modulo = 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
@@ -204,6 +205,14 @@ export const operations: Operacao[] = [
   op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
   op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
   op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,409,413,415,500]}),
+  op('documentos','get','/api/documentos/consulta','ListaDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,500],query:parametrosDocumentais,
+    notes:'SCRUM-193: consulta paginada por tipo/veículo/motorista/validade. Situação vencido/hoje/futuro pela data civil do banco, sem escolher janela RF46. Legado /api/documentos preservado.'}),
+  op('documentos','get','/api/documentos/{id}','DetalheDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],
+    query:[{name:'tipo',required:false,schema:tipoDocumental}],notes:'Tipo padrão DOCUMENTO_VEICULO; CNH_MOTORISTA identifica cadastro existente. Versão 0 significa ausência de histórico, sem autor retroativo.'}),
+  op('documentos','get','/api/documentos/{id}/historico','HistoricoDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],
+    query:parametrosDocumentais.filter(p=>['tipo','page','limit'].includes(p.name)),notes:'Snapshots reais append-only com autor/instante; paginação decrescente. Histórico legado vazio não é reconstruído.'}),
+  op('documentos','patch','/api/documentos/{id}','DetalheDocumental',gestor,{body:'AlterarDocumento',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],
+    query:[{name:'tipo',required:false,schema:tipoDocumental}],notes:'SCRUM-193: versão obrigatória e data civil válida. Lock do cadastro, histórico e auditoria atômicos; 409 versão antiga. Motorista não edita CNH. Anexo opcional deve pertencer ao mesmo documento/motorista.'}),
   op('documentos','get','/api/documentos','Documentos',gestor),
   op('documentos','get','/api/documentos/pendencias','PendenciasDocumentos',gestor),
   op('documentos','post','/api/documentos','RespostaDocumento',gestor,{body:'CriarDocumento'}),

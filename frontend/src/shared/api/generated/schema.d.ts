@@ -249,6 +249,11 @@ export interface ApiSchemas {
   PendenciasDocumentos: PendenciasDocumentos;
   CriarDocumento: CriarDocumento;
   RespostaDocumento: RespostaDocumento;
+  DocumentoAtual: DocumentoAtual;
+  ListaDocumental: ListaDocumental;
+  DetalheDocumental: DetalheDocumental;
+  HistoricoDocumental: HistoricoDocumental;
+  AlterarDocumento: AlterarDocumento;
   GraficosPeriodo: GraficosPeriodo;
   DashboardGestorIndicadores: DashboardGestorIndicadores;
   Dashboard: Dashboard;
@@ -1156,6 +1161,113 @@ export interface RespostaDocumento {
     arquivo_nome: string | null;
     arquivo_tipo: string | null;
   };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "DocumentoAtual".
+ */
+export interface DocumentoAtual {
+  /**
+   * BIGINT serializado pelo postgres como string; não converter para Number.
+   */
+  id: string;
+  tipo: 'DOCUMENTO_VEICULO' | 'CNH_MOTORISTA';
+  registroId: string | null;
+  dataValidade: string;
+  tipoDocumento: string | null;
+  numeroCnh: string | null;
+  categoriaCnh: string | null;
+  regular: boolean | null;
+  diasRestantes: number;
+  versao: number;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaDocumental".
+ */
+export interface ListaDocumental {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    tipo: 'DOCUMENTO_VEICULO' | 'CNH_MOTORISTA';
+    registroId: string | null;
+    dataValidade: string;
+    tipoDocumento: string | null;
+    numeroCnh: string | null;
+    categoriaCnh: string | null;
+    regular: boolean | null;
+    diasRestantes: number;
+    versao: number;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "DetalheDocumental".
+ */
+export interface DetalheDocumental {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    tipo: 'DOCUMENTO_VEICULO' | 'CNH_MOTORISTA';
+    registroId: string | null;
+    dataValidade: string;
+    tipoDocumento: string | null;
+    numeroCnh: string | null;
+    categoriaCnh: string | null;
+    regular: boolean | null;
+    diasRestantes: number;
+    versao: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "HistoricoDocumental".
+ */
+export interface HistoricoDocumental {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    versao: number;
+    dataValidade: string;
+    tipoDocumento: string | null;
+    numeroCnh: string | null;
+    categoriaCnh: string | null;
+    regular: boolean | null;
+    anexoId: string | null;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "AlterarDocumento".
+ */
+export interface AlterarDocumento {
+  versao: number;
+  dataValidade: string;
+  tipoDocumento?: string;
+  numeroCnh?: string;
+  categoriaCnh?: 'A' | 'B' | 'C' | 'D' | 'E';
+  anexoId?: string | null;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -2249,6 +2361,10 @@ export interface ApiOperations {
   'abastecimentos_get__api_abastecimentos_id_comprovante': { body: undefined; response: Blob };
   'abastecimentos_get__api_abastecimentos': { body: undefined; response: ApiSchemas['Abastecimentos'] };
   'abastecimentos_post__api_abastecimentos': { body: ApiSchemas['CriarAbastecimento']; response: ApiSchemas['RespostaAbastecimento'] };
+  'documentos_get__api_documentos_consulta': { body: undefined; response: ApiSchemas['ListaDocumental'] };
+  'documentos_get__api_documentos_id_': { body: undefined; response: ApiSchemas['DetalheDocumental'] };
+  'documentos_patch__api_documentos_id_': { body: ApiSchemas['AlterarDocumento']; response: ApiSchemas['DetalheDocumental'] };
+  'documentos_get__api_documentos_id_historico': { body: undefined; response: ApiSchemas['HistoricoDocumental'] };
   'documentos_get__api_documentos': { body: undefined; response: ApiSchemas['Documentos'] };
   'documentos_post__api_documentos': { body: ApiSchemas['CriarDocumento']; response: ApiSchemas['RespostaDocumento'] };
   'documentos_get__api_documentos_pendencias': { body: undefined; response: ApiSchemas['PendenciasDocumentos'] };

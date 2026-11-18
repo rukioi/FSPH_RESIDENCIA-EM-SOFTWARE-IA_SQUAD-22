@@ -11,7 +11,18 @@ test.beforeAll(async({request})=>{
   sql=await verifiedSql();
 });
 test.afterAll(async()=>{
-  if(sql) { try {await sql`delete from motorista where nome like 'Fixture T30 E2E%'`;} finally {await sql.end();} }
+  if (!sql) return;
+  const admin = await verifiedSql(true);
+  try {
+    await admin.begin(async tx => {
+      await tx`DELETE FROM public.documento_historico
+        WHERE motorista_id IN (SELECT id FROM public.motorista WHERE nome LIKE 'Fixture T30 E2E%')`;
+      await tx`DELETE FROM public.motorista WHERE nome LIKE 'Fixture T30 E2E%'`;
+    });
+  } finally {
+    await admin.end();
+    await sql.end();
+  }
 });
 for(const width of [390,768,1280]) {
   test(`motoristas confirma cadastro, filtros e detalhes em ${width}px`,async({page},info)=>{

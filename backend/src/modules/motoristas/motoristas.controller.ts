@@ -5,6 +5,7 @@ import { enviarDados as enviarJson, enviarErro } from '../../shared/http/json.js
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
+import { registrarVersaoDocumental } from '../documentos/documentos.historico.js';
 
 const CATEGORIAS_PERMITIDAS = ['A', 'B', 'C', 'D', 'E'];
 
@@ -148,6 +149,7 @@ enviarJson(res, 200, dados);
 export async function criarMotorista(
   req: IncomingMessage,
   res: ServerResponse,
+  autorId: string,
 ) {
   try {
     const body = await lerBody(req);
@@ -282,7 +284,8 @@ export async function criarMotorista(
       }
     }
 
-    const [novo] = await sql`
+    const novo = await sql.begin(async tx => {
+      const [row] = await tx`
       INSERT INTO motorista (
         nome,
         cnh,
@@ -304,6 +307,9 @@ export async function criarMotorista(
       RETURNING *
     `;
 
+      await registrarVersaoDocumental(tx, 'CNH_MOTORISTA', row.id, autorId);
+      return row;
+    });
     enviarJson(res, 201, novo);
   } catch (err) {
     tratarErro(res, err, 'Falha ao cadastrar motorista.');
@@ -315,6 +321,7 @@ export async function atualizarMotorista(
   req: IncomingMessage,
   res: ServerResponse,
   id: string,
+  autorId: string,
 ) {
   try {
     const body = await lerBody(req);
@@ -469,7 +476,9 @@ export async function atualizarMotorista(
       }
     }
 
-    const [atualizado] = await sql`
+    const atualizado = await sql.begin(async tx => {
+      const [antes] = await tx`SELECT cnh,categoria_cnh,validade_cnh FROM motorista WHERE id=${id} FOR UPDATE`;
+      const [row] = await tx`
       UPDATE motorista
       SET
         nome = COALESCE(${nome ?? null}, nome),
@@ -489,6 +498,12 @@ export async function atualizarMotorista(
       RETURNING *
     `;
 
+      if (row && antes && (row.cnh !== antes.cnh || row.categoria_cnh !== antes.categoria_cnh
+        || String(row.validade_cnh) !== String(antes.validade_cnh))) {
+        await registrarVersaoDocumental(tx, 'CNH_MOTORISTA', row.id, autorId);
+      }
+      return row;
+    });
     if (!atualizado) {
       return enviarErro(
         res,

@@ -35,15 +35,15 @@ test('migração #30 permite somente 404 comum de abastecimento e sua descriçã
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
-test('inventory preserves 87 operations and pathname limits',()=>{
-  expect(operations).toHaveLength(87);
+test('inventory preserves 91 operations and pathname limits',()=>{
+  expect(operations).toHaveLength(91);
   for (const method of ['patch','post'] as const) {
     expect(operations.filter(o => o.method === method && o.path === '/api/svo/solicitacoes/{id}/triagem')).toHaveLength(1);
   }
 });
 
-test('inventory preserves previous operations and adds eleven trip operations',()=>{
-  // Operacoes do OpenAPI da base 1e5f2bb, independentes do HEAD e do historico Git.
+test('inventory preserves previous operations and adds document history operations',()=>{
+  // Operações da base 1e5f2bb e as quatro rotas documentais da SCRUM-193.
   const anterior = [
     "delete /api/motoristas/{id}",
     "delete /api/veiculos/{id}",
@@ -57,7 +57,10 @@ test('inventory preserves previous operations and adds eleven trip operations',(
     "get /api/dashboard/graficos",
     "get /api/dashboard/pendencias",
     "get /api/documentos",
+    "get /api/documentos/consulta",
     "get /api/documentos/pendencias",
+    "get /api/documentos/{id}",
+    "get /api/documentos/{id}/historico",
     "get /api/motoristas",
     "get /api/notificacoes",
     "get /api/relatorios",
@@ -87,6 +90,7 @@ test('inventory preserves previous operations and adds eleven trip operations',(
     "get /api/veiculos",
     "get /api/veiculos/{id}/foto",
     "patch /api/admin/usuarios/{id}/status",
+    "patch /api/documentos/{id}",
     "patch /api/motoristas/{id}",
     "patch /api/solicitacoes-viagem/{id}",
     "patch /api/svo/ordens-coleta/{id}/cancelar",
@@ -128,7 +132,7 @@ test('inventory preserves previous operations and adds eleven trip operations',(
     'patch /api/viagens/{id}/corrigir-quilometragem', 'patch /api/viagens/{id}/encerrar', 'patch /api/viagens/{id}/iniciar',
     'patch /api/viagens/{id}/validar', 'post /api/viagens',
   ].sort());
-  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(76);
+  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(80);
   expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
