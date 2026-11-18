@@ -6,7 +6,11 @@
 - **Atendente SVO** recebe `data.visao: SVO`. Usa os repositórios da SCRUM-149 para contagens, filas e atividades. A visão exclui os dados documentais e de frota da gestão.
 - Sem sessão a resposta é 401. Os demais perfis recebem 403. Os endpoints legados `/gestor`, `/graficos` e `/pendencias` mantêm formatos e acesso de gestão.
 
-Gestão aceita `hoje`, `7d`, `30d` e `personalizado`, com começo inclusivo e fim exclusivo no fuso institucional já usado na SCRUM-164 e na S8. O SVO preserva `hoje`, `7d` e `30d`. As filas e a contagem de vencidos e vencimentos de hoje refletem o estado atual. Os documentos usam a data civil da consulta legada do PostgreSQL.
+Gestão e SVO aceitam `hoje`, `7d`, `30d` e `personalizado` em `GET /api/dashboard`. Para o personalizado, envie `inicio` e `fim` em ISO 8601 com offset explícito, com duração de até 31 dias. As agregações usam começo inclusivo e fim exclusivo no fuso America/Maceio.
+
+No SVO, o período limita triagens, ordens geradas e a coorte de solicitações. A fila atual e as atividades recentes continuam independentes do filtro. `operacional.inicio` e `operacional.fim` repetem os instantes ISO informados no personalizado. Para Hoje, 7d e 30d, continuam sendo as datas civis inicial e final inclusivas. A rota `/api/svo/dashboard` conserva seus três períodos originais.
+
+As filas de gestão e as contagens de documentos vencidos e vencendo hoje refletem o estado atual. Os documentos usam a data civil da consulta legada do PostgreSQL.
 
 A contagem de viagens executadas inclui registros cujo início real cai no período. Uma solicitação planejada sem início real não aparece nessa contagem. Zero representa agregação sem linhas. Falhas nas fontes retornam 500. Cada módulo usa seu snapshot ao compor a resposta.
 

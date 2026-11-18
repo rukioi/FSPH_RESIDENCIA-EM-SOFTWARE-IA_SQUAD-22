@@ -1,5 +1,5 @@
 import { indicadoresAbastecimentos, indicadoresAbastecimentosAntesDeConsumo, notaIndicadoresAbastecimentos, notaIndicadoresAntesDeConsumo } from '../backend/src/modules/abastecimentos/abastecimentos.schemas.js';
-import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoAntesDeConsumo, dashboardConsolidadoAntesRf46, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardAntesDeConsumo, notaDashboardAntesRf46, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
+import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoAntesDeConsumo, dashboardConsolidadoAntesPeriodoSvo, dashboardConsolidadoAntesRf46, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo, notaDashboardAntesRf46, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -79,11 +79,11 @@ export function checkCompatibility(previous: Document, current: Document) {
           &&Object.entries(expected.responses).every(([key,value])=>JSON.stringify(candidate!.responses?.[key])===JSON.stringify(value)))candidate=structuredClone(old);
       }
     }
-    // A integração de combustível atualiza somente a descrição da operação raiz.
+    // SCRUM-195: reconhece as descrições anteriores da operação raiz do dashboard.
     if (path === '/api/dashboard' && method === 'get' && candidate) {
       const anterior = definition as { description?: string };
       const atual = candidate as { description?: string };
-      if (([notaDashboardAntesDeAbastecimentos, notaDashboardAntesRf46, notaDashboardAntesDeConsumo].includes(anterior.description ?? '')) && atual.description === notaDashboardConsolidado) {
+      if (([notaDashboardAntesDeAbastecimentos, notaDashboardAntesRf46, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo].includes(anterior.description ?? '')) && atual.description === notaDashboardConsolidado) {
         atual.description = anterior.description;
       }
     }
@@ -180,7 +180,9 @@ export function checkCompatibility(previous: Document, current: Document) {
       void rf46Dialect;
       const { $schema: consumoDialect, ...antesConsumo } = z.toJSONSchema(dashboardConsolidadoAntesDeConsumo, { io: 'input' });
       void consumoDialect;
-      const anteriorReconhecido = [anterior, antesRf46, antesConsumo].some(legado => JSON.stringify(legado) === JSON.stringify(schema));
+      const { $schema: periodoDialect, ...antesPeriodoSvo } = z.toJSONSchema(dashboardConsolidadoAntesPeriodoSvo, { io: 'input' });
+      void periodoDialect;
+      const anteriorReconhecido = [anterior, antesRf46, antesConsumo, antesPeriodoSvo].some(legado => JSON.stringify(legado) === JSON.stringify(schema));
       if (anteriorReconhecido && JSON.stringify(candidate) === JSON.stringify(atual)) {
         candidate = structuredClone(schema);
       }

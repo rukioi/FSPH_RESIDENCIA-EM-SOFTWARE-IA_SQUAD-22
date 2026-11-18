@@ -5001,7 +5001,7 @@ paths:
       operationId: dashboard_get__api_dashboard
       tags:
         - dashboard
-      description: "SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d. Filas e documentos são estado atual. Abastecimentos por dias civis abrangidos. Documentos a vencer pela janela RF46. Consumo cheio a cheio em km/L."
+      description: "SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d/personalizado; inicio/fim ISO com offset e até 31 dias no personalizado. Filas e documentos são estado atual. Abastecimentos por dias civis abrangidos. Documentos a vencer pela janela RF46. Consumo cheio a cheio em km/L."
       security:
         - bearerAuth: []
       x-perfis:
@@ -12245,6 +12245,7 @@ components:
                         - hoje
                         - 7d
                         - 30d
+                        - personalizado
                     inicio:
                       type: string
                     fim:

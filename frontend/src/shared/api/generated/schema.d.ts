@@ -564,7 +564,7 @@ export interface DashboardConsolidado {
     | {
         visao: 'SVO';
         operacional: {
-          periodo: 'hoje' | '7d' | '30d';
+          periodo: 'hoje' | '7d' | '30d' | 'personalizado';
           inicio: string;
           fim: string;
           indicadores: {
