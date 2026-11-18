@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {afterAll,afterEach,beforeAll,expect,test} from 'vitest';
 import type {AddressInfo} from 'node:net';
 import {createApp} from '../../src/app.js';
@@ -90,9 +91,12 @@ test('filtros por veículo SVO, CNH, situação e período civil inclusivo usam 
 });
 
 test('anexo de outra entidade não pode integrar versão; arquivo correto pode',async()=>{
-  const form=new FormData();form.append('tipoRegistro','DOCUMENTO_VEICULO');form.append('registroId','92195');
-  form.append('arquivo',new Blob([new Uint8Array(pngAnexo)],{type:'image/png'}),'x.png');
-  const {data}=await(await fetch(base+'/api/anexos',{method:'POST',headers:headers(),body:form})).json();
+  const [data] = await fixture.sql<{ id: string }[]>`
+    INSERT INTO public.anexo (documento_veiculo_id, nome, tipo, tamanho, sha256, dados, autor_id)
+    VALUES (92195, 'x.png', 'image/png', ${pngAnexo.length},
+      ${createHash('sha256').update(pngAnexo).digest('hex')}, ${pngAnexo}, 92194)
+    RETURNING id::text
+  `;
   expect((await write('/api/documentos/92194',{versao:0,dataValidade:'2029-01-01',anexoId:data.id})).status).toBe(404);
   expect((await write('/api/documentos/92195',{versao:0,dataValidade:'2029-01-01',anexoId:data.id})).status).toBe(200);
   expect((await(await get('/api/documentos/92195/historico')).json()).data[0].anexoId).toBe(data.id);
