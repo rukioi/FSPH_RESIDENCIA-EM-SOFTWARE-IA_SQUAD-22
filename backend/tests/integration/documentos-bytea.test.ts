@@ -25,10 +25,18 @@ afterAll(async () => {
   if (server.listening) await new Promise<void>(resolve => server.close(() => resolve()));
   try {
     if (veiculoId) {
-      await sql.begin(async tx => {
-        await tx`DELETE FROM public.documento_veiculo WHERE veiculo_id = ${veiculoId!}`;
-        await tx`DELETE FROM public.veiculo WHERE id = ${veiculoId!}`;
-      });
+      const id = veiculoId;
+      const admin = await verifiedSql(true);
+      try {
+        await admin.begin(async tx => {
+          await tx`DELETE FROM public.documento_historico
+            WHERE documento_veiculo_id IN (SELECT id FROM public.documento_veiculo WHERE veiculo_id = ${id})`;
+          await tx`DELETE FROM public.documento_veiculo WHERE veiculo_id = ${id}`;
+          await tx`DELETE FROM public.veiculo WHERE id = ${id}`;
+        });
+      } finally {
+        await admin.end();
+      }
     }
   } finally {
     await sql.end();
