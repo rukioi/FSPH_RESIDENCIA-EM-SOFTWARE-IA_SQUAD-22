@@ -266,3 +266,25 @@ for(const mutate of [
 console.log('ok');
 `)).toContain('ok');
 });
+
+test('SCRUM-188 permite substituir somente a fonte antes indisponível do dashboard',()=>{
+  expect(independent(`
+import {z} from 'zod';
+import {openapi} from './backend/src/shared/contract/openapi.ts';
+import {checkCompatibility} from './scripts/generate-api.ts';
+import {dashboardConsolidadoAntesDeAbastecimentos,notaDashboardAntesDeAbastecimentos} from './backend/src/modules/dashboard/dashboard.consolidado.schemas.ts';
+const current=openapi(), previous=structuredClone(current);
+const {$schema, ...anterior}=z.toJSONSchema(dashboardConsolidadoAntesDeAbastecimentos,{io:'input'});
+previous.components.schemas.DashboardConsolidado=anterior;
+previous.paths['/api/dashboard'].get.description=notaDashboardAntesDeAbastecimentos;
+delete previous.paths['/api/abastecimentos/indicadores'];
+delete previous.components.schemas.IndicadoresAbastecimentos;
+checkCompatibility(previous,current);
+const candidate=structuredClone(current);
+candidate.paths['/api/dashboard'].get.security=[];
+let rejected=false;
+try{checkCompatibility(previous,candidate)}catch{rejected=true}
+if(!rejected)throw Error('alteração adicional aceita');
+console.log('ok');
+`)).toContain('ok');
+});

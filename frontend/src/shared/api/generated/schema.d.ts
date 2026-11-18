@@ -257,6 +257,7 @@ export interface ApiSchemas {
   RespostaMotorista: RespostaMotorista;
   CriarMotorista: CriarMotorista;
   EditarMotorista: EditarMotorista;
+  IndicadoresAbastecimentos: IndicadoresAbastecimentos;
   ComprovanteAbastecimento: ComprovanteAbastecimento;
   Abastecimento: Abastecimento;
   RespostaAbastecimento: RespostaAbastecimento;
@@ -455,9 +456,36 @@ export interface DashboardConsolidado {
           }[];
         };
         abastecimentos: {
-          estado: 'INDISPONIVEL';
-          valor: null;
-          motivo: 'FONTE_SCRUM_188_PENDENTE';
+          estado: 'DISPONIVEL' | 'SEM_ABASTECIMENTOS';
+          quantidade: number;
+          /**
+           * NUMERIC serializado pelo driver como string, preservando precisão.
+           */
+          totalLitros: string;
+          /**
+           * NUMERIC serializado pelo driver como string, preservando precisão.
+           */
+          totalCusto: string;
+          custoPorLitro: string | null;
+          periodoObservado: {
+            inicio: string | null;
+            fim: string | null;
+          };
+          kmObservadosPorVeiculo: {
+            /**
+             * BIGINT serializado pelo postgres como string; não converter para Number.
+             */
+            veiculoId: string;
+            leiturasComKm: number;
+            leiturasSemKm: number;
+            menorKm: number | null;
+            maiorKm: number | null;
+          }[];
+          consumoPorDistancia: {
+            valor: null;
+            estado: 'INDISPONIVEL';
+            motivo: 'REGRA_DE_NEGOCIO_PENDENTE';
+          };
         };
         documentos: {
           criterio: 'ESTADO_ATUAL';
@@ -1363,6 +1391,44 @@ export interface EditarMotorista {
   status?: 'DISPONIVEL' | 'EM_VIAGEM' | 'FOLGA' | 'AFASTADO';
   cpf?: string | null;
   telefone?: string | null;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "IndicadoresAbastecimentos".
+ */
+export interface IndicadoresAbastecimentos {
+  data: {
+    estado: 'DISPONIVEL' | 'SEM_ABASTECIMENTOS';
+    quantidade: number;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    totalLitros: string;
+    /**
+     * NUMERIC serializado pelo driver como string, preservando precisão.
+     */
+    totalCusto: string;
+    custoPorLitro: string | null;
+    periodoObservado: {
+      inicio: string | null;
+      fim: string | null;
+    };
+    kmObservadosPorVeiculo: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      veiculoId: string;
+      leiturasComKm: number;
+      leiturasSemKm: number;
+      menorKm: number | null;
+      maiorKm: number | null;
+    }[];
+    consumoPorDistancia: {
+      valor: null;
+      estado: 'INDISPONIVEL';
+      motivo: 'REGRA_DE_NEGOCIO_PENDENTE';
+    };
+  };
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -2765,6 +2831,7 @@ export interface ApiOperations {
   'motoristas_patch__api_motoristas_id_': { body: ApiSchemas['EditarMotorista']; response: ApiSchemas['RespostaMotorista'] };
   'motoristas_delete__api_motoristas_id_': { body: undefined; response: ApiSchemas['Exclusao'] };
   'abastecimentos_get__api_abastecimentos_id_comprovante': { body: undefined; response: Blob };
+  'abastecimentos_get__api_abastecimentos_indicadores': { body: undefined; response: ApiSchemas['IndicadoresAbastecimentos'] };
   'abastecimentos_get__api_abastecimentos': { body: undefined; response: ApiSchemas['Abastecimentos'] };
   'abastecimentos_post__api_abastecimentos': { body: ApiSchemas['CriarAbastecimento']; response: ApiSchemas['RespostaAbastecimento'] };
   'anotacoes_post__api_anotacoes': { body: ApiSchemas['CriarAnotacao']; response: ApiSchemas['RespostaAnotacao'] };

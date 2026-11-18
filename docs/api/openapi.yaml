@@ -5001,7 +5001,7 @@ paths:
       operationId: dashboard_get__api_dashboard
       tags:
         - dashboard
-      description: "SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d. Filas e documentos são estado atual. RF46 e fonte SCRUM-188 pendentes."
+      description: "SCRUM-195: GESTAO para ADM/GESTOR e SVO para ATENDENTE. Gestão: hoje/7d/30d/personalizado, execução por início real e próximas por saída prevista. SVO: hoje/7d/30d. Filas e documentos são estado atual. Abastecimentos por dias civis abrangidos. RF46 e consumo por distância pendentes."
       security:
         - bearerAuth: []
       x-perfis:
@@ -9604,6 +9604,126 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
+  /api/abastecimentos/indicadores:
+    get:
+      operationId: abastecimentos_get__api_abastecimentos_indicadores
+      tags:
+        - abastecimentos
+      description: "SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo por distância indisponível até definição da regra."
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: veiculoId
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d{0,18}$
+        - name: inicio
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: fim
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndicadoresAbastecimentos"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
   /api/abastecimentos:
     get:
       operationId: abastecimentos_get__api_abastecimentos
@@ -11722,16 +11842,101 @@ components:
                   properties:
                     estado:
                       type: string
-                      const: INDISPONIVEL
-                    valor:
-                      type: "null"
-                    motivo:
+                      enum:
+                        - DISPONIVEL
+                        - SEM_ABASTECIMENTOS
+                    quantidade:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    totalLitros:
                       type: string
-                      const: FONTE_SCRUM_188_PENDENTE
+                      description: NUMERIC serializado pelo driver como string, preservando precisão.
+                    totalCusto:
+                      type: string
+                      description: NUMERIC serializado pelo driver como string, preservando precisão.
+                    custoPorLitro:
+                      anyOf:
+                        - type: string
+                          description: NUMERIC serializado pelo driver como string, preservando precisão.
+                        - type: "null"
+                    periodoObservado:
+                      type: object
+                      properties:
+                        inicio:
+                          anyOf:
+                            - type: string
+                              format: date
+                              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                            - type: "null"
+                        fim:
+                          anyOf:
+                            - type: string
+                              format: date
+                              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                            - type: "null"
+                      required:
+                        - inicio
+                        - fim
+                    kmObservadosPorVeiculo:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          veiculoId:
+                            type: string
+                            pattern: ^-?\d+$
+                            description: BIGINT serializado pelo postgres como string; não converter para Number.
+                          leiturasComKm:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          leiturasSemKm:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          menorKm:
+                            anyOf:
+                              - type: integer
+                                minimum: -9007199254740991
+                                maximum: 9007199254740991
+                              - type: "null"
+                          maiorKm:
+                            anyOf:
+                              - type: integer
+                                minimum: -9007199254740991
+                                maximum: 9007199254740991
+                              - type: "null"
+                        required:
+                          - veiculoId
+                          - leiturasComKm
+                          - leiturasSemKm
+                          - menorKm
+                          - maiorKm
+                    consumoPorDistancia:
+                      type: object
+                      properties:
+                        valor:
+                          type: "null"
+                        estado:
+                          type: string
+                          const: INDISPONIVEL
+                        motivo:
+                          type: string
+                          const: REGRA_DE_NEGOCIO_PENDENTE
+                      required:
+                        - valor
+                        - estado
+                        - motivo
                   required:
                     - estado
-                    - valor
-                    - motivo
+                    - quantidade
+                    - totalLitros
+                    - totalCusto
+                    - custoPorLitro
+                    - periodoObservado
+                    - kmObservadosPorVeiculo
+                    - consumoPorDistancia
                 documentos:
                   type: object
                   properties:
@@ -14482,6 +14687,111 @@ components:
           type:
             - string
             - "null"
+    IndicadoresAbastecimentos:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            estado:
+              type: string
+              enum:
+                - DISPONIVEL
+                - SEM_ABASTECIMENTOS
+            quantidade:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            totalLitros:
+              type: string
+              description: NUMERIC serializado pelo driver como string, preservando precisão.
+            totalCusto:
+              type: string
+              description: NUMERIC serializado pelo driver como string, preservando precisão.
+            custoPorLitro:
+              anyOf:
+                - type: string
+                  description: NUMERIC serializado pelo driver como string, preservando precisão.
+                - type: "null"
+            periodoObservado:
+              type: object
+              properties:
+                inicio:
+                  anyOf:
+                    - type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                    - type: "null"
+                fim:
+                  anyOf:
+                    - type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                    - type: "null"
+              required:
+                - inicio
+                - fim
+            kmObservadosPorVeiculo:
+              type: array
+              items:
+                type: object
+                properties:
+                  veiculoId:
+                    type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  leiturasComKm:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  leiturasSemKm:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  menorKm:
+                    anyOf:
+                      - type: integer
+                        minimum: -9007199254740991
+                        maximum: 9007199254740991
+                      - type: "null"
+                  maiorKm:
+                    anyOf:
+                      - type: integer
+                        minimum: -9007199254740991
+                        maximum: 9007199254740991
+                      - type: "null"
+                required:
+                  - veiculoId
+                  - leiturasComKm
+                  - leiturasSemKm
+                  - menorKm
+                  - maiorKm
+            consumoPorDistancia:
+              type: object
+              properties:
+                valor:
+                  type: "null"
+                estado:
+                  type: string
+                  const: INDISPONIVEL
+                motivo:
+                  type: string
+                  const: REGRA_DE_NEGOCIO_PENDENTE
+              required:
+                - valor
+                - estado
+                - motivo
+          required:
+            - estado
+            - quantidade
+            - totalLitros
+            - totalCusto
+            - custoPorLitro
+            - periodoObservado
+            - kmObservadosPorVeiculo
+            - consumoPorDistancia
+      required:
+        - data
     ComprovanteAbastecimento:
       type: string
     Abastecimento:

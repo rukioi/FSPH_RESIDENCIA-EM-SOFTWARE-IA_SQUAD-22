@@ -56,6 +56,12 @@ test('agrega 0, 1 e 3 registros SVO em datas civis, sem inferir distância de km
     consumoPorDistancia:{ valor:null, estado:'INDISPONIVEL', motivo:'REGRA_DE_NEGOCIO_PENDENTE' },
   });
   expect((await (await get('?inicio=2097-04-10&fim=2097-04-12')).json()).data.quantidade).toBe(4);
+  const painel = await fetch(base.replace('/abastecimentos/indicadores', '/dashboard')
+    + '?periodo=personalizado&inicio=2097-04-10T12:00:00-03:00&fim=2097-04-12T00:00:00-03:00',
+    { headers: { Authorization: 'Bearer ' + fixture.tokens.ADM } });
+  expect(painel.status).toBe(200);
+  const comparacao = await get('?inicio=2097-04-10&fim=2097-04-11');
+  expect((await painel.json()).data.abastecimentos).toEqual((await comparacao.json()).data);
   if (process.env.CI) console.info('SCRUM-188 HTTP/SQL', response.status, persistido, data.consumoPorDistancia);
 });
 

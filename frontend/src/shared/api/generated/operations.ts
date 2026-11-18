@@ -328,6 +328,10 @@ export const apiOperations = {
     "method": "GET",
     "path": "/api/abastecimentos/{id}/comprovante"
   },
+  "abastecimentos_get__api_abastecimentos_indicadores": {
+    "method": "GET",
+    "path": "/api/abastecimentos/indicadores"
+  },
   "abastecimentos_get__api_abastecimentos": {
     "method": "GET",
     "path": "/api/abastecimentos"
