@@ -15,6 +15,8 @@ Autenticação: Bearer JWT. Perfis: ADM/GESTOR_FROTA.
 
 Escrita existente: veiculo_id positivo, tipo_documento e data_vencimento civil válida (YYYY-MM-DD). Multipart inclui um arquivo PDF/JPEG/PNG com assinatura validada. JSON mantém 1 MiB; arquivo 5 MiB, corpo total 5 MiB + 64 KiB, dez campos de 4 KiB e onze partes. O excesso agora é 413; estrutura inválida permanece UPLOAD_INVALIDO (400).
 
+No cadastro multipart, o driver grava o `Buffer` do arquivo diretamente em `documento_veiculo.arquivo_dados` (`BYTEA`). A correção vale para novos uploads. Arquivos antigos eventualmente gravados como texto hexadecimal exigem diagnóstico e reparo próprios.
+
 ## Respostas
 
 ### 200 — Consulta (exemplo vazio)

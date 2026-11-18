@@ -474,7 +474,7 @@ test('BE-S6-02 recebe PDF por multipart e prepara cadastro no banco', async () =
 
   expect(parametros).toContain('documento.pdf');
   expect(parametros).toContain('application/pdf');
-  expect(parametros).toContain(`\\x${pdf.toString('hex')}`);
+  expect(parametros).toContainEqual(pdf);
 });
 test('BE-S6-02 rejeita JSON maior que 1 MB', async () => {
   const req = Readable.from([
