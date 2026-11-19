@@ -5,6 +5,7 @@ import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from
 
 export type EventoAtividade =
   | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
+  | { operacao: 'abastecimento_criado'; recursoId: string }
   | { operacao: 'anotacao_criada'; recursoId: string }
   | { operacao: 'anexo_criado'; recursoId: string }
   | { operacao: 'documento_versionado' | 'cnh_versionada'; recursoId: string }
@@ -40,6 +41,7 @@ function identificador(valor: string): string {
 function descrever(evento: EventoAtividade): string {
   const id = identificador(evento.recursoId);
   switch (evento.operacao) {
+    case 'abastecimento_criado': return `Registrou abastecimento ID ${id}`;
     case 'anotacao_criada': return `Registrou anotação ID ${id}`;
     case 'anexo_criado': return `Anexou arquivo ID ${id}`;
     case 'documento_versionado': return `Registrou versão do documento ID ${id}`;

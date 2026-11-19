@@ -1,4 +1,8 @@
-import {expect,test,vi} from 'vitest';
+import {afterEach,expect,test,vi} from 'vitest';
+// São testes unitários do agregador: documentos/RF46 não devem abrir um pool ao importar.
+const bancoProibido=vi.hoisted(()=>vi.fn(()=>{throw new Error('Banco proibido neste teste unitário.');}));
+vi.mock('../../src/database/connection.js',()=>({sql:bancoProibido}));
+afterEach(()=>{expect(bancoProibido).not.toHaveBeenCalled();});
 const falha=new Error('Falha técnica deliberada do agregador');
 vi.mock('../../src/modules/dashboard/dashboard.service.js',()=>({obterIndicadoresConsolidados:vi.fn()}));
 import {obterIndicadoresConsolidados} from '../../src/modules/dashboard/dashboard.service.js';

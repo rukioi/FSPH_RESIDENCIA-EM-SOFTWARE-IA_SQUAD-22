@@ -23,5 +23,5 @@ export async function registrarAbastecimento(body: CriarAbastecimentoDto) {
 /** Baixa o comprovante privado com sessão e tratamento de erros compartilhados. */
 export async function baixarComprovanteAbastecimento(id: string, signal?: AbortSignal): Promise<Blob> {
   if (!/^[1-9]\d*$/.test(id)) throw new ApiError(400, 'DADOS_INVALIDOS', 'Identificador de abastecimento inválido.');
-  return requestImageApi(`/api/abastecimentos/${encodeURIComponent(id)}/comprovante`, signal);
+  return requestImageApi(`/api/abastecimentos/${encodeURIComponent(id)}/comprovante`, signal, { tipos: ['application/pdf', 'image/jpeg', 'image/png'], maxBytes: 5 * 1024 * 1024 });
 }

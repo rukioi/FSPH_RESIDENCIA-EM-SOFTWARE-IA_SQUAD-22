@@ -16,6 +16,7 @@ const metadados = vinculoAnexo.extend({ id, nome: z.string().min(1).max(255),
   tipo: z.enum(['application/pdf', 'image/jpeg', 'image/png']), tamanho: z.number().int().min(1).max(5242880),
   sha256: z.string().regex(/^[a-f0-9]{64}$/), autorId: id, criadoEm: z.iso.datetime() });
 export const anexosSchemas = {
+  CriarComprovante: z.object({}).strict(),
   CriarAnexo: vinculoAnexo,
   MetadadosAnexo: metadados,
   RespostaAnexo: dados(metadados),

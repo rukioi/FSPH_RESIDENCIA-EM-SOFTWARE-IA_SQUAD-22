@@ -85,11 +85,21 @@ for (const width of [390, 768, 1280]) {
 }
 
 test('perfil de outro usuário não autoriza acesso à página do gestor', async ({ page }) => {
+  const consultasGestor: string[] = []
+  await page.route(url => url.pathname.startsWith('/api/'), route => {
+    const path = new URL(route.request().url()).pathname
+    if (path.startsWith('/api/dashboard') || path.startsWith('/api/motoristas') || path.startsWith('/api/veiculos')) consultasGestor.push(path)
+    return route.fulfill({ status: 503, json: { error: { code: 'INDISPONIVEL', message: 'Fixture indisponível' } } })
+  })
   await page.addInitScript(() => { if (location.pathname !== '/login') sessionStorage.setItem('token', 'fixture-perfil') })
   await page.route('**/api/auth/sessao', route => route.fulfill({ json: { data: {
     id: '43', nome: 'Motorista', email: 'motorista@example.invalid', perfil: 'MOTORISTA',
   } } }))
   await page.goto('/gestor/dashboard')
-  await expect(page).toHaveURL(/\/login$/)
+  // Sessão válida vai ao início do próprio perfil; não é um logout por falta de permissão.
+  await expect(page).toHaveURL(/\/notificacoes$/)
+  await expect(page.getByRole('heading', { name: 'Notificações', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Meu perfil' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toHaveCount(0)
+  expect(consultasGestor).toEqual([])
 })

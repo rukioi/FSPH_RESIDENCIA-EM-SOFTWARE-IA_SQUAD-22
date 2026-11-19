@@ -23,6 +23,7 @@ afterAll(async () => {
   await sql`delete from abastecimento where veiculo_id=30001`;
   await sql`delete from motorista where id=30001`;
   await sql`delete from veiculo where id=30001`;
+  await sql`delete from log_atividade where usuario_id in (30001,30002)`;
   await sql`delete from usuario where id in (30001,30002)`;
   await sql.end();
 });
