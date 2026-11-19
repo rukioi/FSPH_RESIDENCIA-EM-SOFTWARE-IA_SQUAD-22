@@ -51,7 +51,12 @@ export async function criarAbastecimento(req: IncomingMessage, res: ServerRespon
     }
     const body = value as CorpoAbastecimento;
     const entrada = criarAbastecimentoSchema.safeParse(value);
-    if (!entrada.success) return enviarErro(res, 400, 'DADOS_INVALIDOS', 'Confira os tipos e campos exigidos pelo cadastro atual de abastecimento.');
+    if (!entrada.success) {
+      const erroArquivo = entrada.error.issues.some(issue => issue.path[0] === 'comprovante');
+      return erroArquivo
+        ? enviarErro(res, 400, 'ARQUIVO_INVALIDO', 'Envie uma imagem JPEG ou PNG válida de até 1 MiB.')
+        : enviarErro(res, 400, 'DADOS_INVALIDOS', 'Confira os tipos e campos exigidos pelo cadastro atual de abastecimento.');
+    }
     const {veiculo_id,motorista_id,posto,litragem,valor_total,quilometragem,data_abastecimento} = entrada.data;
     if (body.tanque_completo !== undefined && typeof body.tanque_completo !== 'boolean') {
       return enviarErro(res, 400, 'DADOS_INVALIDOS', 'Tanque completo deve ser booleano.');

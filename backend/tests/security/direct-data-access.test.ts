@@ -4,6 +4,7 @@ import { verifiedSql } from '../../src/database/scripts/verify-test-db.js';
 test('ACL mínima simulada bloqueia anon/authenticated e preserva runtime sem privilégios de dono', async () => {
   const sql = await verifiedSql(true);
   const rollback = new Error('rollback-fixture-t29');
+  const [aclAntes] = await sql`select nspacl::text as acl from pg_namespace where nspname='public'`;
   try {
     await expect(sql.begin(async tx => {
       await tx`CREATE ROLE fixture_t29_runtime NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE`;
@@ -38,6 +39,8 @@ test('ACL mínima simulada bloqueia anon/authenticated e preserva runtime sem pr
       await tx`delete from public.usuario where id=29901`;
       await expect(tx.savepoint(async sp => { await sp`truncate public.usuario cascade`; })).rejects.toMatchObject({code:'42501'});
       await tx`RESET ROLE`;
+      // Concessão transacional apenas para criar a fixture; o rollback preserva o ACL original.
+      await tx`GRANT CREATE ON SCHEMA public TO postgres`;
       await tx`SET LOCAL ROLE postgres`;
       await tx`CREATE TABLE public.fixture_t29_default (id bigint)`;
       await tx`RESET ROLE`;
@@ -50,5 +53,7 @@ test('ACL mínima simulada bloqueia anon/authenticated e preserva runtime sem pr
     const [restored]=await sql`select has_table_privilege('anon','public.usuario','SELECT') as allowed,
       exists(select 1 from pg_roles where rolname='fixture_t29_runtime') as runtime`;
     expect(restored).toEqual({allowed:true,runtime:false});
+    const [aclDepois] = await sql`select nspacl::text as acl from pg_namespace where nspname='public'`;
+    expect(aclDepois).toEqual(aclAntes);
   } finally { await sql.end(); }
 });

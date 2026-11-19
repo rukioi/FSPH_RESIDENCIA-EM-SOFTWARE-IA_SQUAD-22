@@ -48,9 +48,9 @@ async function novaSolicitacao(): Promise<string> {
   });
   expect(resposta.status).toBe(201);
   const corpo = await resposta.json();
-  expect(corpo.solicitacao.criadoEm).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}$/);
   const id: string = corpo.solicitacao.id;
   cadastradas.push(id);
+  expect(corpo.solicitacao.criadoEm).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}$/);
   return id;
 }
 

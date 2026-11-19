@@ -97,6 +97,12 @@ test('GET inicial lê ocorrências reais por estado e não divulga dados pessoai
     codigo: `#SVO-${cadastradas[0]}`,
     status_triagem: 'AGUARDANDO_TRIAGEM',
   });
+  const [instanteEsperado]=await sql`
+    SELECT to_char((criado_em AT TIME ZONE 'America/Maceio') AT TIME ZONE 'UTC',
+      'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS criado_em
+    FROM public.solicitacao_obito WHERE id=${cadastradas[0]}`;
+  expect(nossa.criado_em).toBe(instanteEsperado.criado_em);
+  expect(nossa.criado_em).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   expect(Object.keys(nossa).sort()).toEqual(['codigo', 'criado_em', 'id', 'status_triagem']);
   expect(JSON.stringify(nossa)).not.toContain('Pessoa fictícia');
 });

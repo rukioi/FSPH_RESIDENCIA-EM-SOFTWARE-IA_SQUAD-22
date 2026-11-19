@@ -8,15 +8,15 @@ import postgres from 'postgres';
 export const root = fileURLToPath(new URL('../../../../', import.meta.url));
 /** Perfil fechado: valores externos nunca definem o destino ou a identidade. */
 const selectedProfile = process.env.FSPH_TEST_PROFILE ?? 't1';
-if (selectedProfile !== 't1' && selectedProfile !== 's9' && selectedProfile !== 's9-full' && selectedProfile !== 's9-full-repro') throw new Error('Perfil de teste desconhecido.');
+if (selectedProfile !== 't1' && selectedProfile !== 's9' && selectedProfile !== 's9-full' && selectedProfile !== 's9-full-repro' && selectedProfile !== 's9-mig-v3' && selectedProfile !== 's9-integracao-segura') throw new Error('Perfil de teste desconhecido.');
 export const testProfile = selectedProfile;
 const isS9 = testProfile !== 't1';
-export const testPort = testProfile === 's9-full-repro' ? '55496' : testProfile === 's9-full' ? '55495' : isS9 ? '55494' : '55432';
-export const project = testProfile === 's9-full-repro' ? 'fsph-s9-full-repro-2026' : testProfile === 's9-full' ? 'fsph-s9-full-2026' : isS9 ? 'fsph-s9-conciliacao-2026' : 'fsph-t1-isolated-2026';
+export const testPort = testProfile === 's9-integracao-segura' ? '55499' : testProfile === 's9-mig-v3' ? '55498' : testProfile === 's9-full-repro' ? '55496' : testProfile === 's9-full' ? '55495' : isS9 ? '55494' : '55432';
+export const project = testProfile === 's9-integracao-segura' ? 'fsph-s9-integracao-segura-2026' : testProfile === 's9-mig-v3' ? 'fsph-s9-mig-v3-2026' : testProfile === 's9-full-repro' ? 'fsph-s9-full-repro-2026' : testProfile === 's9-full' ? 'fsph-s9-full-2026' : isS9 ? 'fsph-s9-conciliacao-2026' : 'fsph-t1-isolated-2026';
 export const container = isS9 ? project : 'supabase_db_' + project;
-export const database = testProfile === 's9-full-repro' ? 'fsph_s9_full_repro' : testProfile === 's9-full' ? 'fsph_s9_full' : isS9 ? 'fsph_s9_conciliacao' : 'fsph_t1_baseline';
+export const database = testProfile === 's9-integracao-segura' ? 'fsph_s9_integracao_segura' : testProfile === 's9-mig-v3' ? 'fsph_s9_mig_v3' : testProfile === 's9-full-repro' ? 'fsph_s9_full_repro' : testProfile === 's9-full' ? 'fsph_s9_full' : isS9 ? 'fsph_s9_conciliacao' : 'fsph_t1_baseline';
 export const testUrl = 'postgresql://postgres:postgres@127.0.0.1:' + testPort + '/' + database;
-export const manifestPath = resolve(root, testProfile === 's9-full-repro' ? '.test-db/s9-full-repro.json' : testProfile === 's9-full' ? '.test-db/s9-full.json' : isS9 ? '.test-db/s9-conciliacao.json' : '.test-db/provision.json');
+export const manifestPath = resolve(root, testProfile === 's9-integracao-segura' ? '.test-db/s9-integracao-segura.json' : testProfile === 's9-mig-v3' ? '.test-db/s9-mig-v3.json' : testProfile === 's9-full-repro' ? '.test-db/s9-full-repro.json' : testProfile === 's9-full' ? '.test-db/s9-full.json' : isS9 ? '.test-db/s9-conciliacao.json' : '.test-db/provision.json');
 interface Manifest { workspace: string; containerId: string; nonce: string }
 interface Inspection {
   Id: string; Name: string; Running: boolean;

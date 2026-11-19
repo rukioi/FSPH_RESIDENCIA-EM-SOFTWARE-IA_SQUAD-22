@@ -371,3 +371,29 @@ Ele usa o projeto/container/volume `fsph-s9-full-repro-2026`, o banco
 `fsph_s9_full_repro`, a porta `55496` e o manifesto
 `.test-db/s9-full-repro.json`. O provisionador exige ausência do manifesto,
 container, volume e labels reservados, além da porta livre; nunca remove recursos.
+
+Para testar uma sequência revisada de migrations sem reutilizar bancos já
+provisionados, o perfil `s9-mig-v3` usa container/volume
+`fsph-s9-mig-v3-2026`, banco `fsph_s9_mig_v3`, porta `55498` e manifesto
+`.test-db/s9-mig-v3.json`:
+
+```powershell
+$env:FSPH_TEST_PROFILE = 's9-mig-v3'
+npm run db:test:s9-mig-v3:provision
+npm run db:test:start
+npm run db:test:prepare
+npm run test:db
+```
+
+Assim como os demais perfis S9, `db:test:start` apenas verifica identidade e
+marcador depois do provisionamento; não adota nem altera outro ambiente.
+
+### Perfil s9-integracao-segura
+
+O perfil fechado s9-integracao-segura usa recursos exclusivos da worktree de
+integração segura e a porta local 55499. A disponibilidade precisa ser
+reconfirmada no momento do provisionamento. Com autorização específica,
+selecione o perfil e execute o comando de provisionamento existente; ele
+recusa recursos ou manifesto preexistentes e verifica a identidade antes
+de preparar o banco. O comando aplica migrations e seed somente após as
+verificações, portanto não deve ser executado como simples verificação.

@@ -6,7 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { command, root, project, container, database, manifestPath, testPort, assertTarget, testProfile, verifyContainer, verifiedSql } from './verify-test-db.js';
 import { prepare } from './apply-test-migrations.js';
 
-if (testProfile !== 's9-full' && testProfile !== 's9-full-repro') throw new Error('Selecione explicitamente o perfil s9-full ou s9-full-repro.');
+if (testProfile !== 's9-full' && testProfile !== 's9-full-repro' && testProfile !== 's9-mig-v3' && testProfile !== 's9-integracao-segura') throw new Error('Selecione explicitamente um perfil isolado de suíte completa.');
 assertTarget(process.env.DATABASE_URL);
 if (existsSync(manifestPath)) throw new Error('Manifesto existente; provisionamento recusado.');
 const docker = (args:string[]) => command('docker',args).trim();
@@ -18,7 +18,7 @@ if (names.includes(container) || volumes.includes(project) ||
   throw new Error('Recurso preexistente; provisionamento recusado.');
 }
 const versions = readdirSync(resolve(root,'backend/src/database/supabase/migrations'))
-  .filter(name=>/^\d+_.+\.sql$/.test(name)).map(name=>name.split('_')[0]);
+  .filter(name=>/^\d+_[a-z0-9_-]+\.sql$/.test(name)).map(name=>name.split('_')[0]);
 if (!versions.length || new Set(versions).size !== versions.length) throw new Error('Migrations ausentes ou versões duplicadas.');
 const listener=createServer();
 await new Promise<void>((accept,reject)=>listener.once('error',reject).listen(Number(testPort),'127.0.0.1',accept));
@@ -44,6 +44,7 @@ for(let i=0;i<60;i++) {
   verifyContainer();
   let identity: string;
   try {
+    docker(['exec',container,'pg_isready','-U','supabase_admin','-d',database]);
     identity=docker(['exec','-e','PGPASSWORD=postgres',container,'psql','-U','supabase_admin','-d',database,'-Atqc',
       "SELECT current_database() || '|' || COALESCE(shobj_description(oid,'pg_database'),'') || '|' || (SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid()) FROM pg_database WHERE datname=current_database()"]);
   } catch { await delay(1000); continue; }

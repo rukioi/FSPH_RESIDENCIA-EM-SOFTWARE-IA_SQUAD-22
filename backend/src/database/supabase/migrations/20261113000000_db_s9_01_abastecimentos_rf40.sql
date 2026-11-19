@@ -3,10 +3,11 @@
 ALTER TABLE public.abastecimento
   ALTER COLUMN motorista_id DROP NOT NULL,
   ALTER COLUMN quilometragem DROP NOT NULL,
-  ADD COLUMN criado_por_id bigint REFERENCES public.usuario(id),
-  ADD CONSTRAINT abastecimento_litragem_positiva CHECK (litragem > 0 AND litragem <> 'NaN'::numeric),
-  ADD CONSTRAINT abastecimento_valor_positivo CHECK (valor_total > 0 AND valor_total <> 'NaN'::numeric),
-  ADD CONSTRAINT abastecimento_quilometragem_valida CHECK (quilometragem IS NULL OR quilometragem >= 0);
+  ADD COLUMN criado_por_id bigint,
+  ADD CONSTRAINT abastecimento_criado_por_id_fkey FOREIGN KEY (criado_por_id) REFERENCES public.usuario(id) NOT VALID,
+  ADD CONSTRAINT abastecimento_litragem_positiva CHECK (litragem > 0 AND litragem <> 'NaN'::numeric) NOT VALID,
+  ADD CONSTRAINT abastecimento_valor_positivo CHECK (valor_total > 0 AND valor_total <> 'NaN'::numeric) NOT VALID,
+  ADD CONSTRAINT abastecimento_quilometragem_valida CHECK (quilometragem IS NULL OR quilometragem >= 0) NOT VALID;
 
 CREATE INDEX idx_abastecimento_veiculo_data
   ON public.abastecimento (veiculo_id, data_abastecimento DESC, id DESC);

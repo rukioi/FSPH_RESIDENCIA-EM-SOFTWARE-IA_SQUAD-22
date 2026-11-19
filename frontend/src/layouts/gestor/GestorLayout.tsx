@@ -19,7 +19,7 @@ const itensMenu: { nome: string; icone: NomeIcone; rota?: string }[] = [
   { nome: 'Calendário', icone: 'calendario', rota: ROTAS.calendarioGestor },
   { nome: 'Veículos', icone: 'veiculos', rota: ROTAS.veiculosGestor },
   { nome: 'Motoristas', icone: 'motoristas', rota: ROTAS.motoristasGestor },
-  { nome: 'Documentos', icone: 'documentos' },
+  { nome: 'Documentos', icone: 'documentos', rota: ROTAS.documentosGestor },
   { nome: 'Abastecimentos', icone: 'abastecimentos', rota: ROTAS.abastecimentosGestor },
   { nome: 'Relatórios', icone: 'relatorios', rota: ROTAS.relatoriosGestor },
   { nome: 'Notificações', icone: 'notificacoes', rota: ROTAS.notificacoes },

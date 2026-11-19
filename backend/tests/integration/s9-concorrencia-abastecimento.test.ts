@@ -80,8 +80,9 @@ test.each([[3, 'correcao'], [4, 'abastecimento']] as const)('concorrência sem d
   const unblock = new Promise<void>(r => { release = r; });
   const locked = new Promise<void>(r => { ready = r; });
   const hold = sql.begin(async tx => { await tx.unsafe('SELECT id FROM public.veiculo WHERE id=$1 FOR UPDATE', [ids.base + i]); ready(); await unblock; });
-  const monitor = await verifiedSql();
+  let monitor: Awaited<ReturnType<typeof verifiedSql>> | undefined;
   const wait = async (n: number) => {
+    if (!monitor) throw new Error('Conexão de monitoramento indisponível.');
     const until = Date.now() + 5000;
     while (Date.now() < until) {
       const [r] = await monitor.unsafe("SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE '%FOR UPDATE%'");
@@ -92,6 +93,7 @@ test.each([[3, 'correcao'], [4, 'abastecimento']] as const)('concorrência sem d
   };
   try {
     await locked;
+    monitor = await verifiedSql();
     const a = first === 'correcao' ? correction(i, 1050, true) : fueling(i, '2025-12-31', 950);
     await wait(1);
     const b = first === 'correcao' ? fueling(i, '2025-12-31', 950) : correction(i, 1050, true);
@@ -101,7 +103,11 @@ test.each([[3, 'correcao'], [4, 'abastecimento']] as const)('concorrência sem d
     expect(responses.map(r => r.status)).toEqual(first === 'correcao' ? [200, 409] : [201, 409]);
     const [row] = await monitor.unsafe('SELECT v.km_final,ve.quilometragem_atual,(SELECT count(*)::int FROM public.viagem_correcao WHERE viagem_id=v.id) AS correcoes,(SELECT count(*)::int FROM public.abastecimento WHERE veiculo_id=ve.id) AS abastecimentos FROM public.viagem v JOIN public.veiculo ve ON ve.id=v.veiculo_id WHERE v.id=$1', [ids.base + 200 + i]);
     expect(row).toMatchObject(first === 'correcao' ? { km_final: 1050, quilometragem_atual: 1050, correcoes: 1, abastecimentos: 0 } : { km_final: 1000, quilometragem_atual: 1000, correcoes: 0, abastecimentos: 1 });
-  } finally { release(); await hold; await monitor.end(); }
+  } finally {
+    release();
+    try { await hold; }
+    finally { await monitor?.end(); }
+  }
 }, 20000);
 
 test('veículo SVO aceita abastecimento legítimo e mantém validações', async () => {

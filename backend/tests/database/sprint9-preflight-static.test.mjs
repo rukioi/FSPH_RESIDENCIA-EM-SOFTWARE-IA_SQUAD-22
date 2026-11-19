@@ -23,10 +23,27 @@ test('identifica versões duplicadas sem acessar o banco',()=>{
   assert.deepEqual(resultado.invalidos,[]);
 });
 
-test('aponta nomes SQL inválidos e não considera outros arquivos',()=>{
-  const resultado=identificarVersoes(['readme.md','malformada.sql','123_valida.sql']);
-  assert.deepEqual(resultado.invalidos,['malformada.sql']);
+test('usa a gramática do runner e ignora arquivos SQL não versionados',()=>{
+  const resultado=identificarVersoes(['readme.md','malformada.sql','123_BAD.sql','123_valida.sql']);
+  assert.deepEqual(resultado.invalidos,['123_BAD.sql']);
   assert.deepEqual(resultado.duplicadas,[]);
+});
+
+test('somente migrations aceitas pelo runner participam da detecção de colisões',()=>{
+  const resultado=identificarVersoes(['123_valid-a.sql','123_valid_b.sql','123_Invalid.sql']);
+  assert.deepEqual(resultado.duplicadas,[{versao:'123',arquivos:['123_valid-a.sql','123_valid_b.sql']}]);
+  assert.deepEqual(resultado.invalidos,['123_Invalid.sql']);
+});
+
+test('provisionador espera pg_isready dentro do retry limitado antes de marcar o banco',async()=>{
+  const texto=await readFile(new URL('../../src/database/scripts/provision-s9-full.ts',import.meta.url),'utf8');
+  const inicio=texto.indexOf('for(let i=0;i<60;i++)');
+  const fim=texto.indexOf('if(!marked)',inicio);
+  assert.ok(inicio>=0&&fim>inicio);
+  const retry=texto.slice(inicio,fim);
+  assert.match(retry,/try\s*\{[\s\S]*pg_isready[\s\S]*psql[\s\S]*catch/);
+  assert.ok(retry.indexOf('pg_isready')<retry.indexOf('psql'));
+  assert.ok(retry.indexOf('psql')<retry.indexOf('COMMENT ON DATABASE'));
 });
 
 test('não acusa duas cópias do mesmo nome entre referências',()=>{

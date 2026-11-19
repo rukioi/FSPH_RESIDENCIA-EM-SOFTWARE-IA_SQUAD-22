@@ -186,7 +186,9 @@ export type ResultadoDespacho =
 export async function listarSolicitacoes(status?: 'AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML') {
   const filtro = status ?? null;
   const registros = await sql`
-    SELECT id::text AS id, codigo, status_triagem::text AS status_triagem, criado_em
+    SELECT id::text AS id, codigo, status_triagem::text AS status_triagem,
+      to_char((criado_em AT TIME ZONE 'America/Maceio') AT TIME ZONE 'UTC',
+        'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS criado_em
     FROM public.solicitacao_obito
     WHERE (${filtro}::text IS NULL OR status_triagem::text = ${filtro})
     ORDER BY criado_em DESC NULLS LAST, id DESC

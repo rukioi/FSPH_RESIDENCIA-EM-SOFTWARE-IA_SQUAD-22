@@ -21,7 +21,7 @@ const itensMenu: ItemMenu[] = [
   { nome: 'Veículos', icone: 'veiculos', rota: ROTAS.veiculosGestor },
   { nome: 'Motoristas', icone: 'motoristas', rota: ROTAS.motoristasGestor },
   { nome: 'SVO', icone: 'svo', rota: ROTAS.svoDashboard },
-  { nome: 'Documentos', icone: 'documentos' },
+  { nome: 'Documentos', icone: 'documentos', rota: ROTAS.documentosAdm },
   { nome: 'Abastecimentos', icone: 'abastecimentos', rota: ROTAS.abastecimentosGestor },
   { nome: 'Relatórios', icone: 'relatorios', rota: ROTAS.relatoriosGestor },
   { nome: 'Auditoria', icone: 'auditoria', rota: ROTAS.auditoria },

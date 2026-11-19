@@ -112,10 +112,18 @@ test.each([
 test('rejeita comprovantes inválidos e preserva cadastro legado sem imagem', async () => {
   for (const comprovante of [
     {nome:'../foto.png',tipo:'image/png',dadosBase64:'iVBORw0KGgo='},
+    {nome:'x'.repeat(256),tipo:'image/png',dadosBase64:'iVBORw0KGgo='},
     {nome:'foto.png',tipo:'image/png',dadosBase64:'AAAA'},
     {nome:'foto.png',tipo:'image/png',dadosBase64:'!'},
     {nome:'foto.pdf',tipo:'application/pdf',dadosBase64:'JVBERi0='},
-  ]) expect((await call({...input,comprovante})).status).toBe(400);
+  ]) {
+    const resposta=await call({...input,comprovante});
+    expect(resposta.status).toBe(400);
+    expect((await resposta.json()).error.code).toBe('ARQUIVO_INVALIDO');
+  }
+  const camposInvalidos=await call({...input,litragem:0,comprovante:{nome:'foto.png',tipo:'image/png',dadosBase64:'iVBORw0KGgo='}});
+  expect(camposInvalidos.status).toBe(400);
+  expect((await camposInvalidos.json()).error.code).toBe('DADOS_INVALIDOS');
   const response = await call(input);
   expect(response.status).toBe(201);
   const {data} = await response.json();

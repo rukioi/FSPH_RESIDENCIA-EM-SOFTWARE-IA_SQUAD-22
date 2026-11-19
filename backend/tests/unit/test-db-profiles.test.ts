@@ -26,14 +26,22 @@ test('perfil reproduzível usa identidade exclusiva sem reutilizar s9-full',()=>
   const result=probe('s9-full-repro',`import {project,database,testProfile,testUrl,manifestPath} from '${modulePath}'; import {basename} from 'node:path'; console.log(project,database,testProfile,new URL(testUrl).port,basename(manifestPath))`);
   expect(result.trim()).toBe('fsph-s9-full-repro-2026 fsph_s9_full_repro s9-full-repro 55496 s9-full-repro.json');
 });
+test('perfil de migrations usa identidade exclusiva',()=>{
+  const result=probe('s9-mig-v3',`import {project,database,testProfile,testUrl,manifestPath} from '${modulePath}'; import {basename} from 'node:path'; console.log(project,database,testProfile,new URL(testUrl).port,basename(manifestPath))`);
+  expect(result.trim()).toBe('fsph-s9-mig-v3-2026 fsph_s9_mig_v3 s9-mig-v3 55498 s9-mig-v3.json');
+});
+test('perfil da integração segura usa identidade exclusiva',()=>{
+  const result=probe('s9-integracao-segura',`import {project,database,testProfile,testUrl,manifestPath} from '${modulePath}'; import {basename} from 'node:path'; console.log(project,database,testProfile,new URL(testUrl).port,basename(manifestPath))`);
+  expect(result.trim()).toBe('fsph-s9-integracao-segura-2026 fsph_s9_integracao_segura s9-integracao-segura 55499 s9-integracao-segura.json');
+});
 test('perfil desconhecido é recusado antes de qualquer conexão',()=>{
   expect(()=>probe('desconhecido',`await import('${modulePath}')`)).toThrow();
 });
-test.each(['t1','s9','s9-full','s9-full-repro'])('perfil %s recusa alvo arbitrário antes de conectar',profile=>{
+test.each(['t1','s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura'])('perfil %s recusa alvo arbitrário antes de conectar',profile=>{
   const code=`import {assertTarget,testUrl} from '${modulePath}'; assertTarget(testUrl); try {assertTarget('postgresql://example.invalid/production'); throw new Error('aceitou alvo');} catch(e) {if (!String(e).includes('Alvo recusado')) throw e;} console.log('recusado')`;
   expect(probe(profile,code).trim()).toBe('recusado');
 });
-test.each(['s9','s9-full','s9-full-repro'])('perfil %s rejeita alterações de checkout, container, volume, porta e nonce',profile=>{
+test.each(['s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura'])('perfil %s rejeita alterações de checkout, container, volume, porta e nonce',profile=>{
   const code = `
     import {createHash} from 'node:crypto';
     import {realpathSync} from 'node:fs';
