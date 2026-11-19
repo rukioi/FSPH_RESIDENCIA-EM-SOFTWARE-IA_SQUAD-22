@@ -11,16 +11,37 @@ const registro = { id: '9007199254740993', veiculo_id: '1', motorista_id: '2', p
 const entrada = { veiculo_id: '1', motorista_id: '2', litragem: 12.5, valor_total: 75,
   quilometragem: 1000, data_abastecimento: '2026-11-09', tanque_completo: true };
 
-test('contrato obrigatório rejeita km ausente/nulo antes de enviar a requisição', async () => {
-  const mock = vi.fn();
+test.each([
+  { motorista_id: undefined, quilometragem: undefined },
+  { motorista_id: null, quilometragem: null },
+  { motorista_id: null, quilometragem: 0 },
+  { motorista_id: '2', quilometragem: null },
+])('cadastro envia campos opcionais e aceita resposta confirmada: %j', async opcionais => {
+  const body: CriarAbastecimentoDto = { ...entrada, ...opcionais };
+  const resposta = { ...registro, motorista_id: body.motorista_id ?? null, quilometragem: body.quilometragem ?? null };
+  const mock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: resposta }), { status: 201 }));
   vi.stubGlobal('fetch', mock);
-  for (const quilometragem of [undefined, null]) {
-    const invalido = { ...entrada, quilometragem } as unknown as CriarAbastecimentoDto;
-    await expect(registrarAbastecimento(invalido)).rejects.toMatchObject({ status: 400, code: 'DADOS_INVALIDOS' });
-  }
-  expect(mock).not.toHaveBeenCalled();
+
+  expect(await registrarAbastecimento(body)).toEqual(resposta);
+  expect(mock).toHaveBeenCalledOnce();
+  expect(mock.mock.calls[0][0]).toBe('/api/abastecimentos');
+  expect(mock.mock.calls[0][1].method).toBe('POST');
+  expect(JSON.parse(mock.mock.calls[0][1].body)).toEqual(JSON.parse(JSON.stringify(body)));
 });
 
+test.each([
+  { ...entrada, quilometragem: -1 },
+  { ...entrada, quilometragem: 1.5 },
+  { ...entrada, litragem: 0 },
+  { ...entrada, valor_total: 0.005 },
+  { ...entrada, veiculo_id: undefined },
+])('cadastro rejeita valores inválidos antes da requisição: %j', async invalido => {
+  const mock = vi.fn();
+  vi.stubGlobal('fetch', mock);
+  await expect(registrarAbastecimento(invalido as CriarAbastecimentoDto))
+    .rejects.toMatchObject({ status: 400, code: 'DADOS_INVALIDOS' });
+  expect(mock).not.toHaveBeenCalled();
+});
 test('lista preserva BIGINT e transmite cancelamento sem expor conteúdo de comprovantes', async () => {
   const row = { ...registro, veiculo_placa: 'ABC1D23', motorista_nome: 'Fixture' };
   const mock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [row] })));
