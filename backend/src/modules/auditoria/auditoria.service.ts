@@ -4,6 +4,7 @@ import { notificarAtividades } from '../notificacoes/notificacoes.service.js';
 import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from './auditoria.repository.js';
 
 export type EventoAtividade =
+  | { operacao: 'abastecimento_criado'; recursoId: string }
   | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'anotacao_criada'; recursoId: string }
   | { operacao: 'anexo_criado'; recursoId: string }
@@ -41,6 +42,7 @@ function descrever(evento: EventoAtividade): string {
   const id = identificador(evento.recursoId);
   switch (evento.operacao) {
     case 'anotacao_criada': return `Registrou anotação ID ${id}`;
+    case 'abastecimento_criado': return `Registrou o abastecimento ID ${id}`;
     case 'anexo_criado': return `Anexou arquivo ID ${id}`;
     case 'documento_versionado': return `Registrou versão do documento ID ${id}`;
     case 'cnh_versionada': return `Registrou versão da CNH do motorista ID ${id}`;

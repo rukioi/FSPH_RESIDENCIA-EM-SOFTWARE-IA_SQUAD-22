@@ -15217,9 +15217,11 @@ components:
           pattern: ^-?\d+$
           description: BIGINT serializado pelo postgres como string; não converter para Number.
         motorista_id:
-          type: string
-          pattern: ^-?\d+$
-          description: BIGINT serializado pelo postgres como string; não converter para Number.
+          anyOf:
+            - type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            - type: "null"
         litragem:
           type: string
           description: NUMERIC serializado pelo driver como string, preservando precisão.
@@ -15227,9 +15229,11 @@ components:
           type: string
           description: NUMERIC serializado pelo driver como string, preservando precisão.
         quilometragem:
-          type: integer
-          minimum: -9007199254740991
-          maximum: 9007199254740991
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         data_abastecimento:
           type: string
           description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
@@ -15275,9 +15279,11 @@ components:
               pattern: ^-?\d+$
               description: BIGINT serializado pelo postgres como string; não converter para Number.
             motorista_id:
-              type: string
-              pattern: ^-?\d+$
-              description: BIGINT serializado pelo postgres como string; não converter para Number.
+              anyOf:
+                - type: string
+                  pattern: ^-?\d+$
+                  description: BIGINT serializado pelo postgres como string; não converter para Number.
+                - type: "null"
             litragem:
               type: string
               description: NUMERIC serializado pelo driver como string, preservando precisão.
@@ -15285,9 +15291,11 @@ components:
               type: string
               description: NUMERIC serializado pelo driver como string, preservando precisão.
             quilometragem:
-              type: integer
-              minimum: -9007199254740991
-              maximum: 9007199254740991
+              anyOf:
+                - type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                - type: "null"
             data_abastecimento:
               type: string
               description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
@@ -15337,9 +15345,11 @@ components:
                 pattern: ^-?\d+$
                 description: BIGINT serializado pelo postgres como string; não converter para Number.
               motorista_id:
-                type: string
-                pattern: ^-?\d+$
-                description: BIGINT serializado pelo postgres como string; não converter para Number.
+                anyOf:
+                  - type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  - type: "null"
               litragem:
                 type: string
                 description: NUMERIC serializado pelo driver como string, preservando precisão.
@@ -15347,9 +15357,11 @@ components:
                 type: string
                 description: NUMERIC serializado pelo driver como string, preservando precisão.
               quilometragem:
-                type: integer
-                minimum: -9007199254740991
-                maximum: 9007199254740991
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
               data_abastecimento:
                 type: string
                 description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
@@ -15450,7 +15462,7 @@ components:
         - litragem
         - valor_total
         - data_abastecimento
-      description: "Forma usual de transporte. #30 classifica JSON/tipo/campo incompatível com o schema atual como 400 e FK inexistente como 404. Motorista/km omitidos ou nulos recebem 400 pelo NOT NULL atual; RF40 permanece adiado, sem migration para alterar obrigatoriedade. Validação técnica de calendário e tipos ocorre no controller."
+      description: Forma usual de transporte. Motorista e quilometragem são opcionais; litros e valor devem ser positivos, quilometragem não negativa e data válida. A autoria é registrada a partir da sessão.
     Documentos:
       type: object
       properties:

@@ -131,10 +131,10 @@ export function Abastecimentos() {
       if (!montado.current) return;
       await registrarAbastecimento({
         veiculo_id: String(campos.get("veiculo")),
-        motorista_id: String(campos.get("motorista")),
+        motorista_id: String(campos.get("motorista") ?? "") || null,
         posto: String(campos.get("posto") ?? "").trim() || null,
         data_abastecimento: String(campos.get("data")),
-        quilometragem: Number(campos.get("quilometragem")),
+        quilometragem: String(campos.get("quilometragem") ?? "") === "" ? null : Number(campos.get("quilometragem")),
         litragem: String(campos.get("litros")),
         valor_total: String(campos.get("valor")),
         tanque_completo: campos.has("tanque"),
@@ -348,7 +348,7 @@ export function Abastecimentos() {
                             .reverse()
                             .join("/")}
                         </td>
-                        <td>{item.quilometragem ? (numero.format(item.quilometragem)+'km') : 'Não informada'}</td>
+                        <td>{item.quilometragem != null ? (numero.format(item.quilometragem)+'km') : 'Não informada'}</td>
                         <td>{numero.format(Number(item.litragem))} L</td>
                         <td>{moeda.format(Number(item.valor_total))}</td>
                         <td>
@@ -424,7 +424,7 @@ export function Abastecimentos() {
             <div><dt>Motorista</dt><dd>{selecionado.motorista_nome ?? "N?o informado"}</dd></div>
             <div><dt>Data</dt><dd>{selecionado.data_abastecimento.slice(0, 10).split("-").reverse().join("/")}</dd></div>
             <div><dt>Posto de combust?vel</dt><dd>{selecionado.posto ?? "N?o informado"}</dd></div>
-            <div><dt>Quilometragem</dt><dd>{numero.format(selecionado.quilometragem)} km</dd></div>
+            <div><dt>Quilometragem</dt><dd>{selecionado.quilometragem == null ? 'Não informada' : numero.format(selecionado.quilometragem) + ' km'}</dd></div>
             <div><dt>Litros abastecidos</dt><dd>{numero.format(Number(selecionado.litragem))} L</dd></div>
             <div><dt>Valor total</dt><dd>{moeda.format(Number(selecionado.valor_total))}</dd></div>
             <div><dt>Tanque completo</dt><dd>{selecionado.tanque_completo ? "Sim" : "N?o"}</dd></div>
@@ -477,9 +477,9 @@ export function Abastecimentos() {
               </label>
               <label className="abastecimentos-modal__inteiro">
                 Motorista
-                <Select name="motorista" required defaultValue="">
-                  <option value="" disabled>
-                    Selecione o motorista
+                <Select name="motorista" defaultValue="">
+                  <option value="">
+                    Não informado
                   </option>
                   {remoto.data.motoristas.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -510,7 +510,6 @@ export function Abastecimentos() {
                   type="number"
                   min="0"
                   step="1"
-                  required
                 />
               </label>
               <label>

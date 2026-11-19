@@ -39,12 +39,19 @@ test('exige sessão e perfil efetivo; conta inativa não passa',async () => {
   await sql`update usuario set ativo=false where id=30002`;
   expect((await call(input,svo)).status).toBe(401);
 });
-test.each([null,[],42,{...input,motorista_id:null},{...input,quilometragem:null},
+test.each([null,[],42,
   {...input,litragem:{}},{...input,posto:123},{...input,posto:'x'.repeat(256)},{...input,quilometragem:1.5},
   {...input,data_abastecimento:'2026-02-30'}])('entrada técnica inválida retorna 400: %j',async body => {
   const response = await call(body);
   expect(response.status).toBe(400);
   expect((await response.json()).error.code).toBe('DADOS_INVALIDOS');
+});
+test.each([{...input,motorista_id:null},{...input,quilometragem:null}])('campo opcional é aceito: %j',async body => {
+  const response = await call(body);
+  expect(response.status).toBe(201);
+  const {data} = await response.json();
+  expect(data.motorista_id).toBe(body.motorista_id === null ? null : String(body.motorista_id));
+  expect(data.quilometragem).toBe(body.quilometragem);
 });
 test('referência inexistente retorna 404 e não persiste',async () => {
   for (const body of [{...input,veiculo_id:30000999},{...input,motorista_id:30000999}]) {

@@ -45,7 +45,7 @@ export async function abastecimentosRoute(req: IncomingMessage, res: ServerRespo
   }
 
   if (method === 'POST' && pathname === '/api/abastecimentos') {
-    return criarAbastecimento(req, res);
+    return criarAbastecimento(req, res, usuario.id);
   }
 
   jsonCompartilhado(res, 404, {

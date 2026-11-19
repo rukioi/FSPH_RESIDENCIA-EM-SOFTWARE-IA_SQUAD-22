@@ -135,7 +135,7 @@ test('consulta inválida oferece nova tentativa', async ({ page }) => {
   await expect(page.locator('tbody tr').filter({ hasText: 'E2EA001' })).toBeVisible();
 });
 
-test('cadastro exige motorista e quilometragem e preserva formulário em erro do servidor', async ({ page }) => {
+test('cadastro aceita motorista e quilometragem ausentes e preserva formulário em erro do servidor', async ({ page }) => {
   await page.goto('/login');
   await page.evaluate(value => sessionStorage.setItem('token', value), token);
   await page.goto('/gestor/abastecimentos');
@@ -146,19 +146,24 @@ test('cadastro exige motorista e quilometragem e preserva formulário em erro do
   await dialog.getByLabel('Data', { exact: true }).fill('2026-03-15');
   await dialog.getByLabel('Litros', { exact: true }).fill('15');
   await dialog.getByLabel('Valor total', { exact: true }).fill('90');
-  await dialog.getByLabel('Quilometragem', { exact: true }).fill('3000');
-  await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
-  await expect(dialog.getByLabel('Motorista', { exact: true })).toBeFocused();
-  await selecionarOpcao(dialog.getByLabel('Motorista', { exact: true }), String(driverId));
-  await dialog.getByLabel('Quilometragem', { exact: true }).fill('');
-  await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
-  await expect(dialog.getByLabel('Quilometragem', { exact: true })).toBeFocused();
-  await dialog.getByLabel('Quilometragem', { exact: true }).fill('3000');
-  await page.route('**/api/abastecimentos', route => route.request().method() === 'POST'
-    ? route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: { code: 'ERRO_INTERNO', message: 'Falha ao registrar abastecimento.' } }) })
-    : route.continue());
+  const corpos: Array<{motorista_id: string | null; quilometragem: number | null}> = [];
+  await page.route('**/api/abastecimentos', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    corpos.push(route.request().postDataJSON());
+    await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: { code: 'ERRO_INTERNO', message: 'Falha ao registrar abastecimento.' } }) });
+  });
   await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('Falha ao registrar abastecimento');
+  expect(corpos).toHaveLength(1);
+  expect(corpos[0]).toMatchObject({motorista_id:null,quilometragem:null});
+  await expect(dialog.getByRole('button', { name: 'Registrar', exact: true })).toBeEnabled();
+
+  await selecionarOpcao(dialog.getByLabel('Motorista', { exact: true }), String(driverId));
+  await dialog.getByLabel('Quilometragem', { exact: true }).fill('3000');
+  await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Falha ao registrar abastecimento');
+  expect(corpos).toHaveLength(2);
+  expect(corpos[1]).toMatchObject({motorista_id:String(driverId),quilometragem:3000});
   await expect(dialog.getByLabel('Quilometragem', { exact: true })).toHaveValue('3000');
   await expect(dialog.getByRole('button', { name: 'Registrar', exact: true })).toBeEnabled();
 });

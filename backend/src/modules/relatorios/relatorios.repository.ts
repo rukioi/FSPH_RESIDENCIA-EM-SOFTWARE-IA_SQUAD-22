@@ -11,7 +11,7 @@ export async function consultarLinhasRelatorio(q: ConsultaRelatorio) {
     SELECT a.id::text AS id, a.data_abastecimento::text AS data, v.placa, m.nome AS motorista,
       a.quilometragem AS odometro, a.litragem::text AS litros, a.valor_total::text AS valor,
       a.posto, CASE WHEN a.tanque_completo THEN 'Sim' ELSE 'Não' END AS "tanqueCompleto"
-    FROM public.abastecimento a JOIN public.veiculo v ON v.id=a.veiculo_id JOIN public.motorista m ON m.id=a.motorista_id
+    FROM public.abastecimento a JOIN public.veiculo v ON v.id=a.veiculo_id LEFT JOIN public.motorista m ON m.id=a.motorista_id
     WHERE a.data_abastecimento>=${inicio}::date AND a.data_abastecimento<${fim}::date+1
       AND (${q.veiculoId ?? null}::bigint IS NULL OR a.veiculo_id=${q.veiculoId ?? null}::bigint)
       AND (${q.motoristaId ?? null}::bigint IS NULL OR a.motorista_id=${q.motoristaId ?? null}::bigint)

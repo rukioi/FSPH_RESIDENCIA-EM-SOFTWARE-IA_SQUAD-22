@@ -1580,10 +1580,7 @@ export interface Abastecimento {
    * BIGINT serializado pelo postgres como string; não converter para Number.
    */
   veiculo_id: string;
-  /**
-   * BIGINT serializado pelo postgres como string; não converter para Number.
-   */
-  motorista_id: string;
+  motorista_id: string | null;
   /**
    * NUMERIC serializado pelo driver como string, preservando precisão.
    */
@@ -1592,7 +1589,7 @@ export interface Abastecimento {
    * NUMERIC serializado pelo driver como string, preservando precisão.
    */
   valor_total: string;
-  quilometragem: number;
+  quilometragem: number | null;
   /**
    * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
    */
@@ -1616,10 +1613,7 @@ export interface RespostaAbastecimento {
      * BIGINT serializado pelo postgres como string; não converter para Number.
      */
     veiculo_id: string;
-    /**
-     * BIGINT serializado pelo postgres como string; não converter para Number.
-     */
-    motorista_id: string;
+    motorista_id: string | null;
     /**
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
@@ -1628,7 +1622,7 @@ export interface RespostaAbastecimento {
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
     valor_total: string;
-    quilometragem: number;
+    quilometragem: number | null;
     /**
      * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
      */
@@ -1653,10 +1647,7 @@ export interface Abastecimentos {
      * BIGINT serializado pelo postgres como string; não converter para Number.
      */
     veiculo_id: string;
-    /**
-     * BIGINT serializado pelo postgres como string; não converter para Number.
-     */
-    motorista_id: string;
+    motorista_id: string | null;
     /**
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
@@ -1665,7 +1656,7 @@ export interface Abastecimentos {
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
     valor_total: string;
-    quilometragem: number;
+    quilometragem: number | null;
     /**
      * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
      */
@@ -1679,7 +1670,7 @@ export interface Abastecimentos {
   }[];
 }
 /**
- * Forma usual de transporte. #30 classifica JSON/tipo/campo incompatível com o schema atual como 400 e FK inexistente como 404. Motorista/km omitidos ou nulos recebem 400 pelo NOT NULL atual; RF40 permanece adiado, sem migration para alterar obrigatoriedade. Validação técnica de calendário e tipos ocorre no controller.
+ * Forma usual de transporte. Motorista e quilometragem são opcionais; litros e valor devem ser positivos, quilometragem não negativa e data válida. A autoria é registrada a partir da sessão.
  *
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "CriarAbastecimento".

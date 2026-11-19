@@ -223,6 +223,20 @@ export function checkCompatibility(previous: Document, current: Document) {
       };
       strip(candidate);
     }
+    // SCRUM-179: somente os dois campos de abastecimento passam a aceitar null.
+    if (candidate && ['Abastecimento','RespostaAbastecimento','Abastecimentos'].includes(name)) {
+      const normalize = (before: unknown, after: unknown): void => {
+        if (!before || !after || typeof before !== 'object' || typeof after !== 'object') return;
+        const a=before as Record<string,unknown>, b=after as Record<string,unknown>;
+        for (const key of Object.keys(a)) {
+          const value=a[key] as {type?:string} | undefined;
+          if (['motorista_id','quilometragem'].includes(key) && value && ['string','integer'].includes(value.type ?? '') &&
+              JSON.stringify(b[key])===JSON.stringify({anyOf:[a[key],{type:'null'}]})) b[key]=a[key];
+          else normalize(a[key],b[key]);
+        }
+      };
+      normalize(schema,candidate);
+    }
     if (JSON.stringify(schema) !== JSON.stringify(candidate)) throw new Error('Componente existente alterado: '+name);
   }
 }

@@ -13,17 +13,13 @@ Autenticação: Bearer JWT. Perfis: ADM/GESTOR_FROTA.
 | POST /api/abastecimentos | JSON | {data: registro}, 201 |
 | GET /api/abastecimentos/{id}/comprovante | não | imagem binária JPEG/PNG, 200 |
 
-Campos existentes: veiculo_id, motorista_id, posto, litragem, valor_total,
-quilometragem e data_abastecimento. Corpo precisa ser objeto JSON. IDs aceitam
-inteiro seguro ou string decimal; litragem/valor aceitam número finito ou string
-numérica; quilometragem exige inteiro; data exige calendário válido YYYY-MM-DD;
-posto aceita string ou null. Mantém a rejeição anterior de veículo/litros/valor/data
-vazios/zero. O banco atual exige motorista e quilometragem: omissão/null recebe
-400, em vez de falhar com 500. Isso não define a obrigatoriedade definitiva do
-produto: RF40 permite quilometragem quando disponível e não exige motorista.
-A divergência continua adiada, sem migration. A consulta inclui veiculo_placa e
-motorista_nome, sem nova regra, filtro ou indicador.
-
+Campos: veiculo_id, motorista_id, posto, litragem, valor_total, quilometragem e
+data_abastecimento. O corpo deve ser objeto JSON. Motorista, quilometragem e
+posto podem ser omitidos ou nulos; zero é uma quilometragem válida. Veículo e
+data são obrigatórios, litros e valor devem ser positivos com até duas casas
+decimais e quilometragem deve ser um inteiro não negativo. A autoria é obtida
+da sessão autenticada, sem confiar em campos enviados pelo cliente. A consulta
+inclui placa e nome do motorista quando disponíveis.
 ## Respostas
 
 ### 200 — Consulta (exemplo vazio)
@@ -131,8 +127,7 @@ Authorization: Bearer <token>
 
 ## O que a entrega não faz
 
-Não muda permissões, estados, regras operacionais ou paginação. Não resolve
-a divergência RF40 nem muda nomes de DTOs. Limites, request ID e erros técnicos seguem
+Não muda permissões, estados ou paginação. Limites, request ID e erros técnicos seguem
 [infraestrutura comum](./README.md#infraestrutura-http--28).
 
 ## Identidade comum — #29
