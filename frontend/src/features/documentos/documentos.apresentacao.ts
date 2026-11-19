@@ -39,8 +39,14 @@ export function filtrosDaAba(
   delete filtros.page
   delete filtros.limit
 
-  if (aba === 'VEICULOS') filtros.tipo = 'DOCUMENTO_VEICULO'
-  if (aba === 'MOTORISTAS') filtros.tipo = 'CNH_MOTORISTA'
+  if (aba === 'VEICULOS') {
+    filtros.tipo = 'DOCUMENTO_VEICULO'
+    delete filtros.motoristaId
+  }
+  if (aba === 'MOTORISTAS') {
+    filtros.tipo = 'CNH_MOTORISTA'
+    delete filtros.veiculoId
+  }
   if (aba === 'A_VENCER') filtros.situacao = 'A_VENCER'
   if (aba === 'VENCIDO') filtros.situacao = 'VENCIDO'
 

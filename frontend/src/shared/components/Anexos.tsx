@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   baixarAnexo,
@@ -17,16 +17,26 @@ type AnexosProps = {
   registroId: string;
 };
 
+const LIMITE_POR_PAGINA = 20;
+
 export function Anexos({ tipoRegistro, registroId }: AnexosProps) {
   const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [arquivo, setArquivo] = useState<File | null>(null);
+  const [pagina, setPagina] = useState(1);
+  const [limite, setLimite] = useState(LIMITE_POR_PAGINA);
+  const [total, setTotal] = useState(0);
+
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [baixandoId, setBaixandoId] = useState<string | null>(null);
   const [erro, setErro] = useState('');
   const [mensagem, setMensagem] = useState('');
 
-  const carregarAnexos = useCallback(async () => {
+  const vinculoAnterior = useRef({ tipoRegistro, registroId });
+
+  const totalPaginas = Math.ceil(total / limite);
+
+  const carregarAnexos = useCallback(async (paginaSolicitada = pagina) => {
     setCarregando(true);
     setErro('');
 
@@ -34,19 +44,42 @@ export function Anexos({ tipoRegistro, registroId }: AnexosProps) {
       const resposta = await listarAnexos({
         tipoRegistro,
         registroId,
+        page: paginaSolicitada,
+        limit: LIMITE_POR_PAGINA,
       });
 
       setAnexos(resposta.data);
+      setPagina(resposta.meta.page);
+      setLimite(resposta.meta.limit);
+      setTotal(resposta.meta.total);
     } catch (error) {
       setErro(errorMessage(error));
     } finally {
       setCarregando(false);
     }
-  }, [tipoRegistro, registroId]);
+  }, [tipoRegistro, registroId, pagina]);
 
   useEffect(() => {
-    void carregarAnexos();
-  }, [carregarAnexos]);
+    const vinculoMudou =
+      vinculoAnterior.current.tipoRegistro !== tipoRegistro ||
+      vinculoAnterior.current.registroId !== registroId;
+
+    if (vinculoMudou) {
+      vinculoAnterior.current = { tipoRegistro, registroId };
+
+      setPagina(1);
+      setAnexos([]);
+      setTotal(0);
+      setArquivo(null);
+      setMensagem('');
+
+      if (pagina !== 1) {
+        return;
+      }
+    }
+
+    void carregarAnexos(vinculoMudou ? 1 : pagina);
+  }, [tipoRegistro, registroId, pagina, carregarAnexos]);
 
   async function handleEnviar() {
     if (!arquivo) {
@@ -67,7 +100,7 @@ export function Anexos({ tipoRegistro, registroId }: AnexosProps) {
       setArquivo(null);
       setMensagem('Arquivo enviado com sucesso.');
 
-      await carregarAnexos();
+      await carregarAnexos(pagina);
     } catch (error) {
       setErro(errorMessage(error));
     } finally {
@@ -110,6 +143,18 @@ export function Anexos({ tipoRegistro, registroId }: AnexosProps) {
       dateStyle: 'short',
       timeStyle: 'short',
     }).format(new Date(data));
+  }
+
+  function irParaPaginaAnterior() {
+    if (pagina > 1) {
+      setPagina(pagina - 1);
+    }
+  }
+
+  function irParaProximaPagina() {
+    if (pagina < totalPaginas) {
+      setPagina(pagina + 1);
+    }
   }
 
   return (
@@ -171,30 +216,68 @@ export function Anexos({ tipoRegistro, registroId }: AnexosProps) {
         <h3>Arquivos enviados</h3>
 
         {carregando ? (
-          <p>Carregando anexos...</p>
-        ) : anexos.length === 0 ? (
-          <p>Nenhum arquivo anexado a este registro.</p>
-        ) : (
-          <ul>
-            {anexos.map(anexo => (
-              <li key={anexo.id} className="anexos__item">
-                <div className="anexos__informacoes">
-                  <strong>{anexo.nome}</strong>
-                  <span>{anexo.tipo}</span>
-                  <span>{formatarTamanho(anexo.tamanho)}</span>
-                  <span>{formatarData(anexo.criadoEm)}</span>
-                </div>
+            <p>Carregando anexos...</p>
+            ) : erro ? (
+            <button
+                type="button"
+                onClick={() => void carregarAnexos(pagina)}
+            >
+                Tentar novamente
+            </button>
+            ) : anexos.length === 0 ? (
+            <p>Nenhum arquivo anexado a este registro.</p>
+            ) : (
+          <>
+            <ul>
+              {anexos.map(anexo => (
+                <li key={anexo.id} className="anexos__item">
+                  <div className="anexos__informacoes">
+                    <strong>{anexo.nome}</strong>
+                    <span>{anexo.tipo}</span>
+                    <span>{formatarTamanho(anexo.tamanho)}</span>
+                    <span>{formatarData(anexo.criadoEm)}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleBaixar(anexo)}
+                    disabled={baixandoId === anexo.id}
+                  >
+                    {baixandoId === anexo.id ? 'Baixando...' : 'Baixar'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {totalPaginas > 1 && (
+              <nav
+                className="anexos__paginacao"
+                aria-label="Paginação dos anexos"
+              >
+                <button
+                  type="button"
+                  onClick={irParaPaginaAnterior}
+                  disabled={pagina <= 1 || carregando}
+                  aria-label="Ir para a página anterior"
+                >
+                  Página anterior
+                </button>
+
+                <span aria-live="polite">
+                  Página {pagina} de {totalPaginas}
+                </span>
 
                 <button
                   type="button"
-                  onClick={() => handleBaixar(anexo)}
-                  disabled={baixandoId === anexo.id}
+                  onClick={irParaProximaPagina}
+                  disabled={pagina >= totalPaginas || carregando}
+                  aria-label="Ir para a próxima página"
                 >
-                  {baixandoId === anexo.id ? 'Baixando...' : 'Baixar'}
+                  Próxima página
                 </button>
-              </li>
-            ))}
-          </ul>
+              </nav>
+            )}
+          </>
         )}
       </div>
     </section>
