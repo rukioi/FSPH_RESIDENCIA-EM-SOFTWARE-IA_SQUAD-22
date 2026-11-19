@@ -26,13 +26,21 @@ function cadastrar(km: unknown, dia = entrada.data_abastecimento) {
     body: JSON.stringify({ ...entrada, quilometragem: km, data_abastecimento: dia }) });
 }
 
-test.each([undefined, null, -1, -2147483648])('km ausente/nulo/negativo retorna 400 e não persiste: %s', async km => {
+test.each([-1, -2147483648, 1.5])('km inválido retorna 400 e não persiste: %s', async km => {
   const response = await cadastrar(km);
   expect(response.status).toBe(400);
   expect((await response.json()).error.code).toBe('DADOS_INVALIDOS');
   expect(await fixture.sql`SELECT id FROM abastecimento WHERE posto=${entrada.posto}`).toHaveLength(0);
 });
 
+test.each([undefined, null])('km ausente/nulo é persistido como null: %s', async km => {
+  const response = await cadastrar(km);
+  expect(response.status).toBe(201);
+  const { data } = await response.json();
+  expect(data.quilometragem).toBeNull();
+  const [row] = await fixture.sql`SELECT quilometragem FROM abastecimento WHERE id=${data.id}`;
+  expect(row.quilometragem).toBeNull();
+});
 test('leitura inferior à anterior retorna 409 sem registrar abastecimento', async () => {
   const response = await cadastrar(999);
   expect(response.status).toBe(409);

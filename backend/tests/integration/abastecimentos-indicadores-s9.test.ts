@@ -127,3 +127,20 @@ test('cheio a cheio inclui parciais, pondera os trechos e nunca cruza os veícul
     kmPorLitro: consumo.valor, trechosValidos: consumo.trechosValidos, painel: painel.status,
   });
 });
+
+test('quilometragem ausente preserva insuficiência sem criar média fictícia', async () => {
+  try {
+    await fixture.sql`INSERT INTO public.abastecimento
+      (id,veiculo_id,motorista_id,litragem,valor_total,quilometragem,data_abastecimento,tanque_completo) VALUES
+      (92221,92194,null,10,60,1000,'2095-01-01',true),
+      (92222,92194,null,10,60,null,'2095-01-02',false),
+      (92223,92194,null,10,60,1200,'2095-01-03',true)`;
+    const response=await get('?inicio=2095-01-01&fim=2095-01-03&veiculoId=92194');
+    expect(response.status).toBe(200);
+    const data=(await response.json()).data;
+    expect(data.kmObservadosPorVeiculo).toMatchObject([{leiturasComKm:2,leiturasSemKm:1}]);
+    expect(data.consumoPorDistancia).toMatchObject({estado:'DADOS_INSUFICIENTES',valor:null,trechosValidos:0});
+  } finally {
+    await fixture.sql`DELETE FROM public.abastecimento WHERE id IN (92221,92222,92223)`;
+  }
+});

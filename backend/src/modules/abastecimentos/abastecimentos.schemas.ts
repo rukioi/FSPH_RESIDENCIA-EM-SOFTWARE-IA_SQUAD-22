@@ -1,21 +1,24 @@
 import { z } from 'zod';
 import { id, date, timestamp, decimal, dados, meta } from '../../shared/contract/schemas.js';
-const abastecimento = z.object({ id, veiculo_id: id, motorista_id: id, litragem: decimal, valor_total: decimal,
-  quilometragem: z.number().int(), data_abastecimento: date, criado_em: timestamp.nullable(), posto: z.string().nullable(), tanque_completo: z.boolean(), comprovante_nome: z.string().nullable() });
+const abastecimento = z.object({ id, veiculo_id: id, motorista_id: id.nullable(), litragem: decimal, valor_total: decimal,
+  quilometragem: z.number().int().nullable(), data_abastecimento: date, criado_em: timestamp.nullable(), posto: z.string().nullable(), tanque_completo: z.boolean(), comprovante_nome: z.string().nullable() });
+const identificadorCadastro = z.union([z.number().int().safe(), z.string().regex(/^-?\d+$/)])
+  .refine(v => (typeof v==='number' ? Number.isSafeInteger(v) : /^-?\d{1,19}$/.test(v)) &&
+    BigInt(v) !== 0n && BigInt(v) >= -9223372036854775808n && BigInt(v) <= 9223372036854775807n);
+const dataCivilCadastro = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v =>
+  v >= '0001-01-01' && !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v);
+const positivoDecimal = z.union([z.number().positive().max(99999999.99), z.string().regex(/^\d{1,8}(\.\d{1,2})?$/)])
+  .refine(v => Number(v) > 0 && /^\d{1,8}(\.\d{1,2})?$/.test(String(v)), 'Use valor positivo com até duas casas decimais.');
+const comprovante = z.object({nome:z.string().min(1).max(255),tipo:z.enum(['image/jpeg','image/png']),dadosBase64:z.string().max(1398104)}).nullish();
+
+export const criarAbastecimentoSchema = z.object({
+  veiculo_id: identificadorCadastro, motorista_id: identificadorCadastro.nullish(),
+  posto:z.string().max(255).nullish(), litragem:positivoDecimal, valor_total:positivoDecimal,
+  quilometragem:z.number().int().min(0).max(2147483647).nullish(), data_abastecimento:dataCivilCadastro,
+  tanque_completo:z.boolean().optional(), comprovante,
+}).describe('RF40/SCRUM-186: motorista, km e posto opcionais. Litros/valor positivos numeric(10,2); km inteiro não negativo. Autoria sempre da sessão; campos extras ignorados. Comprovante legado JPEG/PNG mantém validação de assinatura no service.');
+
 const quantidade = z.number().int().nonnegative();
-// NUMERIC(10,2) arredonda no PostgreSQL. Compare 0.005 exatamente, sem transformar
-// strings decimais em float (0.004999… não pode virar 0.005 por perda de precisão).
-const valorPositivo = z.union([z.number(), z.string()]).refine(valor => {
-  const texto = String(valor).trim();
-  if (!/^\+?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(texto)
-    || !Number.isFinite(Number(texto))) return false;
-  const [mantissa, expoente = '0'] = texto.replace(/^\+/, '').toLowerCase().split('e');
-  const [inteiro, fracao = ''] = mantissa.split('.');
-  const digitos = (inteiro + fracao).replace(/^0+/, '');
-  if (!digitos) return false;
-  const ordem = digitos.length - fracao.length + Number(expoente);
-  return ordem > -2 || ordem === -2 && digitos[0] >= '5';
-});
 const dataCivilIndicadores = z.iso.date().refine(data => data >= '0001-01-01');
 const veiculoIndicadores = z.string().regex(/^[1-9]\d{0,18}$/)
   .refine(valor => /^[1-9]\d{0,18}$/.test(valor) && BigInt(valor) <= 9223372036854775807n);
@@ -89,9 +92,5 @@ export const abastecimentosSchemas = {
   IndicadoresAbastecimentos: indicadoresAbastecimentos,
   ComprovanteAbastecimento: z.string(), Abastecimento: abastecimento, RespostaAbastecimento: dados(abastecimento),
   Abastecimentos: dados(z.array(abastecimento.extend({ veiculo_placa: z.string().nullable(), motorista_nome: z.string().nullable() }))),
-  CriarAbastecimento: z.object({ veiculo_id: z.union([z.number(),z.string()]), motorista_id: z.union([z.number(),z.string()]),
-    posto: z.string().nullish(), litragem: valorPositivo, valor_total: valorPositivo,
-    quilometragem: z.number().int().nonnegative(), data_abastecimento: z.string(), tanque_completo: z.boolean().optional(),
-    comprovante: z.object({ nome: z.string().min(1).max(255), tipo: z.enum(['image/jpeg','image/png']), dadosBase64: z.string().max(1398104) }).nullish() })
-    .describe('Caso B confirmado pelo responsável: quilometragem inteira obrigatória, nunca nula ou negativa. Ausência/null/valor negativo recebe 400; leitura inferior à anterior ou incompatível com viagem corrigida recebe 409. Igualdade não é regressão. Motorista obrigatório: ausência/null recebe 400 e ID inexistente recebe 404. Litros e valor devem ser decimais finitos e permanecer positivos após arredondamento NUMERIC(10,2): mínimo 0.005; inválidos recebem 400. O PostgreSQL mantém o arredondamento e o limite superior da coluna, sem conversão monetária no JavaScript. Cadastro e atividade do ator autenticado são atômicos; autoria enviada no corpo não é utilizada. Demais validações de calendário e tipos permanecem no controller.'),
+  CriarAbastecimento: criarAbastecimentoSchema,
 };

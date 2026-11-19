@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
-import { root, testUrl, verifiedSql, verifyContainer } from '../../../backend/src/database/scripts/verify-test-db.js';
+import { root, testUrl, verifiedSql, verifyContainer, testProfile } from '../../../backend/src/database/scripts/verify-test-db.js';
 
 const sql = await verifiedSql();
 await sql.end();
@@ -9,7 +9,7 @@ for (const key of ['PATH', 'Path', 'SystemRoot', 'SYSTEMROOT', 'TEMP', 'TMP', 'U
   if (process.env[key]) env[key] = process.env[key];
 }
 Object.assign(env, {
-  NODE_ENV: 'test', DATABASE_URL: testUrl,
+  NODE_ENV: 'test', DATABASE_URL: testUrl, FSPH_TEST_PROFILE: testProfile,
   FSPH_TEST_NONCE: verifyContainer().nonce,
   JWT_SECRET: 'fixture-t1-jwt-2026-32-bytes-minimum',
   LOGIN_RATE_LIMIT: '100',

@@ -28,9 +28,13 @@ Para preparar um ambiente novo, na raiz do checkout, instale as dependências do
 
 Esse comando é explícito: cria container e volume exclusivos, gera manifesto ignorado pelo Git para este checkout, define marcador, cria os papéis de teste e aplica as migrations versionadas exclusivamente no banco isolado, sem seed. Se houver recurso preexistente, manifesto, porta ocupada ou versões de migration duplicadas, interrompe; falhas podem deixar recursos criados para inspeção. Não copie manifestos nem ajuste o verificador para forçar a execução. Se já existir um ambiente válido desse checkout, não provisione novamente.
 
-Com o container iniciado e sem outras conexões ao banco dedicado, execute sequencialmente:
+Com o container de preflight iniciado e sem outras conexões ao banco dedicado, execute:
 
     npx vitest run --config backend/tests/database/vitest-s9-preflight.config.mjs
+
+O teste de concorrência usa o harness oficial e exige um perfil Sprint 9 vinculado ao checkout, com banco isolado já provisionado e acesso administrativo apropriado para fixtures. Por exemplo, somente após comprovar a identidade e disponibilidade do perfil `s9-integracao-segura`, no PowerShell:
+
+    $env:FSPH_TEST_PROFILE = 's9-integracao-segura'
     npx vitest run --config backend/tests/integration/vitest-s9-concorrencia.config.mjs
 
 Cada configuração confere a identidade Docker, checkout, porta, volume, nonce, marcador e ausência de conexões concorrentes antes dos testes. As consultas do preflight são somente leitura; testes de integração criam e limpam fixtures e um trigger temporário no banco exclusivo. Não execute esses comandos contra banco compartilhado. O CI padrão não provisiona nem executa automaticamente esse ambiente adicional; para validar esses testes em CI é necessário configurar uma etapa explícita com Docker e a imagem local exigida.

@@ -8,7 +8,7 @@ export function identificarVersoes(arquivos) {
   const grupos=new Map(),invalidos=[];
   for(const nome of new Set(arquivos)){
     if(!nome.endsWith('.sql'))continue;
-    const match=/^(\d+)_.+\.sql$/.exec(nome);
+    const match=/^(\d+)_([a-z0-9_-]+)\.sql$/.exec(nome);
     if(!match){invalidos.push(nome);continue;}
     const grupo=grupos.get(match[1])??[];grupo.push(nome);grupos.set(match[1],grupo);
   }

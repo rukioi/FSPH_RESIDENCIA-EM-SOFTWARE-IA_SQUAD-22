@@ -2,7 +2,7 @@ import { afterAll, beforeAll, expect, test, vi } from 'vitest';
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
-import { testUrl } from '../../src/database/scripts/verify-test-db.js';
+import { testUrl, testProfile } from '../../src/database/scripts/verify-test-db.js';
 import { carregarAmbiente } from '../../src/config/environment.js';
 
 vi.mock('dotenv', () => ({ default: { config: vi.fn() } }));
@@ -52,7 +52,7 @@ for (const entry of ['backend/src/server.ts', 'backend/dist/server.js']) {
       env: {
         PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, TEMP: process.env.TEMP,
         // Sem DATABASE_URL inicial: o pool só pode existir após carregar a configuração.
-        NODE_ENV: 'development',
+        NODE_ENV: 'development', FSPH_TEST_PROFILE: testProfile,
         FSPH_TEST_NONCE: process.env.FSPH_TEST_NONCE, JWT_SECRET: 'fixture-t2-bootstrap-32-bytes-minimum',
       },
       stdio: ['ignore', 'pipe', 'pipe', 'ipc'],

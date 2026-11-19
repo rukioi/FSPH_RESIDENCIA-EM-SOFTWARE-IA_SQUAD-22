@@ -20,19 +20,29 @@ async function cadastrar(body: unknown) {
   return { status: writeHead.mock.calls[0][0], body: JSON.parse(end.mock.calls[0][0]) };
 }
 
-test.each([undefined, null])('motorista ausente/nulo recebe 400 sem transação: %s', async motorista_id => {
-  expect(await cadastrar({ ...entrada, motorista_id })).toMatchObject({ status: 400, body: { error: { code: 'DADOS_INVALIDOS' } } });
-  expect(mocks.begin).not.toHaveBeenCalled();
-  expect(mocks.auditar).not.toHaveBeenCalled();
+test.each([undefined, null])('motorista ausente/nulo é aceito e auditado: %s', async motorista_id => {
+  const tx = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([])
+    .mockResolvedValueOnce([{ ...entrada, motorista_id: null, id: '7' }]);
+  mocks.begin.mockImplementationOnce(callback => callback(tx));
+  expect(await cadastrar({ ...entrada, motorista_id })).toMatchObject({ status: 201, body: { data: { motorista_id: null } } });
+  expect(mocks.auditar).toHaveBeenCalledExactlyOnceWith(tx, '42', [{ operacao: 'abastecimento_criado', recursoId: '7' }]);
 });
 
-test.each([undefined, null, -1, -2147483648, 1.5])('km inválido recebe 400 antes de consultar banco: %s', async quilometragem => {
+test.each([-1, -2147483648, 1.5])('km inválido recebe 400 antes de consultar banco: %s', async quilometragem => {
   expect(await cadastrar({ ...entrada, quilometragem })).toMatchObject({ status: 400,
     body: { error: { code: 'DADOS_INVALIDOS' } } });
   expect(mocks.begin).not.toHaveBeenCalled();
   expect(mocks.auditar).not.toHaveBeenCalled();
 });
 
+test.each([undefined, null])('km ausente/nulo é aceito sem comparação de leitura: %s', async quilometragem => {
+  const tx = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([])
+    .mockResolvedValueOnce([{ ...entrada, quilometragem: null, id: '7' }]);
+  mocks.begin.mockImplementationOnce(callback => callback(tx));
+  expect(await cadastrar({ ...entrada, quilometragem })).toMatchObject({ status: 201, body: { data: { quilometragem: null } } });
+  expect(mocks.leitura).not.toHaveBeenCalled();
+  expect(mocks.auditar).toHaveBeenCalledExactlyOnceWith(tx, '42', [{ operacao: 'abastecimento_criado', recursoId: '7' }]);
+});
 test('violação de FK do motorista recebe 404, sem transformar referência ausente em 500', async () => {
   mocks.begin.mockRejectedValueOnce(Object.assign(new Error('sentinela SQL privada'), { code: '23503' }));
   const response = await cadastrar({ ...entrada, motorista_id: 999999 });

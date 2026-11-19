@@ -6,6 +6,7 @@ import { fecharBanco } from '../../src/database/connection.js';
 import { criarJwt } from '../../src/security/jwt.js';
 
 const sql = await verifiedSql();
+const fixtureAdmin = await verifiedSql(true);
 const server = createApp();
 const ids = { usuario: 9371001, motorista: 9371002, base: 9371100 };
 let base = '', token = '', created = false;
@@ -30,7 +31,8 @@ beforeAll(async () => {
 afterAll(async () => {
   try {
     if (server.listening) await new Promise<void>(resolve => server.close(() => resolve()));
-    if (created) await sql.begin(async tx => {
+    if (created) await fixtureAdmin.begin(async tx => {
+      await tx.unsafe('DELETE FROM public.log_atividade WHERE usuario_id=$1', [ids.usuario]);
       await tx.unsafe('DELETE FROM public.viagem_correcao WHERE viagem_id BETWEEN $1 AND $2', [ids.base + 201, ids.base + 205]);
       await tx.unsafe('DELETE FROM public.log_atividade WHERE solicitacao_viagem_id BETWEEN $1 AND $2', [ids.base + 101, ids.base + 105]);
       await tx.unsafe('DELETE FROM public.abastecimento WHERE veiculo_id BETWEEN $1 AND $2', [ids.base + 1, ids.base + 5]);
@@ -40,7 +42,7 @@ afterAll(async () => {
       await tx.unsafe('DELETE FROM public.motorista WHERE id=$1', [ids.motorista]);
       await tx.unsafe('DELETE FROM public.usuario WHERE id=$1', [ids.usuario]);
     });
-  } finally { await sql.end(); await fecharBanco(); }
+  } finally { await sql.end(); await fixtureAdmin.end(); await fecharBanco(); }
 });
 
 function correction(i: number, km: number, confirm: boolean) {
@@ -78,8 +80,9 @@ test.each([[3, 'correcao'], [4, 'abastecimento']] as const)('concorrência sem d
   const unblock = new Promise<void>(r => { release = r; });
   const locked = new Promise<void>(r => { ready = r; });
   const hold = sql.begin(async tx => { await tx.unsafe('SELECT id FROM public.veiculo WHERE id=$1 FOR UPDATE', [ids.base + i]); ready(); await unblock; });
-  const monitor = await verifiedSql();
+  let monitor: Awaited<ReturnType<typeof verifiedSql>> | undefined;
   const wait = async (n: number) => {
+    if (!monitor) throw new Error('Conexão de monitoramento indisponível.');
     const until = Date.now() + 5000;
     while (Date.now() < until) {
       const [r] = await monitor.unsafe("SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE '%FOR UPDATE%'");
@@ -90,6 +93,7 @@ test.each([[3, 'correcao'], [4, 'abastecimento']] as const)('concorrência sem d
   };
   try {
     await locked;
+    monitor = await verifiedSql();
     const a = first === 'correcao' ? correction(i, 1050, true) : fueling(i, '2025-12-31', 950);
     await wait(1);
     const b = first === 'correcao' ? fueling(i, '2025-12-31', 950) : correction(i, 1050, true);
@@ -99,7 +103,11 @@ test.each([[3, 'correcao'], [4, 'abastecimento']] as const)('concorrência sem d
     expect(responses.map(r => r.status)).toEqual(first === 'correcao' ? [200, 409] : [201, 409]);
     const [row] = await monitor.unsafe('SELECT v.km_final,ve.quilometragem_atual,(SELECT count(*)::int FROM public.viagem_correcao WHERE viagem_id=v.id) AS correcoes,(SELECT count(*)::int FROM public.abastecimento WHERE veiculo_id=ve.id) AS abastecimentos FROM public.viagem v JOIN public.veiculo ve ON ve.id=v.veiculo_id WHERE v.id=$1', [ids.base + 200 + i]);
     expect(row).toMatchObject(first === 'correcao' ? { km_final: 1050, quilometragem_atual: 1050, correcoes: 1, abastecimentos: 0 } : { km_final: 1000, quilometragem_atual: 1000, correcoes: 0, abastecimentos: 1 });
-  } finally { release(); await hold; await monitor.end(); }
+  } finally {
+    release();
+    try { await hold; }
+    finally { await monitor?.end(); }
+  }
 }, 20000);
 
 test('veículo SVO aceita abastecimento legítimo e mantém validações', async () => {
@@ -113,16 +121,16 @@ test('falha de auditoria reverte correção, odômetro e histórico', async () =
   if (exists.present) throw new Error('Função de teste já existe.');
   let fn = false, trigger = false;
   try {
-    await sql.unsafe("CREATE FUNCTION public.s9_test_audit_failure_9371102() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.solicitacao_viagem_id=9371202 THEN RAISE EXCEPTION 's9 audit fixture'; END IF; RETURN NEW; END $$");
+    await fixtureAdmin.unsafe("CREATE FUNCTION public.s9_test_audit_failure_9371102() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.solicitacao_viagem_id=9371202 THEN RAISE EXCEPTION 's9 audit fixture'; END IF; RETURN NEW; END $$");
     fn = true;
-    await sql.unsafe('CREATE TRIGGER s9_test_audit_failure_9371102 BEFORE INSERT ON public.log_atividade FOR EACH ROW EXECUTE FUNCTION public.s9_test_audit_failure_9371102()');
+    await fixtureAdmin.unsafe('CREATE TRIGGER s9_test_audit_failure_9371102 BEFORE INSERT ON public.log_atividade FOR EACH ROW EXECUTE FUNCTION public.s9_test_audit_failure_9371102()');
     trigger = true;
     const query = 'SELECT v.km_final,ve.quilometragem_atual,(SELECT count(*)::int FROM public.viagem_correcao WHERE viagem_id=v.id) AS correcoes FROM public.viagem v JOIN public.veiculo ve ON ve.id=v.veiculo_id WHERE v.id=$1';
     const before = await sql.unsafe(query, [ids.base + 202]);
     expect((await correction(2, 1100, true)).status).toBe(500);
     expect(await sql.unsafe(query, [ids.base + 202])).toEqual(before);
   } finally {
-    if (trigger) await sql.unsafe('DROP TRIGGER s9_test_audit_failure_9371102 ON public.log_atividade');
-    if (fn) await sql.unsafe('DROP FUNCTION public.s9_test_audit_failure_9371102()');
+    if (trigger) await fixtureAdmin.unsafe('DROP TRIGGER s9_test_audit_failure_9371102 ON public.log_atividade');
+    if (fn) await fixtureAdmin.unsafe('DROP FUNCTION public.s9_test_audit_failure_9371102()');
   }
 });

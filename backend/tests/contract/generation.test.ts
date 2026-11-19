@@ -9,27 +9,38 @@ import { checkCompatibility } from '../../../scripts/generate-api.js';
 import { z } from 'zod';
 
 const root = fileURLToPath(new URL('../../../',import.meta.url));
-test('gate permite exigir km não negativo, mas não remover o limite ou mudar outro campo', () => {
-  const current = openapi();
-  const previous = structuredClone(current);
-  const { $schema: dialect, ...inteiro } = z.toJSONSchema(z.number().int(), { io: 'input' });
-  void dialect;
-  previous.components.schemas.CriarAbastecimento.properties!.quilometragem = inteiro;
+test('gate histórico exige km não negativo sem remover limites nem alterar outros campos', () => {
+  const previous = openapi();
+  const current = structuredClone(previous);
+  const { $schema: antigoDialect, ...antigoKm } = z.toJSONSchema(z.number().int(), { io: 'input' });
+  const { $schema: atualDialect, ...atualKm } = z.toJSONSchema(z.number().int().nonnegative(), { io: 'input' });
+  void antigoDialect; void atualDialect;
+  for (const doc of [previous, current]) {
+    const schema = doc.components.schemas.CriarAbastecimento;
+    schema.required = [...(schema.required ?? []).filter(campo => campo !== 'quilometragem'), 'quilometragem'];
+  }
+  previous.components.schemas.CriarAbastecimento.properties!.quilometragem = antigoKm;
+  current.components.schemas.CriarAbastecimento.properties!.quilometragem = atualKm;
   expect(() => checkCompatibility(previous, current)).not.toThrow();
   expect(() => checkCompatibility(current, previous)).toThrow();
   const alterado = structuredClone(current);
   alterado.components.schemas.CriarAbastecimento.properties!.veiculo_id = { type: 'boolean' };
   expect(() => checkCompatibility(previous, alterado)).toThrow();
 });
-test('gate permite somente tornar motorista obrigatório, preservando tipos e autorização', () => {
-  const current = openapi();
-  const previous = structuredClone(current);
-  const schema = previous.components.schemas.CriarAbastecimento;
-  const { $schema: dialect, ...motoristaLegado } = z.toJSONSchema(z.union([z.number(), z.string()]).nullish(), { io: 'input' });
-  void dialect;
-  schema.properties!.motorista_id = motoristaLegado;
-  schema.required = schema.required!.filter(campo => campo !== 'motorista_id');
+test('gate histórico reconhece somente a obrigatoriedade de motorista e preserva tipos e autorização', () => {
+  const previous = openapi();
+  const current = structuredClone(previous);
+  const { $schema: antigoDialect, ...antigoMotorista } = z.toJSONSchema(z.union([z.number(), z.string()]).nullish(), { io: 'input' });
+  const { $schema: atualDialect, ...atualMotorista } = z.toJSONSchema(z.union([z.number(), z.string()]), { io: 'input' });
+  void antigoDialect; void atualDialect;
+  const anterior = previous.components.schemas.CriarAbastecimento;
+  const posterior = current.components.schemas.CriarAbastecimento;
+  anterior.properties!.motorista_id = antigoMotorista;
+  anterior.required = (anterior.required ?? []).filter(campo => campo !== 'motorista_id');
+  posterior.properties!.motorista_id = atualMotorista;
+  posterior.required = [...(posterior.required ?? []).filter(campo => campo !== 'motorista_id'), 'motorista_id'];
   expect(() => checkCompatibility(previous, current)).not.toThrow();
+  expect(() => checkCompatibility(current, previous)).toThrow();
   const tipoInvalido = structuredClone(current);
   tipoInvalido.components.schemas.CriarAbastecimento.properties!.motorista_id = { type: 'boolean' };
   expect(() => checkCompatibility(previous, tipoInvalido)).toThrow();
@@ -368,4 +379,8 @@ for(const mutate of [d=>d.paths['/api/abastecimentos/indicadores'].get.security=
 }
 console.log('ok');
 `)).toContain('ok');
+});
+
+test('RF40 concilia somente contratos exatos dos pais e rejeita mudanças adicionais',()=>{
+  expect(independent("import {execFileSync} from 'node:child_process';import {parse} from 'yaml';import {openapi} from './backend/src/shared/contract/openapi.ts';import {mergeContractBaselines,checkCompatibility} from './scripts/generate-api.ts';const read=r=>parse(execFileSync('git',['show',r+':docs/api/openapi.yaml'],{encoding:'utf8'}));const base=read('f956a77b3ca51e3b1463ff37f7eb3aa837f19f53'),head=read('0cc6b7d885612e26f872750f684a52dbc4265fd3'),incoming=read('a658dfc1fd1eb53434ef4d3cc390f1af3a2a5ce1');const combined=mergeContractBaselines(base,head,incoming),current=openapi();for(const prev of [head,incoming,combined])checkCompatibility(prev,current);for(const mutate of [d=>delete d.paths['/api/abastecimentos'].post,d=>d.paths['/api/abastecimentos'].post.security=[],d=>d.paths['/api/abastecimentos'].post['x-perfis']=['MOTORISTA'],d=>d.paths['/api/abastecimentos'].post.responses[409].description='divergente',d=>d.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},d=>d.components.schemas.DetalheAbastecimento.properties.quilometragem={type:'string'}]){const v=structuredClone(current);mutate(v);let rejected=false;try{checkCompatibility(combined,v)}catch{rejected=true}if(!rejected)throw Error('divergencia adicional aceita')}const bad=structuredClone(incoming);bad.components.schemas.CriarAbastecimento.description='alteração divergente';let rejected=false;try{mergeContractBaselines(base,head,bad)}catch{rejected=true}if(!rejected)throw Error('conflito adicional aceito');console.log('ok');")).toContain('ok');
 });

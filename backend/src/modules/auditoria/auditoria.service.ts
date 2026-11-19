@@ -4,8 +4,8 @@ import { notificarAtividades } from '../notificacoes/notificacoes.service.js';
 import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from './auditoria.repository.js';
 
 export type EventoAtividade =
-  | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'abastecimento_criado'; recursoId: string }
+  | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'anotacao_criada'; recursoId: string }
   | { operacao: 'anexo_criado'; recursoId: string }
   | { operacao: 'documento_versionado' | 'cnh_versionada'; recursoId: string }

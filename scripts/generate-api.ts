@@ -2,6 +2,7 @@ import { indicadoresAbastecimentos, indicadoresAbastecimentosAntesDeConsumo, not
 import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoAntesDeCandidatos, dashboardConsolidadoAntesDeConsumo, dashboardConsolidadoAntesPeriodoSvo, dashboardConsolidadoAntesRf46, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardAntesDeCandidatos, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo, notaDashboardAntesRf46, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stringify, parse } from 'yaml';
@@ -30,6 +31,16 @@ export function checkCoverage(manifest: { operations: {method:string;path:string
 }
 
 type Document = ReturnType<typeof openapi>;
+// Transições RF40/SCRUM-180 aprovadas: hashes dos schemas completos anteriores e atual.
+// Qualquer mudança adicional em campos, descrição ou obrigatoriedade continua rejeitada.
+const fingerprint = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const rf40Schemas: Record<string, { anteriores: string[]; atual: string }> = {
+  CriarAbastecimento: { anteriores: ['075c4c1853c922b920b2b1d38958556cdbec6f025cafd38d62a4c3ee5a58ec46', '03e5d864d0513be5f3fe38e4f9049a3c112cc4869402f230382b16a3d8aa4b50', '41b4b90e4dd4d5072dcdc62ca568be00cb6a977c3c3fafe957e94261539c328e'], atual: '1e19a4495b0ccab17c2c1b7cfb051e01dd0518b6249d3f2c8e1e60082a7762ff' },
+  DetalheAbastecimento: { anteriores: ['42a9b677f22e39773f7e1e58f23d514702f2151f3a05a8a05a88dbdf42394621'], atual: 'c440b93f68c533d5c450a4d38adfbd125087a03d42c8e3483d34a013106ef7b8' },
+  RespostaDetalheAbastecimento: { anteriores: ['bd83c01df4fee3e9a41cb3c61075958def5bb7656afaafccf5eb68cfd0b8e7ca'], atual: '028b79cb2198584c3d2494575eaebbda11133669825df682cc12b8c7b07463d6' },
+  ListaAbastecimentos: { anteriores: ['17780e0cdf302b7feb43c471aa35dc89c704781592fc7a858823f680db75a946'], atual: '713e3d26bd0650cacd58e7554b9c3d7851dc483df2db1c4a8484f0e93f78ca47' },
+  HistoricoAbastecimentos: { anteriores: ['2758259ac82335eb9754e0df22ef59749d1a56e13a94952d87a8e15ff944f25d'], atual: '496247921f77981c5543d4c5e8c780b253bc1cd8d5bfcc8eb2807aaaf9bd5d20' },
+};
 /** Gate conservador: qualquer alteração de contrato existente exige migração explícita; permite somente componentes e operações adicionais. */
 export function checkCompatibility(previous: Document, current: Document) {
   for (const [path,methods] of Object.entries(previous.paths)) for (const [method,definition] of Object.entries(methods)) {
@@ -201,6 +212,10 @@ export function checkCompatibility(previous: Document, current: Document) {
   }
   for (const [name,schema] of Object.entries(previous.components.schemas)) {
     let candidate = structuredClone(current.components.schemas[name as keyof typeof current.components.schemas]);
+    const transicao = rf40Schemas[name];
+    if (candidate && transicao?.anteriores.includes(fingerprint(schema)) && fingerprint(candidate) === transicao.atual) {
+      candidate = structuredClone(schema);
+    }
     if (name === 'IndicadoresAbastecimentos' && candidate) {
       const { $schema: anteriorDialect, ...anterior } = z.toJSONSchema(indicadoresAbastecimentosAntesDeConsumo, { io: 'input' });
       const { $schema: atualDialect, ...atual } = z.toJSONSchema(indicadoresAbastecimentos, { io: 'input' });
@@ -288,6 +303,20 @@ export function checkCompatibility(previous: Document, current: Document) {
       };
       strip(candidate);
     }
+    // SCRUM-179: somente os dois campos de abastecimento passam a aceitar null.
+    if (candidate && ['Abastecimento','RespostaAbastecimento','Abastecimentos'].includes(name)) {
+      const normalize = (before: unknown, after: unknown): void => {
+        if (!before || !after || typeof before !== 'object' || typeof after !== 'object') return;
+        const a=before as Record<string,unknown>, b=after as Record<string,unknown>;
+        for (const key of Object.keys(a)) {
+          const value=a[key] as {type?:string} | undefined;
+          if (['motorista_id','quilometragem'].includes(key) && value && ['string','integer'].includes(value.type ?? '') &&
+              JSON.stringify(b[key])===JSON.stringify({anyOf:[a[key],{type:'null'}]})) b[key]=a[key];
+          else normalize(a[key],b[key]);
+        }
+      };
+      normalize(schema,candidate);
+    }
     if (JSON.stringify(schema) !== JSON.stringify(candidate)) throw new Error('Componente existente alterado: '+name);
   }
 }
@@ -298,6 +327,11 @@ export function mergeContractBaselines(base: Document, head: Document, incoming:
   const merge = (b: unknown,h: unknown,i: unknown,path: string): unknown => {
     if (equal(h,b)) return i;
     if (equal(i,b) || equal(h,i)) return h;
+    // Descrições exatas dos dois pais RF40; nenhum outro conflito é resolvido implicitamente.
+    if (path === 'contrato.components.schemas.CriarAbastecimento.description'
+      && fingerprint(b) === '2df5388449c72dd2983bcfad3dc483cbf27a8f44e3b3f8dc86314c90f27b6eeb'
+      && fingerprint(h) === '164ed807b8e1fc7052b5d67a89ae7e51c7910f8f572ec49e1ee75de656725e84'
+      && fingerprint(i) === 'ff13b26b027fd73a86eaec9594d1c865d3effba620a19d37f190456a681c28ec') return h;
     if (!object(b) || !object(h) || !object(i)) throw new Error('Conflito entre contratos dos pais em '+path);
     const result: Record<string,unknown> = {};
     for (const key of new Set([...Object.keys(b),...Object.keys(h),...Object.keys(i)])) {

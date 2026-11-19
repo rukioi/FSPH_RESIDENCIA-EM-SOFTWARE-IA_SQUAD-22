@@ -1,16 +1,22 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import postgres from 'postgres';
 
 export const root = fileURLToPath(new URL('../../../../', import.meta.url));
-export const project = 'fsph-t1-isolated-2026';
-export const container = 'supabase_db_' + project;
-export const database = 'fsph_t1_baseline';
-export const testUrl = 'postgresql://postgres:postgres@127.0.0.1:55432/' + database;
-export const manifestPath = resolve(root, '.test-db/provision.json');
-
+/** Perfil fechado: valores externos nunca definem o destino ou a identidade. */
+const selectedProfile = process.env.FSPH_TEST_PROFILE ?? 't1';
+if (selectedProfile !== 't1' && selectedProfile !== 's9' && selectedProfile !== 's9-full' && selectedProfile !== 's9-full-repro' && selectedProfile !== 's9-mig-v3' && selectedProfile !== 's9-integracao-segura' && selectedProfile !== 's9-conciliacao-final') throw new Error('Perfil de teste desconhecido.');
+export const testProfile = selectedProfile;
+const isS9 = testProfile !== 't1';
+export const testPort = testProfile === 's9-conciliacao-final' ? '55501' : testProfile === 's9-integracao-segura' ? '55499' : testProfile === 's9-mig-v3' ? '55498' : testProfile === 's9-full-repro' ? '55496' : testProfile === 's9-full' ? '55495' : isS9 ? '55494' : '55432';
+export const project = testProfile === 's9-conciliacao-final' ? 'fsph-s9-conciliacao-final-2026' : testProfile === 's9-integracao-segura' ? 'fsph-s9-integracao-segura-2026' : testProfile === 's9-mig-v3' ? 'fsph-s9-mig-v3-2026' : testProfile === 's9-full-repro' ? 'fsph-s9-full-repro-2026' : testProfile === 's9-full' ? 'fsph-s9-full-2026' : isS9 ? 'fsph-s9-conciliacao-2026' : 'fsph-t1-isolated-2026';
+export const container = isS9 ? project : 'supabase_db_' + project;
+export const database = testProfile === 's9-conciliacao-final' ? 'fsph_s9_conciliacao_final' : testProfile === 's9-integracao-segura' ? 'fsph_s9_integracao_segura' : testProfile === 's9-mig-v3' ? 'fsph_s9_mig_v3' : testProfile === 's9-full-repro' ? 'fsph_s9_full_repro' : testProfile === 's9-full' ? 'fsph_s9_full' : isS9 ? 'fsph_s9_conciliacao' : 'fsph_t1_baseline';
+export const testUrl = 'postgresql://postgres:postgres@127.0.0.1:' + testPort + '/' + database;
+export const manifestPath = resolve(root, testProfile === 's9-conciliacao-final' ? '.test-db/s9-conciliacao-final.json' : testProfile === 's9-integracao-segura' ? '.test-db/s9-integracao-segura.json' : testProfile === 's9-mig-v3' ? '.test-db/s9-mig-v3.json' : testProfile === 's9-full-repro' ? '.test-db/s9-full-repro.json' : testProfile === 's9-full' ? '.test-db/s9-full.json' : isS9 ? '.test-db/s9-conciliacao.json' : '.test-db/provision.json');
 interface Manifest { workspace: string; containerId: string; nonce: string }
 interface Inspection {
   Id: string; Name: string; Running: boolean;
@@ -40,12 +46,52 @@ export function assertTarget(url: string | undefined) {
   }
 }
 
+interface S9Manifest extends Manifest {
+  project: string; container: string; volume: string; database: string; port: string;
+  marker: string; imageId: string;
+}
+interface S9Container {
+  Id: string; Name: string; Image: string; State: {Running: boolean};
+  Config: {Labels: Record<string,string>};
+  Mounts: {Type:string; Name:string; Destination:string; RW:boolean}[];
+  NetworkSettings: {Ports:Record<string,{HostPort:string;HostIp:string}[]>};
+}
+interface S9Volume {Name:string; Driver:string; Scope:string; Labels:Record<string,string>}
+
+/** Confere container, volume e manifesto dedicados antes de conectar. */
+function verifyS9(manifest: S9Manifest): Manifest {
+  const info = JSON.parse(command('docker',['inspect',container]))[0] as S9Container;
+  const volume = JSON.parse(command('docker',['volume','inspect',project]))[0] as S9Volume;
+  return validateS9Identity(manifest, info, volume);
+}
+
+/** Valida identidades já inspecionadas sem abrir conexão. */
+export function validateS9Identity(manifest: S9Manifest, info: S9Container, volume: S9Volume): Manifest {
+  const hash = createHash('sha256').update(realpathSync(root).toLowerCase()).digest('hex');
+  const ports = info.NetworkSettings?.Ports?.['5432/tcp'];
+  const mounts = info.Mounts?.filter(m => m.Type === 'volume' && m.Name === project && m.Destination === '/var/lib/postgresql/data');
+  if (manifest.workspace !== root || manifest.project !== project || manifest.container !== container ||
+      manifest.volume !== project || manifest.database !== database || manifest.port !== testPort ||
+      !/^[a-f0-9]{64}$/.test(manifest.containerId) || !/^[a-f0-9-]{36}$/.test(manifest.nonce) ||
+      manifest.marker !== project + ':' + manifest.nonce || info.Id !== manifest.containerId ||
+      info.Name !== '/' + container || !info.State?.Running || info.Image !== manifest.imageId ||
+      info.Config?.Labels?.['fsph.project'] !== project || info.Config.Labels['fsph.workspace'] !== hash ||
+      info.Config.Labels['fsph.nonce'] !== manifest.nonce || volume.Name !== project ||
+      volume.Driver !== 'local' || volume.Scope !== 'local' || volume.Labels?.['fsph.project'] !== project ||
+      volume.Labels['fsph.workspace'] !== hash || volume.Labels['fsph.nonce'] !== manifest.nonce ||
+      mounts?.length !== 1 || !mounts[0].RW || !ports?.length ||
+      !ports.every(p => p.HostPort === testPort && p.HostIp === '127.0.0.1')) {
+    throw new Error('Identidade Docker isolada não confere; nenhuma escrita autorizada.');
+  }
+  return manifest;
+}
 /** Confirma proveniência Docker e vínculo ao checkout antes de conectar. */
 export function verifyContainer(): Manifest {
   assertTarget(process.env.DATABASE_URL);
   let manifest: Manifest;
   try { manifest = JSON.parse(readFileSync(manifestPath, 'utf8')); }
   catch { throw new Error('Identidade isolada ausente. Execute npm run db:test:start.'); }
+  if (isS9) return verifyS9(manifest as S9Manifest);
   const info = inspectContainer();
   if (manifest.workspace !== root || !/^[a-f0-9]{64}$/.test(manifest.containerId) ||
       !/^[a-f0-9-]{36}$/.test(manifest.nonce) ||

@@ -58,6 +58,17 @@ test.each(['ADM', 'GESTOR_FROTA'])('cadastro SVO persiste valores exatos e audit
   }
 });
 
+test.each([undefined, null])('motorista ausente/nulo é persistido como null e auditado: %s', async motorista_id => {
+  const response = await cadastrar({ ...entrada, motorista_id });
+  expect(response.status).toBe(201);
+  const { data } = await response.json();
+  expect(data.motorista_id).toBeNull();
+  const [row] = await fixture.sql`SELECT motorista_id FROM abastecimento WHERE id=${data.id}`;
+  expect(row.motorista_id).toBeNull();
+  const atividades = await fixture.sql`SELECT usuario_id FROM log_atividade WHERE tipo_evento='abastecimento_criado'
+    AND descricao=${`Registrou abastecimento ID ${data.id}`}`;
+  expect(atividades).toEqual([{ usuario_id: '92194' }]);
+});
 test('falha real da auditoria reverte cadastro e comprovante legado; a próxima requisição funciona', async () => {
   await falharAuditoriaAnexo(fixture.admin, async () => {
     const response = await cadastrar({ ...entrada, comprovante: {

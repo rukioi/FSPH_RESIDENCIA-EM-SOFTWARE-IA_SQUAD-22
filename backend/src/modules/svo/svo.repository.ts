@@ -115,10 +115,11 @@ export async function finalizarTriagem(dados: DadosTriagemFinal): Promise<Result
       SET status_triagem = ${dados.decisao},
           triagem_observacoes = ${dados.triagemObservacoes},
           triado_por_id = ${dados.atendenteId},
-          triado_em = CURRENT_TIMESTAMP
+          triado_em = timezone('America/Maceio', CURRENT_TIMESTAMP)
       WHERE id = ${dados.solicitacaoId}
       RETURNING id::text AS id, codigo, status_triagem::text AS status_triagem,
-                triado_por_id::text AS triado_por_id, triado_em
+            triado_por_id::text AS triado_por_id,
+            to_char(triado_em, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS triado_em
     `;
 
     let ordemColeta: {
@@ -152,8 +153,7 @@ export async function finalizarTriagem(dados: DadosTriagemFinal): Promise<Result
           codigo: String(atualizada.codigo),
           statusTriagem: dados.decisao,
           triadoPorId: String(atualizada.triado_por_id),
-          triadoEm: atualizada.triado_em instanceof Date
-            ? atualizada.triado_em.toISOString() : String(atualizada.triado_em),
+          triadoEm: String(atualizada.triado_em),
         },
         ordemColeta,
         atividades,
@@ -186,10 +186,12 @@ export type ResultadoDespacho =
 export async function listarSolicitacoes(status?: 'AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML') {
   const filtro = status ?? null;
   const registros = await sql`
-    SELECT id::text AS id, codigo, status_triagem::text AS status_triagem, criado_em
+    SELECT id::text AS id, codigo, status_triagem::text AS status_triagem,
+      to_char((criado_em AT TIME ZONE 'America/Maceio') AT TIME ZONE 'UTC',
+        'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS criado_em
     FROM public.solicitacao_obito
     WHERE (${filtro}::text IS NULL OR status_triagem::text = ${filtro})
-    ORDER BY criado_em DESC NULLS LAST, id DESC
+    ORDER BY solicitacao_obito.criado_em DESC NULLS LAST, solicitacao_obito.id DESC
     LIMIT 20
   `;
   return registros.map(registro => ({
@@ -212,15 +214,16 @@ export async function criarSolicitacao(dados: NovaSolicitacaoObito) {
         id, codigo, atendente_id, nome_falecido, local_falecimento,
         endereco_remocao, solicitante_nome, solicitante_parentesco,
         solicitante_telefone, observacoes_medicas, ponto_referencia,
-        canal_atendimento, status_triagem
+        canal_atendimento, status_triagem, criado_em
       ) VALUES (
         ${id}, ${codigo}, ${dados.atendenteId}, ${dados.nomeFalecido ?? null},
         ${dados.localFalecimento}, ${dados.enderecoRemocao}, ${dados.solicitanteNome},
         ${dados.solicitanteParentesco ?? null}, ${dados.solicitanteTelefone ?? null},
         ${dados.observacoesMedicas ?? null}, ${dados.pontoReferencia ?? null},
-        'TELEFONE', 'AGUARDANDO_TRIAGEM'
+        'TELEFONE', 'AGUARDANDO_TRIAGEM', timezone('America/Maceio', CURRENT_TIMESTAMP)
       )
-      RETURNING id::text AS id, codigo, status_triagem::text AS status_triagem, criado_em
+      RETURNING id::text AS id, codigo, status_triagem::text AS status_triagem,
+            to_char(criado_em, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS criado_em
     `;
     const atividades = await registrarAtividades(transacao, dados.atendenteId, [
       { operacao: 'solicitacao_registrada', recursoId: id },
@@ -230,8 +233,7 @@ export async function criarSolicitacao(dados: NovaSolicitacaoObito) {
         id: String(registro.id),
         codigo: String(registro.codigo),
         statusTriagem: 'AGUARDANDO_TRIAGEM' as const,
-        criadoEm: registro.criado_em instanceof Date
-          ? registro.criado_em.toISOString() : registro.criado_em === null ? null : String(registro.criado_em),
+        criadoEm: String(registro.criado_em),
       },
       atividades,
     };

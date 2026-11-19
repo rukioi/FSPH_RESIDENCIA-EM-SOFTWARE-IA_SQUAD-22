@@ -16,44 +16,13 @@ Autenticação: Bearer JWT. Perfis: ADM/GESTOR_FROTA.
 | GET /api/abastecimentos/{id}/comprovante | não | bytes PDF/JPEG/PNG, 200 |
 | POST /api/abastecimentos/{id}/comprovante | multipart, somente arquivo | {data: MetadadosAnexo}, 201 |
 
-Campos existentes: veiculo_id, motorista_id, posto, litragem, valor_total,
-quilometragem e data_abastecimento. Corpo precisa ser objeto JSON. IDs aceitam
-inteiro seguro ou string decimal; litragem/valor aceitam número finito ou string
-numérica; quilometragem exige inteiro; data exige calendário válido YYYY-MM-DD;
-posto aceita string ou null. Mantém a rejeição anterior de veículo/litros/valor/data
-vazios/zero. O banco atual exige motorista e quilometragem: omissão/null recebe
-400, em vez de falhar com 500. **Caso B confirmado por Gabriel (responsável pelo
-backend), comunicado pelo solicitante em 18/11/2026:** abastecimento não pode ser
-finalizado sem quilometragem, km não pode ser nulo nem inferior à leitura anterior
-válida. Igualdade é permitida. Essa decisão substitui a proposta anterior nullable;
-não há migration RF40 ativa ou pendente nesta entrega. Motorista conserva a
-obrigatoriedade atual; não foi definida nova regra para esse campo.
-
-Schema de entrada, DTO e OpenAPI exigem `motorista_id` e `quilometragem` inteira
-não negativa. Km negativo recebe 400 antes de iniciar transação, inclusive para
-veículo sem abastecimento anterior. Zero é válido se não for regressivo; igualdade
-com a leitura anterior continua permitida. A validação do cadastro reutiliza o
-schema, sem alteração de migrations ou da RF40 mantida pelo responsável.
-Motorista ausente/null recebe 400; referência inexistente recebe 404.
-O formulário da
-main permanece obrigatório, sem “Não informada” e sem conversão para zero.
-A consulta inclui veiculo_placa e motorista_nome, sem inferir autoria.
-
-Litros e valor total devem ser numéricos finitos e positivos, inclusive quando
-enviados como strings numéricas decimais, inclusive notação científica. A escala
-persistida é `NUMERIC(10,2)`: zero, negativos e positivos menores que `0.005`
-retornam 400 antes do INSERT, pois resultariam em zero após arredondamento.
-Não foi criada restrição de duas casas na entrada: `0.005` e `0.009` continuam
-aceitos e são arredondados pelo PostgreSQL para `0.01`; `0.01`, inteiros e valores
-com duas casas permanecem válidos. A comparação decimal não arredonda strings
-em ponto flutuante e não modifica o valor enviado ao banco. O limite superior da
-coluna continua conferido pelo PostgreSQL; overflow recebe 400 pelo mapeamento
-existente. Não há cálculo monetário novo no JavaScript.
-O usuário da sessão autenticada registra `abastecimento_criado` em `log_atividade`
-na mesma transação do cadastro e comprovante legado. A descrição contém somente
-o ID do abastecimento; não copia posto, arquivo ou dados pessoais. Autoria enviada
-no corpo é ignorada. Falha de auditoria reverte cadastro e comprovante, sem falso
-sucesso. Não depende de `criado_por_id` nem da proposta nullable RF40 descartada.
+Campos: veiculo_id, motorista_id, posto, litragem, valor_total, quilometragem e
+data_abastecimento. O corpo deve ser objeto JSON. Motorista, quilometragem e
+posto podem ser omitidos ou nulos; zero é uma quilometragem válida. Veículo e
+data são obrigatórios, litros e valor devem ser positivos com até duas casas
+decimais e quilometragem deve ser um inteiro não negativo. A autoria é obtida
+da sessão autenticada, sem confiar em campos enviados pelo cliente. A consulta
+inclui placa e nome do motorista quando disponíveis.
 
 A comparação usa o mesmo veículo e a leitura válida de abastecimento mais recente
 até a data civil informada (km não nulo e não negativo), na ordem já utilizada
@@ -189,8 +158,7 @@ Authorization: Bearer <token>
 
 ## O que a entrega não faz
 
-Não muda permissões, estados, motorista obrigatório ou o cálculo de consumo.
-A regra de km obrigatório foi confirmada; não há suporte a cadastro nullable. Limites, request ID e erros técnicos seguem
+Não muda permissões, estados ou o cálculo de consumo. Limites, request ID e erros técnicos seguem
 [infraestrutura comum](./README.md#infraestrutura-http--28).
 
 ## Identidade comum — #29

@@ -7,8 +7,8 @@ export interface ConsultaAbastecimentos {
   page: number; limit: number; paginada: boolean; historico: boolean;
 }
 export interface LinhaAbastecimento {
-  id:string;veiculo_id:string;motorista_id:string;litragem:string;valor_total:string;
-  quilometragem:number;data_abastecimento:Date;criado_em:Date|null;posto:string|null;
+  id:string;veiculo_id:string;motorista_id:string|null;litragem:string;valor_total:string;
+  quilometragem:number|null;data_abastecimento:Date;criado_em:Date|null;posto:string|null;
   tanque_completo:boolean;comprovante_nome:string|null;veiculo_placa:string|null;
   motorista_nome:string|null;
 }

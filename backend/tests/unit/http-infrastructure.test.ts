@@ -13,6 +13,7 @@ import { lerCorpoJson } from '../../src/shared/http/body.js';
 import { receberUpload } from '../../src/modules/documentos/documentos.upload.js';
 import { sql, fecharBanco } from '../../src/database/connection.js';
 import { sql as legado } from '../../src/config/db.js';
+import { database } from '../../src/database/scripts/verify-test-db.js';
 
 const asRequest = (corpo: Buffer | string) => Readable.from([corpo]) as IncomingMessage;
 afterAll(async () => { const first = fecharBanco(); expect(fecharBanco()).toBe(first); await first; });
@@ -21,7 +22,7 @@ test('adaptador usa o mesmo pool e fechamento é idempotente', async () => {
   expect(legado).toBe(sql);
   expect(sql.options.prepare).toBe(false);
   const [row] = await sql`select current_database() as name`;
-  expect(row.name).toBe('fsph_t1_baseline');
+  expect(row.name).toBe(database);
   // O encerramento real ocorre em afterAll, sem afetar as demais provas.
 });
 

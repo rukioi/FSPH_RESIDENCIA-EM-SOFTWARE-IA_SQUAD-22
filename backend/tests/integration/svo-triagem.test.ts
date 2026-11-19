@@ -50,6 +50,7 @@ async function novaSolicitacao(): Promise<string> {
   const corpo = await resposta.json();
   const id: string = corpo.solicitacao.id;
   cadastradas.push(id);
+  expect(corpo.solicitacao.criadoEm).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}$/);
   return id;
 }
 
@@ -59,6 +60,23 @@ function triagem(method: 'POST' | 'PATCH', id: string, body: unknown, token = to
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+async function dashboard() {
+  const resposta = await fetch(base + '/api/svo/dashboard', {
+    headers: { Authorization: `Bearer ${tokenSvo}` },
+  });
+  expect(resposta.status).toBe(200);
+  return resposta.json();
+}
+
+async function horariosLocais(id: string) {
+  const [linha] = await sql`
+    SELECT abs(extract(epoch FROM (criado_em - timezone('America/Maceio', CURRENT_TIMESTAMP)))) < 120 AS criado_local,
+           abs(extract(epoch FROM (triado_em - timezone('America/Maceio', CURRENT_TIMESTAMP)))) < 120 AS triado_local
+    FROM public.solicitacao_obito WHERE id=${id}
+  `;
+  expect(linha).toEqual({criado_local:true,triado_local:true});
 }
 
 async function dadosPersistidos(id: string) {
@@ -96,6 +114,7 @@ test('PATCH permite salvar rascunho duas vezes, sem finalizar ou gerar ordem', a
 
 test('POST confirma SVO, cria exatamente uma ordem e impede repetição', async () => {
   const id = await novaSolicitacao();
+  const antes = await dashboard();
   const decisao = {
     decisao: 'CONFIRMADA_SVO', triagemObservacoes: 'Competência SVO fictícia', quantidadeCorpos: 2,
   };
@@ -105,6 +124,7 @@ test('POST confirma SVO, cria exatamente uma ordem e impede repetição', async 
   expect(body.solicitacao).toMatchObject({
     id, codigo: `#SVO-${id}`, statusTriagem: 'CONFIRMADA_SVO', triadoPorId: atendenteId,
   });
+  expect(body.solicitacao.triadoEm).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}$/);
   expect(body.ordemColeta).toMatchObject({
     codigo: `#OC-${body.ordemColeta.id}`,
     status: 'PENDENTE_ALOCACAO', quantidadeCorpos: 2,
@@ -114,8 +134,13 @@ test('POST confirma SVO, cria exatamente uma ordem e impede repetição', async 
   expect(s.status_triagem).toBe('CONFIRMADA_SVO');
   expect(s.triado_por_id).toBe(atendenteId);
   expect(s.triado_em).not.toBeNull();
+  await horariosLocais(id);
   expect(ordens).toHaveLength(1);
   expect(Number(ordens[0].quantidade_corpos)).toBe(2);
+  const depois = await dashboard();
+  expect(depois.indicadores.confirmadasSvo).toBe(antes.indicadores.confirmadasSvo + 1);
+  expect(depois.indicadores.ordensColeta).toBe(antes.indicadores.ordensColeta + 1);
+  expect(depois.visaoGeral.confirmadasSvo).toBe(antes.visaoGeral.confirmadasSvo + 1);
   expect((await triagem('POST', id, decisao)).status).toBe(409);
   expect((await triagem('PATCH', id, { triagemObservacoes: 'Alteração proibida' })).status).toBe(409);
   expect((await dadosPersistidos(id)).ordens).toHaveLength(1);
@@ -123,6 +148,7 @@ test('POST confirma SVO, cria exatamente uma ordem e impede repetição', async 
 
 test('POST encaminha ao IML sem criar ordem e preserva a decisão', async () => {
   const id = await novaSolicitacao();
+  const antes = await dashboard();
   const resposta = await triagem('POST', id, {
     decisao: 'ENCAMINHADA_IML', triagemObservacoes: 'Encaminhamento fictício',
   });
@@ -134,7 +160,11 @@ test('POST encaminha ao IML sem criar ordem e preserva a decisão', async () => 
   expect(s.status_triagem).toBe('ENCAMINHADA_IML');
   expect(s.triado_por_id).toBe(atendenteId);
   expect(s.triado_em).not.toBeNull();
+  await horariosLocais(id);
   expect(ordens).toHaveLength(0);
+  const depois = await dashboard();
+  expect(depois.indicadores.encaminhadasIml).toBe(antes.indicadores.encaminhadasIml + 1);
+  expect(depois.visaoGeral.encaminhadasIml).toBe(antes.visaoGeral.encaminhadasIml + 1);
   expect((await triagem('POST', id, {
     decisao: 'CONFIRMADA_SVO', quantidadeCorpos: 1, triagemObservacoes: 'Não deve alterar',
   })).status).toBe(409);

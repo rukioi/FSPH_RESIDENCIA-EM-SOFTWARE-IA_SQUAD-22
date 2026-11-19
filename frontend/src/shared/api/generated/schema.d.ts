@@ -1489,10 +1489,7 @@ export interface DetalheAbastecimento {
    * BIGINT serializado pelo postgres como string; não converter para Number.
    */
   veiculo_id: string;
-  /**
-   * BIGINT serializado pelo postgres como string; não converter para Number.
-   */
-  motorista_id: string;
+  motorista_id: string | null;
   /**
    * NUMERIC serializado pelo driver como string, preservando precisão.
    */
@@ -1501,7 +1498,7 @@ export interface DetalheAbastecimento {
    * NUMERIC serializado pelo driver como string, preservando precisão.
    */
   valor_total: string;
-  quilometragem: number;
+  quilometragem: number | null;
   /**
    * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
    */
@@ -1527,10 +1524,7 @@ export interface RespostaDetalheAbastecimento {
      * BIGINT serializado pelo postgres como string; não converter para Number.
      */
     veiculo_id: string;
-    /**
-     * BIGINT serializado pelo postgres como string; não converter para Number.
-     */
-    motorista_id: string;
+    motorista_id: string | null;
     /**
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
@@ -1539,7 +1533,7 @@ export interface RespostaDetalheAbastecimento {
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
     valor_total: string;
-    quilometragem: number;
+    quilometragem: number | null;
     /**
      * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
      */
@@ -1566,10 +1560,7 @@ export interface ListaAbastecimentos {
      * BIGINT serializado pelo postgres como string; não converter para Number.
      */
     veiculo_id: string;
-    /**
-     * BIGINT serializado pelo postgres como string; não converter para Number.
-     */
-    motorista_id: string;
+    motorista_id: string | null;
     /**
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
@@ -1578,7 +1569,7 @@ export interface ListaAbastecimentos {
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
     valor_total: string;
-    quilometragem: number;
+    quilometragem: number | null;
     /**
      * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
      */
@@ -1610,10 +1601,7 @@ export interface HistoricoAbastecimentos {
      * BIGINT serializado pelo postgres como string; não converter para Number.
      */
     veiculo_id: string;
-    /**
-     * BIGINT serializado pelo postgres como string; não converter para Number.
-     */
-    motorista_id: string;
+    motorista_id: string | null;
     /**
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
@@ -1622,7 +1610,7 @@ export interface HistoricoAbastecimentos {
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
     valor_total: string;
-    quilometragem: number;
+    quilometragem: number | null;
     /**
      * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
      */
@@ -1754,10 +1742,7 @@ export interface Abastecimento {
    * BIGINT serializado pelo postgres como string; não converter para Number.
    */
   veiculo_id: string;
-  /**
-   * BIGINT serializado pelo postgres como string; não converter para Number.
-   */
-  motorista_id: string;
+  motorista_id: string | null;
   /**
    * NUMERIC serializado pelo driver como string, preservando precisão.
    */
@@ -1766,7 +1751,7 @@ export interface Abastecimento {
    * NUMERIC serializado pelo driver como string, preservando precisão.
    */
   valor_total: string;
-  quilometragem: number;
+  quilometragem: number | null;
   /**
    * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
    */
@@ -1790,10 +1775,7 @@ export interface RespostaAbastecimento {
      * BIGINT serializado pelo postgres como string; não converter para Number.
      */
     veiculo_id: string;
-    /**
-     * BIGINT serializado pelo postgres como string; não converter para Number.
-     */
-    motorista_id: string;
+    motorista_id: string | null;
     /**
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
@@ -1802,7 +1784,7 @@ export interface RespostaAbastecimento {
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
     valor_total: string;
-    quilometragem: number;
+    quilometragem: number | null;
     /**
      * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
      */
@@ -1827,10 +1809,7 @@ export interface Abastecimentos {
      * BIGINT serializado pelo postgres como string; não converter para Number.
      */
     veiculo_id: string;
-    /**
-     * BIGINT serializado pelo postgres como string; não converter para Number.
-     */
-    motorista_id: string;
+    motorista_id: string | null;
     /**
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
@@ -1839,7 +1818,7 @@ export interface Abastecimentos {
      * NUMERIC serializado pelo driver como string, preservando precisão.
      */
     valor_total: string;
-    quilometragem: number;
+    quilometragem: number | null;
     /**
      * Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
      */
@@ -1853,18 +1832,18 @@ export interface Abastecimentos {
   }[];
 }
 /**
- * Caso B confirmado pelo responsável: quilometragem inteira obrigatória, nunca nula ou negativa. Ausência/null/valor negativo recebe 400; leitura inferior à anterior ou incompatível com viagem corrigida recebe 409. Igualdade não é regressão. Motorista obrigatório: ausência/null recebe 400 e ID inexistente recebe 404. Litros e valor devem ser decimais finitos e permanecer positivos após arredondamento NUMERIC(10,2): mínimo 0.005; inválidos recebem 400. O PostgreSQL mantém o arredondamento e o limite superior da coluna, sem conversão monetária no JavaScript. Cadastro e atividade do ator autenticado são atômicos; autoria enviada no corpo não é utilizada. Demais validações de calendário e tipos permanecem no controller.
+ * RF40/SCRUM-186: motorista, km e posto opcionais. Litros/valor positivos numeric(10,2); km inteiro não negativo. Autoria sempre da sessão; campos extras ignorados. Comprovante legado JPEG/PNG mantém validação de assinatura no service.
  *
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "CriarAbastecimento".
  */
 export interface CriarAbastecimento {
   veiculo_id: number | string;
-  motorista_id: number | string;
+  motorista_id?: (number | string) | null;
   posto?: string | null;
   litragem: number | string;
   valor_total: number | string;
-  quilometragem: number;
+  quilometragem?: number | null;
   data_abastecimento: string;
   tanque_completo?: boolean;
   comprovante?: {
