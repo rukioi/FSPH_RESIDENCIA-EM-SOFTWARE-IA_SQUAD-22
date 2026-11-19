@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { navegar } from '../../app/routes/router'
 import { rotaSolicitacao } from '../../app/routes/rotas'
 import { Icone } from '../../shared/components/Icone'
+import { Anexos } from '../../shared/components/Anexos'
 import {
   buscarDetalheSolicitacao,
   buscarHistoricoSolicitacao,
@@ -362,6 +363,19 @@ export function DetalheSolicitacao({
               )}
             </div>
           )}
+        </div>
+      </section>
+
+            <section className="cartao sol-cartao" aria-labelledby="anexos-titulo">
+        <div className="sol-cartao__topo">
+          <h2 id="anexos-titulo">Documentos e anexos</h2>
+        </div>
+
+        <div className="sol-cartao__corpo">
+          <Anexos
+            tipoRegistro="SOLICITACAO_VIAGEM"
+            registroId={id}
+          />
         </div>
       </section>
 
