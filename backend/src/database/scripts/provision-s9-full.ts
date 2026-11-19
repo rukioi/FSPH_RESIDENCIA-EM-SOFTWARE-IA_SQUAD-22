@@ -6,7 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { command, root, project, container, database, manifestPath, testPort, assertTarget, testProfile, verifyContainer, verifiedSql } from './verify-test-db.js';
 import { prepare } from './apply-test-migrations.js';
 
-if (testProfile !== 's9-full' && testProfile !== 's9-full-repro' && testProfile !== 's9-mig-v3' && testProfile !== 's9-integracao-segura') throw new Error('Selecione explicitamente um perfil isolado de suíte completa.');
+if (testProfile !== 's9-full' && testProfile !== 's9-full-repro' && testProfile !== 's9-mig-v3' && testProfile !== 's9-integracao-segura' && testProfile !== 's9-conciliacao-final') throw new Error('Selecione explicitamente um perfil isolado de suíte completa.');
 assertTarget(process.env.DATABASE_URL);
 if (existsSync(manifestPath)) throw new Error('Manifesto existente; provisionamento recusado.');
 const docker = (args:string[]) => command('docker',args).trim();

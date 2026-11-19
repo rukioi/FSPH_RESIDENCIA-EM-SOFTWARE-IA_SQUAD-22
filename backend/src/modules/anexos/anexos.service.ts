@@ -36,7 +36,8 @@ export function lerConsultaRegistro(params: URLSearchParams) {
 }
 
 /** Reutiliza o parser limitado; metadados privados nunca são copiados para logs. */
-export async function lerAnexo(req: IncomingMessage) {
+export async function lerAnexo(req: IncomingMessage, fixo?: VinculoRegistro) {
+  if (fixo && !vinculoAnexo.safeParse(fixo).success) { req.resume(); throw registroAusente(); }
   if (!/^multipart\/form-data(?:\s*;|$)/i.test(req.headers['content-type'] ?? '')) {
     req.resume(); throw new ErroHttp(415, 'TIPO_NAO_SUPORTADO', 'Envie o arquivo como multipart/form-data.');
   }
@@ -46,9 +47,10 @@ export async function lerAnexo(req: IncomingMessage) {
     if (error instanceof ErroHttp || error instanceof ErroCorpoRequisicao) throw error;
     throw new ErroHttp(400, 'UPLOAD_INVALIDO', 'Envie um único arquivo e os campos esperados.');
   }
-  const entrada = vinculoAnexo.safeParse(upload.campos);
+  // No comprovante, somente o caminho define o vínculo; campos extras são rejeitados.
+  const entrada = (fixo ? anexosSchemas.CriarComprovante : vinculoAnexo).safeParse(upload.campos);
   if (!entrada.success) throw invalido();
-  const vinculo = entrada.data;
+  const vinculo = vinculoAnexo.parse(fixo ?? entrada.data);
   validarArquivo(upload.arquivo);
   return { vinculo, arquivo: upload.arquivo };
 }
@@ -106,6 +108,18 @@ export async function consultarAnexo(usuario: UsuarioAutenticado, id: string) {
     await autorizarRegistro(tx, usuario, vinculoDaLinha(linha));
     const [conteudo] = await tx<{ dados: Buffer }[]>`SELECT dados FROM public.anexo WHERE id=${id}`;
     return { tipo: linha.tipo, dados: conteudo.dados };
+  });
+}
+
+/** Obtém o último arquivo confirmado do registro autorizado, sem substituir o histórico. */
+export async function consultarUltimoAnexo(usuario: UsuarioAutenticado, vinculo: VinculoRegistro) {
+  if (!vinculoAnexo.safeParse(vinculo).success) throw registroAusente();
+  return sql.begin(async tx => {
+    await autorizarRegistro(tx, usuario, vinculo);
+    const [arquivo] = await tx<{ tipo: string; dados: Buffer }[]>`
+      SELECT tipo,dados FROM public.anexo WHERE ${tx(registros[vinculo.tipoRegistro].coluna)}=${vinculo.registroId}
+      ORDER BY criado_em DESC,id DESC LIMIT 1`;
+    return arquivo;
   });
 }
 

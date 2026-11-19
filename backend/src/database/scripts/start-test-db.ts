@@ -14,7 +14,7 @@ function provisionDatabase(nonce: string) {
 }
 
 assertTarget(process.env.DATABASE_URL);
-if (testProfile === 's9' || testProfile === 's9-full' || testProfile === 's9-full-repro' || testProfile === 's9-mig-v3' || testProfile === 's9-integracao-segura') {
+if (testProfile === 's9' || testProfile === 's9-full' || testProfile === 's9-full-repro' || testProfile === 's9-mig-v3' || testProfile === 's9-integracao-segura' || testProfile === 's9-conciliacao-final') {
   // Nunca adotar, criar ou alterar recursos Sprint 9 sem identidade completa.
   const sql = await verifiedSql();
   await sql.end();

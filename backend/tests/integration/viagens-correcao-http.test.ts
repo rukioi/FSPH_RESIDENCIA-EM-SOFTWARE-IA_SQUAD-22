@@ -64,7 +64,12 @@ test('abastecimento no mesmo dia preserva confirmacao e permite correcao segura'
   expect(resposta.status).toBe(200);expect(viagensSchemas.RespostaCorrecaoViagem.parse(await resposta.json()).data.odometroAtualizado).toBe(false);
   const criar=(dia:string,km:number)=>fetch(base+'/api/abastecimentos',{method:'POST',headers:{Authorization:`Bearer ${gestor}`,'Content-Type':'application/json'},body:JSON.stringify({veiculo_id:8920104,motorista_id:-27001,litragem:10,valor_total:50,quilometragem:km,data_abastecimento:dia,posto:'Teste concorrencia 8920304'})});
   try {expect((await criar('2026-01-01',950)).status).toBe(201);expect((await criar('2025-12-31',901)).status).toBe(409);}
-  finally {await sql`DELETE FROM public.abastecimento WHERE veiculo_id=8920104 AND posto='Teste concorrencia 8920304'`;}
+  finally {
+    await sql`DELETE FROM public.log_atividade WHERE tipo_evento='abastecimento_criado'
+      AND descricao IN (SELECT 'Registrou abastecimento ID ' || id FROM public.abastecimento
+        WHERE veiculo_id=8920104 AND posto='Teste concorrencia 8920304')`;
+    await sql`DELETE FROM public.abastecimento WHERE veiculo_id=8920104 AND posto='Teste concorrencia 8920304'`;
+  }
 });
 test('correcao e abastecimento concorrentes respeitam ambas as ordens sem deadlock',async()=>{
   for (const [index,primeiro] of [[1,'correcao'],[2,'abastecimento']] as const) {
@@ -90,6 +95,8 @@ test('correcao e abastecimento concorrentes respeitam ambas as ordens sem deadlo
     } finally {
       liberar();await holding;
       await admin`DELETE FROM public.viagem_correcao WHERE viagem_id=${viagem}`;
+      await sql`DELETE FROM public.log_atividade WHERE tipo_evento='abastecimento_criado'
+        AND descricao IN (SELECT 'Registrou abastecimento ID ' || id FROM public.abastecimento WHERE veiculo_id=${veiculo})`;
       await sql.begin(async tx=>{await tx`DELETE FROM public.log_atividade WHERE solicitacao_viagem_id=${pedido}`;await tx`DELETE FROM public.abastecimento WHERE veiculo_id=${veiculo}`;await tx`DELETE FROM public.viagem WHERE id=${viagem}`;await tx`DELETE FROM public.solicitacao_viagem WHERE id=${pedido}`;await tx`DELETE FROM public.veiculo WHERE id=${veiculo}`;});
     }
   }

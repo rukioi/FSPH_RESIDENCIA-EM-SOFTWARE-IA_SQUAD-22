@@ -9524,7 +9524,7 @@ paths:
       operationId: abastecimentos_get__api_abastecimentos_id_comprovante
       tags:
         - abastecimentos
-      description: Imagem JPEG ou PNG como bytes; acesso autenticado.
+      description: "PDF/JPEG/PNG privados: último anexo compartilhado, com fallback do comprovante legado. Acesso autenticado."
       security:
         - bearerAuth: []
       x-perfis: *a1
@@ -9547,6 +9547,10 @@ paths:
                 type: string
                 format: uuid
           content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
             image/jpeg:
               schema:
                 type: string
@@ -9600,6 +9604,146 @@ paths:
             X-Request-Id:
               schema:
                 type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    post:
+      operationId: abastecimentos_post__api_abastecimentos_id_comprovante
+      tags:
+        - abastecimentos
+      description: "SCRUM-187: arquivo PDF/JPEG/PNG até 5 MiB; vínculo exclusivamente pelo caminho, infraestrutura compartilhada, auditoria e bytes atômicos."
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                arquivo:
+                  type: string
+                  format: binary
+              additionalProperties: false
+              required:
+                - arquivo
+      responses:
+        "201":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaAnexo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
           content:
             application/json:
               schema:
@@ -9741,12 +9885,50 @@ paths:
       operationId: abastecimentos_get__api_abastecimentos
       tags:
         - abastecimentos
-      description: Formato atual preservado; query params não declarados são ignorados.
+      description: "SCRUM-186: sem filtros preserva lista completa por id DESC; filtros reconhecidos ativam paginação por data DESC/id DESC. Período civil inclusivo. Parâmetros desconhecidos continuam ignorados."
       security:
         - bearerAuth: []
       x-perfis: *a1
-      x-runtime-validation: false
-      parameters: []
+      x-runtime-validation: true
+      parameters:
+        - name: veiculoId
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d{0,18}$
+        - name: inicio
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: fim
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: pagina
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+            description: Máximo 100.
       responses:
         "200":
           description: Sucesso no formato atual
@@ -9759,7 +9941,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Abastecimentos"
+                $ref: "#/components/schemas/ListaAbastecimentos"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
         "401":
           description: Falha atual HTTP 401
           headers:
@@ -9774,6 +9968,18 @@ paths:
                 $ref: "#/components/schemas/Erro"
         "403":
           description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
           headers:
             X-Request-Id:
               description: UUID gerado pelo servidor; IDs recebidos não são confiados.
@@ -9931,6 +10137,252 @@ paths:
               schema:
                 type: string
                 format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/abastecimentos/{id}:
+    get:
+      operationId: abastecimentos_get__api_abastecimentos_id_
+      tags:
+        - abastecimentos
+      description: "SCRUM-186: detalhe persistido, sem bytes do comprovante ou autoria inferida."
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaDetalheAbastecimento"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/veiculos/{id}/abastecimentos:
+    get:
+      operationId: abastecimentos_get__api_veiculos_id_abastecimentos
+      tags:
+        - abastecimentos
+      description: "SCRUM-186: histórico de abastecimentos por data ASC/id ASC, paginado, período civil inclusivo. Veículo inexistente retorna 404."
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: veiculoId
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d{0,18}$
+        - name: inicio
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: fim
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: pagina
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9]\d*$
+            description: Máximo 100.
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoricoAbastecimentos"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -12600,6 +13052,10 @@ components:
       required:
         - data
         - meta
+    CriarComprovante:
+      type: object
+      properties: {}
+      additionalProperties: false
     CriarAnexo:
       type: object
       properties:
@@ -14962,6 +15418,340 @@ components:
           type:
             - string
             - "null"
+    DetalheAbastecimento:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        veiculo_id:
+          type: string
+          pattern: ^-?\d+$
+          description: BIGINT serializado pelo postgres como string; não converter para Number.
+        motorista_id:
+          anyOf:
+            - type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            - type: "null"
+        litragem:
+          type: string
+          description: NUMERIC serializado pelo driver como string, preservando precisão.
+        valor_total:
+          type: string
+          description: NUMERIC serializado pelo driver como string, preservando precisão.
+        quilometragem:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        data_abastecimento:
+          type: string
+          description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+        criado_em:
+          anyOf:
+            - type: string
+              description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+            - type: "null"
+        posto:
+          type:
+            - string
+            - "null"
+        tanque_completo:
+          type: boolean
+        comprovante_nome:
+          type:
+            - string
+            - "null"
+        veiculo_placa:
+          type:
+            - string
+            - "null"
+        motorista_nome:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - veiculo_id
+        - motorista_id
+        - litragem
+        - valor_total
+        - quilometragem
+        - data_abastecimento
+        - criado_em
+        - posto
+        - tanque_completo
+        - comprovante_nome
+        - veiculo_placa
+        - motorista_nome
+    RespostaDetalheAbastecimento:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            veiculo_id:
+              type: string
+              pattern: ^-?\d+$
+              description: BIGINT serializado pelo postgres como string; não converter para Number.
+            motorista_id:
+              anyOf:
+                - type: string
+                  pattern: ^-?\d+$
+                  description: BIGINT serializado pelo postgres como string; não converter para Number.
+                - type: "null"
+            litragem:
+              type: string
+              description: NUMERIC serializado pelo driver como string, preservando precisão.
+            valor_total:
+              type: string
+              description: NUMERIC serializado pelo driver como string, preservando precisão.
+            quilometragem:
+              anyOf:
+                - type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                - type: "null"
+            data_abastecimento:
+              type: string
+              description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+            criado_em:
+              anyOf:
+                - type: string
+                  description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                - type: "null"
+            posto:
+              type:
+                - string
+                - "null"
+            tanque_completo:
+              type: boolean
+            comprovante_nome:
+              type:
+                - string
+                - "null"
+            veiculo_placa:
+              type:
+                - string
+                - "null"
+            motorista_nome:
+              type:
+                - string
+                - "null"
+          required:
+            - id
+            - veiculo_id
+            - motorista_id
+            - litragem
+            - valor_total
+            - quilometragem
+            - data_abastecimento
+            - criado_em
+            - posto
+            - tanque_completo
+            - comprovante_nome
+            - veiculo_placa
+            - motorista_nome
+      required:
+        - data
+    ListaAbastecimentos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              veiculo_id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              motorista_id:
+                anyOf:
+                  - type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  - type: "null"
+              litragem:
+                type: string
+                description: NUMERIC serializado pelo driver como string, preservando precisão.
+              valor_total:
+                type: string
+                description: NUMERIC serializado pelo driver como string, preservando precisão.
+              quilometragem:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              data_abastecimento:
+                type: string
+                description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+              criado_em:
+                anyOf:
+                  - type: string
+                    description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                  - type: "null"
+              posto:
+                type:
+                  - string
+                  - "null"
+              tanque_completo:
+                type: boolean
+              comprovante_nome:
+                type:
+                  - string
+                  - "null"
+              veiculo_placa:
+                type:
+                  - string
+                  - "null"
+              motorista_nome:
+                type:
+                  - string
+                  - "null"
+            required:
+              - id
+              - veiculo_id
+              - motorista_id
+              - litragem
+              - valor_total
+              - quilometragem
+              - data_abastecimento
+              - criado_em
+              - posto
+              - tanque_completo
+              - comprovante_nome
+              - veiculo_placa
+              - motorista_nome
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+      required:
+        - data
+    HistoricoAbastecimentos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              veiculo_id:
+                type: string
+                pattern: ^-?\d+$
+                description: BIGINT serializado pelo postgres como string; não converter para Number.
+              motorista_id:
+                anyOf:
+                  - type: string
+                    pattern: ^-?\d+$
+                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                  - type: "null"
+              litragem:
+                type: string
+                description: NUMERIC serializado pelo driver como string, preservando precisão.
+              valor_total:
+                type: string
+                description: NUMERIC serializado pelo driver como string, preservando precisão.
+              quilometragem:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              data_abastecimento:
+                type: string
+                description: Representação atual do driver; DATE é serializado como ISO com hora, sem conversão histórica.
+              criado_em:
+                anyOf:
+                  - type: string
+                    description: Timestamp sem fuso no banco, serializado pelo driver como ISO; não redefine seu significado histórico.
+                  - type: "null"
+              posto:
+                type:
+                  - string
+                  - "null"
+              tanque_completo:
+                type: boolean
+              comprovante_nome:
+                type:
+                  - string
+                  - "null"
+              veiculo_placa:
+                type:
+                  - string
+                  - "null"
+              motorista_nome:
+                type:
+                  - string
+                  - "null"
+            required:
+              - id
+              - veiculo_id
+              - motorista_id
+              - litragem
+              - valor_total
+              - quilometragem
+              - data_abastecimento
+              - criado_em
+              - posto
+              - tanque_completo
+              - comprovante_nome
+              - veiculo_placa
+              - motorista_nome
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+      required:
+        - data
+        - meta
     IndicadoresAbastecimentos:
       type: object
       properties:
@@ -15408,32 +16198,49 @@ components:
       type: object
       properties:
         veiculo_id:
-          type:
-            - number
-            - string
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: string
+              pattern: ^-?\d+$
         motorista_id:
-          type:
-            - number
-            - string
-            - "null"
+          anyOf:
+            - anyOf:
+                - type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                - type: string
+                  pattern: ^-?\d+$
+            - type: "null"
         posto:
-          type:
-            - string
-            - "null"
+          anyOf:
+            - type: string
+              maxLength: 255
+            - type: "null"
         litragem:
-          type:
-            - number
-            - string
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+              maximum: 99999999.99
+            - type: string
+              pattern: ^\d{1,8}(\.\d{1,2})?$
         valor_total:
-          type:
-            - number
-            - string
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+              maximum: 99999999.99
+            - type: string
+              pattern: ^\d{1,8}(\.\d{1,2})?$
         quilometragem:
-          type:
-            - number
-            - "null"
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 2147483647
+            - type: "null"
         data_abastecimento:
           type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
         tanque_completo:
           type: boolean
         comprovante:
@@ -15462,7 +16269,7 @@ components:
         - litragem
         - valor_total
         - data_abastecimento
-      description: Forma usual de transporte. Motorista e quilometragem são opcionais; litros e valor devem ser positivos, quilometragem não negativa e data válida. A autoria é registrada a partir da sessão.
+      description: "RF40/SCRUM-186: motorista, km e posto opcionais. Litros/valor positivos numeric(10,2); km inteiro não negativo. Autoria sempre da sessão; campos extras ignorados. Comprovante legado JPEG/PNG mantém validação de assinatura no service."
     Documentos:
       type: object
       properties:

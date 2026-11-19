@@ -1,5 +1,15 @@
 import { expect, test } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route(url => url.pathname === '/api/anexos', async route => {
+    expect(route.request().method()).toBe('GET');
+    expect(Object.fromEntries(new URL(route.request().url()).searchParams)).toEqual({
+      tipoRegistro: 'SOLICITACAO_VIAGEM', registroId: '1', page: '1', limit: '20',
+    });
+    await route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0 } } });
+  });
+});
+
 for (const width of [390, 768, 1280]) {
   test(`gestor consulta e edita solicitação em ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 900 });

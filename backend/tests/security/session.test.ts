@@ -1,5 +1,8 @@
-import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import type { AddressInfo } from 'node:net';
+// Esta suíte substitui a consulta de identidade; usuarios-sessao prova a integração real.
+const bancoProibido=vi.hoisted(()=>vi.fn(()=>{throw new Error('Banco proibido neste teste de sessão.');}));
+vi.mock('../../src/database/connection.js',()=>({sql:bancoProibido}));
 vi.mock('../../src/modules/usuarios/usuarios.repository.js', () => ({ consultarIdentidade: vi.fn() }));
 import { consultarIdentidade } from '../../src/modules/usuarios/usuarios.repository.js';
 import { criarJwt } from '../../src/security/jwt.js';
@@ -14,6 +17,7 @@ beforeAll(async()=>{
 });
 afterAll(async()=>{await new Promise<void>(resolve=>server.close(()=>resolve()));});
 beforeEach(()=>repository.mockReset());
+afterEach(()=>{expect(bancoProibido).not.toHaveBeenCalled();});
 test('JWT ausente ou subject inválido não consulta identidade',async()=>{
   expect(await buscarSessao(undefined)).toBeNull();
   const token=await criarJwt({id:'identidade-inválida',perfil:'ADM'});

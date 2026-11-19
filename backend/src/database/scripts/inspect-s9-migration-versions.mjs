@@ -9,7 +9,7 @@ export function identificarVersoes(arquivos) {
   for(const nome of new Set(arquivos)){
     if(!nome.endsWith('.sql'))continue;
     const match=/^(\d+)_([a-z0-9_-]+)\.sql$/.exec(nome);
-    if(!match){if(/^\d+_.*\.sql$/.test(nome))invalidos.push(nome);continue;}
+    if(!match){invalidos.push(nome);continue;}
     const grupo=grupos.get(match[1])??[];grupo.push(nome);grupos.set(match[1],grupo);
   }
   const duplicadas=[...grupos].filter(([,grupo])=>grupo.length>1)

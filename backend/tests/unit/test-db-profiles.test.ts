@@ -34,14 +34,18 @@ test('perfil da integração segura usa identidade exclusiva',()=>{
   const result=probe('s9-integracao-segura',`import {project,database,testProfile,testUrl,manifestPath} from '${modulePath}'; import {basename} from 'node:path'; console.log(project,database,testProfile,new URL(testUrl).port,basename(manifestPath))`);
   expect(result.trim()).toBe('fsph-s9-integracao-segura-2026 fsph_s9_integracao_segura s9-integracao-segura 55499 s9-integracao-segura.json');
 });
+test('perfil de conciliação final usa identidade exclusiva',()=>{
+  const result=probe('s9-conciliacao-final',`import {project,database,testProfile,testUrl,manifestPath} from '${modulePath}'; import {basename} from 'node:path'; console.log(project,database,testProfile,new URL(testUrl).port,basename(manifestPath))`);
+  expect(result.trim()).toBe('fsph-s9-conciliacao-final-2026 fsph_s9_conciliacao_final s9-conciliacao-final 55501 s9-conciliacao-final.json');
+});
 test('perfil desconhecido é recusado antes de qualquer conexão',()=>{
   expect(()=>probe('desconhecido',`await import('${modulePath}')`)).toThrow();
 });
-test.each(['t1','s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura'])('perfil %s recusa alvo arbitrário antes de conectar',profile=>{
+test.each(['t1','s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura','s9-conciliacao-final'])('perfil %s recusa alvo arbitrário antes de conectar',profile=>{
   const code=`import {assertTarget,testUrl} from '${modulePath}'; assertTarget(testUrl); try {assertTarget('postgresql://example.invalid/production'); throw new Error('aceitou alvo');} catch(e) {if (!String(e).includes('Alvo recusado')) throw e;} console.log('recusado')`;
   expect(probe(profile,code).trim()).toBe('recusado');
 });
-test.each(['s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura'])('perfil %s rejeita alterações de checkout, container, volume, porta e nonce',profile=>{
+test.each(['s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura','s9-conciliacao-final'])('perfil %s rejeita alterações de checkout, container, volume, porta e nonce',profile=>{
   const code = `
     import {createHash} from 'node:crypto';
     import {realpathSync} from 'node:fs';

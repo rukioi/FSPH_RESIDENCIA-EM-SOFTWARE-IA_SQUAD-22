@@ -41,8 +41,8 @@ function identificador(valor: string): string {
 function descrever(evento: EventoAtividade): string {
   const id = identificador(evento.recursoId);
   switch (evento.operacao) {
+    case 'abastecimento_criado': return `Registrou abastecimento ID ${id}`;
     case 'anotacao_criada': return `Registrou anotação ID ${id}`;
-    case 'abastecimento_criado': return `Registrou o abastecimento ID ${id}`;
     case 'anexo_criado': return `Anexou arquivo ID ${id}`;
     case 'documento_versionado': return `Registrou versão do documento ID ${id}`;
     case 'cnh_versionada': return `Registrou versão da CNH do motorista ID ${id}`;

@@ -35,7 +35,7 @@ test('persiste campos ausentes, autor autenticado e auditoria',async()=>{
   const {data}=await response.json();
   const [row]=await sql`SELECT motorista_id,quilometragem,criado_por_id FROM abastecimento WHERE id=${data.id}`;
   expect(row).toEqual({motorista_id:null,quilometragem:null,criado_por_id:'91860'});
-  const [audit]=await sql`SELECT usuario_id FROM log_atividade WHERE usuario_id=91860 AND descricao=${`Registrou o abastecimento ID ${data.id}`}`;
+  const [audit]=await sql`SELECT usuario_id FROM log_atividade WHERE usuario_id=91860 AND descricao=${`Registrou abastecimento ID ${data.id}`}`;
   expect(audit.usuario_id).toBe('91860');
 });
 test('aceita veículo SVO e conserva quilometragem zero',async()=>{

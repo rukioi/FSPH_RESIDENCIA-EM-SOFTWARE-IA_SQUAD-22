@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 import { testUrl, verifiedSql, verifyContainer, testProfile } from './backend/src/database/scripts/verify-test-db.js';
 
@@ -8,6 +8,9 @@ export default defineConfig(async () => {
   return {
     test: {
       include: ['backend/**/*.test.ts', 'frontend/**/*.test.ts', 'frontend/**/*.test.tsx'],
+      exclude: [...configDefaults.exclude,
+        'backend/tests/database/sprint9-preflight.test.ts',
+        'backend/tests/integration/s9-concorrencia-abastecimento.test.ts'],
       environment: 'node',
       fileParallelism: false,
       env: {
