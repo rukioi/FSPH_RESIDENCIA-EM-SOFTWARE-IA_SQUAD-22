@@ -1,3 +1,5 @@
+import { useSidebar } from '../../shared/components/useSidebar'
+import { MarcaInstitucional } from '../../shared/components/MarcaInstitucional'
 import { Sininho } from '../../features/notificacoes/Sininho'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
@@ -23,7 +25,7 @@ function iniciais(nome: string): string {
 export function SolicitanteLayout({ children, usuario: sessao }: { children: ReactNode; usuario: UsuarioSessao }) {
   const nome = sessao.nome ?? sessao.email ?? 'Usuário'
   const usuario = { nome, cargo: 'Solicitante', iniciais: iniciais(nome) }
-  const [menuAberto, setMenuAberto] = useState(window.innerWidth > 900)
+  const { menuAberto, setMenuAberto, menuMovel } = useSidebar()
   const caminho = useCaminho()
   const [itemClicado, setItemClicado] = useState('Minhas Solicitações')
   const itemAtivo =
@@ -32,11 +34,9 @@ export function SolicitanteLayout({ children, usuario: sessao }: { children: Rea
 
   return (
     <div className={menuAberto ? 'shell shell--aberto' : 'shell'}>
-      <aside className="menu">
+      <aside id="menu-solicitante" className="menu" inert={menuMovel && !menuAberto}>
         <div className="menu__marca">
-          <span className="menu__logo">
-            <Icone nome="veiculos" tamanho={22} />
-          </span>
+          <MarcaInstitucional />
           <div>
             <strong>Gestão de Frotas</strong>
             <small>Central de Transporte</small>
@@ -48,6 +48,8 @@ export function SolicitanteLayout({ children, usuario: sessao }: { children: Rea
           {itensMenu.map((item) => (
             <button
               key={item.nome}
+              title={item.nome}
+              aria-label={item.nome}
               type="button"
               className={item.nome === itemAtivo ? 'menu__item menu__item--ativo' : 'menu__item'}
               aria-current={item.nome === itemAtivo ? 'page' : undefined}
@@ -58,7 +60,7 @@ export function SolicitanteLayout({ children, usuario: sessao }: { children: Rea
               }}
             >
               <Icone nome={item.icone} />
-              {item.nome}
+              <span className="menu__rotulo">{item.nome}</span>
             </button>
           ))}
         </nav>
@@ -72,14 +74,16 @@ export function SolicitanteLayout({ children, usuario: sessao }: { children: Rea
         </div>
       </aside>
 
-      <div className="shell__fundo" onClick={() => setMenuAberto(false)} />
+      <button type="button" className="shell__fundo" aria-label="Fechar menu" tabIndex={-1} onClick={() => setMenuAberto(false)} />
 
       <div className="shell__principal">
         <header className="cabecalho">
           <button
             type="button"
             className="botao-icone"
-            aria-label="Abrir ou fechar menu"
+            aria-label={menuAberto ? 'Retrair menu' : 'Expandir menu'}
+            aria-expanded={menuAberto}
+            aria-controls="menu-solicitante"
             onClick={() => setMenuAberto(!menuAberto)}
           >
             <Icone nome="menu" />

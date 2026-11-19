@@ -20,7 +20,7 @@ for (const width of [390,768,1280]) {
     await page.evaluate(value=>sessionStorage.setItem('token',value),token);
     await page.goto('/gestor/veiculos');
     await expect(page.getByRole('heading',{name:'Veículos',exact:true})).toBeVisible();
-    await expect(page.getByRole('status')).toHaveCount(0);
+    await expect(page.getByText('Carregando veículos...', {exact:true})).toHaveCount(0);
     await page.getByRole('button',{name:'Cadastrar veículo',exact:true}).click();
     const dialog=page.getByRole('dialog');
     await dialog.getByLabel('Placa',{exact:true}).fill(`T32E${width}`);
@@ -54,14 +54,13 @@ for (const width of [390,768,1280]) {
     await page.screenshot({path:info.outputPath(`veiculos-${width}.png`),fullPage:true});
     const response = await page.request.get('/api/veiculos', {headers: {Authorization: `Bearer ${token}`}});
     const vehicle = (await response.json()).data.find((item: {placa: string}) => item.placa === `T32E${width}`);
-    let attempts = 0;
+    let permitirRespostaValida = false;
     await page.route('**/api/abastecimentos', route => {
-      attempts++;
-      return route.fulfill(attempts === 1
+      return route.fulfill(!permitirRespostaValida
         ? {status: 500, contentType: 'application/json', body: JSON.stringify({error: {code: 'ERRO_INTERNO', message: 'Falha na consulta.'}})}
         : {status: 200, contentType: 'application/json', body: JSON.stringify({data: [
-          {id: '1', veiculo_id: vehicle.id, motorista_id: '1', litragem: '10.50', valor_total: '63.00', quilometragem: 1000, data_abastecimento: '2026-01-15T00:00:00.000Z', criado_em: null, posto: 'Posto teste', veiculo_placa: vehicle.placa, motorista_nome: null},
-          {id: '2', veiculo_id: '999999', motorista_id: '1', litragem: '20.00', valor_total: '100.00', quilometragem: 2000, data_abastecimento: '2026-01-15T00:00:00.000Z', criado_em: null, posto: 'Outro posto', veiculo_placa: null, motorista_nome: null},
+          {id: '1', veiculo_id: vehicle.id, motorista_id: '1', litragem: '10.50', valor_total: '63.00', quilometragem: 1000, data_abastecimento: '2026-01-15T00:00:00.000Z', criado_em: null, tanque_completo: false, comprovante_nome: null, posto: 'Posto teste', veiculo_placa: vehicle.placa, motorista_nome: null},
+          {id: '2', veiculo_id: '999999', motorista_id: '1', litragem: '20.00', valor_total: '100.00', quilometragem: 2000, data_abastecimento: '2026-01-15T00:00:00.000Z', criado_em: null, tanque_completo: false, comprovante_nome: null, posto: 'Outro posto', veiculo_placa: null, motorista_nome: null},
         ]})});
     });
     await page.route('**/api/documentos', route => route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({data: [
@@ -73,8 +72,10 @@ for (const width of [390,768,1280]) {
     await expect(page.getByText('Licenciamento teste')).toBeVisible();
     await expect(page.getByText('Documento de outro veiculo')).toHaveCount(0);
     await expect(page.getByText('CNH teste')).toHaveCount(0);
-    await expect(page.getByRole('alert')).toBeVisible();
-    await page.getByRole('button', {name: 'Tentar novamente'}).click();
+    const abastecimentos = page.locator('article').filter({has: page.getByRole('heading', {name: 'Abastecimentos', exact: true})});
+    await expect(abastecimentos.getByRole('alert')).toBeVisible();
+    permitirRespostaValida = true;
+    await abastecimentos.getByRole('button', {name: 'Tentar novamente'}).click();
     await expect(page.getByText('Posto teste')).toBeVisible();
     await expect(page.getByText('Outro posto')).toHaveCount(0);
     await expect(page.getByText('A consulta de manutenção por veículo ainda não está disponível.')).toBeVisible();

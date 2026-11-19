@@ -19,6 +19,8 @@ server.ts carrega a configuração da raiz antes de importar a aplicação. Não
 credenciais do PostgreSQL como login da aplicação. Assistentes não acessam arquivos
 de ambiente/credenciais existentes. Os testes usam somente fixtures explícitas.
 
+O pool único desativa prepared statements (`prepare: false`) para compatibilidade com o pooler transacional do Supabase. Consultas continuam parametrizadas e transações são preservadas. Reinicie o backend após atualizar o código para recriar as conexões.
+
 A conexão Supabase configura TLS automaticamente no backend. Basta `npm run dev`:
 não é necessário arquivo `.crt`, `NODE_EXTRA_CA_CERTS` ou comando adicional no
 PowerShell. A CA pública está incorporada ao código; certificado e hostname

@@ -1,5 +1,5 @@
-import { DatePicker } from '../../shared/components/DatePicker';
-import { Select } from '../../shared/components/Select';
+import { DatePicker } from "../../shared/components/DatePicker";
+import { Select } from "../../shared/components/Select";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRemoteData } from "../../shared/api/useRemoteData";
 import { errorMessage } from "../../shared/api/errors";
@@ -12,6 +12,10 @@ import { buscarVeiculos } from "../../shared/services/veiculos.service";
 import { buscarMotoristas } from "../../shared/services/motoristas.service";
 import { IconeGestor } from "../../shared/components/IconeGestor";
 import "./Abastecimentos.css";
+import { Link } from "../../app/routes/router";
+import {
+  rotaHistoricoAbastecimentosVeiculo,
+} from "../../app/routes/rotas";
 
 const carregar = async (signal: AbortSignal) => {
   const [registros, veiculos, motoristas] = await Promise.all([
@@ -48,20 +52,39 @@ export function Abastecimentos() {
       download.current?.abort();
     };
   }, []);
+  const detalhes = useRef<HTMLDialogElement>(null);
+  const [selecionado, setSelecionado] = useState<Dados["registros"][number] | null>(null);
   const dialogo = useRef<HTMLDialogElement>(null);
   const abrir = useRef<HTMLButtonElement>(null);
+
   const registros = useMemo(
     () =>
-      remoto.data.registros.filter((item) => {
-        const data = item.data_abastecimento.slice(0, 10);
-        return (
-          (!inicio || data >= inicio) &&
-          (!fim || data <= fim) &&
-          (!veiculo || item.veiculo_id === veiculo)
-        );
-      }),
+      remoto.data.registros
+        .filter((item) => {
+          const data = item.data_abastecimento.slice(0, 10);
+
+          return (
+            (!inicio || data >= inicio) &&
+            (!fim || data <= fim) &&
+            (!veiculo || item.veiculo_id === veiculo)
+          );
+        })
+        .sort((a, b) =>
+          b.data_abastecimento.localeCompare(a.data_abastecimento),
+        ),
     [remoto.data.registros, inicio, fim, veiculo],
   );
+
+  const [pagina, setPagina] = useState(1);
+  const porPagina = 10;
+  const totalPaginas = Math.max(1, Math.ceil(registros.length / porPagina));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+
+  const registrosPagina = registros.slice(
+    (paginaAtual - 1) * porPagina,
+    paginaAtual * porPagina,
+  );
+
   const litros = registros.reduce(
     (total, item) => total + Number(item.litragem),
     0,
@@ -109,6 +132,7 @@ export function Abastecimentos() {
       await registrarAbastecimento({
         veiculo_id: String(campos.get("veiculo")),
         motorista_id: String(campos.get("motorista")),
+        posto: String(campos.get("posto") ?? "").trim() || null,
         data_abastecimento: String(campos.get("data")),
         quilometragem: Number(campos.get("quilometragem")),
         litragem: String(campos.get("litros")),
@@ -241,7 +265,10 @@ export function Abastecimentos() {
                 <DatePicker
                   type="date"
                   value={inicio}
-                  onChange={(e) => setInicio(e.target.value)}
+                  onChange={(e) => {
+                    setInicio(e.target.value);
+                    setPagina(1);
+                  }}
                 />
               </label>
               <label>
@@ -249,7 +276,10 @@ export function Abastecimentos() {
                 <DatePicker
                   type="date"
                   value={fim}
-                  onChange={(e) => setFim(e.target.value)}
+                  onChange={(e) => {
+                    setFim(e.target.value);
+                    setPagina(1);
+                  }}
                 />
               </label>
               <label>
@@ -257,7 +287,10 @@ export function Abastecimentos() {
                 <Select
                   aria-label="Filtrar por veículo"
                   value={veiculo}
-                  onChange={(e) => setVeiculo(e.target.value)}
+                  onChange={(e) => {
+                    setVeiculo(e.target.value);
+                    setPagina(1);
+                  }}
                 >
                   <option value="">Todos os veículos</option>
                   {remoto.data.veiculos.map((item) => (
@@ -282,10 +315,11 @@ export function Abastecimentos() {
                     <th>Litros</th>
                     <th>Valor</th>
                     <th>Comprovante</th>
+                    <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {registros.map((item) => {
+                  {registrosPagina.map((item) => {
                     const veic = remoto.data.veiculos.find(
                       (v) => v.id === item.veiculo_id,
                     );
@@ -293,7 +327,13 @@ export function Abastecimentos() {
                       <tr key={item.id}>
                         <td>
                           <strong>
-                            {item.veiculo_placa ?? "Placa não informada"}
+                            <Link
+                              para={rotaHistoricoAbastecimentosVeiculo(
+                                String(item.veiculo_id),
+                              )}
+                            >
+                              {item.veiculo_placa ?? "Placa não informada"}
+                            </Link>
                           </strong>
                           <small>
                             {veic
@@ -308,7 +348,7 @@ export function Abastecimentos() {
                             .reverse()
                             .join("/")}
                         </td>
-                        <td>{numero.format(item.quilometragem)} km</td>
+                        <td>{item.quilometragem ? (numero.format(item.quilometragem)+'km') : 'Não informada'}</td>
                         <td>{numero.format(Number(item.litragem))} L</td>
                         <td>{moeda.format(Number(item.valor_total))}</td>
                         <td>
@@ -326,6 +366,11 @@ export function Abastecimentos() {
                             "Não informado"
                           )}
                         </td>
+                        <td>
+                          <button type="button" className="abastecimentos__download" onClick={() => { setSelecionado(item); detalhes.current?.showModal(); }}>
+                            Ver detalhes
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -337,9 +382,57 @@ export function Abastecimentos() {
                 </p>
               )}
             </div>
+
+            {registros.length > 0 && (
+              <nav
+                className="abastecimentos__paginacao"
+                aria-label="Paginação dos abastecimentos"
+              >
+                <button
+                  type="button"
+                  disabled={paginaAtual === 1}
+                  onClick={() => setPagina(paginaAtual - 1)}
+                >
+                  Anterior
+                </button>
+
+                <span>
+                  Página {paginaAtual} de {totalPaginas}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={paginaAtual === totalPaginas}
+                  onClick={() => setPagina(paginaAtual + 1)}
+                >
+                  Próxima
+                </button>
+              </nav>
+            )}
           </div>
         </>
       )}
+      <dialog ref={detalhes} className="abastecimentos-modal" aria-labelledby="detalhes-abastecimento-titulo">
+        {selecionado && <div className="abastecimentos__painel">
+          <div className="abastecimentos-modal__topo">
+            <h2 id="detalhes-abastecimento-titulo">Detalhes do abastecimento</h2>
+            <button type="button" aria-label="Fechar" onClick={() => detalhes.current?.close()}><IconeGestor nome="fechar" /></button>
+          </div>
+          <h3>Abastecimento #{selecionado.id}</h3>
+          <dl className="abastecimentos__detalhes">
+            <div><dt>Ve?culo</dt><dd>{selecionado.veiculo_placa ?? "N?o informado"}</dd></div>
+            <div><dt>Motorista</dt><dd>{selecionado.motorista_nome ?? "N?o informado"}</dd></div>
+            <div><dt>Data</dt><dd>{selecionado.data_abastecimento.slice(0, 10).split("-").reverse().join("/")}</dd></div>
+            <div><dt>Posto de combust?vel</dt><dd>{selecionado.posto ?? "N?o informado"}</dd></div>
+            <div><dt>Quilometragem</dt><dd>{numero.format(selecionado.quilometragem)} km</dd></div>
+            <div><dt>Litros abastecidos</dt><dd>{numero.format(Number(selecionado.litragem))} L</dd></div>
+            <div><dt>Valor total</dt><dd>{moeda.format(Number(selecionado.valor_total))}</dd></div>
+            <div><dt>Tanque completo</dt><dd>{selecionado.tanque_completo ? "Sim" : "N?o"}</dd></div>
+            <div><dt>Comprovante</dt><dd>{selecionado.comprovante_nome ? <button type="button" className="abastecimentos__download" onClick={() => void baixar(selecionado.id, selecionado.comprovante_nome!)}>Baixar comprovante</button> : "N?o anexado"}</dd></div>
+          </dl>
+          {erroDownload && <p role="alert">{erroDownload}</p>}
+        </div>}
+      </dialog>
       <dialog
         ref={dialogo}
         className="abastecimentos-modal"
@@ -395,6 +488,17 @@ export function Abastecimentos() {
                   ))}
                 </Select>
               </label>
+
+              <label className="abastecimentos-modal__inteiro">
+                Posto de combustível (opcional)
+                <input
+                  name="posto"
+                  type="text"
+                  maxLength={255}
+                  placeholder="Informe o posto de combustível"
+                />
+              </label>
+
               <label>
                 Data
                 <DatePicker name="data" type="date" required />

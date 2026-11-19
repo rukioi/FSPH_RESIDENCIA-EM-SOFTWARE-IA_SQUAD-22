@@ -1,4 +1,4 @@
-import { listaVeiculos, respostaVeiculo, criarVeiculoSchema, editarVeiculoSchema, erroValidacaoVeiculo } from '../../../../backend/src/modules/veiculos/veiculos.schemas';
+import { listaVeiculos, respostaVeiculo, criarVeiculoSchema, editarVeiculoSchema, erroValidacaoVeiculo, fotoVeiculoResposta } from '../../../../backend/src/modules/veiculos/veiculos.schemas';
 import type { ApiSchemas } from '../api/generated/schema';
 import { executeApi } from '../api/client';
 import { ApiError } from '../api/errors';
@@ -24,4 +24,14 @@ export async function atualizarVeiculo(id: string, body: unknown): Promise<Veicu
   const result = editarVeiculoSchema.safeParse(body);
   if (!result.success) { const error = erroValidacaoVeiculo(result.error, false, body); throw new ApiError(400, error.code, error.message); }
   return (await executeApi('veiculos_patch__api_veiculos_id_', { id, body: result.data, parse: value => parseResponse(respostaVeiculo, value) })).data;
+}
+
+export type FotoVeiculo = { tipo: 'image/jpeg' | 'image/png'; dadosBase64: string };
+/** Consulta a foto privada e valida a resposta antes de exibi-la. */
+export async function buscarFotoVeiculo(id: string, signal?: AbortSignal): Promise<FotoVeiculo | null> {
+  return (await executeApi('veiculos_get__api_veiculos_id_foto', { id, signal, parse: value => parseResponse(fotoVeiculoResposta, value) })).data.foto;
+}
+/** Envia a foto e aguarda confirmação do armazenamento. */
+export async function salvarFotoVeiculo(id: string, foto: FotoVeiculo): Promise<FotoVeiculo | null> {
+  return (await executeApi('veiculos_put__api_veiculos_id_foto', { id, body: foto, parse: value => parseResponse(fotoVeiculoResposta, value) })).data.foto;
 }

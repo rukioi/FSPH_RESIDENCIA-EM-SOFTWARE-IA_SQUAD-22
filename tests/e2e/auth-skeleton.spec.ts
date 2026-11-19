@@ -50,9 +50,14 @@ for (const width of [390, 768, 1280]) {
 
 test('skeleton dá lugar à página somente após confirmar a sessão e reaparece ao navegar', async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem('token', 'fixture-skeleton-token'));
+  await page.route(url => url.pathname === '/api/notificacoes/sincronizar', route => route.request().method() === 'POST' ? route.fulfill({ json: { data: { atualizadas: 0 } } }) : route.fallback());
+  await page.route(url => url.pathname === '/api/notificacoes', route => route.request().method() === 'GET' ? route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0, naoLidas: 0 } } }) : route.fallback());
+  await page.route(url => url.pathname === '/api/admin/auditoria/logs', route => route.fulfill({ status: 503, json: { error: { message: 'Fixture indisponivel' } } }));
+  await page.route(url => url.pathname === '/api/admin/usuarios', route => route.fulfill({ status: 503, json: { error: { message: 'Fixture indisponivel' } } }));
   let liberar: (() => void) | undefined;
+  let espera = new Promise<void>(resolve => { liberar = resolve; });
   await page.route('**/api/auth/sessao', async route => {
-    await new Promise<void>(resolve => { liberar = resolve; });
+    await espera;
     await route.fulfill({ json: { data: usuario } });
   });
   await page.goto('/admin/auditoria');
@@ -61,7 +66,7 @@ test('skeleton dá lugar à página somente após confirmar a sessão e reaparec
   liberar?.();
   await expect(page.getByRole('heading', { name: 'Auditoria', exact: true })).toBeVisible();
   await expect(page.getByRole('status', { name: 'Carregando página' })).toHaveCount(0);
-  liberar = undefined;
+  espera = new Promise<void>(resolve => { liberar = resolve; });
   await page.getByRole('link', { name: 'Configurações' }).click();
   await expect(page.getByRole('status', { name: 'Carregando página' })).toBeVisible();
   await expect(page.getByRole('heading')).toHaveCount(0);
@@ -96,6 +101,8 @@ test('sessão sem permissão redireciona sem revelar a página solicitada', asyn
   await page.addInitScript(() => sessionStorage.setItem('token', 'fixture-skeleton-token'));
   await page.route('**/api/auth/sessao', route => route.fulfill({ json: { data: { ...usuario, perfil: 'GESTOR_FROTA' } } }));
   // Este cenário verifica a guarda de rota; o token fictício não autentica consultas operacionais.
+  await page.route(url => url.pathname === '/api/notificacoes/sincronizar', route => route.request().method() === 'POST' ? route.fulfill({ json: { data: { atualizadas: 0 } } }) : route.fallback());
+  await page.route(url => url.pathname === '/api/notificacoes', route => route.request().method() === 'GET' ? route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0, naoLidas: 0 } } }) : route.fallback());
   await page.route('**/api/dashboard/**', route => route.fulfill({ status: 503, json: { error: { code: 'INDISPONIVEL', message: 'Fixture de isolamento da guarda.' } } }));
   await page.goto('/admin/auditoria');
   await expect(page).toHaveURL(/\/gestor\/dashboard$/);

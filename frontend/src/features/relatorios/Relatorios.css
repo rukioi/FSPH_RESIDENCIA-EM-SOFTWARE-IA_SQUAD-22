@@ -1,0 +1,34 @@
+.relatorios { min-width: 0; display: grid; gap: 20px; }
+.relatorios .pagina__topo { margin-bottom: 0; }
+.relatorios__acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.relatorios__filtros { padding: 24px; }
+.relatorios__filtros fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.relatorios__filtros legend { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+.relatorios__campos { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 16px; }
+.relatorios__campos .campo { min-width: 0; }
+.relatorios__campos input { min-width: 0; width: 100%; }
+.relatorios__gerar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+.relatorios__gerar p, .relatorios__notas, .relatorios__resultado header p { color: var(--texto-suave); font-size: 14px; line-height: 1.5; }
+.relatorios__resumo { display: flex; flex-wrap: wrap; gap: 16px 32px; }
+.relatorios__resumo p { color: var(--texto-suave); }
+.relatorios__resumo strong { display: block; color: var(--texto); font-size: 24px; margin-bottom: 4px; }
+.relatorios__resultado { min-width: 0; overflow: hidden; }
+.relatorios__resultado header { padding: 20px 24px; border-bottom: 1px solid var(--borda); }
+.relatorios__resultado h2 { font-size: 20px; margin-bottom: 8px; }
+.relatorios__tabela { overflow: auto; max-height: 640px; }
+.relatorios table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.relatorios th, .relatorios td { padding: 16px; text-align: left; border-bottom: 1px solid var(--borda); vertical-align: top; min-width: 120px; max-width: 360px; overflow-wrap: anywhere; }
+.relatorios th { background: var(--fundo); position: sticky; top: 0; font-weight: 700; }
+.relatorios tbody tr:last-child td { border-bottom: 0; }
+.relatorios .paginacao__botoes button { min-height: 40px; min-width: 40px; }
+.relatorios__notas { display: grid; gap: 8px; }
+.relatorio-atalho { display: inline-flex; margin-bottom: 16px; text-decoration: none; }
+@media (max-width: 600px) {
+  .relatorios__campos { grid-template-columns: 1fr; }
+  .relatorios__filtros { padding: 16px; }
+  .relatorios .pagina__titulo { font-size: 26px; }
+  .relatorios .pagina__descricao { font-size: 16px; }
+  .relatorios__acoes { width: 100%; }
+  .relatorios__acoes .btn { flex: 1; padding: 0 12px; }
+  .relatorios__gerar .btn { width: 100%; }
+}

@@ -38,7 +38,7 @@ test('criação usa sequência, parâmetros, fuso explícito e auditoria na mesm
   expect(insert[0].join('?')).toContain("'-03:00'");
   expect(insert.slice(1)).toEqual(['1024', 'TRP-1024', '42', 'Sede', 'Unidade', 'Serviço', input.dados.dataHoraSaida, 2]);
   const audit = mocks.tx.mock.calls.find(([parts]) => parts.join('').includes('INSERT INTO public.log_atividade'))!;
-  expect(audit.slice(1)).toEqual(['42', ['Criou a solicitação de transporte ID 1024'],['1024']]);
+  expect(audit.slice(1)).toEqual(['42', ['Criou a solicitação de transporte ID 1024'],['solicitacao_viagem_criada'],['1024']]);
 });
 
 test('falha de auditoria rejeita o callback transacional, sem sucesso parcial', async () => {
@@ -94,7 +94,7 @@ test.each(['APROVADA','REPROVADA'] as const)('decisão %s bloqueia a linha antes
   expect(lock[0].join('?')).toContain('WHERE id=? FOR UPDATE');
   expect(update[0].join('?')).toContain("WHERE id=? AND status='PENDENTE'");
   expect(update.slice(1)).toEqual([status,status === 'REPROVADA' ? 'Motivo' : null,'1024']);
-  expect(audit.slice(1)).toEqual(['42',[`${status === 'APROVADA' ? 'Aprovou' : 'Reprovou'} a solicitação de transporte ID 1024`],['1024']]);
+  expect(audit.slice(1)).toEqual(['42',[`${status === 'APROVADA' ? 'Aprovou' : 'Reprovou'} a solicitação de transporte ID 1024`],[status === 'APROVADA' ? 'solicitacao_viagem_aprovada' : 'solicitacao_viagem_reprovada'],['1024']]);
 });
 
 test('pedido inexistente retorna 404 sem UPDATE nem auditoria', async () => {
@@ -135,7 +135,7 @@ test.each(['PENDENTE','APROVADA'])('PATCH em %s termina PENDENTE e preserva camp
   expect(query).not.toContain('motorista_id='); expect(query).not.toContain('veiculo_id=');
   expect(query).not.toContain('data_hora_retorno_previsto=');
   expect(update.slice(1)).toEqual(['Nova sede',null,null,null,null,'1024']);
-  expect(audit.slice(1)).toEqual(['42',['Editou a solicitação de transporte ID 1024'],['1024']]);
+  expect(audit.slice(1)).toEqual(['42',['Editou a solicitação de transporte ID 1024'],['solicitacao_viagem_editada'],['1024']]);
 });
 test.each(['AGENDADA','PRONTA_PARA_INICIAR','EM_ANDAMENTO','CONCLUIDA','REPROVADA',null])('PATCH bloqueia estado %s antes do UPDATE', async status => {
   mocks.tx.mockResolvedValueOnce([{status}]);

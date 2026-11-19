@@ -333,3 +333,10 @@ button:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .shell--gestor, .shell--gestor .menu { transition: none; }
 }
+
+/* Cabeçalho mais compacto na listagem de motoristas. */
+.shell--motoristas .cabecalho { height: 60px; box-shadow: 0 1px 4px rgb(16 24 40 / 6%); }
+.shell--motoristas .cabecalho__caminho { color: #5a6b85; font-size: 15px; }
+.shell--motoristas .cabecalho__caminho strong { font-weight: 900; }
+.shell--motoristas .cabecalho__direita { gap: 6px; }
+.shell--motoristas .cabecalho__usuario { gap: 8px; }

@@ -5,8 +5,6 @@ import { Notificacoes } from '../features/notificacoes/Notificacoes'
 import type { ComponentType } from 'react'
 import '../shared/styles/tema.css'
 
-import LoginMotorista from '../pages/motorista/Minhas-Viagens'
-
 import { Link, navegar, useCaminho } from './routes/router'
 import { ROTAS, lerDetalheSvo, lerRotaSolicitacao } from './routes/rotas'
 import { AuthSkeleton } from './AuthSkeleton'
@@ -16,6 +14,8 @@ import { perfilPodeAcessar } from '../shared/services/access.service'
 import { GestorLayout } from '../layouts/gestor/GestorLayout'
 import { SvoLayout } from '../layouts/svo/SvoLayout'
 
+import { Login } from '../pages/login/Login'
+import LoginMotorista from '../pages/motorista/Viagens'
 import { DashboardAdmin } from '../pages/administrador/DashboardAdm'
 import { Configuracoes } from '../pages/administrador/Configuracoes'
 import { Auditoria } from '../pages/administrador/Auditoria'
@@ -50,6 +50,8 @@ import {
 } from '../shared/services/auth.service'
 import type { UsuarioSessao } from '../shared/services/auth.service'
 
+const ROTA_LOGIN_MOTORISTA = '/motorista/login'
+
 const paginas: Record<string, ComponentType> = {
   [ROTAS.dashboard]: DashboardAdmin,
   [ROTAS.configuracoes]: Configuracoes,
@@ -75,6 +77,14 @@ function AppContent() {
     if (previewSvo) {
       // Navegação interna: a entrada de desenvolvimento monta a mesma prévia do acesso direto.
       window.location.reload()
+      return () => {
+        ativa = false
+      }
+    }
+
+    // A tela de login do motorista é pública e não exige sessão.
+    if (caminho === ROTA_LOGIN_MOTORISTA) {
+      setCaminhoVerificado(caminho)
       return () => {
         ativa = false
       }
@@ -128,13 +138,18 @@ function AppContent() {
 
   if (previewSvo) return null
 
-  // Tela de login temporária para teste visual.
-  if (caminho === ROTAS.login) {
+  // Acesso público à nova tela de login do motorista.
+  if (caminho === ROTA_LOGIN_MOTORISTA) {
     return <LoginMotorista />
   }
 
+  // Login original do Administrador, Gestor e demais perfis.
+  if (caminho === ROTAS.login) {
+    return <Login />
+  }
+
   if (!obterToken()) {
-    return <LoginMotorista />
+    return <Login />
   }
 
   if (caminhoVerificado === caminho && sessao && caminho.startsWith('/svo/') &&

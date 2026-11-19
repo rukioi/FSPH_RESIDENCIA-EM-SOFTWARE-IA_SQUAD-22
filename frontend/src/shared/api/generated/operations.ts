@@ -1,5 +1,85 @@
 /* Gerado por client:generate. Não editar. */
 export const apiOperations = {
+  "viagens_post__api_viagens": {
+    "method": "POST",
+    "path": "/api/viagens"
+  },
+  "viagens_get__api_viagens": {
+    "method": "GET",
+    "path": "/api/viagens"
+  },
+  "viagens_get__api_viagens_pendentes_validacao": {
+    "method": "GET",
+    "path": "/api/viagens/pendentes-validacao"
+  },
+  "viagens_patch__api_viagens_id_encerrar": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/encerrar"
+  },
+  "viagens_get__api_viagens_id_evidencias": {
+    "method": "GET",
+    "path": "/api/viagens/{id}/evidencias"
+  },
+  "viagens_get__api_viagens_evidencias_id_": {
+    "method": "GET",
+    "path": "/api/viagens/evidencias/{id}"
+  },
+  "viagens_get__api_viagens_id_": {
+    "method": "GET",
+    "path": "/api/viagens/{id}"
+  },
+  "viagens_get__api_viagens_id_historico": {
+    "method": "GET",
+    "path": "/api/viagens/{id}/historico"
+  },
+  "viagens_patch__api_viagens_id_corrigir_quilometragem": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/corrigir-quilometragem"
+  },
+  "viagens_get__api_viagens_id_correcoes": {
+    "method": "GET",
+    "path": "/api/viagens/{id}/correcoes"
+  },
+  "viagens_patch__api_viagens_id_validar": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/validar"
+  },
+  "viagens_patch__api_viagens_id_iniciar": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/iniciar"
+  },
+  "viagens_patch__api_viagens_id_concluir": {
+    "method": "PATCH",
+    "path": "/api/viagens/{id}/concluir"
+  },
+  "viagens_get__api_viagens_minhas": {
+    "method": "GET",
+    "path": "/api/viagens/minhas"
+  },
+  "notificacoes_get__api_motorista_notificacoes": {
+    "method": "GET",
+    "path": "/api/motorista/notificacoes"
+  },
+  "notificacoes_patch__api_motorista_notificacoes_id_lida": {
+    "method": "PATCH",
+    "path": "/api/motorista/notificacoes/{id}/lida"
+  },
+  "relatorios_get__api_relatorios": {
+    "method": "GET",
+    "path": "/api/relatorios"
+  },
+  "relatorios_get__api_relatorios_recursos": {
+    "method": "GET",
+    "path": "/api/relatorios/recursos"
+  },
+  "relatorios_get__api_svo_relatorios": {
+    "method": "GET",
+    "path": "/api/svo/relatorios"
+  },
+  "relatorios_get__api_svo_relatorios_recursos": {
+    "method": "GET",
+    "path": "/api/svo/relatorios/recursos"
+  },
   "notificacoes_get__api_notificacoes": {
     "method": "GET",
     "path": "/api/notificacoes"
@@ -196,6 +276,14 @@ export const apiOperations = {
     "method": "GET",
     "path": "/api/svo/dashboard/atividades"
   },
+  "veiculos_get__api_veiculos_id_foto": {
+    "method": "GET",
+    "path": "/api/veiculos/{id}/foto"
+  },
+  "veiculos_put__api_veiculos_id_foto": {
+    "method": "PUT",
+    "path": "/api/veiculos/{id}/foto"
+  },
   "veiculos_get__api_veiculos": {
     "method": "GET",
     "path": "/api/veiculos"
@@ -240,6 +328,10 @@ export const apiOperations = {
     "method": "GET",
     "path": "/api/abastecimentos/{id}/comprovante"
   },
+  "abastecimentos_get__api_abastecimentos_indicadores": {
+    "method": "GET",
+    "path": "/api/abastecimentos/indicadores"
+  },
   "abastecimentos_get__api_abastecimentos": {
     "method": "GET",
     "path": "/api/abastecimentos"
@@ -248,6 +340,42 @@ export const apiOperations = {
     "method": "POST",
     "path": "/api/abastecimentos"
   },
+  "anotacoes_post__api_anotacoes": {
+    "method": "POST",
+    "path": "/api/anotacoes"
+  },
+  "anotacoes_get__api_anotacoes": {
+    "method": "GET",
+    "path": "/api/anotacoes"
+  },
+  "anexos_post__api_anexos": {
+    "method": "POST",
+    "path": "/api/anexos"
+  },
+  "anexos_get__api_anexos": {
+    "method": "GET",
+    "path": "/api/anexos"
+  },
+  "anexos_get__api_anexos_id_": {
+    "method": "GET",
+    "path": "/api/anexos/{id}"
+  },
+  "documentos_get__api_documentos_consulta": {
+    "method": "GET",
+    "path": "/api/documentos/consulta"
+  },
+  "documentos_get__api_documentos_id_": {
+    "method": "GET",
+    "path": "/api/documentos/{id}"
+  },
+  "documentos_patch__api_documentos_id_": {
+    "method": "PATCH",
+    "path": "/api/documentos/{id}"
+  },
+  "documentos_get__api_documentos_id_historico": {
+    "method": "GET",
+    "path": "/api/documentos/{id}/historico"
+  },
   "documentos_get__api_documentos": {
     "method": "GET",
     "path": "/api/documentos"
@@ -255,6 +383,10 @@ export const apiOperations = {
   "documentos_post__api_documentos": {
     "method": "POST",
     "path": "/api/documentos"
+  },
+  "documentos_get__api_documentos_alertas": {
+    "method": "GET",
+    "path": "/api/documentos/alertas"
   },
   "documentos_get__api_documentos_pendencias": {
     "method": "GET",

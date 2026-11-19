@@ -213,3 +213,24 @@ do seed nesse estado. Uma validação separada comprovou zero linhas antes de in
 somente a identidade fictícia necessária ao HTTP, com a base nova preservada.
 
 O fechamento por critério das dez SCRUMs está em [encerramento do backend](../solicitacoes/sprint7-encerramento.md). O preflight de catálogo [inspect-sprint7.sql](../../backend/src/database/scripts/inspect-sprint7.sql) é somente leitura e possui teste real READ ONLY; não substitui a comparação de equivalência nem autoriza reparar o histórico remoto.
+
+## Complemento DB-S8-01 (SCRUM-166)
+
+O incremento `20261109200000_db_s8_01_viagem_execucao.sql` evolui a tabela
+existente `viagem`, sem criar outra entidade. Acrescenta:
+
+- criação e validação com autor;
+- seis CHECKs NOT VALID de execução;
+- as tabelas protegidas `viagem_evidencia` e `viagem_correcao`;
+- tipo e demanda em `notificacao`;
+- três índices.
+
+A reversão manual fica em `backend/src/database/rollback/`, fora do runner, e
+recusa executar se houver dados no modelo novo. O preflight somente leitura é
+`scripts/inspect-db-s8-01.sql`. O snapshot foi regenerado com `db:docs:generate`
+depois de todas as migrations; inclui também as duas migrations de 09/11 que
+estavam pendentes. Ele contém 14 tabelas, 146 colunas, 8 enums, 77 constraints e
+39 índices. Não há alteração executada no Supabase.
+
+Ambiente, provas e limites estão em
+[sprint8-viagem-execucao](./sprint8-viagem-execucao.md).

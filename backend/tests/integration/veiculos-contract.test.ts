@@ -164,9 +164,15 @@ test('SCRUM-146/149: listas e dashboard validam HTTP, perfil efetivo e parâmetr
 });
 
 test('consultas legadas reais correspondem aos schemas sem exigir migração de formato',async()=>{
-  for (const operation of operations.filter(o=>o.method==='get' && !o.path.includes('{id}') && !['veiculos','solicitacoes'].includes(o.modulo))) {
-    const path = operation.path+(operation.path==='/api/svo/ordens-coleta' ? '?status=AGUARDANDO_DESPACHO' : '');
-    const response = await call(path,'GET',undefined,operation.perfis.includes('MOTORISTA') ? negado : operation.modulo==='svo' ? svo : admin);
+  // Anexos e anotações exigem vínculo explícito e têm suítes de integração próprias.
+  for (const operation of operations.filter(o=>o.method==='get' && !o.path.includes('{id}') && !['veiculos','solicitacoes','anexos','anotacoes'].includes(o.modulo))) {
+    const query = operation.path==='/api/svo/ordens-coleta' ? '?status=AGUARDANDO_DESPACHO'
+      : operation.path==='/api/abastecimentos/indicadores' ? '?inicio=2099-01-01&fim=2099-01-31'
+      : operation.path==='/api/relatorios' ? '?tipo=viagens&inicio=2099-01-01&fim=2099-01-31'
+      : operation.path==='/api/svo/relatorios' ? '?inicio=2099-01-01&fim=2099-01-31' : '';
+    const path = operation.path+query;
+    const token = operation.modulo==='relatorios' && operation.path.startsWith('/api/svo/') ? svo : operation.perfis.includes('MOTORISTA') ? negado : operation.modulo==='svo' ? svo : admin;
+    const response = await call(path,'GET',undefined,token);
     expect(response.status,operation.id).toBe(200);
     const body = await response.json();
     const result = schemas[operation.response].safeParse(body);

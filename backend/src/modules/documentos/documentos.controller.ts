@@ -6,6 +6,7 @@ import { enviarDados as enviarJson, enviarErro } from '../../shared/http/json.js
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 import { receberUpload } from './documentos.upload.js';
+import { registrarVersaoDocumental } from './documentos.historico.js';
 
 /** Consulta pendências de vencimento das CNHs e documentos dos veículos. */
 export async function buscarPendenciasDocumentos(
@@ -80,6 +81,7 @@ export async function buscarPendenciasDocumentos(
 export async function criarDocumento(
   req: IncomingMessage,
   res: ServerResponse,
+  autorId: string,
 ): Promise<void> {
   let body: unknown;
 
@@ -207,13 +209,12 @@ export async function criarDocumento(
   const arquivoNome = arquivoDocumento?.nome ?? null;
   const arquivoTipo = arquivoDocumento?.tipo ?? null;
 
-  // O PostgreSQL aceita BYTEA no formato hexadecimal \x...
-  const arquivoDados = arquivoDocumento
-    ? `\\x${arquivoDocumento.conteudo.toString('hex')}`
-    : null;
+  // O driver serializa Buffer como BYTEA; string hexadecimal seria gravada como texto.
+  const arquivoDados = arquivoDocumento?.conteudo ?? null;
 
   try {
-    const [documento] = await sql`
+    const documento = await sql.begin(async tx => {
+      const [novo] = await tx`
       INSERT INTO documento_veiculo (
         veiculo_id,
         tipo_documento,
@@ -242,6 +243,9 @@ export async function criarDocumento(
         arquivo_tipo
     `;
 
+      await registrarVersaoDocumental(tx, 'DOCUMENTO_VEICULO', novo.id, autorId);
+      return novo;
+    });
     enviarJson(res, 201, documento);
   } catch (erro) {
     registrarFalha(erro);

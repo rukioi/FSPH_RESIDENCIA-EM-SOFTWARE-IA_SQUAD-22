@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
 const base = { marca: 'Fixture', ano: 2026, capacidade_obitos: 0, quilometragem_atual: 1000,
@@ -156,4 +157,39 @@ test('imagem indisponível usa ilustração e outra URL volta a exibir fotografi
   await expect(foto).toBeVisible();
   await expect.poll(() => foto.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(300);
   expect(await page.locator('.vehicle-image').boundingBox()).toEqual(before);
+});
+
+
+test('foto opcional pode ser enviada e exibida após confirmação', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.addInitScript(() => { sessionStorage.setItem('token', 'fixture-ui-controls'); history.replaceState({}, '', '/gestor/veiculos'); });
+  let foto: { tipo: string; dadosBase64: string } | null = null;
+  await page.route('**/api/**', route => {
+    const { pathname } = new URL(route.request().url());
+    if (!pathname.startsWith('/api/')) return route.continue();
+    if (pathname === '/api/auth/sessao') return route.fulfill({ json: { data: { id: '1', nome: 'Gestor', email: 'gestor@example.invalid', perfil: 'GESTOR_FROTA' } } });
+    if (pathname === '/api/veiculos') return route.fulfill({ json: { data: [veiculos[0], veiculos[1]] } });
+    if (pathname === '/api/veiculos/1' && route.request().method() === 'PATCH') return route.fulfill({ json: { data: veiculos[0] } });
+    if (pathname.match(/\/api\/veiculos\/\d+\/foto/)) {
+      if (route.request().method() === 'PUT') foto = route.request().postDataJSON();
+      return route.fulfill({ json: { data: { foto: pathname.includes('/1/') ? foto : null } } });
+    }
+    if (pathname.endsWith('/sincronizar')) return route.fulfill({ json: { data: { atualizadas: 0 } } });
+    return route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0, naoLidas: 0 } } });
+  });
+  await page.goto('/tests/ui-controls/application.html');
+  const cards = page.locator('.veiculo-card');
+  await expect(cards).toHaveCount(2);
+  await cards.first().getByRole('button', { name: /Ver detalhes/ }).click();
+  await page.getByRole('button', { name: 'Editar veículo' }).click();
+  const arquivo = readFileSync('docs/veiculos-exemplos/carro-passeio.jpg');
+  await page.getByLabel('Foto do veículo (opcional)').setInputFiles({ name: 'carro.jpg', mimeType: 'image/jpeg', buffer: arquivo });
+  await expect(page.getByAltText('Prévia da foto selecionada')).toBeVisible();
+  await page.getByRole('button', { name: 'Salvar alterações' }).click();
+  await expect(page.getByText('Veículo atualizado com sucesso.')).toBeVisible();
+  await expect(page.locator('.vehicle-details__image img')).toBeVisible();
+  await page.getByRole('button', { name: /Voltar para veículos/ }).click();
+  await expect(cards.first().locator('img')).toBeVisible();
+  await expect(cards.nth(1).locator('.vehicle-image__illustration')).toBeVisible();
+  await page.screenshot({ path: info.outputPath('foto-exemplo.png'), fullPage: true });
 });

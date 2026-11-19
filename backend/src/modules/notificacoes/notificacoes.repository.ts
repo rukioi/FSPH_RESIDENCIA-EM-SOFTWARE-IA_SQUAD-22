@@ -1,3 +1,4 @@
+import { vencimentosRf46 } from '../documentos/documentos.rf46.js';
 import type postgres from 'postgres';
 import { sql } from '../../database/connection.js';
 import type { z } from 'zod';
@@ -10,6 +11,20 @@ export async function inserirNotificacao(tx: postgres.TransactionSql, usuarios: 
   await tx`INSERT INTO public.notificacao (usuario_id,chave,titulo,descricao,categoria)
     SELECT u.id, ${chave}, ${titulo}, ${descricao}, ${categoria} FROM public.usuario u
     WHERE u.id=ANY(${usuarios}::bigint[]) AND u.ativo=true ON CONFLICT (usuario_id,chave) DO NOTHING`;
+}
+
+/** Insere atribuição tipada com destinatário ativo e chave única da viagem e motorista. */
+export async function inserirAtribuicaoViagem(tx:postgres.TransactionSql,viagemId:string):Promise<boolean> {
+  const rows=await tx`INSERT INTO public.notificacao (usuario_id,chave,titulo,descricao,categoria,tipo,viagem_id)
+    SELECT u.id,'viagem:'||v.id::text||':atribuicao:'||m.id::text,'Nova viagem atribuída a você',
+      'Solicitação #'||s.codigo,'sucesso','ATRIBUICAO',v.id
+    FROM public.viagem v JOIN public.solicitacao_viagem s ON s.id=v.solicitacao_id
+      JOIN public.motorista m ON m.id=v.motorista_id JOIN public.usuario u ON u.id=m.usuario_id
+    WHERE v.id=${viagemId} AND u.ativo=true AND v.status='AGENDADA' AND s.status='AGENDADA'
+      AND s.motorista_id=v.motorista_id AND s.veiculo_id=v.veiculo_id
+    ON CONFLICT (usuario_id,chave) DO UPDATE SET titulo=EXCLUDED.titulo,lida_em=NULL
+      WHERE public.notificacao.titulo='Atribui\u00e7\u00e3o encerrada' RETURNING id`;
+  return rows.length>0;
 }
 
 /** Lista e contadores compartilham snapshot; todo acesso é restrito ao destinatário atual. */
@@ -39,25 +54,26 @@ export async function sincronizarVencimentos(usuarioId: string) {
   return sql.begin(async tx => {
     const [usuario] = await tx`SELECT perfil FROM public.usuario WHERE id=${usuarioId} AND ativo=true`;
     if (!usuario || !['ADM','GESTOR_FROTA'].includes(usuario.perfil)) return 0;
-    const alertas = await tx`SELECT 'cnh:' || id || ':' || validade_cnh || ':' ||
-        CASE WHEN validade_cnh < timezone('America/Maceio',CURRENT_TIMESTAMP)::date THEN 'vencida' ELSE 'proxima' END AS chave,
-        CASE WHEN validade_cnh < timezone('America/Maceio',CURRENT_TIMESTAMP)::date THEN 'CNH vencida — ' ELSE 'CNH próxima do vencimento — ' END || nome AS titulo,
-        'Validade em ' || to_char(validade_cnh,'DD/MM/YYYY') AS descricao,
-        CASE WHEN validade_cnh < timezone('America/Maceio',CURRENT_TIMESTAMP)::date THEN 'urgente' ELSE 'atencao' END AS categoria
-      FROM public.motorista WHERE validade_cnh <= timezone('America/Maceio',CURRENT_TIMESTAMP)::date + 30
-      UNION ALL SELECT 'documento:' || d.id || ':' || d.data_vencimento || ':' ||
-        CASE WHEN d.data_vencimento < timezone('America/Maceio',CURRENT_TIMESTAMP)::date THEN 'vencido' ELSE 'proximo' END,
-        CASE WHEN d.data_vencimento < timezone('America/Maceio',CURRENT_TIMESTAMP)::date THEN 'Documento vencido: ' ELSE 'Documento próximo do vencimento: ' END || d.tipo_documento || ' — ' || v.placa,
-        'Validade em ' || to_char(d.data_vencimento,'DD/MM/YYYY'),
-        CASE WHEN d.data_vencimento < timezone('America/Maceio',CURRENT_TIMESTAMP)::date THEN 'urgente' ELSE 'atencao' END
-      FROM public.documento_veiculo d JOIN public.veiculo v ON v.id=d.veiculo_id
-      WHERE d.data_vencimento <= timezone('America/Maceio',CURRENT_TIMESTAMP)::date + 30`;
-    let atualizadas = 0;
-    for (const a of alertas) {
-      const rows = await tx`INSERT INTO public.notificacao(usuario_id,chave,titulo,descricao,categoria)
-        VALUES (${usuarioId},${a.chave},${a.titulo},${a.descricao},${a.categoria}) ON CONFLICT(usuario_id,chave) DO NOTHING RETURNING id`;
-      atualizadas += rows.length;
-    }
-    return atualizadas;
+    const rows = await tx`
+      INSERT INTO public.notificacao (usuario_id, chave, titulo, descricao, categoria)
+      SELECT ${usuarioId},
+        CASE WHEN tipo = 'CNH_MOTORISTA' THEN 'cnh:' ELSE 'documento:' END
+          || id || ':' || validade || ':' ||
+          CASE WHEN fase = 'VENCIDO' THEN
+            CASE WHEN tipo = 'CNH_MOTORISTA' THEN 'vencida' ELSE 'vencido' END
+          ELSE lower(fase) END,
+        left(CASE WHEN tipo = 'CNH_MOTORISTA' THEN 'CNH' ELSE 'Documento ' || descricao END ||
+          CASE fase WHEN 'VENCIDO' THEN ' — validade expirada'
+            WHEN 'HOJE' THEN ' — vence hoje'
+            WHEN 'SEMANA' THEN ' — última semana'
+            ELSE ' — último mês' END ||
+          coalesce(' — ' || responsavel, ''), 200),
+        'Validade em ' || to_char(validade,'DD/MM/YYYY'),
+        CASE WHEN fase IN ('VENCIDO', 'HOJE') THEN 'urgente' ELSE 'atencao' END
+      FROM (${vencimentosRf46(tx)}) alertas
+      ORDER BY tipo, id
+      ON CONFLICT (usuario_id, chave) DO NOTHING
+      RETURNING id`;
+    return rows.length;
   });
 }

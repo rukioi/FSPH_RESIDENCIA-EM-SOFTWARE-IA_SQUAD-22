@@ -1,3 +1,4 @@
+import { obterIndicadoresAbastecimentos } from './abastecimentos.indicadores.js';
 import { enviarJson as jsonCompartilhado } from '../../shared/http/json.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { autenticarRequisicao } from '../../security/session.js';
@@ -11,8 +12,10 @@ export async function abastecimentosRoute(req: IncomingMessage, res: ServerRespo
 
   const comprovante = /^\/api\/abastecimentos\/(\d+)\/comprovante$/.exec(pathname);
 
+  const indicadores = pathname === '/api/abastecimentos/indicadores';
+
   if (
-    !comprovante && pathname !== '/api/abastecimentos' ||
+    !indicadores && !comprovante && pathname !== '/api/abastecimentos' ||
     (method !== 'GET' && method !== 'POST')
   ) {
     jsonCompartilhado(res, 404, {
@@ -27,6 +30,11 @@ export async function abastecimentosRoute(req: IncomingMessage, res: ServerRespo
   const usuario = await autenticarRequisicao(req, res);
   if (!usuario) return;
   if (!autorizarPerfis(usuario, ['ADM', 'GESTOR_FROTA'], res)) return;
+
+  if (method === 'GET' && indicadores) {
+    jsonCompartilhado(res, 200, await obterIndicadoresAbastecimentos(url.searchParams));
+    return;
+  }
 
   if (method === 'GET' && comprovante) {
     return baixarComprovante(res, comprovante[1]);

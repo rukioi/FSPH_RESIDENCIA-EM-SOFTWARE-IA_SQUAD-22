@@ -1,32 +1,40 @@
+import { evidenciaMetadadosSchema } from '../../modules/viagens/viagens.evidencias.schemas.js';
+import { anexosSchemas, registroId, tipoRegistro } from '../../modules/anexos/anexos.schemas.js';
+import { anotacoesSchemas, tipoNota } from '../../modules/anotacoes/anotacoes.schemas.js';
+import { dashboardConsolidadoSchemas, notaDashboardConsolidado } from '../../modules/dashboard/dashboard.consolidado.schemas.js';
 import { z } from 'zod';
+import { viagensSchemas, statusViagemSchema } from '../../modules/viagens/viagens.schemas.js';
+import { relatoriosSchemas, consultaRelatorioSchema } from '../../modules/relatorios/relatorios.schemas.js';
 import { notificacoesSchemas } from '../../modules/notificacoes/notificacoes.schemas.js';
 import {parametrosPeriodoDashboard,notasDashboardPeriodo} from '../../modules/dashboard/dashboard.indicadores.schemas.js';
-import { erro, erroString, erroSvo, sucessoExclusao, gestor, consultaFrota } from './schemas.js';
+import { erro, erroString, erroSvo, sucessoExclusao, gestor, consultaFrota, meta as schemasMeta } from './schemas.js';
 import { veiculosSchemas } from '../../modules/veiculos/veiculos.schemas.js';
 import { authSchemas } from '../../modules/auth/auth.schemas.js';
 import { usuariosSchemas } from '../../modules/usuarios/usuarios.schemas.js';
 import { auditoriaSchemas } from '../../modules/auditoria/auditoria.schemas.js';
 import { motoristasSchemas } from '../../modules/motoristas/motoristas.schemas.js';
-import { abastecimentosSchemas } from '../../modules/abastecimentos/abastecimentos.schemas.js';
+import { abastecimentosSchemas, parametrosIndicadoresAbastecimentos } from '../../modules/abastecimentos/abastecimentos.schemas.js';
+import { alertasDocumentais, gestaoDocumentalSchemas, parametrosDocumentais, tipoDocumental } from '../../modules/documentos/documentos.gestao.schemas.js';
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
 import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
 import { svoSchemas } from '../../modules/svo/svo.schemas.js';
 import { svoConsultasSchemas } from '../../modules/svo/svo.consultas.schemas.js';
 import { svoDashboardSchemas } from '../../modules/svo/svo.dashboard.schemas.js';
 import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas.js';
-import { solicitacoesSchemas, statusSolicitacao } from '../../modules/solicitacoes/solicitacoes.schemas.js';
+import { solicitacoesSchemas, statusSolicitacao, idRecursoSchema } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
-export const schemas = { ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
+export const schemas = { ...dashboardConsolidadoSchemas, ...anotacoesSchemas, ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
-  ...abastecimentosSchemas, ...documentosSchemas, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
+  ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, AlertasDocumentais: alertasDocumentais, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
-export type Modulo = 'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
+export type Modulo = 'anotacoes'| 'anexos'| 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
   id: string; modulo: Modulo; method: 'get'|'post'|'put'|'patch'|'delete'; path: string;
   perfis: string[]; response: SchemaName; status: number; body?: SchemaName;
-  errors: number[]; runtimeValidation?:boolean; errorSchema?: SchemaName; notes: string; query?: { name: string; required: boolean; schema: z.ZodType }[];
+  errors: number[]; runtimeValidation?:boolean;
+  multipart?: boolean; errorSchema?: SchemaName; notes: string; query?: { name: string; required: boolean; schema: z.ZodType }[];
 }
 const op = (modulo: Modulo, method: Operacao['method'], path: string, response: SchemaName,
   perfis: string[], options: Partial<Omit<Operacao,'modulo'|'method'|'path'|'response'|'perfis'>> = {}): Operacao => ({
@@ -36,6 +44,37 @@ const op = (modulo: Modulo, method: Operacao['method'], path: string, response: 
   notes: 'Formato atual preservado; query params não declarados são ignorados.', ...options,
 });
 export const operations: Operacao[] = [
+  op('viagens','post','/api/viagens','DetalheViagem',gestor,{status:200,body:'CriarViagem',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],notes:'Retorna viagem criada no agendamento; pedido sem viagem exige analise manual.'}),
+  op('viagens','get','/api/viagens/pendentes-validacao','ListaViagens',gestor,{runtimeValidation:true,errors:[400,401,403,500],notes:'Viagens concluidas ainda nao validadas, com paginacao.',query:[{name:'pagina',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('viagens','patch','/api/viagens/{id}/encerrar','RespostaExecucaoViagem',['MOTORISTA'],{body:'ExecutarViagem',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],notes:'Encerra a viagem com quilometragem e foto obrigatorias.'}),
+  op('viagens','get','/api/viagens/{id}/evidencias','ListaEvidenciasViagem',['ADM','GESTOR_FROTA','MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Metadados paginados de uma viagem acessível, sem bytes.',query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('viagens','get','/api/viagens/evidencias/{id}','EvidenciaArquivo',['ADM','GESTOR_FROTA','MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Download autenticado da evidência; motorista apenas da viagem atribuída.'}),
+  op('viagens','get','/api/viagens','ListaViagens',gestor,{runtimeValidation:true,errors:[400,401,403,500],notes:'Viagens institucionais por status e período de início real; ordem id DESC, paginação. Datas ISO com offset; intervalo [inicio,fim).',query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'status',required:false,schema:statusViagemSchema},{name:'motoristaId',required:false,schema:idRecursoSchema},{name:'inicio',required:false,schema:dataHoraInstitucionalSchema},{name:'fim',required:false,schema:dataHoraInstitucionalSchema}]}),
+  op('viagens','get','/api/viagens/{id}','DetalheViagem',['ADM','GESTOR_FROTA','MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Motorista somente da viagem atribuída; ausente ou inacessível retorna 404.'}),
+  op('viagens','get','/api/viagens/{id}/historico','HistoricoViagem',['ADM','GESTOR_FROTA','MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Eventos reais de execução e validação com vínculo à solicitação; ordem data_hora e id. Sem inferir fuso dos registros de auditoria.',query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('viagens','patch','/api/viagens/{id}/corrigir-quilometragem','RespostaCorrecaoViagem',gestor,{body:'CorrigirQuilometragem',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],notes:'Somente concluída; justificativa obrigatória. A confirmação explícita só permite atualizar o odômetro em última leitura verificável; divergências retornam 409.'}),
+  op('viagens','get','/api/viagens/{id}/correcoes','ListaCorrecoesViagem',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Versões de correção em ordem crescente, com justificativa e responsável.',query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('viagens','patch','/api/viagens/{id}/validar','ValidacaoViagem',gestor,{runtimeValidation:true,errors:[400,401,403,404,409,500],notes:'Somente viagem concluída ainda não validada. Ator pela sessão; validação e auditoria na mesma transação.'}),
+  ...(['iniciar','concluir'] as const).map(acao=>op('viagens','patch',`/api/viagens/{id}/${acao}`,'RespostaExecucaoViagem',['MOTORISTA'],{body:'ExecutarViagem',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],notes:'Exclusivo do motorista atribuído; quilometragem e foto JPEG/PNG obrigatórias, até 1 MiB. Transição, evidência e auditoria atômicas.'})),
+  op('viagens','get','/api/viagens/minhas','ListaMinhasViagens',['MOTORISTA'],{
+    runtimeValidation:true, errors:[400,401,403,500], notes:'Viagens institucionais vinculadas ao motorista da sessão. Paginação ordenada por id decrescente. Não inclui ordens SVO.',
+    query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+      {name:'status',required:false,schema:statusViagemSchema}]}),
+  op('notificacoes','get','/api/motorista/notificacoes','ListaNotificacoes',['MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,500],notes:'Caixa individual do motorista.',query:[{name:'pagina',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'lida',required:false,schema:z.enum(['true','false'])}]}),
+  op('notificacoes','patch','/api/motorista/notificacoes/{id}/lida','NotificacoesAtualizadas',['MOTORISTA'],{runtimeValidation:true,errors:[400,401,403,404,500],notes:'Leitura idempotente da notificacao propria.'}),
+  ...(['/api/relatorios', '/api/svo/relatorios'] as const).flatMap(path => {
+    const perfis = path.includes('/svo/') ? ['ATENDENTE_SVO'] : gestor;
+    return [
+      op('relatorios','get',path,'RespostaRelatorio',perfis,{
+        runtimeValidation:true,errors:[400,401,403,422,500],
+        notes:'Relatório completo até 5000 linhas; sem truncamento. inicio/fim YYYY-MM-DD inclusivos, até 366 dias; query estrita sem duplicatas. Frota: tipo obrigatório exceto svo. SVO: tipo=svo (padrão), exclusivo ATENDENTE_SVO. Exportações do snapshot validado na tela. Veja docs/api/relatorios.md.',
+        query:Object.entries(consultaRelatorioSchema.shape).map(([name,schema]) => ({name,required:['inicio','fim'].includes(name) || name==='tipo' && !path.includes('/svo/'),schema})),
+      }),
+      op('relatorios','get',path+'/recursos','RecursosRelatorios',perfis,{
+        runtimeValidation:true,errors:[400,401,403,500],notes:'Catálogo mínimo de veículo/motorista para filtros; não aceita query. Sem CPF, CNH ou contato.',
+      }),
+    ];
+  }),
   op('notificacoes','get','/api/notificacoes','ListaNotificacoes',['ADM','GESTOR_FROTA','SOLICITANTE_INTERNO','MOTORISTA','ATENDENTE_SVO'],{
     runtimeValidation:true,errors:[400,401,500],notes:'Caixa individual por sessão atual; ordem criadoEm DESC,id DESC. Query estrita. GET não materializa alertas.',
     query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
@@ -84,10 +123,12 @@ export const operations: Operacao[] = [
   op('usuarios','patch','/api/admin/usuarios/{id}/status','UsuarioStatus',['ADM'],{body:'StatusUsuario',errors:[400,401,403,404,413,415,500],errorSchema:'ErroUsuario',notes:'Estado explícito idempotente; barra final opcional.'}),
   op('auditoria','get','/api/admin/auditoria/logs','Auditoria',['ADM'],{errors:[400,401,403,500],notes:'Sem page/limit retorna array legado com email. Com qualquer parâmetro de paginação retorna DTO mínimo; defaults page=1, limit=20, max=100. Duplicatas/offset inseguro:400.',query:[
     {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)}, {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
-  ...(['Dashboard','Graficos','PendenciasDashboard','DashboardGestor'] as const).map((s,i)=>op('dashboard','get',
-    ['/api/dashboard','/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],
-    i===1?'GraficosPeriodo':i===3?'DashboardGestorIndicadores':s,gestor,
-    i===1||i===3?{runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notasDashboardPeriodo}:{})),
+  op('dashboard','get','/api/dashboard','DashboardConsolidado',['ADM','GESTOR_FROTA','ATENDENTE_SVO'],{
+    runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notaDashboardConsolidado}),
+  ...(['Graficos','PendenciasDashboard','DashboardGestor'] as const).map((s,i)=>op('dashboard','get',
+    ['/api/dashboard/graficos','/api/dashboard/pendencias','/api/dashboard/gestor'][i],
+    i===0?'GraficosPeriodo':i===2?'DashboardGestorIndicadores':s,gestor,
+    i!==1?{runtimeValidation:true,query:parametrosPeriodoDashboard,errors:[400,401,403,500],notes:notasDashboardPeriodo}:{})),
   // SCRUM-132/145/147/148 — capacidades, vínculo por motorista e execução auditada.
   op('svo','get','/api/svo/recursos-disponiveis','RecursosDisponiveisSvo',['ATENDENTE_SVO'],{
     errors:[400,401,403,500],notes:'Disponibilidade informativa: S10 própria Chevrolet com cadastro coerente, lotação ativa 0/4..4/4; CNH válida, motorista autenticável, documentos vencidos e reservas bloqueiam. Revalidar no PATCH de despacho.'}),
@@ -156,6 +197,8 @@ export const operations: Operacao[] = [
   op('svo','get','/api/svo/dashboard/atividades','AtividadesRecentesSvo',['ATENDENTE_SVO'],{
     errors:[400,401,403,500],notes:'SCRUM-149 IND-07: eventos SVO reais, sem dados pessoais; limite 1..50.',
     query:[{name:'limite',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('veiculos','get','/api/veiculos/{id}/foto','FotoVeiculoResposta',consultaFrota,{errors:[401,403,404,500,503],notes:'Foto privada JPEG ou PNG, ou null quando ausente.'}),
+  op('veiculos','put','/api/veiculos/{id}/foto','FotoVeiculoResposta',gestor,{body:'FotoVeiculoEntrada',errors:[400,401,403,404,413,415,500,503],notes:'Substitui foto privada; máximo 1 MiB.'}),
   op('veiculos','get','/api/veiculos','ListaVeiculos',consultaFrota,{notes:'Lista completa id DESC, sem paginação. Piloto validado em runtime.'}),
   op('veiculos','post','/api/veiculos','RespostaVeiculo',gestor,{body:'CriarVeiculo',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('veiculos',method,'/api/veiculos/{id}','RespostaVeiculo',gestor,
@@ -164,18 +207,49 @@ export const operations: Operacao[] = [
   op('motoristas','get','/api/motoristas','Motoristas',consultaFrota),
   op('motoristas','post','/api/motoristas','RespostaMotorista',gestor,{body:'CriarMotorista',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('motoristas',method,'/api/motoristas/{id}','RespostaMotorista',gestor,{body:'EditarMotorista',errors:[400,401,403,404,409,413,415,500]})),
-  op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,500]}),
+  op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,409,500]}),
   op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
+  op('abastecimentos','get','/api/abastecimentos/indicadores','IndicadoresAbastecimentos',gestor,{
+    runtimeValidation:true,query:parametrosIndicadoresAbastecimentos,errors:[400,401,403,404,500],
+    notes:'SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo por distância indisponível até definição da regra.'}),
   op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
-  op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,413,415,500]}),
+  op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,409,413,415,500]}),
+  op('anotacoes','post','/api/anotacoes','RespostaAnotacao',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    body:'CriarAnotacao',runtimeValidation:true,errors:[400,401,403,404,413,415,500],
+    notes:'RF48: texto privado de 1–2000 caracteres, vínculo único autorizado, autoria/instante do servidor e auditoria atômica. Texto simples, nunca HTML; não altera decisão/status e não tem edição/exclusão.'}),
+  op('anotacoes','get','/api/anotacoes','ListaAnotacoes',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    runtimeValidation:true,errors:[400,401,403,404,500],notes:'Somente registro autorizado, mesma matriz dos anexos; solicitante/equipe só recursos próprios. Query estrita; total e página consistentes.',
+    query:[{name:'tipoRegistro',required:true,schema:tipoNota},{name:'registroId',required:true,schema:registroId},
+      {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('anexos','post','/api/anexos','RespostaAnexo',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    body:'CriarAnexo',multipart:true,runtimeValidation:true,errors:[400,401,403,404,413,415,500],
+    notes:'Arquivo PDF/JPEG/PNG até 5 MiB, campo arquivo e vínculo tipoRegistro/registroId. RBAC e proprietário no servidor. Bytes/metadados/auditoria atômicos. Novo POST cria outro anexo imutável; sem URL pública ou chave de storage no DTO.'}),
+  op('anexos','get','/api/anexos','ListaAnexos',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    runtimeValidation:true,errors:[400,401,403,404,500],notes:'Metadados somente do registro autorizado; query estrita. Perfil negado:403; registro alheio/ausente:404. criadoEm DESC,id DESC.',
+    query:[{name:'tipoRegistro',required:true,schema:tipoRegistro},{name:'registroId',required:true,schema:registroId},
+      {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
+  op('anexos','get','/api/anexos/{id}','ArquivoAnexo',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
+    runtimeValidation:true,errors:[401,403,404,500],notes:'Download autenticado com scoping atual por registro. Bytes privados via streaming; attachment, nosniff, no-store. ID não concede acesso.'}),
+  op('documentos','get','/api/documentos/consulta','ListaDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,500],query:parametrosDocumentais,
+    notes:'SCRUM-193: consulta paginada por tipo/veículo/motorista/validade. Situação vencido/hoje/futuro pela data civil do banco, sem escolher janela RF46. Legado /api/documentos preservado.'}),
+  op('documentos','get','/api/documentos/{id}','DetalheDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],
+    query:[{name:'tipo',required:false,schema:tipoDocumental}],notes:'Tipo padrão DOCUMENTO_VEICULO; CNH_MOTORISTA identifica cadastro existente. Versão 0 significa ausência de histórico, sem autor retroativo.'}),
+  op('documentos','get','/api/documentos/{id}/historico','HistoricoDocumental',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],
+    query:parametrosDocumentais.filter(p=>['tipo','page','limit'].includes(p.name)),notes:'Snapshots reais append-only com autor/instante; paginação decrescente. Histórico legado vazio não é reconstruído.'}),
+  op('documentos','patch','/api/documentos/{id}','DetalheDocumental',gestor,{body:'AlterarDocumento',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],
+    query:[{name:'tipo',required:false,schema:tipoDocumental}],notes:'SCRUM-193: versão obrigatória e data civil válida. Lock do cadastro, histórico e auditoria atômicos; 409 versão antiga. Motorista não edita CNH. Anexo opcional deve pertencer ao mesmo documento/motorista.'}),
   op('documentos','get','/api/documentos','Documentos',gestor),
+  op('documentos','get','/api/documentos/alertas','AlertasDocumentais',gestor,{
+    runtimeValidation:true,errors:[400,401,403,500],
+    query:parametrosDocumentais.filter(p=>['tipo','page','limit'].includes(p.name)),
+    notes:'SCRUM-193 RF46: fases no fuso America/Maceio por mês-calendário, sete dias e dia da validade. Lista paginada com responsável mínimo e vencidos; leitura sem efeitos.'}),
   op('documentos','get','/api/documentos/pendencias','PendenciasDocumentos',gestor),
   op('documentos','post','/api/documentos','RespostaDocumento',gestor,{body:'CriarDocumento'}),
 ];
 
 /** Mantém correspondência exata com os caminhos existentes, inclusive a barra opcional de usuários. */
 export function routePattern(operation: Operacao): RegExp {
-  const path = operation.path.replace(/\{id\}/g, '[0-9]+');
+  const path = operation.path.replace(/\{id\}/g, operation.modulo === 'viagens' ? '-?[0-9]+' : '[0-9]+');
   return new RegExp('^' + path + (operation.modulo === 'usuarios' && path.includes('[0-9]+') ? '/?' : '') + '$');
 }
 

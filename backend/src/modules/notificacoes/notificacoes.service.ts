@@ -1,14 +1,15 @@
-import { randomUUID } from 'node:crypto';
+﻿import { randomUUID } from 'node:crypto';
 import type postgres from 'postgres';
 import type { EventoAtividade } from '../auditoria/auditoria.service.js';
-import { inserirNotificacao } from './notificacoes.repository.js';
+import { inserirNotificacao, inserirAtribuicaoViagem } from './notificacoes.repository.js';
 
 /** Notifica destinatários dos eventos reais na mesma transação, sem dados sensíveis do SVO. */
 export async function notificarAtividades(tx: postgres.TransactionSql, eventos: EventoAtividade[]) {
   for (const evento of eventos) {
     if (evento.operacao.startsWith('solicitacao_viagem_')) {
-      const [pedido] = await tx`SELECT s.codigo,s.solicitante_id::text,m.usuario_id::text AS motorista
-        FROM public.solicitacao_viagem s LEFT JOIN public.motorista m ON m.id=s.motorista_id WHERE s.id=${evento.recursoId}`;
+      const [pedido] = await tx`SELECT s.codigo,s.solicitante_id::text,m.usuario_id::text AS motorista,v.id::text AS viagem
+        FROM public.solicitacao_viagem s LEFT JOIN public.motorista m ON m.id=s.motorista_id
+        LEFT JOIN public.viagem v ON v.solicitacao_id=s.id WHERE s.id=${evento.recursoId}`;
       if (!pedido) continue;
       const gestao = await tx`SELECT id::text FROM public.usuario WHERE ativo=true AND perfil IN ('ADM','GESTOR_FROTA')`;
       const titulos: Record<string,string> = {
@@ -21,7 +22,14 @@ export async function notificarAtividades(tx: postgres.TransactionSql, eventos: 
       const atribuicao = ['solicitacao_viagem_agendada','solicitacao_viagem_reagendada'].includes(evento.operacao);
       const usuarios = new Set(gestao.map(u=>String(u.id)));
       if (pedido.solicitante_id) usuarios.add(pedido.solicitante_id);
-      if (atribuicao && pedido.motorista) usuarios.add(pedido.motorista);
+      let novaAtribuicao=false;
+      if (atribuicao && pedido.viagem && pedido.motorista) novaAtribuicao=await inserirAtribuicaoViagem(tx,pedido.viagem);
+      if (atribuicao && pedido.motorista && !pedido.viagem) usuarios.add(pedido.motorista);
+      // Preserva o aviso de mudança de reserva quando já existe atribuição;
+      // repetições idênticas não geram uma nova mudança.
+      if (evento.operacao==='solicitacao_viagem_reagendada' && evento.houveAlteracao!==false && pedido.motorista && pedido.viagem && !novaAtribuicao && !usuarios.has(pedido.motorista)) {
+        await inserirNotificacao(tx,[pedido.motorista],randomUUID(),titulo,`Solicitação #${pedido.codigo}`,'sucesso');
+      }
       await inserirNotificacao(tx,[...usuarios],randomUUID(),titulo,`Solicitação #${pedido.codigo}`,
         evento.operacao === 'solicitacao_viagem_reprovada' ? 'atencao' : atribuicao || evento.operacao === 'solicitacao_viagem_aprovada' ? 'sucesso' : 'informacao');
     }

@@ -82,3 +82,14 @@ test('leitura aguarda confirmação do servidor antes de atualizar o contador',a
   liberar();
   await expect(page.getByRole('button',{name:'Abrir notificações: 1 não lidas',exact:true})).toBeVisible();
 });
+
+test('leitura em lote zera contador global mesmo na aba de avisos ja lidos', async ({ page }) => {
+  await preparar(page);
+  await page.goto('/notificacoes');
+  await expect(page.getByRole('button', { name: 'Abrir notificações: 2 não lidas', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Lidas', exact: true }).click();
+  await expect(page.locator('.notificacoes__item')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Marcar todas como lidas' }).click();
+  await expect(page.getByRole('button', { name: 'Abrir notificações: 0 não lidas', exact: true })).toBeVisible();
+  await expect(page.locator('.notificacoes__item')).toHaveCount(5);
+});

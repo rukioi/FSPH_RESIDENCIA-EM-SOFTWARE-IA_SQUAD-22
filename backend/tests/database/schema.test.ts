@@ -20,8 +20,11 @@ test('reconstrói o snapshot completo auditado, incluindo ACL/RLS e tipos exatos
   expect(metadata.constraints).toHaveLength(expected.constraints.length);
   expect(metadata.triggers).toEqual([]);
   expect(metadata.policies).toEqual([]);
-  expect(metadata.tables.filter(t=>t.name!=='notificacao').every(t => !t.rls && !t.forceRls)).toBe(true);
-  expect(metadata.tables.find(t=>t.name==='notificacao')).toMatchObject({rls:true,forceRls:false});
+  // Tabelas novas acessadas só pelo backend: RLS ligada sem policies (20261109* e DB-S8-01).
+  const protegidas = ['abastecimento_comprovante','notificacao','viagem_correcao','viagem_evidencia',
+    'anexo', 'documento_historico', 'anotacao'];
+  expect(metadata.tables.filter(t=>!protegidas.includes(t.name)).every(t => !t.rls && !t.forceRls)).toBe(true);
+  for (const nome of protegidas) expect(metadata.tables.find(t=>t.name===nome)).toMatchObject({rls:true,forceRls:false});
   expect(metadata.constraints.find(c => c.name === 'veiculo_vinculo_check')?.validated).toBe(true);
   expect(metadata.constraints.filter(c => c.table === 'log_atividade' && c.type === 'f').map(c => c.onDelete).sort())
     .toEqual(expected.constraints.filter(c => c.table === 'log_atividade' && c.type === 'f').map(c => c.onDelete).sort());
@@ -35,6 +38,7 @@ test('as quatro migrations incrementais estão presentes no catálogo, com tipos
     ['solicitacao_viagem','finalidade','text'],
     ['solicitacao_viagem','data_hora_retorno_previsto','timestamp without time zone'],
     ['log_atividade','solicitacao_viagem_id','bigint'],
+    ['log_atividade','tipo_evento','text'],
   ]) {
     expect(metadata.columns.find(c => c.table === table && c.name === name)).toMatchObject({type,nullable:true,default:null});
   }

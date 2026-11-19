@@ -24,6 +24,12 @@ test.beforeAll(async ({ request }) => {
     (938002, 938001, 20, 120, 2000, '2026-02-15', 'Fixture posto B')`;
 });
 
+test.afterEach(async () => {
+  if (!sql) return;
+  await sql`delete from abastecimento_comprovante where abastecimento_id in (select id from abastecimento where veiculo_id = ${vehicleIds[0]} and quilometragem in (390, 768, 1280))`;
+  await sql`delete from abastecimento where veiculo_id = ${vehicleIds[0]} and quilometragem in (390, 768, 1280)`;
+});
+
 test.afterAll(async () => {
   if (!sql) return;
   try {
@@ -41,6 +47,16 @@ for (const width of [390, 768, 1280]) {
     await page.evaluate(value => sessionStorage.setItem('token', value), token);
     await page.goto('/gestor/abastecimentos');
     await expect(page.getByRole('heading', { name: 'Abastecimentos', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Ver indicadores' })).toHaveCount(0);
+    const action = page.locator('tbody tr').filter({ hasText: 'E2EA001' }).getByRole('button', { name: 'Ver detalhes' });
+    await action.click();
+    const details = page.getByRole('dialog', { name: 'Detalhes do abastecimento' });
+    await expect(details).toContainText('Fixture posto A');
+    await expect(details).toContainText('Fixture E2E Abastecimento');
+    await expect(page).toHaveURL(/\/gestor\/abastecimentos$/);
+    await page.screenshot({ path: info.outputPath(`abastecimento-detalhes-${width}.png`), fullPage: true });
+    await page.keyboard.press('Escape');
+    await expect(action).toBeFocused();
     const rows = page.locator('tbody tr');
     await expect(rows.filter({ hasText: 'E2EA001' })).toBeVisible();
     await expect(rows.filter({ hasText: 'E2EA002' })).toBeVisible();
@@ -95,7 +111,7 @@ for (const width of [390, 768, 1280]) {
     expect(receipt.tipo).toBe('image/png');
     expect(Buffer.from(receipt.dados)).toEqual(png);
     await page.getByLabel('Período final').fill('');
-    const newRow = rows.filter({ hasText: 'E2EA001' }).filter({ hasText: `${new Intl.NumberFormat('pt-BR').format(width)} km` });
+    const newRow = rows.filter({ hasText: 'E2EA001' }).filter({ hasText: `${new Intl.NumberFormat('pt-BR').format(width)}km` });
     const download = page.waitForEvent('download');
     await newRow.getByRole('button', { name: 'Baixar comprovante' }).click();
     expect((await download).suggestedFilename()).toBe(`comprovante-${width}.png`);
@@ -105,16 +121,16 @@ for (const width of [390, 768, 1280]) {
 test('consulta inválida oferece nova tentativa', async ({ page }) => {
   await page.goto('/login');
   await page.evaluate(value => sessionStorage.setItem('token', value), token);
-  let attempts = 0;
+  let permitirRespostaValida = false;
   await page.route('**/api/abastecimentos', route => {
     if (route.request().method() !== 'GET') return route.continue();
-    attempts++;
-    return attempts === 1
+    return !permitirRespostaValida
       ? route.fulfill({ status: 200, contentType: 'application/json', body: '{"data":[{"id":"1"}]}' })
       : route.continue();
   });
   await page.goto('/gestor/abastecimentos');
   await expect(page.getByRole('alert')).toBeVisible();
+  permitirRespostaValida = true;
   await page.getByRole('button', { name: 'Tentar novamente' }).click();
   await expect(page.locator('tbody tr').filter({ hasText: 'E2EA001' })).toBeVisible();
 });
@@ -130,9 +146,11 @@ test('cadastro exige motorista e quilometragem e preserva formulário em erro do
   await dialog.getByLabel('Data', { exact: true }).fill('2026-03-15');
   await dialog.getByLabel('Litros', { exact: true }).fill('15');
   await dialog.getByLabel('Valor total', { exact: true }).fill('90');
+  await dialog.getByLabel('Quilometragem', { exact: true }).fill('3000');
   await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
   await expect(dialog.getByLabel('Motorista', { exact: true })).toBeFocused();
   await selecionarOpcao(dialog.getByLabel('Motorista', { exact: true }), String(driverId));
+  await dialog.getByLabel('Quilometragem', { exact: true }).fill('');
   await dialog.getByRole('button', { name: 'Registrar', exact: true }).click();
   await expect(dialog.getByLabel('Quilometragem', { exact: true })).toBeFocused();
   await dialog.getByLabel('Quilometragem', { exact: true }).fill('3000');

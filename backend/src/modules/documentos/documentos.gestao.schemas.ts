@@ -1,0 +1,43 @@
+import { z } from 'zod';
+import { dados,id,meta } from '../../shared/contract/schemas.js';
+export const idDocumental = z.string().regex(/^[1-9]\d{0,18}$/)
+  .refine(v => /^[1-9]\d{0,18}$/.test(v) && BigInt(v) <= 9223372036854775807n);
+
+const paginacao = z.object({
+  page: z.coerce.number().int().min(1).max(1000000).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+const dataCivil = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v =>
+  v >= '0001-01-01' && !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v);
+export const tipoDocumental=z.enum(['DOCUMENTO_VEICULO','CNH_MOTORISTA']);
+export const consultaDocumental=z.object({tipo:tipoDocumental.optional(),veiculoId:idDocumental.optional(),motoristaId:idDocumental.optional(),
+  situacao:z.enum(['VENCIDO','HOJE','A_VENCER']).optional(),inicio:dataCivil.optional(),fim:dataCivil.optional(),
+  ...paginacao.shape}).strict().refine(q=>!q.inicio||!q.fim||q.inicio<=q.fim);
+export const alterarDocumento=z.object({versao:z.number().int().min(0),dataValidade:dataCivil,
+  tipoDocumento:z.string().trim().min(1).max(50).optional(),numeroCnh:z.string().trim().min(1).max(20).optional(),
+  categoriaCnh:z.enum(['A','B','C','D','E']).optional(),anexoId:idDocumental.nullable().optional()}).strict();
+const item=z.object({id,tipo:tipoDocumental,registroId:id.nullable(),dataValidade:dataCivil,
+  tipoDocumento:z.string().nullable(),numeroCnh:z.string().nullable(),categoriaCnh:z.string().nullable(),
+  regular:z.boolean().nullable(),diasRestantes:z.number().int(),versao:z.number().int().min(0)});
+const versao=z.object({id,versao:z.number().int().positive(),dataValidade:dataCivil,tipoDocumento:z.string().nullable(),
+  numeroCnh:z.string().nullable(),categoriaCnh:z.string().nullable(),regular:z.boolean().nullable(),
+  anexoId:id.nullable(),autorId:id,criadoEm:z.iso.datetime()});
+export const gestaoDocumentalSchemas={DocumentoAtual:item,ListaDocumental:dados(z.array(item)).extend({meta}),
+  DetalheDocumental:dados(item),HistoricoDocumental:dados(z.array(versao)).extend({meta}),AlterarDocumento:alterarDocumento};
+export const parametrosDocumentais=[{name:'tipo',required:false,schema:tipoDocumental},
+  {name:'veiculoId',required:false,schema:idDocumental},{name:'motoristaId',required:false,schema:idDocumental},
+  {name:'situacao',required:false,schema:z.enum(['VENCIDO','HOJE','A_VENCER'])},
+  {name:'inicio',required:false,schema:dataCivil},{name:'fim',required:false,schema:dataCivil},
+  {name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},
+  {name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}];
+
+export const filtroAlertasDocumentais = z.strictObject({
+  tipo: tipoDocumental.optional(),
+  ...paginacao.shape,
+});
+export const alertasDocumentais = dados(z.array(z.object({
+  id, tipo: tipoDocumental, registroId: id.nullable(),
+  descricao: z.string(), responsavel: z.string().nullable(), dataValidade: dataCivil,
+  diasRestantes: z.number().int(), fase: z.enum(['VENCIDO', 'HOJE', 'SEMANA', 'MES']),
+}))).extend({ meta });

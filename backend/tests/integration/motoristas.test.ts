@@ -8,7 +8,7 @@ import { SignJWT } from 'jose';
 import { createApp } from '../../src/app.js';
 
 vi.mock('../../src/config/db.js', () => ({
-  sql: vi.fn(),
+  sql: Object.assign(vi.fn(), {begin: (fn: (tx: unknown)=>unknown) => fn(sql)}),
 }));
 
 vi.mock('../../src/database/connection.js', () => ({
@@ -16,6 +16,7 @@ vi.mock('../../src/database/connection.js', () => ({
 }));
 
 import { sql } from '../../src/config/db.js';
+vi.mock('../../src/modules/documentos/documentos.historico.js',()=>({registrarVersaoDocumental:vi.fn()}));
 import {
   criarMotorista,
   atualizarMotorista,
@@ -59,7 +60,7 @@ test('BE-S6-02 rejeita categoria de CNH inválida sem consultar o banco', async 
 
   const { res, writeHead, end } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     400,
@@ -83,7 +84,7 @@ test('BE-S6-02 rejeita status inválido sem consultar o banco', async () => {
 
   const { res, writeHead, end } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     400,
@@ -104,7 +105,7 @@ test('BE-S6-02 rejeita CNH duplicada', async () => {
   const req = criarRequisicao(dadosMotorista());
   const { res, writeHead, end } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     409,
@@ -133,7 +134,7 @@ test('BE-S6-02 cadastra motorista válido com status 201', async () => {
   const req = criarRequisicao(dadosMotorista());
   const { res, writeHead, end } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     201,
@@ -154,7 +155,7 @@ test('BE-S6-02 rejeita categoria inválida ao atualizar motorista', async () => 
 
   const { res, writeHead, end } = criarResposta();
 
-  await atualizarMotorista(req, res, '15');
+  await atualizarMotorista(req, res, '15', '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     400,
@@ -175,7 +176,7 @@ test('BE-S6-02 rejeita status inválido ao atualizar motorista', async () => {
 
   const { res, writeHead, end } = criarResposta();
 
-  await atualizarMotorista(req, res, '15');
+  await atualizarMotorista(req, res, '15', '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     400,
@@ -305,7 +306,7 @@ test('BE-S6-02 rejeita CPF inválido sem consultar o banco', async () => {
 
   const { res, writeHead, end } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     400,
@@ -327,7 +328,7 @@ test('BE-S6-02 rejeita telefone inválido sem consultar o banco', async () => {
 
   const { res, writeHead, end } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     400,
@@ -355,7 +356,7 @@ test('BE-S6-02 rejeita CPF duplicado ao cadastrar', async () => {
 
   const { res, writeHead, end } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     409,
@@ -392,7 +393,7 @@ test('BE-S6-02 cadastra motorista com CPF e telefone', async () => {
 
   const { res, writeHead, end } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     201,
@@ -415,6 +416,7 @@ test('BE-S6-02 atualiza CPF e telefone do motorista', async () => {
 
   bancoSimulado
     .mockResolvedValueOnce([] as never)
+    .mockResolvedValueOnce([dadosMotorista()] as never)
     .mockResolvedValueOnce([
       {
         id: 15,
@@ -431,7 +433,7 @@ test('BE-S6-02 atualiza CPF e telefone do motorista', async () => {
 
   const { res, writeHead, end } = criarResposta();
 
-  await atualizarMotorista(req, res, '15');
+  await atualizarMotorista(req, res, '15', '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     200,
@@ -446,7 +448,7 @@ test('BE-S6-02 atualiza CPF e telefone do motorista', async () => {
     expect.stringContaining('"telefone":"79999998888"'),
   );
 
-  expect(sql).toHaveBeenCalledTimes(2);
+  expect(sql).toHaveBeenCalledTimes(3);
 });
 
 test('BE-S6-02 trata CPF duplicado informado pelo banco', async () => {
@@ -467,7 +469,7 @@ test('BE-S6-02 trata CPF duplicado informado pelo banco', async () => {
 
   const { res, writeHead, end } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     409,
@@ -498,7 +500,7 @@ test('BE-S6-02 aceita CNH categoria A ao cadastrar motorista', async () => {
 
   const { res, writeHead } = criarResposta();
 
-  await criarMotorista(req, res);
+  await criarMotorista(req, res, '-27002');
 
   expect(writeHead).toHaveBeenCalledWith(
     201,

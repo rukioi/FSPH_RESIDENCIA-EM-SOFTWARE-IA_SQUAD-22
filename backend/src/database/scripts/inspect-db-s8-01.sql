@@ -14,8 +14,11 @@ SELECT 'viagens_legadas' AS verificacao,
   count(*) FILTER (WHERE (v.status::text = 'EM_TRANSPORTE' AND (v.data_inicio IS NULL OR v.km_inicial IS NULL))
     OR (v.status::text = 'CONCLUIDA' AND (v.data_inicio IS NULL OR v.km_inicial IS NULL
       OR v.data_fim IS NULL OR v.km_final IS NULL)))::int AS execucao_incompleta,
-  count(*) FILTER (WHERE v.validada_por_gestor IS TRUE
-    AND (to_jsonb(v) ->> 'validada_por_id' IS NULL OR v.status::text IS DISTINCT FROM 'CONCLUIDA'))::int AS validacao_sem_autor_ou_conclusao
+  count(*) FILTER (WHERE
+    (v.validada_por_gestor IS TRUE AND (to_jsonb(v) ->> 'validada_por_id' IS NULL
+      OR to_jsonb(v) ->> 'validada_em' IS NULL OR v.status::text IS DISTINCT FROM 'CONCLUIDA'))
+    OR (v.validada_por_gestor IS NOT TRUE AND (to_jsonb(v) ->> 'validada_por_id' IS NOT NULL
+      OR to_jsonb(v) ->> 'validada_em' IS NOT NULL)))::int AS validacao_inconsistente
 FROM public.viagem v;
 
 SELECT 'associacao' AS verificacao,

@@ -161,3 +161,24 @@ sessão e os mesmos perfis ADM/GESTOR_FROTA, retorna bytes com Content-Type da
 imagem, ou 404 quando ausente. A imagem fica em tabela separada com RLS ativada
 sem grants aos papéis públicos; confirme o papel de execução do backend e a
 segurança da Data API antes de aplicar em ambiente remoto.
+
+O cadastro retorna 409 quando a quilometragem contradiz comprovadamente uma viagem corrigida do veículo. A coincidência de data, sem horário que determine a ordem, não impede o registro.
+
+## Indicadores de abastecimentos — SCRUM-188
+
+`GET /api/abastecimentos/indicadores` exige sessão ADM ou GESTOR_FROTA. Aceita
+`veiculoId`, `inicio` e `fim` opcionais. As datas são civis, válidas e inclusivas.
+Veículo inexistente retorna 404. Campos desconhecidos, repetidos e intervalos
+invertidos retornam 400. A consulta inclui frota geral e SVO conforme os registros.
+
+`data` informa quantidade, totais de litros e custo, custo médio por litro com
+quatro casas decimais, primeiro e último dia observado e contagem e faixa de
+leituras de odômetro por veículo. Os acumulados usam NUMERIC no PostgreSQL e
+são transportados como strings decimais. Período vazio retorna
+`SEM_ABASTECIMENTOS`, com custo por litro e datas observadas nulos. Zero de km
+registrado é uma leitura. Km mínimo e máximo descrevem as leituras e não
+representam distância percorrida.
+
+O consumo por distância retorna `INDISPONIVEL` com valor nulo até a definição
+da regra de associação entre litros e leituras. A SCRUM-186 continua responsável
+pela API de histórico por veículo e pelo cadastro RF40.
