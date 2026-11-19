@@ -1,23 +1,79 @@
-import { Icone } from '../../shared/components/Icone'
-import './DashboardAdm.css'
+import { DatePicker } from '../../shared/components/DatePicker';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRemoteData } from '../../shared/api/useRemoteData';
+import { buscarDashboardConsolidado, buscarPendenciasDashboard } from '../../shared/services/dashboard.service';
+import { ROTAS, rotaSolicitacao } from '../../app/routes/rotas';
+import { Link } from '../../app/routes/router';
+import { DistribuicaoGestor } from '../../features/dashboard/DistribuicaoGestor';
+import { notifyDataChanged, onDataChanged } from '../../shared/api/dataChanges';
+import '../../features/dashboard/KpiCards.css';
+import '../../features/dashboard/Widgets.css';
+import '../gerente/DashboardGestor.css';
+import './DashboardAdm.css';
 
+type Periodo = 'hoje' | '7d' | '30d' | 'personalizado';
+const periodos: Array<[Periodo, string]> = [['hoje', 'Hoje'], ['7d', '7 dias'], ['30d', '30 dias'], ['personalizado', 'Personalizado']];
+const dataCivil = (valor: string | null) => valor ? valor.slice(0, 10).split('-').reverse().join('/') + (valor.length > 10 ? ` ${valor.slice(11, 16)}` : '') : 'Data não informada';
+const nomeStatus = (status: string | null) => status ? status.replaceAll('_', ' ').toLocaleLowerCase('pt-BR') : 'Não informado';
+
+/** Dashboard do Administrador: mesma visão GESTAO do Gestor, lida do endpoint consolidado. */
 export function DashboardAdmin() {
-  return (
-    <div className="dashboard-admin">
-      <div className="pagina__topo">
-        <div>
-          <h1 className="pagina__titulo">Dashboard</h1>
-          <p className="pagina__descricao">Painel do Administrador</p>
-        </div>
-      </div>
+  const [periodo, setPeriodo] = useState<Periodo>('hoje');
+  const [personalizadoAberto, setPersonalizadoAberto] = useState(false);
+  const [erroPeriodo, setErroPeriodo] = useState('');
+  const [inicio, setInicio] = useState('');
+  const [fim, setFim] = useState('');
+  const [intervalo, setIntervalo] = useState({ inicio: '', fim: '' });
+  const load = useCallback((signal: AbortSignal) => buscarDashboardConsolidado(periodo, intervalo.inicio, intervalo.fim, signal), [periodo, intervalo]);
+  const resumo = useRemoteData(load, null);
+  const pendencias = useRemoteData(buscarPendenciasDashboard, null);
+  // O ADM sempre recebe a visão GESTAO; qualquer outra resposta é tratada como ausência de dados.
+  const consolidado = resumo.data && resumo.data.visao === 'GESTAO' ? resumo.data : null;
+  const dados = consolidado?.gestao ?? null;
+  const ultimaAtualizacao = useRef(0);
 
-      <section className="dashboard-admin__vazio cartao" aria-label="Conteúdo do dashboard">
-        <span className="dashboard-admin__icone">
-          <Icone nome="dashboard" tamanho={28} />
-        </span>
-        <h2>Conteúdo em construção</h2>
-        <p>Os indicadores do Administrador serão exibidos aqui em uma próxima etapa.</p>
-      </section>
+  useEffect(() => {
+    const atualizar = () => {
+      if (document.visibilityState !== 'visible' || resumo.loading || pendencias.loading || Date.now() - ultimaAtualizacao.current < 1000) return;
+      ultimaAtualizacao.current = Date.now();
+      notifyDataChanged();
+    };
+    const unsubscribe = onDataChanged(() => { resumo.retry(); pendencias.retry(); });
+    const timer = window.setInterval(atualizar, 30_000);
+    window.addEventListener('focus', atualizar);
+    document.addEventListener('visibilitychange', atualizar);
+    return () => { window.clearInterval(timer); unsubscribe(); window.removeEventListener('focus', atualizar); document.removeEventListener('visibilitychange', atualizar); };
+  });
+
+  const aplicar = () => {
+    const dias = (Date.parse(`${fim}T00:00:00Z`) - Date.parse(`${inicio}T00:00:00Z`)) / 86400000;
+    if (dias > 0 && dias <= 31) { setErroPeriodo(''); setIntervalo({ inicio, fim }); setPeriodo('personalizado'); } else setErroPeriodo('Informe um intervalo válido de até 31 dias.');
+  };
+
+  return <div className="gestor-dashboard">
+    <div className="cabecalho-pagina"><div><h1>Dashboard</h1><p>Visão geral da operação da frota</p></div>
+      <div className="periodo" role="group" aria-label="Período">{periodos.map(([valor, nome]) => <button key={valor} type="button" aria-pressed={periodo === valor} className={`periodo__botao ${periodo === valor ? 'periodo__botao--ativo' : ''}`} onClick={() => valor === 'personalizado' ? setPersonalizadoAberto(true) : (setPersonalizadoAberto(false), setPeriodo(valor))}>{nome}</button>)}</div>
     </div>
-  )
+    {personalizadoAberto && <div className="dashboard-filtros"><label>Início<DatePicker type="date" value={inicio} onChange={e => setInicio(e.target.value)} /></label><label>Fim exclusivo<DatePicker type="date" value={fim} onChange={e => setFim(e.target.value)} /></label><button type="button" onClick={aplicar}>Aplicar período</button><small>Até 31 dias; a data final não está incluída.</small>{erroPeriodo && <span role="alert">{erroPeriodo}</span>}</div>}
+
+    {resumo.loading && !dados && <p className="gestor-carregando" role="status">Carregando indicadores…</p>}
+    {resumo.error && <div className="gestor-aviso" role="alert"><span>{dados ? 'Não foi possível atualizar o painel. Os dados anteriores foram mantidos.' : 'Não foi possível carregar o painel agora.'}</span><button type="button" onClick={resumo.retry}>Recarregar</button></div>}
+
+    {dados && consolidado && <div className={resumo.loading ? 'gestor-resultados gestor-resultados--carregando' : 'gestor-resultados'} aria-busy={resumo.loading}>
+      <section className="cards-kpis" aria-label="Indicadores">
+        <article className="card-kpi"><span>Chamados pendentes</span><strong>{dados.indicadores.pendentes}</strong><small>Fila atual de análise</small><a href="#adm-fila">Ver fila →</a></article>
+        <article className="card-kpi"><span>{periodo === 'hoje' ? 'Viagens programadas hoje' : 'Viagens programadas'}</span><strong>{dados.solicitacoesPorStatus.filter(item => item.status === 'AGENDADA' || item.status === 'PRONTA_PARA_INICIAR').reduce((total, item) => total + item.total, 0)}</strong><small>Agendadas ou prontas para iniciar no período</small><a href="#adm-viagens">Ver programação →</a></article>
+        <article className="card-kpi"><span>Veículos disponíveis</span><strong>{dados.indicadores.veiculosDisponiveis}</strong><small>Livres no período · frota administrativa</small><a href="#adm-frota">Ver situação →</a></article>
+        <article className="card-kpi"><span>Motoristas disponíveis</span><strong>{dados.motoristasDisponiveis ?? '—'}</strong><small>{dados.motoristasDisponiveisMotivo ?? 'Nenhum motorista cadastrado'}</small><Link para={ROTAS.motoristasGestor}>Consultar motoristas →</Link></article>
+      </section>
+      <div className="dashboard-modulos">
+        <section className="painel-operacional gestor-painel"><h2>Visão geral dos chamados</h2><p>Acompanhe as solicitações previstas para o período.</p><DistribuicaoGestor itens={dados.solicitacoesPorStatus} /><Link para={ROTAS.solicitacoesGestor}>Ver solicitações →</Link></section>
+        <section className="painel-operacional gestor-painel"><h2>Atividade recente</h2><p>Últimas movimentações das solicitações do período.</p><ul className="dashboard-lista">{dados.indicadores.atividadeRecente.length ? dados.indicadores.atividadeRecente.map(item => <li key={item.id}><span>{dataCivil(item.dataHora)} · {item.descricao}</span><Link para={rotaSolicitacao(ROTAS.solicitacoesGestor, String(item.solicitacaoId))}>Ver</Link></li>) : <li>Nenhuma atividade recente neste período.</li>}</ul></section>
+        <section className="painel-operacional gestor-painel"><h2 id="adm-frota">Situação da frota</h2><p>Acompanhe a situação atual dos veículos.</p><DistribuicaoGestor itens={dados.veiculosPorStatus} frota /><Link para={ROTAS.veiculosGestor}>Ver veículos →</Link></section>
+        <section className="painel-operacional gestor-painel"><h2 id="adm-viagens">Próximas viagens</h2><p>Agendadas ou prontas no período selecionado.</p><ul className="dashboard-lista">{dados.proximasViagens.length ? dados.proximasViagens.map(item => <li key={item.id}><span>{dataCivil(item.data_hora_saida)} · {item.codigo}<br />{item.origem} → {item.destino}<br />{nomeStatus(item.status)}</span><Link para={rotaSolicitacao(ROTAS.solicitacoesGestor, String(item.id))}>Ver</Link></li>) : <li>Nenhuma viagem programada para este período.</li>}</ul></section>
+        <section className="painel-operacional gestor-painel"><h2>Pendências documentais</h2><p>Documentos vencidos ou com vencimento nos próximos 30 dias.</p>{pendencias.loading && !pendencias.data ? <p role="status">Carregando pendências…</p> : <>{pendencias.error && <div className="gestor-aviso" role="alert"><span>Não foi possível atualizar as pendências.</span><button type="button" onClick={pendencias.retry}>Recarregar</button></div>}{pendencias.data && <ul className="dashboard-lista">{pendencias.data.motoristas.length + pendencias.data.documentos.length === 0 && <li>Nenhuma pendência encontrada.</li>}{pendencias.data.motoristas.map(item => <li className={item.situacao === 'VENCIDO' ? 'pendencia--critica' : 'pendencia--atencao'} key={`m${item.id}`}><span>CNH · {item.nome}<br />{item.situacao === 'VENCIDO' ? 'Vencida' : 'Próxima do vencimento'} · {dataCivil(item.vencimento)}</span><Link para={ROTAS.motoristasGestor}>Motoristas</Link></li>)}{pendencias.data.documentos.map(item => <li className={item.situacao === 'VENCIDO' ? 'pendencia--critica' : 'pendencia--atencao'} key={`d${item.id}`}><span>{item.tipo_documento} · {item.placa}<br />{item.situacao === 'VENCIDO' ? 'Vencido' : 'Próximo do vencimento'} · {dataCivil(item.vencimento)}</span><Link para={ROTAS.veiculosGestor}>Veículos</Link></li>)}</ul>}</>}<Link para={ROTAS.documentosAdm}>Ver documentos →</Link></section>
+        <section className="painel-operacional gestor-painel"><h2 id="adm-fila">Aguardando análise</h2><p>Solicitações que aguardam decisão do Gestor.</p><ul className="dashboard-lista">{dados.indicadores.filaAguardandoAnalise.length ? dados.indicadores.filaAguardandoAnalise.map(item => <li key={item.id}><span>{item.codigoExibicao}<br />{item.origem} → {item.destino}<br />Criado em {dataCivil(item.criadoEm)}</span><Link para={rotaSolicitacao(ROTAS.solicitacoesGestor, String(item.id))}>Analisar</Link></li>) : <li>Nenhum chamado aguardando análise.</li>}</ul><Link para={ROTAS.solicitacoesGestor}>Ver solicitações →</Link></section>
+      </div>
+    </div>}
+  </div>;
 }
