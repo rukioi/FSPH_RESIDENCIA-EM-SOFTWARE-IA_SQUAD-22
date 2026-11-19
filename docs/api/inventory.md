@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 98 operações.
+Gerado por api:generate; não editar manualmente. 101 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -85,9 +85,12 @@ Gerado por api:generate; não editar manualmente. 98 operações.
 | PUT | /api/motoristas/{id} | ADM, GESTOR_FROTA | EditarMotorista | 200 RespostaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | PATCH | /api/motoristas/{id} | ADM, GESTOR_FROTA | EditarMotorista | 200 RespostaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | DELETE | /api/motoristas/{id} | ADM, GESTOR_FROTA | sem corpo | 200 Exclusao | 401, 403, 404, 409, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
-| GET | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | sem corpo | 200 ComprovanteAbastecimento | 401, 403, 404, 500, 405 | legado | Imagem JPEG ou PNG como bytes; acesso autenticado. |
+| GET | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | sem corpo | 200 ComprovanteAbastecimento | 401, 403, 404, 500, 405 | legado | PDF/JPEG/PNG privados: último anexo compartilhado, com fallback do comprovante legado. Acesso autenticado. |
 | GET | /api/abastecimentos/indicadores | ADM, GESTOR_FROTA | sem corpo | 200 IndicadoresAbastecimentos | 400, 401, 403, 404, 500, 405 | validado | SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo cheio a cheio em km/L, com insuficiência explícita. |
-| GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 Abastecimentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 ListaAbastecimentos | 400, 401, 403, 404, 500, 405 | validado | SCRUM-186: sem filtros preserva lista completa por id DESC; filtros reconhecidos ativam paginação por data DESC/id DESC. Período civil inclusivo. Parâmetros desconhecidos continuam ignorados. |
+| GET | /api/abastecimentos/{id} | ADM, GESTOR_FROTA | sem corpo | 200 RespostaDetalheAbastecimento | 400, 401, 403, 404, 500, 405 | validado | SCRUM-186: detalhe persistido, sem bytes do comprovante ou autoria inferida. |
+| GET | /api/veiculos/{id}/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 HistoricoAbastecimentos | 400, 401, 403, 404, 500, 405 | validado | SCRUM-186: histórico de abastecimentos por data ASC/id ASC, paginado, período civil inclusivo. Veículo inexistente retorna 404. |
+| POST | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | CriarComprovante | 201 RespostaAnexo | 400, 401, 403, 404, 413, 415, 500, 405 | validado | SCRUM-187: arquivo PDF/JPEG/PNG até 5 MiB; vínculo exclusivamente pelo caminho, infraestrutura compartilhada, auditoria e bytes atômicos. |
 | POST | /api/abastecimentos | ADM, GESTOR_FROTA | CriarAbastecimento | 201 RespostaAbastecimento | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | POST | /api/anotacoes | ADM, GESTOR_FROTA, ATENDENTE_SVO, SOLICITANTE_INTERNO, MOTORISTA | CriarAnotacao | 201 RespostaAnotacao | 400, 401, 403, 404, 413, 415, 500, 405 | validado | RF48: texto privado de 1–2000 caracteres, vínculo único autorizado, autoria/instante do servidor e auditoria atômica. Texto simples, nunca HTML; não altera decisão/status e não tem edição/exclusão. |
 | GET | /api/anotacoes | ADM, GESTOR_FROTA, ATENDENTE_SVO, SOLICITANTE_INTERNO, MOTORISTA | sem corpo | 200 ListaAnotacoes | 400, 401, 403, 404, 500, 405 | validado | Somente registro autorizado, mesma matriz dos anexos; solicitante/equipe só recursos próprios. Query estrita; total e página consistentes. |

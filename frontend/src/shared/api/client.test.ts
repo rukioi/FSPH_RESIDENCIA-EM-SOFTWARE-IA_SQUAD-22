@@ -1,10 +1,41 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { requestApi } from './client';
+import { executeApi, requestApi } from './client';
 import { ApiError } from './errors';
 import { dataRevision } from './dataChanges';
+import type { ApiOperations } from './generated/schema';
 
 vi.mock('../services/auth.service', () => ({ fetchAutenticada: (...args: unknown[]) => fetch(...args as Parameters<typeof fetch>) }));
 afterEach(() => vi.unstubAllGlobals());
+test.each([true, false])('binding JSON preserva corpo e header, FormData disponível: %s', async disponivel => {
+  if (!disponivel) vi.stubGlobal('FormData', undefined);
+  const fetchMock = vi.fn().mockResolvedValue(new Response('{}'));
+  vi.stubGlobal('fetch', fetchMock);
+  const body = { email: 'fixture@example.invalid', senha: 'fixture-password' };
+  await executeApi('auth_post__api_auth_login', { body,
+    parse: value => value as ApiOperations['auth_post__api_auth_login']['response'] });
+  expect(fetchMock).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  }));
+});
+
+test('binding de comprovante transmite FormData intacto e deixa o runtime gerar o boundary', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response('{}'));
+  vi.stubGlobal('fetch', fetchMock);
+  const body = new FormData();
+  body.append('arquivo', new Blob(['%PDF-fixture'], { type: 'application/pdf' }), 'comprovante.pdf');
+  await executeApi('abastecimentos_post__api_abastecimentos_id_comprovante', {
+    id: '42', body,
+    parse: value => value as ApiOperations['abastecimentos_post__api_abastecimentos_id_comprovante']['response'],
+  });
+  const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+  expect(path).toBe('/api/abastecimentos/42/comprovante');
+  expect(init.method).toBe('POST');
+  expect(init.body).toBe(body);
+  expect(new Headers(init.headers).has('Content-Type')).toBe(false);
+  const request = new Request('http://fixture.invalid' + path, init);
+  expect(request.headers.get('Content-Type')).toMatch(/^multipart\/form-data; boundary=/);
+  expect(await request.text()).toContain('filename="comprovante.pdf"');
+});
 test('invalida dados apenas depois de uma escrita bem-sucedida e validada', async () => {
   const before = dataRevision();
   vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => new Response('{}')));

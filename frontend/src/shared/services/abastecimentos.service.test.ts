@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { baixarComprovanteAbastecimento, buscarAbastecimentos, registrarAbastecimento } from './abastecimentos.service';
+import { baixarComprovanteAbastecimento, buscarAbastecimentos, registrarAbastecimento, type CriarAbastecimentoDto } from './abastecimentos.service';
 
 vi.mock('./auth.service', () => ({ fetchAutenticada: (...args: Parameters<typeof fetch>) => fetch(...args) }));
 afterEach(() => vi.unstubAllGlobals());
@@ -10,6 +10,16 @@ const registro = { id: '9007199254740993', veiculo_id: '1', motorista_id: '2', p
   tanque_completo: true, comprovante_nome: 'comprovante.png' };
 const entrada = { veiculo_id: '1', motorista_id: '2', litragem: 12.5, valor_total: 75,
   quilometragem: 1000, data_abastecimento: '2026-11-09', tanque_completo: true };
+
+test('contrato obrigatório rejeita km ausente/nulo antes de enviar a requisição', async () => {
+  const mock = vi.fn();
+  vi.stubGlobal('fetch', mock);
+  for (const quilometragem of [undefined, null]) {
+    const invalido = { ...entrada, quilometragem } as unknown as CriarAbastecimentoDto;
+    await expect(registrarAbastecimento(invalido)).rejects.toMatchObject({ status: 400, code: 'DADOS_INVALIDOS' });
+  }
+  expect(mock).not.toHaveBeenCalled();
+});
 
 test('lista preserva BIGINT e transmite cancelamento sem expor conteúdo de comprovantes', async () => {
   const row = { ...registro, veiculo_placa: 'ABC1D23', motorista_nome: 'Fixture' };
@@ -44,6 +54,17 @@ test('download autenticado aceita imagem e mantém BIGINT no caminho', async () 
   vi.stubGlobal('fetch', mock);
   expect((await baixarComprovanteAbastecimento(registro.id)).type).toBe('image/png');
   expect(mock.mock.calls[0][0]).toBe('/api/abastecimentos/9007199254740993/comprovante');
+});
+
+test('download compartilhado aceita PDF e imagem acima do limite legado, até 5 MiB', async () => {
+  for (const tipo of ['application/pdf', 'image/png']) {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(new Uint8Array(2 * 1024 * 1024),
+      { headers: { 'Content-Type': tipo } })));
+    expect((await baixarComprovanteAbastecimento('1')).size).toBe(2 * 1024 * 1024);
+  }
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(new Uint8Array(5 * 1024 * 1024 + 1),
+    { headers: { 'Content-Type': 'application/pdf' } })));
+  await expect(baixarComprovanteAbastecimento('1')).rejects.toMatchObject({ code: 'RESPOSTA_INVALIDA' });
 });
 
 test('download não apresenta HTML de erro nem sucesso inválido como comprovante', async () => {

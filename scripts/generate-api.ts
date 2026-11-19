@@ -1,4 +1,4 @@
-import { indicadoresAbastecimentos, indicadoresAbastecimentosAntesDeConsumo, notaIndicadoresAbastecimentos, notaIndicadoresAntesDeConsumo } from '../backend/src/modules/abastecimentos/abastecimentos.schemas.js';
+import { indicadoresAbastecimentos, indicadoresAbastecimentosAntesDeConsumo, notasListagemAbastecimentos, parametrosAbastecimentos, abastecimentosSchemas, notaIndicadoresAbastecimentos, notaIndicadoresAntesDeConsumo } from '../backend/src/modules/abastecimentos/abastecimentos.schemas.js';
 import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoAntesDeCandidatos, dashboardConsolidadoAntesDeConsumo, dashboardConsolidadoAntesPeriodoSvo, dashboardConsolidadoAntesRf46, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardAntesDeCandidatos, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo, notaDashboardAntesRf46, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -115,6 +115,43 @@ export function checkCompatibility(previous: Document, current: Document) {
       const expected = { ...(old.responses?.[500] as object), description:'Falha atual HTTP 404' };
       if (JSON.stringify(candidate.responses[404]) === JSON.stringify(expected)) delete candidate.responses[404];
     }
+    if (path === '/api/abastecimentos/{id}/comprovante' && method === 'get' && candidate) {
+      const before = definition as {description?:string;responses?:Record<string,{content?:Record<string,unknown>}>};
+      const after = candidate as typeof before;
+      if (before.description === 'Imagem JPEG ou PNG como bytes; acesso autenticado.'
+        && after.description === 'PDF/JPEG/PNG privados: último anexo compartilhado, com fallback do comprovante legado. Acesso autenticado.') {
+        after.description = before.description;
+      }
+      const content = after.responses?.[200]?.content;
+      if (!before.responses?.[200]?.content?.['application/pdf'] && content
+        && JSON.stringify(content['application/pdf']) === JSON.stringify({schema:{type:'string',format:'binary'}})) {
+        delete content['application/pdf'];
+      }
+    }
+    if(path==='/api/abastecimentos' && method==='get' && candidate) {
+      type Operation = {description?:string;parameters?:unknown[];'x-runtime-validation'?:boolean;
+        requestBody?:{content?:{'application/json'?:{schema?:{$ref?:string}}}};
+        responses?:Record<string,{content?:{'application/json'?:{schema?:{$ref?:string}}}}>};
+      const before=definition as Operation,after=candidate as Operation;
+      const status=method==='get' ? 200 : 201;
+      const previousRef='#/components/schemas/'+(method==='get'?'Abastecimentos':'RespostaAbastecimento');
+      const replacement='#/components/schemas/ListaAbastecimentos';
+      const response=after.responses?.[status]?.content?.['application/json']?.schema;
+      if(before.responses?.[status]?.content?.['application/json']?.schema?.$ref===previousRef && response?.$ref===replacement) {
+        const {$schema: dialect, ...shape}=z.toJSONSchema(abastecimentosSchemas.ListaAbastecimentos,{io:'input'}); void dialect;
+        if(JSON.stringify(current.components.schemas.ListaAbastecimentos)!==JSON.stringify(shape)) throw new Error('Listagem fora do contrato aditivo aprovado.');
+        response.$ref=previousRef;
+        if(before['x-runtime-validation']===false && after['x-runtime-validation']===true) after['x-runtime-validation']=false;
+        const notes=notasListagemAbastecimentos;
+        if(before.description==='Formato atual preservado; query params não declarados são ignorados.' && after.description===notes)after.description=before.description;
+        const parameters=parametrosAbastecimentos.map(q=>({name:q.name,in:'query',required:q.required,schema:z.toJSONSchema(q.schema)}));
+        if(method==='get'&&JSON.stringify(before.parameters)==='[]'&&JSON.stringify(after.parameters)===JSON.stringify(parameters))after.parameters=[];
+        for(const code of method==='get'?[400,404]:[409]) {
+          const expected={...(before.responses?.[500] as object),description:'Falha atual HTTP '+code};
+          if(!before.responses?.[code]&&JSON.stringify(after.responses?.[code])===JSON.stringify(expected))delete after.responses![code];
+        }
+      }
+    }
     // SCRUM-164: transição fechada dos dois GETs para DTOs novos; componentes antigos permanecem imutáveis.
     // Não autoriza alteração de perfis, security, headers, outros erros ou remoção de campos legados.
     const dashboard = path==='/api/dashboard/gestor' ? ['DashboardGestor','DashboardGestorIndicadores']
@@ -197,8 +234,36 @@ export function checkCompatibility(previous: Document, current: Document) {
       const after={anyOf:[{type:'object',properties,required:['kmInicial','justificativa'],additionalProperties:false},{type:'object',properties,required:['kmFinal','justificativa'],additionalProperties:false}]};
       if(JSON.stringify(schema)===JSON.stringify(before) && JSON.stringify(candidate)===JSON.stringify(after)) candidate=structuredClone(schema);
     }
-    // A forma legada permanece; apenas a descrição da correção autorizada muda.
-    if (name === 'CriarAbastecimento' && candidate) candidate.description = schema.description;
+    // Correções autorizadas de contrato: km inteiro não negativo e motorista obrigatórios.
+    // Demais campos, envelopes e operações continuam sujeitos ao gate integral.
+    if (name === 'CriarAbastecimento' && candidate) {
+      candidate.description = schema.description;
+      const { $schema: antigoDialect, ...antigoKm } = z.toJSONSchema(z.number().nullish(), { io: 'input' });
+      const { $schema: inteiroDialect, ...inteiroKm } = z.toJSONSchema(z.number().int(), { io: 'input' });
+      const { $schema: novoDialect, ...novoKm } = z.toJSONSchema(z.number().int().nonnegative(), { io: 'input' });
+      void antigoDialect; void inteiroDialect; void novoDialect;
+      if (JSON.stringify(schema.properties?.quilometragem) === JSON.stringify(antigoKm)
+        && JSON.stringify(candidate.properties?.quilometragem) === JSON.stringify(novoKm)
+        && !schema.required?.includes('quilometragem') && candidate.required?.includes('quilometragem')) {
+        candidate.properties!.quilometragem = structuredClone(schema.properties!.quilometragem);
+        candidate.required = candidate.required.filter(campo => campo !== 'quilometragem');
+      }
+      if (JSON.stringify(schema.properties?.quilometragem) === JSON.stringify(inteiroKm)
+        && JSON.stringify(candidate.properties?.quilometragem) === JSON.stringify(novoKm)
+        && schema.required?.includes('quilometragem') && candidate.required?.includes('quilometragem')) {
+        candidate.properties!.quilometragem = structuredClone(schema.properties!.quilometragem);
+      }
+      const motorista = z.union([z.number(), z.string()]);
+      const { $schema: antigoMotoristaDialect, ...antigoMotorista } = z.toJSONSchema(motorista.nullish(), { io: 'input' });
+      const { $schema: novoMotoristaDialect, ...novoMotorista } = z.toJSONSchema(motorista, { io: 'input' });
+      void antigoMotoristaDialect; void novoMotoristaDialect;
+      if (JSON.stringify(schema.properties?.motorista_id) === JSON.stringify(antigoMotorista)
+        && JSON.stringify(candidate.properties?.motorista_id) === JSON.stringify(novoMotorista)
+        && !schema.required?.includes('motorista_id') && candidate.required?.includes('motorista_id')) {
+        candidate.properties!.motorista_id = structuredClone(schema.properties!.motorista_id);
+        candidate.required = candidate.required.filter(campo => campo !== 'motorista_id');
+      }
+    }
     // Extens?o aditiva autorizada para combust?vel; os campos anteriores permanecem id?nticos.
     if (candidate && !JSON.stringify(schema).includes('"tanque_completo"') && ['CriarAbastecimento','Abastecimento','RespostaAbastecimento','Abastecimentos'].includes(name)) {
       const fields = { tanque_completo: z.boolean(), comprovante_nome: z.string().nullable(),
