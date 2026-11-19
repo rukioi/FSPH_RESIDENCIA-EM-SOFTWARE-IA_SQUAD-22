@@ -202,7 +202,7 @@ test('SCRUM-130 cria ocorrência pendente sem gerar ordem, com atividade única'
     .mockResolvedValueOnce([{ id: '10' }])
     .mockResolvedValueOnce([{
       id: '10', codigo: '#SVO-10', status_triagem: 'AGUARDANDO_TRIAGEM',
-      criado_em: new Date('2026-11-04T12:00:00.000Z'),
+      criado_em: '2026-11-04T09:00:00.000000',
     }])
     .mockResolvedValueOnce([]);
   const iniciarTransacao = vi.fn(async (op: (tx: typeof sql) => Promise<unknown>) =>
@@ -217,7 +217,7 @@ test('SCRUM-130 cria ocorrência pendente sem gerar ordem, com atividade única'
   expect(resultado).toEqual({
     solicitacao: {
       id: '10', codigo: '#SVO-10', statusTriagem: 'AGUARDANDO_TRIAGEM',
-      criadoEm: '2026-11-04T12:00:00.000Z',
+      criadoEm: '2026-11-04T09:00:00.000000',
     },
     atividades: ['Solicitação #SVO-10 registrada por telefone'],
   });
@@ -225,6 +225,7 @@ test('SCRUM-130 cria ocorrência pendente sem gerar ordem, com atividade única'
   const statements = consultas.mock.calls.map(call => (call[0] as TemplateStringsArray).join(' ')).join('\n');
   expect(statements).toContain('INSERT INTO public.solicitacao_obito');
   expect(statements).toContain('AGUARDANDO_TRIAGEM');
+  expect(statements).toContain("timezone('America/Maceio', CURRENT_TIMESTAMP)");
   expect(statements).not.toContain('INSERT INTO public.ordem_coleta');
   expect(iniciarTransacao).toHaveBeenCalledOnce();
 });
