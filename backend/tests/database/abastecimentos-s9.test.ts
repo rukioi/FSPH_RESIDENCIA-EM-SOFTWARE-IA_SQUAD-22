@@ -323,29 +323,21 @@ test('NOT VALID preserva legado inválido, bloqueia nova violação e mantém da
 test('VALIDATE CONSTRAINT permite INSERT concorrente durante a validação',async()=>{
 
   const schema='s9_abastecimento_concorrente';
-
-  await sql.begin(async tx=>{
-
-    await baselineDoEnsaio(tx, schema);
-
-    await tx.unsafe(forward().replaceAll('public.',schema+'.'));
-
-  });
-
-  const escritor=await verifiedSql();
-
-  const validador=await verifiedSql();
-
-  const conexao=await escritor.reserve();
-
+  let criacaoIniciada=false;
+  let escritor: Awaited<ReturnType<typeof verifiedSql>> | undefined;
+  let validador: Awaited<ReturnType<typeof verifiedSql>> | undefined;
+  let conexao: Awaited<ReturnType<typeof sql.reserve>> | undefined;
   let validacao:Promise<unknown>|undefined;
-
   let transacaoAberta=false;
-
-  let temporizador:ReturnType<typeof setTimeout>|undefined;
-
   try {
-
+  criacaoIniciada=true;
+  await sql.begin(async tx=>{
+    await baselineDoEnsaio(tx, schema);
+    await tx.unsafe(forward().replaceAll('public.',schema+'.'));
+  });
+    escritor=await verifiedSql();
+    validador=await verifiedSql();
+    conexao=await escritor.reserve();
     await conexao`BEGIN`;
 
     transacaoAberta=true;
@@ -356,20 +348,13 @@ test('VALIDATE CONSTRAINT permite INSERT concorrente durante a validação',asyn
 
       VALUES (-918522,-27001,10,50,'2026-01-17')`;
 
-    validacao=validador.begin(async tx=>{ await tx.unsafe(validation().replaceAll('public.',schema+'.')); });
-
-    const resultado=await Promise.race([validacao.then(()=>true),new Promise<boolean>(resolve=>{
-
-      temporizador=setTimeout(()=>resolve(false),1500);
-
-    })]);
-
-    if(resultado){await conexao`COMMIT`;transacaoAberta=false;}
-
-    expect(resultado).toBe(true);
-
+    validacao=validador.begin(async tx=>{
+      await tx`SET LOCAL lock_timeout='5s'`;
+      await tx.unsafe(validation().replaceAll('public.',schema+'.'));
+    });
     await validacao;
-
+    await conexao`COMMIT`;
+    transacaoAberta=false;
     const estados = await validador`
   SELECT conname, convalidated
   FROM pg_constraint
@@ -392,20 +377,12 @@ expect(
 );
   } finally {
 
-    if(temporizador)clearTimeout(temporizador);
-
-    if(transacaoAberta)await conexao`ROLLBACK`;
-
+    if(transacaoAberta && conexao) await conexao`ROLLBACK`;
     await validacao?.catch(()=>undefined);
-
-    conexao.release();
-
-    await escritor.end();
-
-    await validador.end();
-
-    await sql.unsafe('DROP SCHEMA IF EXISTS '+schema+' CASCADE');
-
+    conexao?.release();
+    await escritor?.end();
+    await validador?.end();
+    if(criacaoIniciada) await sql.unsafe('DROP SCHEMA IF EXISTS '+schema+' CASCADE');
   }
 
 });

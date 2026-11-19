@@ -397,3 +397,42 @@ selecione o perfil e execute o comando de provisionamento existente; ele
 recusa recursos ou manifesto preexistentes e verifica a identidade antes
 de preparar o banco. O comando aplica migrations e seed somente após as
 verificações, portanto não deve ser executado como simples verificação.
+
+## Sprint 9 — RF40: migrations e cuidados operacionais
+
+### Aplicação das migrations
+
+- `20261113000000`: torna motorista e quilometragem opcionais, adiciona autoria, constraints `NOT VALID` e índices.
+- `20261114000000`: valida as constraints adicionadas na migration anterior.
+- O runner executa cada migration em uma transação separada.
+- Se a validação da segunda migration falhar por dados legados incompatíveis, a primeira permanece aplicada.
+- Nesse caso, as constraints `NOT VALID` continuam presentes e protegem novas gravações, mas os registros anteriores ainda precisam de verificação.
+- A recuperação exige diagnóstico dos dados incompatíveis e decisão autorizada de correção. Não apagar nem modificar registros automaticamente.
+- Não marcar uma migration como aplicada sem confirmar que seu SQL foi efetivamente executado.
+
+### Bloqueios e índices
+
+A migration `20261113000000` executa `ALTER TABLE` e dois `CREATE INDEX` na mesma transação.
+
+O bloqueio `ACCESS EXCLUSIVE` adquirido pelo `ALTER TABLE` pode permanecer até o commit, inclusive durante a construção dos índices, impedindo operações concorrentes na tabela.
+
+Antes de executar essa migration em um ambiente ainda não migrado:
+
+1. Avaliar o volume de dados e a duração da construção dos índices em uma cópia representativa.
+2. Planejar uma janela de manutenção aprovada pela equipe.
+3. Não executar `CREATE INDEX CONCURRENTLY` dentro de uma transação.
+4. Não modificar migrations já aplicadas para alterar sua estratégia de execução.
+
+### Rollback
+
+O rollback RF40 recusa a reversão quando existem registros com motorista ou quilometragem ausentes, ou autoria preenchida.
+
+Essa proteção evita perda silenciosa de informações. A reversão exige avaliação prévia e autorização do responsável pelo ambiente.
+
+### Contrato decimal
+
+A decisão RF40 adotada exige litragem e valor total positivos, com no máximo duas casas decimais.
+
+Valores com precisão superior são rejeitados pela API, mesmo que o PostgreSQL pudesse arredondá-los ao armazenar em `numeric(10,2)`.
+
+Essa regra deve permanecer consistente entre API, testes e documentação.

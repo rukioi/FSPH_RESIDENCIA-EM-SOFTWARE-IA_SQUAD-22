@@ -191,7 +191,7 @@ export async function listarSolicitacoes(status?: 'AGUARDANDO_TRIAGEM' | 'CONFIR
         'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS criado_em
     FROM public.solicitacao_obito
     WHERE (${filtro}::text IS NULL OR status_triagem::text = ${filtro})
-    ORDER BY criado_em DESC NULLS LAST, id DESC
+    ORDER BY solicitacao_obito.criado_em DESC NULLS LAST, solicitacao_obito.id DESC
     LIMIT 20
   `;
   return registros.map(registro => ({
