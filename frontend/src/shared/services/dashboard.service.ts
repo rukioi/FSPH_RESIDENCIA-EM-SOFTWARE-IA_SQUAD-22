@@ -4,6 +4,7 @@ import { parseResponse } from '../api/validation';
 import { obterToken } from './auth.service';
 import { dataRevision, onDataChanged } from '../api/dataChanges';
 import { consultarDashboardComRetry } from './dashboard.retry';
+import { dashboardConsolidadoSchemas } from '../../../../backend/src/modules/dashboard/dashboard.consolidado.schemas';
 
 const cache = new Map<string, { value: unknown; expires: number }>();
 let session: string | null = null;
@@ -38,3 +39,9 @@ export async function buscarPendenciasDashboard(signal: AbortSignal) {
 
 // Mantido para consumidores legados que ainda não possuem indicadores.
 export const indicadoresIndisponiveis = 'Indicadores por período indisponíveis. Esta seção está em construção.';
+
+export async function buscarDashboardConsolidado(periodo: string, inicio: string, fim: string, signal: AbortSignal) {
+  const query = new URLSearchParams({ periodo });
+  if (periodo === 'personalizado') { query.set('inicio', `${inicio}T00:00:00-03:00`); query.set('fim', `${fim}T00:00:00-03:00`); }
+  return cached(`consolidado:${query.toString()}`, signal, async () => (await executeApi('dashboard_get__api_dashboard', { query, signal, parse: value => parseResponse(dashboardConsolidadoSchemas.DashboardConsolidado, value) })).data);
+}

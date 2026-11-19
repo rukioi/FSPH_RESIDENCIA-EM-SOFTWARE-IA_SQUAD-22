@@ -5,7 +5,7 @@ import { buscarDashboard, buscarPendenciasDashboard } from '../../shared/service
 import { ROTAS, rotaSolicitacao } from '../../app/routes/rotas';
 import { Link } from '../../app/routes/router';
 import '../../features/dashboard/KpiCards.css';
-import '../../app/Widgets.css';
+import '../../features/dashboard/Widgets.css';
 import './DashboardGestor.css';
 import { DistribuicaoGestor } from '../../features/dashboard/DistribuicaoGestor';
 import { notifyDataChanged, onDataChanged } from '../../shared/api/dataChanges';
