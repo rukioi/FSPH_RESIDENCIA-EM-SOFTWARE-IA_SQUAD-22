@@ -17,6 +17,7 @@ function validar(email: string, senha: string): Erros {
 }
 
 export function Login() {
+  const [acessoMotorista, setAcessoMotorista] = useState(false)
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
@@ -62,11 +63,16 @@ export function Login() {
   }
 
   return (
-    <LoginLayout>
-      <div className="login">
+    <LoginLayout acessoMotorista={acessoMotorista}>
+      <div className={acessoMotorista ? "login login--motorista" : "login"}>
+        {acessoMotorista && <div className="login__perfil">
+          <span className="login__perfil-marca" aria-hidden="true">M</span>
+          <div><strong>Portal do motorista</strong><small>Central de Transporte</small></div>
+        </div>}
         <header className="login__topo">
-          <h1>Acesse sua conta</h1>
-          <p>Entre com seu e-mail institucional para continuar.</p>
+          <span className="login__categoria">ACESSO À PLATAFORMA</span>
+          <h1>{acessoMotorista ? 'Acesso do motorista' : 'Acesse sua conta'}</h1>
+          <p>{acessoMotorista ? 'Entre com as credenciais da sua conta de motorista.' : 'Entre com seu e-mail e senha para continuar.'}</p>
         </header>
 
         <form className="login__form" onSubmit={enviar} noValidate>
@@ -137,10 +143,17 @@ export function Login() {
                 <span className="login__spinner" aria-hidden="true" /> Entrando…
               </>
             ) : (
-              'Entrar'
+              acessoMotorista ? 'Entrar no portal' : 'Entrar'
             )}
           </button>
         </form>
+        <div className="login__alternativa">
+          <p>{acessoMotorista ? 'Usa outro perfil?' : 'Você é motorista?'}</p>
+          <button type="button" className="login__trocar" onClick={() => { setAcessoMotorista(!acessoMotorista); setErroLogin('') }}>
+            {acessoMotorista ? 'Voltar ao acesso geral' : 'Entrar como motorista'}
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
       </div>
     </LoginLayout>
   )

@@ -1,48 +1,26 @@
 import type { ReactNode } from 'react'
-import { Icone } from '../../shared/components/Icone'
+import { MarcaInstitucional } from '../../shared/components/MarcaInstitucional'
 import './LoginLayout.css'
 
-const destaques = [
-  { icone: 'solicitacoes', texto: 'Solicitações e agendamentos de viagens' },
-  { icone: 'veiculos', texto: 'Frota, motoristas e documentação' },
-  { icone: 'relatorios', texto: 'Relatórios, abastecimentos e auditoria' },
-] as const
-
-export function LoginLayout({ children }: { children: ReactNode }) {
+export function LoginLayout({ children, acessoMotorista }: { children: ReactNode; acessoMotorista: boolean }) {
   return (
-    <div className="login-layout">
-      <section className="login-layout__marca" aria-hidden="true">
+    <div className={`login-layout${acessoMotorista ? ' login-layout--motorista' : ''}`}>
+      <section className="login-layout__marca" aria-label="Gestão de Frotas">
         <div className="login-layout__topo">
-          <span className="login-layout__logo">
-            <Icone nome="veiculos" tamanho={26} />
-          </span>
-          <div>
-            <strong>Gestão de Frotas</strong>
-            <small>Central de Transporte</small>
+          <strong>Gestão de Frotas</strong><small>Central de Transporte</small>
+        </div>
+        <div className="login-layout__conteudo">
+          <span className="login-layout__logo"><MarcaInstitucional /></span>
+          <div className="login-layout__chamada">
+            <span className="login-layout__etiqueta">FUNDAÇÃO DE SAÚDE PARREIRAS HORTA</span>
+            <h2>{acessoMotorista ? 'Seu acesso, motorista.' : 'Juntos, movemos o cuidado.'}</h2>
+            <p>{acessoMotorista ? 'Entre com sua conta para acessar seu espaço na Central de Transporte.' : 'Um espaço para acompanhar e organizar o transporte da nossa instituição.'}</p>
+            <div className="login-layout__linha" aria-hidden="true" />
           </div>
         </div>
-
-        <div className="login-layout__chamada">
-          <h2>Toda a operação da frota em um só lugar.</h2>
-          <ul>
-            {destaques.map((d) => (
-              <li key={d.texto}>
-                <span>
-                  <Icone nome={d.icone} />
-                </span>
-                {d.texto}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="login-layout__estrada" />
+        <p className="login-layout__rodape">Gestão de Frotas <span>•</span> FSPH</p>
       </section>
-
-      <main className="login-layout__formulario">
-        <div className="login-layout__faixa" />
-        {children}
-      </main>
+      <main className="login-layout__formulario">{children}</main>
     </div>
   )
 }
