@@ -39,6 +39,13 @@ export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
     return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil);
   }
 
+  // Detalhe/edição da própria solicitação: /solicitante/minhas-solicitacoes/:id(/editar).
+  // O backend continua conferindo se a solicitação pertence ao solicitante.
+  const solicitacaoPropria = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes);
+  if (solicitacaoPropria && /^[0-9]+$/.test(solicitacaoPropria.id)) {
+    return perfisPorRota[ROTAS.minhasSolicitacoes].includes(perfil);
+  }
+
   if (lerRotaDetalheAbastecimento(caminho) !== null) {
     return perfisPorRota[ROTAS.abastecimentosGestor].includes(perfil);
   }

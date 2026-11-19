@@ -1,0 +1,19 @@
+/* Segue o padrão de Anexos.css, usando as variáveis do tema. */
+.anotacoes { display: flex; flex-direction: column; gap: 16px; width: 100%; min-width: 0; }
+.anotacoes__form { display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid var(--borda); border-radius: 8px; background: var(--fundo); }
+.anotacoes__form label { font-weight: 700; color: var(--texto); }
+.anotacoes__form textarea { width: 100%; min-height: 84px; padding: 10px; border: 1px solid var(--borda); border-radius: 6px; background: var(--branco); color: var(--texto); font: inherit; resize: vertical; }
+.anotacoes__rodape { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.anotacoes__rodape small { color: var(--texto-suave); font-size: 12px; }
+.anotacoes button { min-height: 40px; padding: 9px 16px; border: 0; border-radius: 6px; background: var(--azul-medio); color: var(--branco); font-weight: 700; cursor: pointer; }
+.anotacoes button:disabled { opacity: .55; cursor: not-allowed; }
+.anotacoes__erro, .anotacoes__sucesso { margin: 0; font-size: 14px; }
+.anotacoes__erro { color: var(--vermelho); }
+.anotacoes__sucesso { color: var(--verde); }
+.anotacoes__vazio { margin: 0; padding: 16px; border-radius: 8px; background: var(--fundo); color: var(--texto-suave); }
+.anotacoes__lista { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.anotacoes__item { padding: 14px 16px; border: 1px solid var(--borda); border-radius: 8px; background: var(--branco); }
+.anotacoes__autor { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+.anotacoes__autor small { color: var(--texto-suave); }
+.anotacoes__item p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--texto); }
+.anotacoes__paginacao { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; }
