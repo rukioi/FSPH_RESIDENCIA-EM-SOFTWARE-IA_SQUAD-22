@@ -11,6 +11,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.dashboard]: ['ADM'],
   [ROTAS.configuracoes]: ['ADM'],
   [ROTAS.auditoria]: ['ADM'],
+  [ROTAS.documentosAdm]: ['ADM'],
 
   [ROTAS.dashboardGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.veiculosGestor]: ['ADM', 'GESTOR_FROTA'],
@@ -20,6 +21,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.calendarioGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],
   [ROTAS.minhasSolicitacoes]: ['SOLICITANTE_INTERNO'],
+  [ROTAS.documentosGestor]: ['ADM', 'GESTOR_FROTA'],
 
   // Mantida temporariamente para links antigos.
   [ROTAS.svoRaiz]: ['ATENDENTE_SVO'],
