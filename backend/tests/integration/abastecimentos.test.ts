@@ -23,6 +23,7 @@ afterAll(async () => {
   await sql`delete from abastecimento where veiculo_id=30001`;
   await sql`delete from motorista where id=30001`;
   await sql`delete from veiculo where id=30001`;
+  await sql`delete from log_atividade where usuario_id in (30001,30002)`;
   await sql`delete from usuario where id in (30001,30002)`;
   await sql.end();
 });
@@ -39,12 +40,19 @@ test('exige sessão e perfil efetivo; conta inativa não passa',async () => {
   await sql`update usuario set ativo=false where id=30002`;
   expect((await call(input,svo)).status).toBe(401);
 });
-test.each([null,[],42,{...input,motorista_id:null},{...input,quilometragem:null},
+test.each([null,[],42,
   {...input,litragem:{}},{...input,posto:123},{...input,posto:'x'.repeat(256)},{...input,quilometragem:1.5},
   {...input,data_abastecimento:'2026-02-30'}])('entrada técnica inválida retorna 400: %j',async body => {
   const response = await call(body);
   expect(response.status).toBe(400);
   expect((await response.json()).error.code).toBe('DADOS_INVALIDOS');
+});
+test.each([{...input,motorista_id:null},{...input,quilometragem:null}])('campo opcional é aceito: %j',async body => {
+  const response = await call(body);
+  expect(response.status).toBe(201);
+  const {data} = await response.json();
+  expect(data.motorista_id).toBe(body.motorista_id === null ? null : String(body.motorista_id));
+  expect(data.quilometragem).toBe(body.quilometragem);
 });
 test('referência inexistente retorna 404 e não persiste',async () => {
   for (const body of [{...input,veiculo_id:30000999},{...input,motorista_id:30000999}]) {
@@ -105,10 +113,18 @@ test.each([
 test('rejeita comprovantes inválidos e preserva cadastro legado sem imagem', async () => {
   for (const comprovante of [
     {nome:'../foto.png',tipo:'image/png',dadosBase64:'iVBORw0KGgo='},
+    {nome:'x'.repeat(256),tipo:'image/png',dadosBase64:'iVBORw0KGgo='},
     {nome:'foto.png',tipo:'image/png',dadosBase64:'AAAA'},
     {nome:'foto.png',tipo:'image/png',dadosBase64:'!'},
     {nome:'foto.pdf',tipo:'application/pdf',dadosBase64:'JVBERi0='},
-  ]) expect((await call({...input,comprovante})).status).toBe(400);
+  ]) {
+    const resposta=await call({...input,comprovante});
+    expect(resposta.status).toBe(400);
+    expect((await resposta.json()).error.code).toBe('ARQUIVO_INVALIDO');
+  }
+  const camposInvalidos=await call({...input,litragem:0,comprovante:{nome:'foto.png',tipo:'image/png',dadosBase64:'iVBORw0KGgo='}});
+  expect(camposInvalidos.status).toBe(400);
+  expect((await camposInvalidos.json()).error.code).toBe('DADOS_INVALIDOS');
   const response = await call(input);
   expect(response.status).toBe(201);
   const {data} = await response.json();

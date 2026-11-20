@@ -18,7 +18,7 @@ export function openapi() {
     if (['ComprovanteAbastecimento','EvidenciaArquivo'].includes(operation.response)) {
       (responses[operation.status] as {content: unknown}).content = { 'image/jpeg': {schema:{type:'string',format:'binary'}}, 'image/png': {schema:{type:'string',format:'binary'}} };
     }
-    if (operation.response === 'ArquivoAnexo') {
+    if (['ArquivoAnexo','ComprovanteAbastecimento'].includes(operation.response)) {
       (responses[operation.status] as {content: unknown}).content = Object.fromEntries(
         ['application/pdf','image/jpeg','image/png'].map(tipo=>[tipo,{schema:{type:'string',format:'binary'}}]));
     }

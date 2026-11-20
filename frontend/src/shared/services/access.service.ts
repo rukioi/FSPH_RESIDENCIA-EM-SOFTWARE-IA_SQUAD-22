@@ -11,6 +11,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.dashboard]: ['ADM'],
   [ROTAS.configuracoes]: ['ADM'],
   [ROTAS.auditoria]: ['ADM'],
+  [ROTAS.documentosAdm]: ['ADM'],
 
   [ROTAS.dashboardGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.veiculosGestor]: ['ADM', 'GESTOR_FROTA'],
@@ -20,6 +21,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.calendarioGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],
   [ROTAS.minhasSolicitacoes]: ['SOLICITANTE_INTERNO'],
+  [ROTAS.documentosGestor]: ['ADM', 'GESTOR_FROTA'],
 
   // Mantida temporariamente para links antigos.
   [ROTAS.svoRaiz]: ['ATENDENTE_SVO'],
@@ -35,6 +37,13 @@ export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
   const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor);
   if (solicitacao && /^[0-9]+$/.test(solicitacao.id)) {
     return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil);
+  }
+
+  // Detalhe/edição da própria solicitação: /solicitante/minhas-solicitacoes/:id(/editar).
+  // O backend continua conferindo se a solicitação pertence ao solicitante.
+  const solicitacaoPropria = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes);
+  if (solicitacaoPropria && /^[0-9]+$/.test(solicitacaoPropria.id)) {
+    return perfisPorRota[ROTAS.minhasSolicitacoes].includes(perfil);
   }
 
   if (lerRotaDetalheAbastecimento(caminho) !== null) {

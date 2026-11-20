@@ -147,7 +147,7 @@ export function DetalheAbastecimento({ id }: Props) {
 
             <div>
               <dt>Quilometragem</dt>
-              <dd>{numero.format(registro.quilometragem)} km</dd>
+              <dd>{registro.quilometragem == null ? 'Não informada' : numero.format(registro.quilometragem) + ' km'}</dd>
             </div>
 
             <div>

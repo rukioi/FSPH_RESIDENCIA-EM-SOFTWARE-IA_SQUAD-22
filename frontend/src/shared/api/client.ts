@@ -36,8 +36,8 @@ export async function requestApi<T = unknown>(path: string, init: RequestInit = 
   }
 }
 
-/** Consulta imagens privadas pelo mesmo transporte autenticado, sem expor respostas HTML como arquivos. */
-export async function requestImageApi(path: string, signal?: AbortSignal): Promise<Blob> {
+/** Consulta arquivos privados pelo transporte autenticado; imagens de até 1 MiB são o padrão legado. */
+export async function requestImageApi(path: string, signal?: AbortSignal, contrato: { tipos: readonly string[]; maxBytes: number } = { tipos: ['image/jpeg', 'image/png'], maxBytes: 1024 * 1024 }): Promise<Blob> {
   const response = await fetchApi(path, { signal }, true);
   const requestId = response.headers.get('X-Request-Id') ?? undefined;
   if (!response.ok) {
@@ -47,7 +47,7 @@ export async function requestImageApi(path: string, signal?: AbortSignal): Promi
     throw apiError(response.status, body, requestId);
   }
   const tipo = response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase();
-  if (tipo !== 'image/jpeg' && tipo !== 'image/png') {
+  if (!tipo || !contrato.tipos.includes(tipo)) {
     throw new ApiError(response.status, 'RESPOSTA_INVALIDA', 'O comprovante recebido é inválido. Tente novamente.', undefined, requestId);
   }
   let blob: Blob;
@@ -57,7 +57,7 @@ export async function requestImageApi(path: string, signal?: AbortSignal): Promi
     throw new ApiError(0, 'FALHA_REDE', 'Não foi possível baixar o comprovante. Tente novamente.', undefined, requestId);
   }
   if (signal?.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError');
-  if (!blob.size || blob.size > 1024 * 1024) {
+  if (!blob.size || blob.size > contrato.maxBytes) {
     throw new ApiError(response.status, 'RESPOSTA_INVALIDA', 'O comprovante recebido é inválido. Tente novamente.', undefined, requestId);
   }
   return blob;
@@ -71,6 +71,8 @@ export async function executeApi<K extends keyof ApiOperations>(operation: K, op
   const binding = apiOperations[operation];
   if (binding.path.includes('{id}') && !options.id) throw new Error('Identificador obrigatório.');
   const path = binding.path.replace('{id}',encodeURIComponent(options.id ?? '')) + (options.query ? '?'+options.query : '');
+  const multipart = typeof FormData !== 'undefined' && options.body instanceof FormData;
   return requestApi(path,{method:binding.method,signal:options.signal,
-    ...(options.body === undefined ? {} : {headers:{'Content-Type':'application/json'},body:JSON.stringify(options.body)})},options.parse);
+    ...(options.body === undefined ? {} : multipart ? {body:options.body as FormData}
+      : {headers:{'Content-Type':'application/json'},body:JSON.stringify(options.body)})},options.parse);
 }

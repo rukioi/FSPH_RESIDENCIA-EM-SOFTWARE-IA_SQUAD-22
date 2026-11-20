@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { command, root, container, database, project, manifestPath, inspectContainer, assertTarget, verifiedSql, verifyContainer } from './verify-test-db.js';
+import { command, root, container, database, project, manifestPath, inspectContainer, assertTarget, verifiedSql, verifyContainer, testProfile } from './verify-test-db.js';
 
 function provisionDatabase(nonce: string) {
   const existing = command('docker', ['exec', container, 'psql', '-U', 'postgres', '-d', 'postgres', '-Atqc',
@@ -14,7 +14,12 @@ function provisionDatabase(nonce: string) {
 }
 
 assertTarget(process.env.DATABASE_URL);
-if (existsSync(manifestPath)) {
+if (testProfile === 's9' || testProfile === 's9-full' || testProfile === 's9-full-repro' || testProfile === 's9-mig-v3' || testProfile === 's9-integracao-segura' || testProfile === 's9-conciliacao-final') {
+  // Nunca adotar, criar ou alterar recursos Sprint 9 sem identidade completa.
+  const sql = await verifiedSql();
+  await sql.end();
+  console.log('Banco Sprint 9 já provisionado e verificado.');
+} else if (existsSync(manifestPath)) {
   // Só provisiona o nome fixo em container cuja proveniência já foi comprovada.
   provisionDatabase(verifyContainer().nonce);
   const sql = await verifiedSql();

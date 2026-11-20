@@ -9,20 +9,47 @@ Autenticação: Bearer JWT. Perfis: ADM/GESTOR_FROTA.
 
 | Método e caminho | Corpo | Sucesso existente |
 | --- | --- | --- |
-| GET /api/abastecimentos | não | {data: array}, id DESC |
+| GET /api/abastecimentos | query opcional | {data: array}, id DESC sem filtros; meta na consulta paginada |
+| GET /api/abastecimentos/{id} | não | {data: registro com placa/nome}, 200 |
+| GET /api/veiculos/{id}/abastecimentos | query opcional | {data: array, meta}, data ASC/id ASC |
 | POST /api/abastecimentos | JSON | {data: registro}, 201 |
-| GET /api/abastecimentos/{id}/comprovante | não | imagem binária JPEG/PNG, 200 |
+| GET /api/abastecimentos/{id}/comprovante | não | bytes PDF/JPEG/PNG, 200 |
+| POST /api/abastecimentos/{id}/comprovante | multipart, somente arquivo | {data: MetadadosAnexo}, 201 |
 
-Campos existentes: veiculo_id, motorista_id, posto, litragem, valor_total,
-quilometragem e data_abastecimento. Corpo precisa ser objeto JSON. IDs aceitam
-inteiro seguro ou string decimal; litragem/valor aceitam número finito ou string
-numérica; quilometragem exige inteiro; data exige calendário válido YYYY-MM-DD;
-posto aceita string ou null. Mantém a rejeição anterior de veículo/litros/valor/data
-vazios/zero. O banco atual exige motorista e quilometragem: omissão/null recebe
-400, em vez de falhar com 500. Isso não define a obrigatoriedade definitiva do
-produto: RF40 permite quilometragem quando disponível e não exige motorista.
-A divergência continua adiada, sem migration. A consulta inclui veiculo_placa e
-motorista_nome, sem nova regra, filtro ou indicador.
+Campos: veiculo_id, motorista_id, posto, litragem, valor_total, quilometragem e
+data_abastecimento. O corpo deve ser objeto JSON. Motorista, quilometragem e
+posto podem ser omitidos ou nulos; zero é uma quilometragem válida. Veículo e
+data são obrigatórios, litros e valor devem ser positivos com até duas casas
+decimais e quilometragem deve ser um inteiro não negativo. A autoria é obtida
+da sessão autenticada, sem confiar em campos enviados pelo cliente. A consulta
+inclui placa e nome do motorista quando disponíveis.
+
+A comparação usa o mesmo veículo e a leitura válida de abastecimento mais recente
+até a data civil informada (km não nulo e não negativo), na ordem já utilizada
+pelos indicadores: data do abastecimento, instante de cadastro e ID. A leitura
+anterior é reconsultada dentro da transação após adquirir o lock do veículo;
+valor menor recebe `409 ODOMETRO_INCONSISTENTE`, igualdade é aceita. Um registro
+com data futura não é tratado como leitura anterior de um cadastro retroativo.
+Não há atualização nem inferência de odômetro do veículo.
+
+O confronto com viagens corrigidas permanece exatamente como na main, inclusive
+409 para contradição comprovável e ausência de ordem presumida entre viagem e
+abastecimento quando só a data civil do mesmo dia está disponível.
+
+## Consultas e histórico — SCRUM-186
+
+A coleção aceita `veiculoId`, `inicio`, `fim`, `pagina` e `limit`. Datas civis
+YYYY-MM-DD são inclusivas. Qualquer parâmetro reconhecido ativa paginação:
+`meta: {page, limit, total}`, padrão 1/20, limite máximo 100, ordem data DESC/id DESC.
+Sem parâmetros reconhecidos, mantém o formato completo e a ordem id DESC da main.
+Parâmetros desconhecidos continuam ignorados; reconhecidos duplicados, datas
+inválidas, intervalo invertido e paginação inválida retornam 400.
+
+O histórico por veículo usa os mesmos filtros e paginação, em data ASC/id ASC;
+`veiculoId` informado na query deve coincidir com o caminho. Veículo existente
+sem registros retorna lista vazia/total zero; veículo ou detalhe ausente retorna
+404. Total e página usam o mesmo snapshot PostgreSQL. Isso é histórico de
+registros de abastecimento, não uma timeline reconstruída de eventos.
 
 ## Respostas
 
@@ -131,8 +158,7 @@ Authorization: Bearer <token>
 
 ## O que a entrega não faz
 
-Não muda permissões, estados, regras operacionais ou paginação. Não resolve
-a divergência RF40 nem muda nomes de DTOs. Limites, request ID e erros técnicos seguem
+Não muda permissões, estados ou o cálculo de consumo. Limites, request ID e erros técnicos seguem
 [infraestrutura comum](./README.md#infraestrutura-http--28).
 
 ## Identidade comum — #29
@@ -157,10 +183,25 @@ na mesma transação. Cadastro legado continua válido.
 
 A lista e o cadastro retornam `tanque_completo` e `comprovante_nome` (null
 quando ausente), sem retornar a imagem. O GET de comprovante exige a mesma
-sessão e os mesmos perfis ADM/GESTOR_FROTA, retorna bytes com Content-Type da
-imagem, ou 404 quando ausente. A imagem fica em tabela separada com RLS ativada
+sessão e os mesmos perfis ADM/GESTOR_FROTA, retorna bytes com Content-Type do
+arquivo, ou 404 quando ausente. O comprovante legado fica em tabela separada com RLS ativada
 sem grants aos papéis públicos; confirme o papel de execução do backend e a
 segurança da Data API antes de aplicar em ambiente remoto.
+
+### Comprovante compartilhado — SCRUM-187
+
+O POST de comprovante vincula exclusivamente pelo ID do caminho; rejeita campos
+extras no multipart. Usa [anexos compartilhados](./anexos.md), PDF/JPEG/PNG por
+assinatura até 5 MiB, validação do recurso, nome seguro e auditoria na mesma
+transação. Erros: 400/401/403/404/413/415/500. Falha parcial reverte o novo anexo
+sem apagar o comprovante anterior ou o abastecimento.
+
+GET, detalhe e listagem usam o último anexo confirmado (`criado_em DESC,id DESC`),
+com fallback para a imagem legada. Upload anterior permanece acessível pela API
+autorizada de anexos. Downloads são privados, `nosniff`, `attachment`, sem cache
+ou URL pública. O consumidor de abastecimentos aceita PDF e 5 MiB; os demais
+consumidores do helper de imagens conservam JPEG/PNG e 1 MiB. Nenhuma tela foi
+substituída. O cadastro JSON/limite de 1 MiB permanece inalterado.
 
 O cadastro retorna 409 quando a quilometragem contradiz comprovadamente uma viagem corrigida do veículo. A coincidência de data, sem horário que determine a ordem, não impede o registro.
 
@@ -179,6 +220,19 @@ são transportados como strings decimais. Período vazio retorna
 registrado é uma leitura. Km mínimo e máximo descrevem as leituras e não
 representam distância percorrida.
 
-O consumo por distância retorna `INDISPONIVEL` com valor nulo até a definição
-da regra de associação entre litros e leituras. A SCRUM-186 continua responsável
-pela API de histórico por veículo e pelo cadastro RF40.
+O consumo usa o método cheio a cheio, em `km/L`. Cada trecho vai de um
+registro de tanque completo até o próximo do mesmo veículo. Os dois marcos
+precisam estar no período consultado. Divide-se a diferença de odômetro pela
+soma dos litros posteriores à abertura até o fechamento, incluindo parciais.
+
+A ordem é data do abastecimento, instante de cadastro quando disponível e ID.
+Leituras ausentes ou regressivas dentro do trecho, distância zero e litros não
+positivos descartam o trecho. O odômetro repetido dentro de um trecho ainda
+permite o cálculo se os marcos tiverem diferença positiva e não houver regressão.
+Trechos abertos e abastecimentos anteriores ao primeiro tanque completo não
+entram na conta. Sem trecho válido, o estado é `DADOS_INSUFICIENTES`, com
+valor nulo. Com trecho válido, o estado é `DISPONIVEL` e o valor é uma string
+decimal de quatro casas. A resposta traz o agregado por veículo e, no total,
+a divisão entre a soma dos quilômetros e a soma dos litros dos trechos válidos.
+
+A SCRUM-186 é responsável pela API de histórico por veículo e pelo cadastro RF40.

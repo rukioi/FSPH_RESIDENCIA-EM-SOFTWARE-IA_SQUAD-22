@@ -22,10 +22,16 @@ do autor. Não existe exclusão/edição de anexos: depende de regra aprovada.
 
 O gerador de cliente reconhece uploads somente multipart como `FormData` e
 downloads como `Blob`. O frontend manual permanece reservado ao Gustavo:
-usar `requestApi` com `FormData`, sem forçar Content-Type (boundary do navegador).
-O helper `executeApi` atual é JSON e não deve serializar FormData. O download
-genérico PDF também exige adaptação do consumidor; o helper legado de imagens
-aceita apenas JPEG/PNG. Não foram alteradas telas/serviços nesta entrega.
+usar `executeApi` com o binding multipart e o próprio `FormData`, sem forçar
+Content-Type (boundary do navegador). O transporte também preserva corpos JSON;
+ambientes sem o construtor global FormData continuam enviando JSON normalmente. O download
+genérico PDF exige configuração explícita do consumidor; o helper legado de
+imagens mantém JPEG/PNG e 1 MiB como padrão. O serviço de abastecimentos configura
+PDF/JPEG/PNG e 5 MiB para a integração da SCRUM-187. Não foram alteradas telas.
+
+O endpoint específico `POST /api/abastecimentos/{id}/comprovante` reutiliza esta
+infraestrutura com vínculo fixado no caminho e formulário contendo só `arquivo`.
+Consulte [comprovantes](./abastecimentos.md#comprovante-compartilhado--scrum-187).
 
 ## Matriz de acesso por registro
 

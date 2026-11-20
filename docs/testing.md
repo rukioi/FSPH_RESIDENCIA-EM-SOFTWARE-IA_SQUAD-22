@@ -327,3 +327,112 @@ legados. Artefatos de build rastreados são restaurados ao estado inicial e não
 integram o commit; a pasta graft preexistente é preservada sem inclusão.
 
 Próximo ticket: #30; somente #33 abre/reutiliza o PR final.
+
+## Perfil isolado da conciliação Sprint 9
+
+O harness usa o perfil original por padrão. Para a worktree de conciliação,
+selecione explicitamente o perfil fechado `s9` antes de chamar os comandos
+oficiais. O perfil verifica manifesto próprio, checkout, container, volume,
+porta local, nonce e marcador do banco. URLs arbitrárias são recusadas.
+
+No PowerShell, para os processos da sessão atual:
+
+```powershell
+$env:FSPH_TEST_PROFILE = 's9'
+npm run db:test:start
+npm test
+npm run test:e2e -- tests/e2e/abastecimentos.spec.ts
+```
+
+O comando de início do perfil `s9` somente verifica um ambiente exclusivo já
+provisionado; não adota nem cria recursos sem identidade comprovada. A suíte
+completa e o E2E só devem ser executados depois de confirmar compatibilidade
+das fixtures e ausência de conexões concorrentes. O perfil não concede
+permissões de banco. Para voltar ao padrão, remova a variável da sessão.
+
+O perfil fechado `s9-full` usa um segundo ambiente exclusivo para a suíte
+completa, separado do perfil `s9`. No PowerShell, selecione-o com
+`$env:FSPH_TEST_PROFILE = 's9-full'` antes de executar os comandos oficiais.
+Antes do primeiro uso, com Docker e a imagem local PostgreSQL 17 disponíveis, execute npm run db:test:s9-full:provision com o perfil selecionado. O provisionador recusa recursos ou portas existentes e preserva-os em caso de erro. O comando de início apenas
+confirma a identidade de um ambiente já provisionado. Nenhum perfil adota
+recursos de outra worktree.
+
+Para comprovar o provisionamento desde um ambiente vazio sem tocar no perfil
+`s9-full` existente, use o perfil descartável e independente `s9-full-repro`:
+
+```powershell
+$env:FSPH_TEST_PROFILE = 's9-full-repro'
+npm run db:test:s9-full:repro:provision
+npm run db:test:start
+npm run test:db
+```
+
+Ele usa o projeto/container/volume `fsph-s9-full-repro-2026`, o banco
+`fsph_s9_full_repro`, a porta `55496` e o manifesto
+`.test-db/s9-full-repro.json`. O provisionador exige ausência do manifesto,
+container, volume e labels reservados, além da porta livre; nunca remove recursos.
+
+Para testar uma sequência revisada de migrations sem reutilizar bancos já
+provisionados, o perfil `s9-mig-v3` usa container/volume
+`fsph-s9-mig-v3-2026`, banco `fsph_s9_mig_v3`, porta `55498` e manifesto
+`.test-db/s9-mig-v3.json`:
+
+```powershell
+$env:FSPH_TEST_PROFILE = 's9-mig-v3'
+npm run db:test:s9-mig-v3:provision
+npm run db:test:start
+npm run db:test:prepare
+npm run test:db
+```
+
+Assim como os demais perfis S9, `db:test:start` apenas verifica identidade e
+marcador depois do provisionamento; não adota nem altera outro ambiente.
+
+### Perfil s9-integracao-segura
+
+O perfil fechado s9-integracao-segura usa recursos exclusivos da worktree de
+integração segura e a porta local 55499. A disponibilidade precisa ser
+reconfirmada no momento do provisionamento. Com autorização específica,
+selecione o perfil e execute o comando de provisionamento existente; ele
+recusa recursos ou manifesto preexistentes e verifica a identidade antes
+de preparar o banco. O comando aplica migrations e seed somente após as
+verificações, portanto não deve ser executado como simples verificação.
+
+## Sprint 9 — RF40: migrations e cuidados operacionais
+
+### Aplicação das migrations
+
+- `20261113000000`: torna motorista e quilometragem opcionais, adiciona autoria, constraints `NOT VALID` e índices.
+- `20261114000000`: valida as constraints adicionadas na migration anterior.
+- O runner executa cada migration em uma transação separada.
+- Se a validação da segunda migration falhar por dados legados incompatíveis, a primeira permanece aplicada.
+- Nesse caso, as constraints `NOT VALID` continuam presentes e protegem novas gravações, mas os registros anteriores ainda precisam de verificação.
+- A recuperação exige diagnóstico dos dados incompatíveis e decisão autorizada de correção. Não apagar nem modificar registros automaticamente.
+- Não marcar uma migration como aplicada sem confirmar que seu SQL foi efetivamente executado.
+
+### Bloqueios e índices
+
+A migration `20261113000000` executa `ALTER TABLE` e dois `CREATE INDEX` na mesma transação.
+
+O bloqueio `ACCESS EXCLUSIVE` adquirido pelo `ALTER TABLE` pode permanecer até o commit, inclusive durante a construção dos índices, impedindo operações concorrentes na tabela.
+
+Antes de executar essa migration em um ambiente ainda não migrado:
+
+1. Avaliar o volume de dados e a duração da construção dos índices em uma cópia representativa.
+2. Planejar uma janela de manutenção aprovada pela equipe.
+3. Não executar `CREATE INDEX CONCURRENTLY` dentro de uma transação.
+4. Não modificar migrations já aplicadas para alterar sua estratégia de execução.
+
+### Rollback
+
+O rollback RF40 recusa a reversão quando existem registros com motorista ou quilometragem ausentes, ou autoria preenchida.
+
+Essa proteção evita perda silenciosa de informações. A reversão exige avaliação prévia e autorização do responsável pelo ambiente.
+
+### Contrato decimal
+
+A decisão RF40 adotada exige litragem e valor total positivos, com no máximo duas casas decimais.
+
+Valores com precisão superior são rejeitados pela API, mesmo que o PostgreSQL pudesse arredondá-los ao armazenar em `numeric(10,2)`.
+
+Essa regra deve permanecer consistente entre API, testes e documentação.

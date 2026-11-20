@@ -5,8 +5,49 @@ import { fileURLToPath } from 'node:url';
 import { openapi } from '../../src/shared/contract/openapi.js';
 import { operations, routePattern } from '../../src/shared/contract/registry.js';
 import { criarVeiculoSchema, editarVeiculoSchema, erroValidacaoVeiculo } from '../../src/modules/veiculos/veiculos.schemas.js';
+import { checkCompatibility } from '../../../scripts/generate-api.js';
+import { z } from 'zod';
 
 const root = fileURLToPath(new URL('../../../',import.meta.url));
+test('gate histórico exige km não negativo sem remover limites nem alterar outros campos', () => {
+  const previous = openapi();
+  const current = structuredClone(previous);
+  const { $schema: antigoDialect, ...antigoKm } = z.toJSONSchema(z.number().int(), { io: 'input' });
+  const { $schema: atualDialect, ...atualKm } = z.toJSONSchema(z.number().int().nonnegative(), { io: 'input' });
+  void antigoDialect; void atualDialect;
+  for (const doc of [previous, current]) {
+    const schema = doc.components.schemas.CriarAbastecimento;
+    schema.required = [...(schema.required ?? []).filter(campo => campo !== 'quilometragem'), 'quilometragem'];
+  }
+  previous.components.schemas.CriarAbastecimento.properties!.quilometragem = antigoKm;
+  current.components.schemas.CriarAbastecimento.properties!.quilometragem = atualKm;
+  expect(() => checkCompatibility(previous, current)).not.toThrow();
+  expect(() => checkCompatibility(current, previous)).toThrow();
+  const alterado = structuredClone(current);
+  alterado.components.schemas.CriarAbastecimento.properties!.veiculo_id = { type: 'boolean' };
+  expect(() => checkCompatibility(previous, alterado)).toThrow();
+});
+test('gate histórico reconhece somente a obrigatoriedade de motorista e preserva tipos e autorização', () => {
+  const previous = openapi();
+  const current = structuredClone(previous);
+  const { $schema: antigoDialect, ...antigoMotorista } = z.toJSONSchema(z.union([z.number(), z.string()]).nullish(), { io: 'input' });
+  const { $schema: atualDialect, ...atualMotorista } = z.toJSONSchema(z.union([z.number(), z.string()]), { io: 'input' });
+  void antigoDialect; void atualDialect;
+  const anterior = previous.components.schemas.CriarAbastecimento;
+  const posterior = current.components.schemas.CriarAbastecimento;
+  anterior.properties!.motorista_id = antigoMotorista;
+  anterior.required = (anterior.required ?? []).filter(campo => campo !== 'motorista_id');
+  posterior.properties!.motorista_id = atualMotorista;
+  posterior.required = [...(posterior.required ?? []).filter(campo => campo !== 'motorista_id'), 'motorista_id'];
+  expect(() => checkCompatibility(previous, current)).not.toThrow();
+  expect(() => checkCompatibility(current, previous)).toThrow();
+  const tipoInvalido = structuredClone(current);
+  tipoInvalido.components.schemas.CriarAbastecimento.properties!.motorista_id = { type: 'boolean' };
+  expect(() => checkCompatibility(previous, tipoInvalido)).toThrow();
+  const permissaoInvalida = structuredClone(current);
+  (permissaoInvalida.paths['/api/abastecimentos'].post as Record<string, unknown>)['x-perfis'] = ['MOTORISTA'];
+  expect(() => checkCompatibility(previous, permissaoInvalida)).toThrow();
+});
 function independent(code: string) {
   // Allowlist explícita; subprocesso não herda DATABASE_URL, JWT_SECRET nem configuração do desenvolvedor.
   const env: Record<string,string> = {};
@@ -35,8 +76,8 @@ test('migração #30 permite somente 404 comum de abastecimento e sua descriçã
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
-test('inventory preserves 98 operations and pathname limits',()=>{
-  expect(operations).toHaveLength(98);
+test('inventory preserves 101 operations and pathname limits',()=>{
+  expect(operations).toHaveLength(101);
   for (const method of ['patch','post'] as const) {
     expect(operations.filter(o => o.method === method && o.path === '/api/svo/solicitacoes/{id}/triagem')).toHaveLength(1);
   }
@@ -49,6 +90,7 @@ test('inventory preserves previous operations and includes document and attachme
     "delete /api/veiculos/{id}",
     "get /api/abastecimentos",
     "get /api/abastecimentos/indicadores",
+    "get /api/abastecimentos/{id}",
     "get /api/abastecimentos/{id}/comprovante",
     "get /api/admin/auditoria/logs",
     "get /api/admin/usuarios",
@@ -93,6 +135,7 @@ test('inventory preserves previous operations and includes document and attachme
     "get /api/svo/solicitacoes/{id}/historico",
     "get /api/svo/veiculos/{id}/ocupacao",
     "get /api/veiculos",
+    "get /api/veiculos/{id}/abastecimentos",
     "get /api/veiculos/{id}/foto",
     "patch /api/admin/usuarios/{id}/status",
     "patch /api/documentos/{id}",
@@ -106,6 +149,7 @@ test('inventory preserves previous operations and includes document and attachme
     "patch /api/svo/solicitacoes/{id}/triagem",
     "patch /api/veiculos/{id}",
     "post /api/abastecimentos",
+    "post /api/abastecimentos/{id}/comprovante",
     "post /api/admin/usuarios",
     "post /api/anexos",
     "post /api/anotacoes",
@@ -139,7 +183,7 @@ test('inventory preserves previous operations and includes document and attachme
     'patch /api/viagens/{id}/corrigir-quilometragem', 'patch /api/viagens/{id}/encerrar', 'patch /api/viagens/{id}/iniciar',
     'patch /api/viagens/{id}/validar', 'post /api/viagens',
   ].sort());
-  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(87);
+  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(90);
   expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
@@ -311,4 +355,32 @@ for(const mutate of [d=>d.paths['/api/motoristas/{id}'].delete.security=[],d=>d.
 }
 console.log('ok');
 `)).toContain('ok');
+});
+
+test('SCRUM-188 habilita somente o consumo cheio a cheio nos contratos de abastecimentos e dashboard',()=>{
+  expect(independent(`
+import {z} from 'zod';
+import {openapi} from './backend/src/shared/contract/openapi.ts';
+import {checkCompatibility} from './scripts/generate-api.ts';
+import {dashboardConsolidadoAntesDeConsumo,notaDashboardAntesDeConsumo} from './backend/src/modules/dashboard/dashboard.consolidado.schemas.ts';
+import {indicadoresAbastecimentosAntesDeConsumo,notaIndicadoresAntesDeConsumo} from './backend/src/modules/abastecimentos/abastecimentos.schemas.ts';
+const current=openapi(), previous=structuredClone(current);
+const { $schema: dashboardDialect, ...dashboard }=z.toJSONSchema(dashboardConsolidadoAntesDeConsumo,{io:'input'});
+const { $schema: abastecimentosDialect, ...abastecimentos }=z.toJSONSchema(indicadoresAbastecimentosAntesDeConsumo,{io:'input'});
+previous.components.schemas.DashboardConsolidado=dashboard;
+previous.components.schemas.IndicadoresAbastecimentos=abastecimentos;
+previous.paths['/api/dashboard'].get.description=notaDashboardAntesDeConsumo;
+previous.paths['/api/abastecimentos/indicadores'].get.description=notaIndicadoresAntesDeConsumo;
+checkCompatibility(previous,current);
+for(const mutate of [d=>d.paths['/api/abastecimentos/indicadores'].get.security=[],d=>d.paths['/api/dashboard'].get['x-perfis'].push('MOTORISTA')]){
+  const candidate=structuredClone(current);mutate(candidate);let rejected=false;
+  try{checkCompatibility(previous,candidate)}catch{rejected=true}
+  if(!rejected)throw Error('alteração adicional aceita');
+}
+console.log('ok');
+`)).toContain('ok');
+});
+
+test('RF40 concilia somente contratos exatos dos pais e rejeita mudanças adicionais',()=>{
+  expect(independent("import {execFileSync} from 'node:child_process';import {parse} from 'yaml';import {openapi} from './backend/src/shared/contract/openapi.ts';import {mergeContractBaselines,checkCompatibility} from './scripts/generate-api.ts';const read=r=>parse(execFileSync('git',['show',r+':docs/api/openapi.yaml'],{encoding:'utf8'}));const base=read('f956a77b3ca51e3b1463ff37f7eb3aa837f19f53'),head=read('0cc6b7d885612e26f872750f684a52dbc4265fd3'),incoming=read('a658dfc1fd1eb53434ef4d3cc390f1af3a2a5ce1');const combined=mergeContractBaselines(base,head,incoming),current=openapi();for(const prev of [head,incoming,combined])checkCompatibility(prev,current);for(const mutate of [d=>delete d.paths['/api/abastecimentos'].post,d=>d.paths['/api/abastecimentos'].post.security=[],d=>d.paths['/api/abastecimentos'].post['x-perfis']=['MOTORISTA'],d=>d.paths['/api/abastecimentos'].post.responses[409].description='divergente',d=>d.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},d=>d.components.schemas.DetalheAbastecimento.properties.quilometragem={type:'string'}]){const v=structuredClone(current);mutate(v);let rejected=false;try{checkCompatibility(combined,v)}catch{rejected=true}if(!rejected)throw Error('divergencia adicional aceita')}const bad=structuredClone(incoming);bad.components.schemas.CriarAbastecimento.description='alteração divergente';let rejected=false;try{mergeContractBaselines(base,head,bad)}catch{rejected=true}if(!rejected)throw Error('conflito adicional aceito');console.log('ok');")).toContain('ok');
 });

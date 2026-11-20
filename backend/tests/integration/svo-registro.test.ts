@@ -97,10 +97,36 @@ test('GET inicial lê ocorrências reais por estado e não divulga dados pessoai
     codigo: `#SVO-${cadastradas[0]}`,
     status_triagem: 'AGUARDANDO_TRIAGEM',
   });
+  const [instanteEsperado]=await sql`
+    SELECT to_char((criado_em AT TIME ZONE 'America/Maceio') AT TIME ZONE 'UTC',
+      'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS criado_em
+    FROM public.solicitacao_obito WHERE id=${cadastradas[0]}`;
+  expect(nossa.criado_em).toBe(instanteEsperado.criado_em);
+  expect(nossa.criado_em).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   expect(Object.keys(nossa).sort()).toEqual(['codigo', 'criado_em', 'id', 'status_triagem']);
   expect(JSON.stringify(nossa)).not.toContain('Pessoa fictícia');
 });
 
+test('GET ordena pelo timestamp completo quando milissegundos coincidem', async () => {
+  const ids: string[] = [];
+  for (let i = 0; i < 2; i++) {
+    const response = await post(dados);
+    expect(response.status).toBe(201);
+    const body = await response.json();
+    ids.push(body.solicitacao.id);
+    cadastradas.push(body.solicitacao.id);
+  }
+  await sql`UPDATE public.solicitacao_obito SET criado_em='2099-01-01 12:00:00.123900' WHERE id=${ids[0]}`;
+  await sql`UPDATE public.solicitacao_obito SET criado_em='2099-01-01 12:00:00.123100' WHERE id=${ids[1]}`;
+  const response = await get('/api/svo/solicitacoes?status=AGUARDANDO_TRIAGEM');
+  expect(response.status).toBe(200);
+  const body = await response.json() as { id: string; criado_em: string }[];
+  const posicoes = ids.map(id => body.findIndex(row => row.id === id));
+  expect(posicoes[0]).toBeGreaterThanOrEqual(0);
+  expect(posicoes[1]).toBeGreaterThanOrEqual(0);
+  expect(posicoes[0]).toBeLessThan(posicoes[1]);
+  expect(body[posicoes[0]].criado_em).toBe(body[posicoes[1]].criado_em);
+});
 test('GET recusa filtros desconhecidos, repetidos e status inválido', async () => {
   for (const query of ['status=INEXISTENTE', 'status=AGUARDANDO_TRIAGEM&status=AGUARDANDO_TRIAGEM', 'limit=999']) {
     expect((await get('/api/svo/solicitacoes?' + query)).status).toBe(400);

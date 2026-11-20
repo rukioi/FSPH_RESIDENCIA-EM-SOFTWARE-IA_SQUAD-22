@@ -5,7 +5,7 @@ import {consultarRecursosDisponiveis} from '../alocacao/alocacao.repository.js';
 import type {ConsultaDashboard,periodoDashboard} from './dashboard.indicadores.schemas.js';
 
 /** Usa um único snapshot; o período é da saída local, não do instante civil desconhecido dos logs. */
-export async function consultarIndicadores(query:ConsultaDashboard,comResumo:boolean){
+export async function consultarIndicadores(query:ConsultaDashboard,comResumo:boolean,incluirMotoristasCandidatos=false){
   return sql.begin('isolation level repeatable read read only',async tx=>{
     const [intervalo]=await tx<{inicio:string;fim:string;valido:boolean}[]>`WITH janela AS (
       SELECT CASE WHEN ${query.periodo}='personalizado' THEN ${query.inicio??null}::text::timestamptz AT TIME ZONE 'America/Maceio'
@@ -34,6 +34,24 @@ export async function consultarIndicadores(query:ConsultaDashboard,comResumo:boo
       AND data_hora_saida>=${intervalo.inicio}::text::timestamp AND data_hora_saida<${intervalo.fim}::text::timestamp
       ORDER BY data_hora_saida,id LIMIT 5`;
     const recursos=await consultarRecursosDisponiveis(tx,intervalo);
+    let motoristasCandidatos: number | undefined;
+    if (incluirMotoristasCandidatos) {
+      const ids = recursos.filter(recurso => recurso.tipo === 'motorista').map(recurso => recurso.id);
+      const [contagem] = await tx<{ total: number }[]>`
+        SELECT count(*)::int AS total
+        FROM public.motorista m
+        JOIN public.usuario u ON u.id = m.usuario_id
+        WHERE m.id = ANY(${ids}::bigint[])
+          AND u.ativo IS TRUE
+          AND u.perfil = 'MOTORISTA'
+          AND btrim(m.cnh) <> ''
+          AND m.validade_cnh >= greatest(
+            (transaction_timestamp() AT TIME ZONE 'America/Maceio')::date,
+            (${intervalo.fim}::text::timestamp - interval '1 microsecond')::date
+          )
+      `;
+      motoristasCandidatos = contagem.total;
+    }
     const livres=recursos.filter(r=>r.tipo==='veiculo').map(r=>r.id);
     // Sem autorização para incorporar frota marcada SVO ao recorte administrativo.
     const [veiculos]=await tx`SELECT count(*)::int AS total FROM public.veiculo WHERE is_svo=false AND id=ANY(${livres}::bigint[])`;
@@ -48,7 +66,7 @@ export async function consultarIndicadores(query:ConsultaDashboard,comResumo:boo
       WHERE s.data_hora_saida>=${intervalo.inicio}::text::timestamp AND s.data_hora_saida<${intervalo.fim}::text::timestamp
       AND l.descricao IN ('Aprovou a solicitação de transporte ID '||s.id,'Reprovou a solicitação de transporte ID '||s.id)
       ORDER BY l.data_hora DESC NULLS LAST,l.id DESC LIMIT 5`;
-    return {graficos,resumo:{...graficos,proximasViagens,motoristasDisponiveis:cadastroMotoristas.existente?null:0,
+    return {graficos,motoristasCandidatos,resumo:{...graficos,proximasViagens,motoristasDisponiveis:cadastroMotoristas.existente?null:0,
       motoristasDisponiveisMotivo:cadastroMotoristas.existente?'Disponibilidade indeterminada: faltam jornada/escala confiáveis e regras de elegibilidade por CNH para todo o intervalo.':null,
       indicadores:{periodo,pendentes:fila.total,aprovadas:solicitacoesPorStatus.find(r=>r.status==='APROVADA')?.total??0,
         reprovadas:solicitacoesPorStatus.find(r=>r.status==='REPROVADA')?.total??0,veiculosDisponiveis:veiculos.total,

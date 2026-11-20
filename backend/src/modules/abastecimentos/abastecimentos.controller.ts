@@ -6,72 +6,29 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
 import { conflitoAbastecimentoViagem } from '../viagens/quilometragem-abastecimento.js';
 import { ErroHttp, responderErroHttp } from '../../shared/http/errors.js';
+import { criarAbastecimentoSchema } from './abastecimentos.schemas.js';
+import { validarLeituraAnterior } from './abastecimentos.repository.js';
+import { registrarAtividades } from '../auditoria/auditoria.service.js';
+import type { z } from 'zod';
 
-interface CorpoAbastecimento {
-  veiculo_id?: number;
-  motorista_id?: number;
-  posto?: string;
-  litragem?: number;
-  valor_total?: number;
-  quilometragem?: number;
-  data_abastecimento?: string;
-  tanque_completo?: unknown;
-  comprovante?: unknown;
-}
+type CorpoAbastecimento = z.input<typeof criarAbastecimentoSchema>;
 
-/** Lista abastecimentos pelo pool compartilhado com o envelope existente. */
-export async function listarAbastecimentos(_req: IncomingMessage, res: ServerResponse): Promise<void> {
-  try {
-    const lista = await sql`
-      SELECT a.id, a.veiculo_id, a.motorista_id, a.litragem, a.valor_total, a.quilometragem,
-        a.data_abastecimento, a.criado_em, a.posto, a.tanque_completo, c.nome as comprovante_nome,
-        v.placa as veiculo_placa, m.nome as motorista_nome
-      FROM abastecimento a
-      LEFT JOIN abastecimento_comprovante c ON c.abastecimento_id = a.id
-      LEFT JOIN veiculo v ON a.veiculo_id = v.id
-      LEFT JOIN motorista m ON a.motorista_id = m.id
-      ORDER BY a.id DESC
-    `;
-    enviarJson(res, 200, lista);
-  } catch (err) {
-    if (responderErroCorpo(res, err)) return;
-    registrarFalha(err);
-    enviarErro(res, 500, 'ERRO_INTERNO', 'Não foi possível listar os abastecimentos.');
-  }
-}
-
-/** Lê JSON limitado e preserva o cadastro de abastecimento existente. */
-export async function criarAbastecimento(req: IncomingMessage, res: ServerResponse) {
+/** Confirma cadastro, comprovante legado e atividade do ator autenticado na mesma transação. */
+export async function criarAbastecimento(req: IncomingMessage, res: ServerResponse, autorId: string) {
   try {
     const value = await lerBody(req, 1500 * 1024);
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return enviarErro(res, 400, 'DADOS_INVALIDOS', 'Envie os campos do abastecimento em um objeto JSON.');
     }
     const body = value as CorpoAbastecimento;
-    const { 
-      veiculo_id, 
-      motorista_id, 
-      posto, 
-      litragem, 
-      valor_total, 
-      quilometragem, 
-      data_abastecimento 
-    } = body;
-    
-    if (!veiculo_id || !litragem || !valor_total || !data_abastecimento) {
-      return enviarErro(res, 400, 'DADOS_INVALIDOS', 'Veículo, litragem, valor total e data do abastecimento são obrigatórios.');
+    const entrada = criarAbastecimentoSchema.safeParse(value);
+    if (!entrada.success) {
+      const erroArquivo = entrada.error.issues.some(issue => issue.path[0] === 'comprovante');
+      return erroArquivo
+        ? enviarErro(res, 400, 'ARQUIVO_INVALIDO', 'Envie uma imagem JPEG ou PNG válida de até 1 MiB.')
+        : enviarErro(res, 400, 'DADOS_INVALIDOS', 'Confira os tipos e campos exigidos pelo cadastro atual de abastecimento.');
     }
-
-    // Apenas forma técnica compatível com as colunas atuais, sem nova regra de produto.
-    const numeric = (v: unknown) => (typeof v === 'number' || typeof v === 'string' && v.trim() !== '') && Number.isFinite(Number(v));
-    const identifier = (v: unknown) => typeof v === 'number' ? Number.isSafeInteger(v) : typeof v === 'string' && /^-?\d+$/.test(v);
-    const validDate = typeof data_abastecimento === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data_abastecimento) &&
-      !Number.isNaN(Date.parse(data_abastecimento)) && new Date(data_abastecimento).toISOString().slice(0,10) === data_abastecimento;
-    if (!identifier(veiculo_id) || !identifier(motorista_id) || !numeric(litragem) || !numeric(valor_total) ||
-        !Number.isInteger(quilometragem) || !validDate || (posto != null && typeof posto !== 'string')) {
-      return enviarErro(res, 400, 'DADOS_INVALIDOS', 'Confira os tipos e campos exigidos pelo cadastro atual de abastecimento.');
-    }
-
+    const {veiculo_id,motorista_id,posto,litragem,valor_total,quilometragem,data_abastecimento} = entrada.data;
     if (body.tanque_completo !== undefined && typeof body.tanque_completo !== 'boolean') {
       return enviarErro(res, 400, 'DADOS_INVALIDOS', 'Tanque completo deve ser booleano.');
     }
@@ -107,23 +64,25 @@ export async function criarAbastecimento(req: IncomingMessage, res: ServerRespon
           AND v.data_inicio IS NOT NULL AND v.data_fim IS NOT NULL
           AND v.km_inicial IS NOT NULL AND v.km_final IS NOT NULL
           AND EXISTS (SELECT 1 FROM public.viagem_correcao c WHERE c.viagem_id=v.id)`;
-      if (viagens.some(v => conflitoAbastecimentoViagem(data_abastecimento, quilometragem!, v))) {
+      if (quilometragem != null && viagens.some(v => conflitoAbastecimentoViagem(data_abastecimento, quilometragem, v))) {
         throw new ErroHttp(409,'ODOMETRO_INCONSISTENTE','Quilometragem incompatível com viagem corrigida.');
       }
+      if (quilometragem != null) await validarLeituraAnterior(tx, veiculo_id, data_abastecimento, quilometragem);
       const [registro] = await tx`
       INSERT INTO abastecimento (
         veiculo_id, motorista_id, posto, litragem, valor_total, quilometragem, data_abastecimento,
-        tanque_completo
+        tanque_completo, criado_por_id
       ) 
       VALUES (
         ${veiculo_id}, ${motorista_id ?? null}, ${posto || null}, ${litragem}, ${valor_total}, ${quilometragem ?? null}, ${data_abastecimento},
-        ${tanqueCompleto}
+        ${tanqueCompleto}, ${autorId}
       ) 
       RETURNING id, veiculo_id, motorista_id, litragem, valor_total, quilometragem, data_abastecimento,
         criado_em, posto, tanque_completo
       `;
       if (arquivo) await tx`INSERT INTO abastecimento_comprovante (abastecimento_id, nome, tipo, dados)
         VALUES (${registro.id}, ${arquivo.nome}, ${arquivo.tipo}, ${arquivo.dados})`;
+      await registrarAtividades(tx, autorId, [{ operacao: 'abastecimento_criado', recursoId: String(registro.id) }]);
       return { ...registro, comprovante_nome: arquivo?.nome ?? null };
     });
     

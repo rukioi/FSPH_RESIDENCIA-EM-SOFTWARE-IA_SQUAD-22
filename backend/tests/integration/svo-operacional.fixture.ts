@@ -31,9 +31,9 @@ export async function prepararFixtureSvo(senhaDeTeste?: string) {
         (${segundoVeiculo},'S7T3821','CHEVROLET','S10 TESTE',2026,'RABECÃO_SVO','DISPONIVEL',TRUE,'PROPRIO',4,2)`;
       for(let i=0;i<5;i++){
         await tx`INSERT INTO public.solicitacao_obito (id,codigo,atendente_id,local_falecimento,endereco_remocao,
-          solicitante_nome,status_triagem,triado_por_id,triado_em) VALUES
+          solicitante_nome,status_triagem,triado_por_id,triado_em,criado_em) VALUES
           (${solicitacoes[i]},${`#SVO-${solicitacoes[i]}`},38100,'Unidade fictícia','Rua fictícia','Pessoa fictícia',
-            'CONFIRMADA_SVO',38100,CURRENT_TIMESTAMP)`;
+            'CONFIRMADA_SVO',38100,timezone('America/Maceio',CURRENT_TIMESTAMP),timezone('America/Maceio',CURRENT_TIMESTAMP))`;
         await tx`INSERT INTO public.ordem_coleta (id,solicitacao_obito_id,quantidade_corpos,status)
           VALUES (${ordens[i]},${solicitacoes[i]},${i===0?3:i===1?1:i===2?1:i===3?3:2},'PENDENTE_ALOCACAO')`;
       }

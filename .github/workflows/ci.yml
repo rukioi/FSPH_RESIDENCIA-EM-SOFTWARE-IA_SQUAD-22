@@ -27,6 +27,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Verificar isolamento dos testes Sprint 9
+        run: node --test backend/tests/database/sprint9-preflight-static.test.mjs backend/tests/database/s9-preflight-harness.test.mjs
       - run: npx playwright install --with-deps chromium
       - name: Provisionar e confirmar banco exclusivo do harness
         run: npm run db:test:start

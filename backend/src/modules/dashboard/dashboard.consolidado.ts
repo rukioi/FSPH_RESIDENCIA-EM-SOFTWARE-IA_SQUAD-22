@@ -2,23 +2,32 @@ import { vencimentosRf46 } from '../documentos/documentos.rf46.js';
 import { obterIndicadoresAbastecimentosDoDashboard } from '../abastecimentos/abastecimentos.indicadores.js';
 import { sql } from '../../database/connection.js';
 import { ErroHttp } from '../../shared/http/errors.js';
-import { obterIndicadores } from './dashboard.service.js';
-import { dashboardSchemas } from './dashboard.schemas.js';
+import { obterIndicadoresConsolidados } from './dashboard.service.js';
 import { dashboardConsolidadoSchemas } from './dashboard.consolidado.schemas.js';
-import { filtroDashboardSvo } from '../svo/svo.dashboard.schemas.js';
-import { consultarDashboardSvo,consultarFilasSvo,consultarAtividadesSvo } from '../svo/svo.dashboard.repository.js';
+import { comValidacaoTemporal } from '../solicitacoes/solicitacoes.erros.js';
+import { parametrosSolicitacoes } from '../solicitacoes/solicitacoes.schemas.js';
+import { consultaDashboardSchema } from './dashboard.indicadores.schemas.js';
+import {
+  consultarDashboardSvo, consultarDashboardSvoPersonalizado, consultarFilasSvo, consultarAtividadesSvo,
+} from '../svo/svo.dashboard.repository.js';
 
 /** Consolida leituras autorizadas dos módulos, sem reconstruir métricas nem ocultar falha como zero. */
 export async function obterDashboardConsolidado(perfil:string,params:URLSearchParams){
   if(perfil==='ATENDENTE_SVO'){
-    for(const key of params.keys())if(params.getAll(key).length!==1)throw new ErroHttp(400,'DADOS_INVALIDOS','Período inválido.');
-    const q=filtroDashboardSvo.safeParse(Object.fromEntries(params));
-    if(!q.success)throw new ErroHttp(400,'DADOS_INVALIDOS','O painel SVO suporta hoje, 7d e 30d.');
-    const [operacional,filas,atividades]=await Promise.all([consultarDashboardSvo(q.data.periodo),consultarFilasSvo(),consultarAtividadesSvo(10)]);
+    const consulta = consultaDashboardSchema.safeParse(parametrosSolicitacoes(params));
+    if (!consulta.success) throw new ErroHttp(400, 'DADOS_INVALIDOS', 'Informe um período válido para os indicadores.');
+    const { periodo, inicio, fim } = consulta.data;
+    const painel = periodo === 'personalizado'
+      ? comValidacaoTemporal(() => {
+        if (!inicio || !fim) throw new ErroHttp(400, 'DADOS_INVALIDOS', 'Informe início e fim do período.');
+        return consultarDashboardSvoPersonalizado({ inicio, fim });
+      })
+      : consultarDashboardSvo(periodo);
+    const [operacional, filas, atividades] = await Promise.all([painel, consultarFilasSvo(), consultarAtividadesSvo(10)]);
     return dashboardConsolidadoSchemas.DashboardConsolidado.parse({data:{visao:'SVO',operacional,filas,atividades:atividades.data}});
   }
   if(!['ADM','GESTOR_FROTA'].includes(perfil))throw new ErroHttp(403,'ACESSO_NEGADO','Acesso não permitido.');
-  const gestao=dashboardSchemas.DashboardGestorIndicadores.parse(await obterIndicadores(params,true)).data;
+  const { gestao, motoristasCandidatos } = await obterIndicadoresConsolidados(params);
   const periodo=gestao.periodo;
   const complemento=await sql.begin('isolation level repeatable read read only',async tx=>{
     const porStatus = await tx<{status:string|null;total:number}[]>`
@@ -42,5 +51,10 @@ export async function obterDashboardConsolidado(perfil:string,params:URLSearchPa
   const abastecimentos = await obterIndicadoresAbastecimentosDoDashboard(periodo);
   gestao.indicadores.indicadoresIndisponiveis = gestao.indicadores.indicadoresIndisponiveis.filter(item => !['IND-02', 'IND-08', 'IND-09'].includes(item.indicador));
   return dashboardConsolidadoSchemas.DashboardConsolidado.parse({data:{visao:'GESTAO',gestao,
-    viagens:complemento.viagens,documentos:complemento.documentos,abastecimentos:abastecimentos.data}});
+    viagens:complemento.viagens,documentos:complemento.documentos,abastecimentos:abastecimentos.data,
+    disponibilidadeMotoristas: {
+      estado: 'PROVISORIA',
+      candidatos: motoristasCandidatos,
+      motivo: 'SEM_ESCALA_E_MATRIZ_CNH',
+    }}});
 }

@@ -1,6 +1,3 @@
-
-
-/* Base compartilhada */
 * { box-sizing: border-box; }
 
 :root {
@@ -27,7 +24,6 @@ body {
 
 button, input { font: inherit; }
 
-/* Tela de login */
 .login-page {
   min-height: 100vh;
   min-height: 100dvh;
@@ -167,7 +163,6 @@ button, input { font: inherit; }
 .shield-icon { flex: 0 0 auto; color: #1260f2; }
 .shield-icon svg { width: 17px; height: 17px; }
 
-/* Cartão das telas de viagens */
 .trips-page {
   position: fixed;
   z-index: 1;
@@ -303,7 +298,6 @@ button, input { font: inherit; }
 .route-arrow { color: #58718e; font-size: 25px; }
 .upcoming-vehicle { padding-top: 12px; border-top: 1px solid #d5dfeb; color: #58718e; font-size: 12px; }
 
-/* Navegação inferior */
 .bottom-navigation {
   position: absolute;
   z-index: 5;
@@ -354,7 +348,6 @@ button, input { font: inherit; }
   font-weight: 700;
 }
 
-/* Tela de detalhes */
 .details-header { flex-basis: 92px; min-height: 92px; padding: 12px 17px 14px; }
 .details-header h1 { margin: 0; font-size: 19px; }
 
@@ -422,7 +415,6 @@ button, input { font: inherit; }
 .start-trip-button:active { transform: translateY(0) scale(.99); }
 .details-action > p { margin: 9px 0 0; color: #58718e; font-size: 10px; text-align: center; }
 
-/* Acessibilidade */
 .view-trip-button:focus-visible,
 .upcoming-heading button:focus-visible,
 .nav-item:focus-visible,
@@ -435,7 +427,6 @@ button, input { font: inherit; }
   outline-offset: 3px;
 }
 
-/* Layout de celular */
 @media (max-width: 480px) {
   .login-page { padding: 0; align-items: stretch; }
   .login-card { width: 100%; height: auto; min-height: 100vh; min-height: 100dvh; border-radius: 0; box-shadow: none; }
@@ -444,7 +435,6 @@ button, input { font: inherit; }
   .trips-page { top: 0; left: 0; transform: none; width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
 }
 
-/* Cabeçalho com Voltar animado e espaçamento da referência */
 .trip-details-page .details-header,
 .start-trip-page .details-header {
   padding: 8px 10px 10px;
@@ -482,7 +472,6 @@ button, input { font: inherit; }
   .back-header-animated .details-back { transition: none; }
 }
 
-/* Início da viagem: formulário e foto */
 .start-trip-page { --safe-bottom: env(safe-area-inset-bottom, 0px); }
 
 .start-trip-content {
@@ -582,10 +571,8 @@ button, input { font: inherit; }
   cursor: pointer;
 }
 
-/* Oculta o input real sem impedir o acionamento pelos botões */
 .visually-hidden-input { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); border: 0; }
 
-/* Ícones de câmera e imagem em traço, sem preenchimento preto */
 .start-trip-page .camera-placeholder svg,
 .start-trip-page .odometer-info svg,
 .start-trip-page .take-photo-button svg,
@@ -601,7 +588,6 @@ button, input { font: inherit; }
   stroke-linejoin: round;
 }
 
-/* Avisos e confirmação */
 .start-trip-page .start-trip-warnings {
   position: static;
   flex: 0 0 auto;
@@ -663,7 +649,6 @@ button, input { font: inherit; }
   font-size: 14px;
 }
 
-/* Correção do enquadramento: supera estilos inline da tela de início */
 .trips-page.start-trip-page {
   position: fixed;
   z-index: 10;
@@ -681,7 +666,6 @@ button, input { font: inherit; }
   border-radius: 28px;
 }
 
-/* Conteúdo e rodapé no mesmo fluxo: tudo rola junto dentro do cartão */
 .start-trip-page .start-trip-content {
   flex: 1 1 auto;
   min-height: 0;
@@ -714,8 +698,6 @@ button, input { font: inherit; }
   .submit-button, .view-trip-button, .start-trip-button, .take-photo-button, .confirm-start-button { transition: none; }
 }
 
-
-/* Retorno após confirmar o início da viagem */
 .trip-details-page .details-header.has-success { flex-basis: 106px; min-height: 106px; }
 .trip-start-toast {
   display: flex;
@@ -750,8 +732,6 @@ button, input { font: inherit; }
   font-size: 11px;
 }
 
-
-/* Registro exibido depois que o início da viagem for confirmado */
 .trip-details-page .trip-record-card { padding: 16px; }
 .trip-details-page .trip-record-card .detail-section-label { margin: 0 0 8px; }
 .trip-details-page .trip-record-card .detail-row { min-height: 41px; }

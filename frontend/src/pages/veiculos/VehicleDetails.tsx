@@ -9,6 +9,7 @@ import { atualizarVeiculo, type VeiculoDto } from '../../shared/services/veiculo
 import { VehiclePhoto, VehiclePhotoInput } from './VehiclePhoto';
 import { salvarFotoVeiculo, type FotoVeiculo } from '../../shared/services/veiculos.service';
 import { VehicleStatusBadge, vehicleTitle, vehicleTypeLabel, formatarQuilometragem } from './VehiclePresentation';
+import { Anotacoes } from '../../shared/components/Anotacoes';
 import './VehicleDetails.css';
 
 function campo(valor: string | number | null | undefined) {
@@ -130,6 +131,11 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar, fotoVersao, aoS
       {!documentos.loading && !documentos.error && (arquivos.length === 0 ? <p className="vehicle-details__empty">Nenhum documento encontrado para este veículo.</p> : <div className="vehicle-details__table"><table><thead><tr><th>Documento</th><th>Validade</th><th>Situação</th></tr></thead><tbody>{arquivos.map(item => <tr key={item.id}><td>{item.descricao}</td><td>{data(item.data_validade)}</td><td><span className={`vehicle-document-status vehicle-document-status--${item.status.toLowerCase()}`}>{statusDocumento[item.status]}</span></td></tr>)}</tbody></table></div>)}
       <p className="vehicle-details__note">O download de documentos não está disponível.</p>
     </article>
+
+    <article className="vehicle-details__panel">
+          <div className="vehicle-details__heading"><div><h2>Anotações</h2><p>Notas internas da gestão sobre este veículo</p></div></div>
+          <Anotacoes tipoRegistro="VEICULO" registroId={veiculo.id} />
+        </article>
 
     <article className="vehicle-details__panel"><div className="vehicle-details__heading"><div><h2>Outros históricos</h2><p>Consultas por veículo</p></div></div>
       {['Histórico de manutenção', 'Histórico de quilometragem', 'Multas e infrações', 'Histórico operacional'].map(titulo => <details className="vehicle-details__history" key={titulo}><summary>{titulo}</summary><p>A consulta deste histórico por veículo ainda não está disponível.</p></details>)}

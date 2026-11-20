@@ -3,6 +3,7 @@ import type { z } from 'zod';
 import { periodoDashboardSvo } from './svo.dashboard.schemas.js';
 
 type Periodo = z.infer<typeof periodoDashboardSvo>;
+type IntervaloPersonalizado = { inicio: string; fim: string };
 function quantidade(valor: unknown): number {
   const n = Number(valor);
   if (!Number.isSafeInteger(n) || n < 0) throw new Error('Contagem do dashboard fora do intervalo seguro.');
@@ -20,14 +21,20 @@ function texto(valor: unknown): string | null { return valor == null ? null : St
  * triado_em da mesma transação que gerou a ordem em SCRUM-131, não timestamp inventado.
  * IND-14 usa coorte de solicitações criadas no período, incluindo status NULL legado.
  */
-export async function consultarDashboardSvo(periodo: Periodo) {
+async function consultarIndicadoresSvo<P extends Periodo | 'personalizado'>(periodo: P, janela?: IntervaloPersonalizado) {
   return sql.begin('isolation level repeatable read read only', async tx => {
     const [r] = await tx`
       WITH hoje AS (
         SELECT timezone('America/Maceio', CURRENT_TIMESTAMP)::date AS dia
       ), intervalo AS (
-        SELECT (dia - CASE ${periodo}::text WHEN '7d' THEN 6 WHEN '30d' THEN 29 ELSE 0 END)::timestamp AS inicio,
-               (dia + interval '1 day')::timestamp AS fim
+        SELECT coalesce(
+                 ${janela?.inicio ?? null}::text::timestamptz AT TIME ZONE 'America/Maceio',
+                 (dia - CASE ${periodo}::text WHEN '7d' THEN 6 WHEN '30d' THEN 29 ELSE 0 END)::timestamp
+               ) AS inicio,
+               coalesce(
+                 ${janela?.fim ?? null}::text::timestamptz AT TIME ZONE 'America/Maceio',
+                 (dia + interval '1 day')::timestamp
+               ) AS fim
         FROM hoje
       ),
       triagens AS (
@@ -63,7 +70,7 @@ export async function consultarDashboardSvo(periodo: Periodo) {
     `;
     if (!r) throw new Error('Agregação SVO sem resultado.');
     return {
-      periodo, inicio: String(r.inicio), fim: String(r.fim),
+      periodo, inicio: janela?.inicio ?? String(r.inicio), fim: janela?.fim ?? String(r.fim),
       indicadores: {
         aguardandoTriagem: quantidade(r.aguardando_triagem),
         confirmadasSvo: quantidade(r.confirmadas_svo),
@@ -78,6 +85,15 @@ export async function consultarDashboardSvo(periodo: Periodo) {
       },
     };
   });
+}
+
+export function consultarDashboardSvo(periodo: Periodo) {
+  return consultarIndicadoresSvo(periodo);
+}
+
+/** Usa o mesmo agregador SVO com os instantes do filtro validado no painel consolidado. */
+export function consultarDashboardSvoPersonalizado(janela: IntervaloPersonalizado) {
+  return consultarIndicadoresSvo('personalizado', janela);
 }
 
 /** IND-10 e fila de despacho são saldos atuais, não dependem do filtro de período. */

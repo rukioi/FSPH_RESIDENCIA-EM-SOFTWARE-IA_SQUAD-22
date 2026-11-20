@@ -1,6 +1,4 @@
-
-
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import "./Viagens.css";
 
@@ -34,6 +32,8 @@ type TripNotification = {
   detail: string;
   time: string;
 };
+
+const NotificationCountContext = createContext(0);
 
 // Rotas HTTP do backend (não são caminhos de arquivos no computador).
 // Configure a URL do servidor em frontend/.env usando VITE_API_BASE_URL.
@@ -510,11 +510,18 @@ function LoginScreen({ onLogin }: { onLogin: (email: string, senha: string) => P
 }
 
 function BottomNavigation({ active = "home", onHome, onTrips, onNotifications, onProfile }: { active?: "home" | "trips" | "notifications" | "profile" | "none"; onHome?: () => void; onTrips?: () => void; onNotifications?: () => void; onProfile?: () => void }) {
+  const notificationCount = useContext(NotificationCountContext);
+
   return (
     <nav className="bottom-navigation" aria-label="Navegação principal">
+      <style>{`.bottom-navigation .nav-item:nth-child(3)::after { content: none !important; display: none !important; } .notification-count-badge { position: absolute; top: 0; left: calc(50% + 2px); min-width: 18px; height: 18px; padding: 0 4px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; border: 1px solid #fff; border-radius: 999px; background: #ef2938; color: #fff; font-size: 10px; font-weight: 700; line-height: 1; }`}</style>
       <button className={`nav-item ${active === "home" ? "active" : ""}`} type="button" onClick={onHome} aria-label="Ir para Início"><HomeIcon /><span>Início</span></button>
       <button className={`nav-item ${active === "trips" ? "active" : ""}`} type="button" onClick={onTrips} aria-label="Ir para Viagens"><TruckIcon /><span>Viagens</span></button>
-      <button className={`nav-item ${active === "notifications" ? "active" : ""}`} type="button" onClick={onNotifications} aria-label="Ir para Notificações"><BellIcon /><span>Notificações</span></button>
+      <button className={`nav-item ${active === "notifications" ? "active" : ""}`} type="button" onClick={onNotifications} aria-label={notificationCount > 0 ? `Ir para Notificações, ${notificationCount} mensagens` : "Ir para Notificações"} style={{ position: "relative" }}>
+        <BellIcon />
+        {notificationCount > 0 && <span className="notification-count-badge" aria-label={`${notificationCount} mensagens`}>{notificationCount > 99 ? "99+" : notificationCount}</span>}
+        <span>Notificações</span>
+      </button>
       <button className={`nav-item ${active === "profile" ? "active" : ""}`} type="button" onClick={onProfile} aria-label="Ir para Perfil"><UserIcon /><span>Perfil</span></button>
     </nav>
   );
@@ -2046,12 +2053,11 @@ function NotificationsScreen({ notifications, onHome, onTrips, onProfile, isLoad
 }
 
 
-export default function App() {
+function AppContent({ notifications, setNotifications }: { notifications: TripNotification[]; setNotifications: (next: TripNotification[]) => void }) {
   const [screen, setScreen] = useState<"login" | "trips" | "tripList" | "tripInfo" | "details" | "start" | "inProgress" | "fuel" | "incident" | "finish" | "completed" | "notifications" | "profile">("login");
   const [tripTab, setTripTab] = useState<"Hoje" | "Próximas" | "Concluídas">("Hoje");
   const [selectedTrip, setSelectedTrip] = useState<TripListItem | null>(null);
   const [tripListData, setTripListData] = useState<TripListItem[]>([]);
-  const [notifications, setNotifications] = useState<TripNotification[]>([]);
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -2239,5 +2245,15 @@ export default function App() {
   if (screen === "tripList") return <TripsListScreen trips={tripListData} activeTab={tripTab} onTabChange={setTripTab} onSelectTrip={openTrip} onHome={() => setScreen("trips")} onNotifications={() => setScreen("notifications")} onProfile={() => setScreen("profile")} isLoading={apiLoading} loadError={apiError} onRetry={() => { void loadApiData(); }} />;
   if (screen === "trips") return <HomeScreen trips={tripListData} driver={driverProfile} onViewTrip={openTrip} onHome={() => setScreen("trips")} onTrips={() => setScreen("tripList")} onNotifications={() => setScreen("notifications")} onProfile={() => setScreen("profile")} isLoading={apiLoading} loadError={apiError} onRetry={() => { void loadApiData(); }} />;
   return <LoginScreen onLogin={async (email, senha) => { await loginWithBackend(email, senha); setScreen("trips"); }} />;
+}
+
+export default function App() {
+  const [notifications, setNotifications] = useState<TripNotification[]>([]);
+
+  return (
+    <NotificationCountContext.Provider value={notifications.length}>
+      <AppContent notifications={notifications} setNotifications={setNotifications} />
+    </NotificationCountContext.Provider>
+  );
 }
 

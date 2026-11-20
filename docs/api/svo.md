@@ -42,7 +42,7 @@ Opcionais: `nomeFalecido` (até 150 caracteres), `solicitanteParentesco` (até 5
     "id": "10",
     "codigo": "#SVO-10",
     "statusTriagem": "AGUARDANDO_TRIAGEM",
-    "criadoEm": "2026-11-04T12:00:00.000Z"
+    "criadoEm": "2026-11-04T09:00:00.000000"
   },
   "atividades": ["Solicitação #SVO-10 registrada por telefone"]
 }

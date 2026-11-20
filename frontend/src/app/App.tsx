@@ -1,235 +1,657 @@
 // App do perfil Administrador e Gestor de Frota.
-import { useEffect, useState } from 'react'
-import { NotificacoesProvider } from '../features/notificacoes/NotificacoesContext'
-import { Notificacoes } from '../features/notificacoes/Notificacoes'
-import type { ComponentType } from 'react'
-import '../shared/styles/tema.css'
+import { lazy, Suspense, useEffect, useState } from "react";
+import type { ComponentType } from "react";
 
-import { Link, navegar, useCaminho } from './routes/router'
-import { ROTAS, lerDetalheSvo, lerRotaSolicitacao } from './routes/rotas'
-import { AuthSkeleton } from './AuthSkeleton'
+import { NotificacoesProvider } from "../features/notificacoes/NotificacoesContext";
+import "../shared/styles/tema.css";
+import "../shared/styles/hierarquia.css";
 
-import { AdminLayout } from '../layouts/administrador/AdminLayout'
-import { perfilPodeAcessar } from '../shared/services/access.service'
-import { GestorLayout } from '../layouts/gestor/GestorLayout'
-import { SvoLayout } from '../layouts/svo/SvoLayout'
-
-import { Login } from '../pages/login/Login'
-import LoginMotorista from '../pages/motorista/Viagens'
-import { DashboardAdmin } from '../pages/administrador/DashboardAdm'
-import { Configuracoes } from '../pages/administrador/Configuracoes'
-import { Auditoria } from '../pages/administrador/Auditoria'
-import { Dashboard } from '../pages/gerente/DashboardGestor'
-import { Veiculos } from '../pages/veiculos/Veiculos'
-import { Motoristas } from '../pages/motorista/Motoristas'
-import { Abastecimentos } from '../pages/abastecimentos/Abastecimentos'
-
-import { SolicitanteLayout } from '../layouts/solicitante/SolicitanteLayout'
-import { Solicitacoes } from '../pages/gerente/Solicitacoes'
-import { Calendario } from '../pages/gerente/Calendario'
-import { NovaSolicitacao } from '../pages/solicitante/NovaSolicitacao'
-import { MinhasSolicitacoes } from '../pages/solicitante/MinhasSolicitacoes'
-import { DetalheSolicitacao } from '../features/solicitacoes/DetalheSolicitacao'
-import { EditarSolicitacao } from '../features/solicitacoes/EditarSolicitacao'
-
-import { telaPreviewSvo } from '../features/svo/preview'
-import { MinhasOrdensSvo, ExecucaoSvo } from '../features/svo/EquipeSvo'
-import { DetalheSolicitacao as DetalheSolicitacaoSvo, DetalheOrdem } from '../features/svo/DetalhesSvo'
-import { Svo } from '../features/svo/Svo'
+import { Link, navegar, useCaminho } from "./routes/router";
 import {
-  CadastroSolicitacaoSvo,
-  ListaOrdensIntegrada,
-  ListaSolicitacoesIntegrada,
-  TriagemSvo,
-} from '../features/svo/SvoOperacional'
+  ROTAS,
+  lerDetalheSvo,
+  lerRotaDetalheAbastecimento,
+  lerRotaHistoricoAbastecimentosVeiculo,
+  lerRotaSolicitacao,
+} from "./routes/rotas";
+import { AuthSkeleton } from "./AuthSkeleton";
+
+import { AdminLayout } from "../layouts/administrador/AdminLayout";
+import { GestorLayout } from "../layouts/gestor/GestorLayout";
+import { SvoLayout } from "../layouts/svo/SvoLayout";
+import { SolicitanteLayout } from "../layouts/solicitante/SolicitanteLayout";
+
+import { perfilPodeAcessar } from "../shared/services/access.service";
 import {
   buscarSessao,
   destinoDoPerfil,
   obterToken,
   sair,
-} from '../shared/services/auth.service'
-import type { UsuarioSessao } from '../shared/services/auth.service'
+} from "../shared/services/auth.service";
+import type { UsuarioSessao } from "../shared/services/auth.service";
 
-const ROTA_LOGIN_MOTORISTA = '/motorista/login'
+import type { ConsultaRelatorio } from "../shared/services/relatorios.service";
+import { telaPreviewSvo } from "../features/svo/preview";
 
+// Notificações
+const Notificacoes = lazy(() =>
+  import("../features/notificacoes/Notificacoes").then((module) => ({
+    default: module.Notificacoes,
+  })),
+);
+
+// Acesso dedicado ao portal de viagens do motorista.
+const ROTA_LOGIN_MOTORISTA = "/motorista/login";
+
+const ViagensMotorista = lazy(() =>
+  import("../pages/motorista/Viagens"),
+);
+
+// Páginas administrativas
+const Login = lazy(() =>
+  import("../pages/login/Login").then((module) => ({
+    default: module.Login,
+  })),
+);
+
+const DashboardAdmin = lazy(() =>
+  import("../pages/administrador/DashboardAdm").then((module) => ({
+    default: module.DashboardAdmin,
+  })),
+);
+
+const Configuracoes = lazy(() =>
+  import("../pages/administrador/Configuracoes").then((module) => ({
+    default: module.Configuracoes,
+  })),
+);
+
+const Auditoria = lazy(() =>
+  import("../pages/administrador/Auditoria").then((module) => ({
+    default: module.Auditoria,
+  })),
+);
+
+const DocumentosAdm = lazy(() =>
+  import("../pages/administrador/DocumentosAdm").then((module) => ({
+    default: module.DocumentosAdm,
+  })),
+);
+
+// Páginas do Gestor
+const Dashboard = lazy(() =>
+  import("../pages/gerente/DashboardGestor").then((module) => ({
+    default: module.Dashboard,
+  })),
+);
+
+const DocumentosGestor = lazy(() =>
+  import("../pages/gerente/DocumentosGestor").then((module) => ({
+    default: module.DocumentosGestor,
+  })),
+);
+
+const Veiculos = lazy(() =>
+  import("../pages/veiculos/Veiculos").then((module) => ({
+    default: module.Veiculos,
+  })),
+);
+
+const Motoristas = lazy(() =>
+  import("../pages/motorista/Motoristas").then((module) => ({
+    default: module.Motoristas,
+  })),
+);
+
+const Abastecimentos = lazy(() =>
+  import("../pages/abastecimentos/Abastecimentos").then((module) => ({
+    default: module.Abastecimentos,
+  })),
+);
+
+const Relatorios = lazy(() =>
+  import("../features/relatorios/Relatorios").then((module) => ({
+    default: module.Relatorios,
+  })),
+);
+
+const DetalheAbastecimento = lazy(() =>
+  import("../pages/abastecimentos/DetalheAbastecimento").then((module) => ({
+    default: module.DetalheAbastecimento,
+  })),
+);
+
+const HistoricoAbastecimentos = lazy(() =>
+  import("../pages/abastecimentos/HistoricoAbastecimentos").then((module) => ({
+    default: module.HistoricoAbastecimentos,
+  })),
+);
+
+const IndicadoresAbastecimentos = lazy(() =>
+  import("../pages/abastecimentos/IndicadoresAbastecimentos").then(
+    (module) => ({
+      default: module.IndicadoresAbastecimentos,
+    }),
+  ),
+);
+
+// Solicitações
+const Solicitacoes = lazy(() =>
+  import("../pages/gerente/Solicitacoes").then((module) => ({
+    default: module.Solicitacoes,
+  })),
+);
+
+const Calendario = lazy(() =>
+  import("../pages/gerente/Calendario").then((module) => ({
+    default: module.Calendario,
+  })),
+);
+
+const NovaSolicitacao = lazy(() =>
+  import("../pages/solicitante/NovaSolicitacao").then((module) => ({
+    default: module.NovaSolicitacao,
+  })),
+);
+
+const MinhasSolicitacoes = lazy(() =>
+  import("../pages/solicitante/MinhasSolicitacoes").then((module) => ({
+    default: module.MinhasSolicitacoes,
+  })),
+);
+
+const DetalheSolicitacao = lazy(() =>
+  import("../features/solicitacoes/DetalheSolicitacao").then((module) => ({
+    default: module.DetalheSolicitacao,
+  })),
+);
+
+const EditarSolicitacao = lazy(() =>
+  import("../features/solicitacoes/EditarSolicitacao").then((module) => ({
+    default: module.EditarSolicitacao,
+  })),
+);
+
+// SVO
+const MinhasOrdensSvo = lazy(() =>
+  import("../features/svo/EquipeSvo").then((module) => ({
+    default: module.MinhasOrdensSvo,
+  })),
+);
+
+const ExecucaoSvo = lazy(() =>
+  import("../features/svo/EquipeSvo").then((module) => ({
+    default: module.ExecucaoSvo,
+  })),
+);
+
+const DetalheSolicitacaoSvo = lazy(() =>
+  import("../features/svo/DetalhesSvo").then((module) => ({
+    default: module.DetalheSolicitacao,
+  })),
+);
+
+const DetalheOrdem = lazy(() =>
+  import("../features/svo/DetalhesSvo").then((module) => ({
+    default: module.DetalheOrdem,
+  })),
+);
+
+const Svo = lazy(() =>
+  import("../features/svo/Svo").then((module) => ({
+    default: module.Svo,
+  })),
+);
+
+const CadastroSolicitacaoSvo = lazy(() =>
+  import("../features/svo/SvoOperacional").then((module) => ({
+    default: module.CadastroSolicitacaoSvo,
+  })),
+);
+
+const ListaOrdensIntegrada = lazy(() =>
+  import("../features/svo/SvoOperacional").then((module) => ({
+    default: module.ListaOrdensIntegrada,
+  })),
+);
+
+const ListaSolicitacoesIntegrada = lazy(() =>
+  import("../features/svo/SvoOperacional").then((module) => ({
+    default: module.ListaSolicitacoesIntegrada,
+  })),
+);
+
+const TriagemSvo = lazy(() =>
+  import("../features/svo/SvoOperacional").then((module) => ({
+    default: module.TriagemSvo,
+  })),
+);
+
+// Páginas administrativas associadas diretamente às rotas
 const paginas: Record<string, ComponentType> = {
   [ROTAS.dashboard]: DashboardAdmin,
   [ROTAS.configuracoes]: Configuracoes,
   [ROTAS.auditoria]: Auditoria,
-}
+  [ROTAS.documentosAdm]: DocumentosAdm,
+};
 
 /** Confirma a sessão da rota atual antes de montar qualquer página protegida. */
 export function App() {
-  useCaminho()
-  return <NotificacoesProvider key={obterToken() ?? 'sem-sessao'}><AppContent /></NotificacoesProvider>
+  const caminho = useCaminho();
+  const token = obterToken();
+
+  const [confirmacao, setConfirmacao] = useState<{
+    caminho: string;
+    token: string;
+    perfil: string;
+  } | null>(null);
+
+  const ativo = Boolean(
+    token &&
+      caminho !== ROTAS.login &&
+      confirmacao?.token === token &&
+      confirmacao.caminho === caminho &&
+      perfilPodeAcessar(caminho, confirmacao.perfil),
+  );
+
+  return (
+    <NotificacoesProvider key={token ?? "sem-sessao"} ativo={ativo}>
+      <Suspense
+        fallback={
+          <div role="status" className="conteudo">
+            Carregando página…
+          </div>
+        }
+      >
+        <AppContent onSessaoConfirmada={setConfirmacao} />
+      </Suspense>
+    </NotificacoesProvider>
+  );
 }
 
-function AppContent() {
-  const caminho = useCaminho()
-  const [sessao, setSessao] = useState<UsuarioSessao | null>(null)
-  const [caminhoVerificado, setCaminhoVerificado] = useState<string | null>(null)
+function AppContent({
+  onSessaoConfirmada,
+}: {
+  onSessaoConfirmada: (
+    confirmacao: {
+      caminho: string;
+      token: string;
+      perfil: string;
+    } | null,
+  ) => void;
+}) {
+  const caminho = useCaminho();
 
-  const previewSvo = import.meta.env.DEV && telaPreviewSvo(caminho) !== null
+  const [sessao, setSessao] = useState<UsuarioSessao | null>(null);
+
+  const [caminhoVerificado, setCaminhoVerificado] = useState<string | null>(
+    null,
+  );
+
+  const previewSvo =
+    import.meta.env.DEV && telaPreviewSvo(caminho) !== null;
 
   useEffect(() => {
-    let ativa = true
+    let ativa = true;
 
     if (previewSvo) {
-      // Navegação interna: a entrada de desenvolvimento monta a mesma prévia do acesso direto.
-      window.location.reload()
+      window.location.reload();
+
       return () => {
-        ativa = false
-      }
+        ativa = false;
+      };
     }
 
-    // A tela de login do motorista é pública e não exige sessão.
     if (caminho === ROTA_LOGIN_MOTORISTA) {
-      setCaminhoVerificado(caminho)
       return () => {
-        ativa = false
-      }
+        ativa = false;
+      };
     }
 
-    if (!obterToken()) {
-      sair()
-      setSessao(null)
-      setCaminhoVerificado(null)
-      if (caminho !== ROTAS.login) navegar(ROTAS.login, true)
-      return () => {
-        ativa = false
+    const tokenAoIniciar = obterToken();
+
+    if (!tokenAoIniciar) {
+      onSessaoConfirmada(null);
+      sair();
+      setSessao(null);
+      setCaminhoVerificado(null);
+
+      if (caminho !== ROTAS.login) {
+        navegar(ROTAS.login, true);
       }
+
+      return () => {
+        ativa = false;
+      };
     }
 
-    setCaminhoVerificado(null)
-    void buscarSessao().then((usuario) => {
-      if (!ativa) return
+    setCaminhoVerificado(null);
 
-      setSessao(usuario)
-      setCaminhoVerificado(caminho)
+    void buscarSessao()
+      .then((usuario) => {
+        if (!ativa || obterToken() !== tokenAoIniciar) return;
 
-      if (!usuario) {
-        sair()
-        if (caminho !== ROTAS.login) navegar(ROTAS.login, true)
-        return
-      }
+        onSessaoConfirmada(
+          usuario
+            ? {
+                caminho,
+                token: tokenAoIniciar,
+                perfil: usuario.perfil,
+              }
+            : null,
+        );
 
-      if (caminho.startsWith('/svo/') && ['ATENDENTE_SVO', 'MOTORISTA'].includes(usuario.perfil)) return
+        setSessao(usuario);
+        setCaminhoVerificado(caminho);
 
-      if (caminho === ROTAS.login || !perfilPodeAcessar(caminho, usuario.perfil)) {
-        try {
-          navegar(destinoDoPerfil(usuario.perfil), true)
-        } catch {
-          sair()
-          navegar(ROTAS.login, true)
+        if (!usuario) {
+          sair();
+
+          if (caminho !== ROTAS.login) {
+            navegar(ROTAS.login, true);
+          }
+
+          return;
         }
-      }
-    }).catch(() => {
-      if (!ativa) return
-      sair()
-      setSessao(null)
-      setCaminhoVerificado(null)
-      navegar(ROTAS.login, true)
-    })
+
+        if (
+          caminho.startsWith("/svo/") &&
+          ["ATENDENTE_SVO", "MOTORISTA"].includes(usuario.perfil)
+        ) {
+          return;
+        }
+
+        if (
+          caminho === ROTAS.login ||
+          !perfilPodeAcessar(caminho, usuario.perfil)
+        ) {
+          try {
+            navegar(destinoDoPerfil(usuario.perfil), true);
+          } catch {
+            sair();
+            navegar(ROTAS.login, true);
+          }
+        }
+      })
+      .catch(() => {
+        if (!ativa || obterToken() !== tokenAoIniciar) return;
+
+        onSessaoConfirmada(null);
+        sair();
+        setSessao(null);
+        setCaminhoVerificado(null);
+        navegar(ROTAS.login, true);
+      });
 
     return () => {
-      ativa = false
-    }
-  }, [caminho, previewSvo])
+      ativa = false;
+    };
+  }, [caminho, previewSvo, onSessaoConfirmada]);
 
-  if (previewSvo) return null
+  if (previewSvo) return null;
 
-  // Acesso público à nova tela de login do motorista.
   if (caminho === ROTA_LOGIN_MOTORISTA) {
-    return <LoginMotorista />
+    return <ViagensMotorista />;
   }
 
-  // Login original do Administrador, Gestor e demais perfis.
+  // Tela de login
   if (caminho === ROTAS.login) {
-    return <Login />
+    return <Login />;
   }
 
   if (!obterToken()) {
-    return <Login />
+    return <Login />;
   }
 
-  if (caminhoVerificado === caminho && sessao && caminho.startsWith('/svo/') &&
-    ['ATENDENTE_SVO', 'MOTORISTA'].includes(sessao.perfil) && !perfilPodeAcessar(caminho, sessao.perfil)) {
-    const conhecida = Object.values(ROTAS).some(rota => rota === caminho) || lerDetalheSvo(caminho)
-    return <SvoLayout usuario={sessao}><h1>{conhecida ? 'Acesso negado' : 'Página não encontrada'}</h1>
-      <p role="alert">{conhecida ? 'Seu perfil não tem acesso a esta página.' : 'Confira o endereço da página.'}</p>
-      <Link className="svo-atalho" para={destinoDoPerfil(sessao.perfil)}>Voltar ao início</Link></SvoLayout>
+  // Acesso especial às telas do SVO
+  if (
+    caminhoVerificado === caminho &&
+    sessao &&
+    caminho.startsWith("/svo/") &&
+    ["ATENDENTE_SVO", "MOTORISTA"].includes(sessao.perfil) &&
+    !perfilPodeAcessar(caminho, sessao.perfil)
+  ) {
+    const conhecida =
+      Object.values(ROTAS).some((rota) => rota === caminho) ||
+      lerDetalheSvo(caminho);
+
+    return (
+      <SvoLayout usuario={sessao}>
+        <h1>
+          {conhecida ? "Acesso negado" : "Página não encontrada"}
+        </h1>
+
+        <p role="alert">
+          {conhecida
+            ? "Seu perfil não tem acesso a esta página."
+            : "Confira o endereço da página."}
+        </p>
+
+        <Link
+          className="svo-atalho"
+          para={destinoDoPerfil(sessao.perfil)}
+        >
+          Voltar ao início
+        </Link>
+      </SvoLayout>
+    );
   }
 
-  if (caminhoVerificado !== caminho || !sessao || !perfilPodeAcessar(caminho, sessao.perfil)) {
-    if (sessao && perfilPodeAcessar(caminho, sessao.perfil) && caminho.startsWith('/gestor/')) {
-      return <GestorLayout usuario={sessao}><AuthSkeleton caminho={caminho} somenteConteudo /></GestorLayout>
+  // Enquanto a sessão é confirmada, mantém o layout correspondente ao perfil.
+  if (
+    caminhoVerificado !== caminho ||
+    !sessao ||
+    !perfilPodeAcessar(caminho, sessao.perfil)
+  ) {
+    if (
+      sessao &&
+      perfilPodeAcessar(caminho, sessao.perfil) &&
+      caminho.startsWith("/gestor/")
+    ) {
+      const LayoutCarregamento =
+        sessao.perfil === "ADM" ? AdminLayout : GestorLayout;
+
+      return (
+        <LayoutCarregamento usuario={sessao}>
+          <AuthSkeleton caminho={caminho} somenteConteudo />
+        </LayoutCarregamento>
+      );
     }
-    return <AuthSkeleton caminho={caminho} />
+
+    return <AuthSkeleton caminho={caminho} />;
   }
 
+  // Layout operacional: ADM usa AdminLayout; Gestor usa GestorLayout.
+  const LayoutOperacional =
+    sessao.perfil === "ADM" ? AdminLayout : GestorLayout;
+
+  // Notificações
   if (caminho === ROTAS.notificacoes) {
-    const Layout = sessao.perfil === 'ADM' ? AdminLayout : sessao.perfil === 'SOLICITANTE_INTERNO' ? SolicitanteLayout : GestorLayout
-    return <Layout usuario={sessao}><Notificacoes /></Layout>
+    const Layout =
+      sessao.perfil === "ADM"
+        ? AdminLayout
+        : sessao.perfil === "SOLICITANTE_INTERNO"
+          ? SolicitanteLayout
+          : GestorLayout;
+
+    return (
+      <Layout usuario={sessao}>
+        <Notificacoes />
+      </Layout>
+    );
   }
 
-  // Tela do Gestor de Frota
+  // Relatórios
+  const tiposRelatorio: Record<string, ConsultaRelatorio["tipo"]> = {
+    [ROTAS.relatoriosGestor]: "viagens",
+    [ROTAS.relatorioVeiculos]: "veiculos",
+    [ROTAS.relatorioMotoristas]: "motoristas",
+    [ROTAS.relatorioSolicitacoes]: "solicitacoes",
+    [ROTAS.relatorioAbastecimentos]: "abastecimentos",
+    [ROTAS.svoRelatorios]: "svo",
+  };
+
+  if (tiposRelatorio[caminho]) {
+    const Layout =
+      caminho === ROTAS.svoRelatorios
+        ? SvoLayout
+        : LayoutOperacional;
+
+    return (
+      <Layout usuario={sessao}>
+        <Relatorios
+          key={caminho}
+          tipoInicial={tiposRelatorio[caminho]}
+        />
+      </Layout>
+    );
+  }
+
+  // Dashboard do Gestor
   if (caminho === ROTAS.dashboardGestor) {
     return (
-      <GestorLayout usuario={sessao}>
+      <LayoutOperacional usuario={sessao}>
         <Dashboard />
-      </GestorLayout>
-    )
+      </LayoutOperacional>
+    );
   }
 
-  // Telas de Veículos e Motoristas do Gestor de Frota
+  // Documentos do Gestor
+  if (caminho === ROTAS.documentosGestor) {
+    return (
+      <LayoutOperacional usuario={sessao}>
+        <DocumentosGestor />
+      </LayoutOperacional>
+    );
+  }
+
+  // Veículos
   if (caminho === ROTAS.veiculosGestor) {
     return (
-      <GestorLayout usuario={sessao}>
+      <LayoutOperacional usuario={sessao}>
+        <Link
+          className="btn btn--secundario relatorio-atalho"
+          para={ROTAS.relatorioVeiculos}
+        >
+          Relatório de veículos
+        </Link>
+
         <Veiculos />
-      </GestorLayout>
-    )
+      </LayoutOperacional>
+    );
   }
 
+  // Histórico de abastecimentos por veículo
+  const historicoVeiculoId =
+    lerRotaHistoricoAbastecimentosVeiculo(caminho);
+
+  if (historicoVeiculoId !== null) {
+    return (
+      <LayoutOperacional usuario={sessao}>
+        <HistoricoAbastecimentos
+          key={historicoVeiculoId}
+          veiculoId={historicoVeiculoId}
+        />
+      </LayoutOperacional>
+    );
+  }
+
+  // Motoristas
   if (caminho === ROTAS.motoristasGestor) {
     return (
-      <GestorLayout usuario={sessao}>
+      <LayoutOperacional usuario={sessao}>
+        <Link
+          className="btn btn--secundario relatorio-atalho"
+          para={ROTAS.relatorioMotoristas}
+        >
+          Relatório de motoristas
+        </Link>
+
         <Motoristas />
-      </GestorLayout>
-    )
+      </LayoutOperacional>
+    );
   }
 
-  // ===== Solicitações e Calendário do Gestor de Frota =====
+  // Abastecimentos
   if (caminho === ROTAS.abastecimentosGestor) {
     return (
-      <GestorLayout usuario={sessao}>
+      <LayoutOperacional usuario={sessao}>
+        <Link
+          className="btn btn--secundario relatorio-atalho"
+          para={ROTAS.relatorioAbastecimentos}
+        >
+          Relatório de abastecimentos
+        </Link>
+
         <Abastecimentos />
-      </GestorLayout>
-    )
+      </LayoutOperacional>
+    );
   }
 
+  // Indicadores de abastecimentos
+  if (caminho === ROTAS.indicadoresAbastecimentosGestor) {
+    return (
+      <LayoutOperacional usuario={sessao}>
+        <IndicadoresAbastecimentos />
+      </LayoutOperacional>
+    );
+  }
+
+  // Detalhe de abastecimento
+  const abastecimentoId = lerRotaDetalheAbastecimento(caminho);
+
+  if (abastecimentoId !== null) {
+    return (
+      <LayoutOperacional usuario={sessao}>
+        <DetalheAbastecimento
+          key={abastecimentoId}
+          id={abastecimentoId}
+        />
+      </LayoutOperacional>
+    );
+  }
+
+  // Solicitações do Gestor
   if (caminho === ROTAS.solicitacoesGestor) {
     return (
-      <GestorLayout usuario={sessao}>
+      <LayoutOperacional usuario={sessao}>
+        <Link
+          className="btn btn--secundario relatorio-atalho"
+          para={ROTAS.relatorioSolicitacoes}
+        >
+          Relatório de solicitações
+        </Link>
+
         <Solicitacoes />
-      </GestorLayout>
-    )
+      </LayoutOperacional>
+    );
   }
 
+  // Calendário do Gestor
   if (caminho === ROTAS.calendarioGestor) {
     return (
-      <GestorLayout usuario={sessao}>
+      <LayoutOperacional usuario={sessao}>
         <Calendario />
-      </GestorLayout>
-    )
+      </LayoutOperacional>
+    );
   }
 
   // /gestor/solicitacoes/:id e /gestor/solicitacoes/:id/editar
-  const rotaGestor = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
+  const rotaGestor = lerRotaSolicitacao(
+    caminho,
+    ROTAS.solicitacoesGestor,
+  );
+
   if (rotaGestor) {
     return (
-      <GestorLayout usuario={sessao}>
+      <LayoutOperacional usuario={sessao}>
         {rotaGestor.editar ? (
-          <EditarSolicitacao key={caminho} id={rotaGestor.id} perfil="gestor" base={ROTAS.solicitacoesGestor} />
+          <EditarSolicitacao
+            key={caminho}
+            id={rotaGestor.id}
+            perfil="gestor"
+            base={ROTAS.solicitacoesGestor}
+          />
         ) : (
           <DetalheSolicitacao
             key={caminho}
@@ -237,37 +659,50 @@ function AppContent() {
             perfil="gestor"
             base={ROTAS.solicitacoesGestor}
             rotuloVoltar="Solicitações"
-            autor={{ nome: sessao.nome ?? sessao.email ?? 'Gestor', cargo: 'Gestor de Frota' }}
+            autor={{
+              nome: sessao.nome ?? sessao.email ?? "Gestor",
+              cargo: "Gestor de Frota",
+            }}
           />
         )}
-      </GestorLayout>
-    )
+      </LayoutOperacional>
+    );
   }
 
-  // ===== Telas do Solicitante =====
+  // Nova Solicitação do Solicitante
   if (caminho === ROTAS.novaSolicitacao) {
     return (
       <SolicitanteLayout usuario={sessao}>
         <NovaSolicitacao usuario={sessao} />
       </SolicitanteLayout>
-    )
+    );
   }
 
+  // Minhas Solicitações
   if (caminho === ROTAS.minhasSolicitacoes) {
     return (
       <SolicitanteLayout usuario={sessao}>
         <MinhasSolicitacoes usuario={sessao} />
       </SolicitanteLayout>
-    )
+    );
   }
 
   // /solicitante/minhas-solicitacoes/:id e /:id/editar
-  const rotaSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)
+  const rotaSolicitante = lerRotaSolicitacao(
+    caminho,
+    ROTAS.minhasSolicitacoes,
+  );
+
   if (rotaSolicitante) {
     return (
       <SolicitanteLayout usuario={sessao}>
         {rotaSolicitante.editar ? (
-          <EditarSolicitacao key={caminho} id={rotaSolicitante.id} perfil="solicitante" base={ROTAS.minhasSolicitacoes} />
+          <EditarSolicitacao
+            key={caminho}
+            id={rotaSolicitante.id}
+            perfil="solicitante"
+            base={ROTAS.minhasSolicitacoes}
+          />
         ) : (
           <DetalheSolicitacao
             key={caminho}
@@ -275,48 +710,92 @@ function AppContent() {
             perfil="solicitante"
             base={ROTAS.minhasSolicitacoes}
             rotuloVoltar="Minhas Solicitações"
-            autor={{ nome: sessao.nome ?? sessao.email ?? 'Solicitante', cargo: 'Solicitante' }}
+            autor={{
+              nome: sessao.nome ?? sessao.email ?? "Solicitante",
+              cargo: "Solicitante",
+            }}
           />
         )}
       </SolicitanteLayout>
-    )
+    );
   }
 
-  // Tela do SVO
-  const detalhe = lerDetalheSvo(caminho)
+  // Telas do SVO
+  const detalhe = lerDetalheSvo(caminho);
+
   const paginasSvo: Record<string, ComponentType> = {
     [ROTAS.svoNovaSolicitacao]: CadastroSolicitacaoSvo,
     [ROTAS.svoSolicitacoes]: ListaSolicitacoesIntegrada,
     [ROTAS.svoOrdens]: ListaOrdensIntegrada,
     [ROTAS.svoMinhasOrdens]: MinhasOrdensSvo,
+  };
+
+  const PaginaSvo = paginasSvo[caminho];
+
+  if (PaginaSvo) {
+    return (
+      <SvoLayout usuario={sessao}>
+        <PaginaSvo key={caminho} />
+      </SvoLayout>
+    );
   }
-  const PaginaSvo = paginasSvo[caminho]
-  if (PaginaSvo) return <SvoLayout usuario={sessao}><PaginaSvo key={caminho} /></SvoLayout>
 
   if (detalhe) {
-    const { id, tela } = detalhe
-    return <SvoLayout usuario={sessao} key={caminho}>
-      {tela === 'solicitacao' && <DetalheSolicitacaoSvo id={id} />}
-      {tela === 'triagem' && <TriagemSvo id={id} />}
-      {tela === 'ordem' && <DetalheOrdem id={id} />}
-      {tela === 'execucao' && <ExecucaoSvo id={id} motorista={sessao.nome ?? '#' + sessao.id} />}
-    </SvoLayout>
+    const { id, tela } = detalhe;
+
+    return (
+      <SvoLayout usuario={sessao} key={caminho}>
+        {tela === "solicitacao" && (
+          <DetalheSolicitacaoSvo id={id} />
+        )}
+
+        {tela === "triagem" && <TriagemSvo id={id} />}
+
+        {tela === "ordem" && <DetalheOrdem id={id} />}
+
+        {tela === "execucao" && (
+          <ExecucaoSvo
+            id={id}
+            motorista={sessao.nome ?? "#" + sessao.id}
+          />
+        )}
+      </SvoLayout>
+    );
   }
 
-  if (caminho === ROTAS.svoRaiz || caminho === ROTAS.svoDashboard) {
+  if (
+    caminho === ROTAS.svoRaiz ||
+    caminho === ROTAS.svoDashboard
+  ) {
     return (
       <SvoLayout usuario={sessao}>
         <Svo />
       </SvoLayout>
-    )
+    );
   }
 
-  // Telas do Administrador e fallback
-  const Pagina = paginas[caminho] ?? DashboardAdmin
+  // Páginas administrativas, incluindo Documentos do ADM
+  const Pagina = paginas[caminho];
 
+  if (Pagina) {
+    return (
+      <AdminLayout usuario={sessao}>
+        <Pagina />
+      </AdminLayout>
+    );
+  }
+
+  // Rota não encontrada: não abre mais o Dashboard por engano.
   return (
-    <AdminLayout usuario={sessao}>
-      <Pagina />
-    </AdminLayout>
-  )
+    <LayoutOperacional usuario={sessao}>
+      <h1>Página não encontrada</h1>
+      <p role="alert">
+        Não encontramos uma página para este endereço.
+      </p>
+      <Link para={destinoDoPerfil(sessao.perfil)}>
+        Voltar ao início
+      </Link>
+    </LayoutOperacional>
+  );
 }
+

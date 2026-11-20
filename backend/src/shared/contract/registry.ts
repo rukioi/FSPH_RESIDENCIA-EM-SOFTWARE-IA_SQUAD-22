@@ -13,7 +13,7 @@ import { authSchemas } from '../../modules/auth/auth.schemas.js';
 import { usuariosSchemas } from '../../modules/usuarios/usuarios.schemas.js';
 import { auditoriaSchemas } from '../../modules/auditoria/auditoria.schemas.js';
 import { motoristasSchemas } from '../../modules/motoristas/motoristas.schemas.js';
-import { abastecimentosSchemas, parametrosIndicadoresAbastecimentos } from '../../modules/abastecimentos/abastecimentos.schemas.js';
+import { abastecimentosSchemas, notasListagemAbastecimentos, parametrosAbastecimentos, notaIndicadoresAbastecimentos, parametrosIndicadoresAbastecimentos } from '../../modules/abastecimentos/abastecimentos.schemas.js';
 import { alertasDocumentais, gestaoDocumentalSchemas, parametrosDocumentais, tipoDocumental } from '../../modules/documentos/documentos.gestao.schemas.js';
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
 import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
@@ -208,11 +208,14 @@ export const operations: Operacao[] = [
   op('motoristas','post','/api/motoristas','RespostaMotorista',gestor,{body:'CriarMotorista',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('motoristas',method,'/api/motoristas/{id}','RespostaMotorista',gestor,{body:'EditarMotorista',errors:[400,401,403,404,409,413,415,500]})),
   op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,409,500]}),
-  op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'Imagem JPEG ou PNG como bytes; acesso autenticado.'}),
+  op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'PDF/JPEG/PNG privados: último anexo compartilhado, com fallback do comprovante legado. Acesso autenticado.'}),
   op('abastecimentos','get','/api/abastecimentos/indicadores','IndicadoresAbastecimentos',gestor,{
     runtimeValidation:true,query:parametrosIndicadoresAbastecimentos,errors:[400,401,403,404,500],
-    notes:'SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo por distância indisponível até definição da regra.'}),
-  op('abastecimentos','get','/api/abastecimentos','Abastecimentos',gestor),
+    notes:notaIndicadoresAbastecimentos}),
+  op('abastecimentos','get','/api/abastecimentos','ListaAbastecimentos',gestor,{runtimeValidation:true,query:parametrosAbastecimentos,errors:[400,401,403,404,500],notes:notasListagemAbastecimentos}),
+  op('abastecimentos','get','/api/abastecimentos/{id}','RespostaDetalheAbastecimento',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],notes:'SCRUM-186: detalhe persistido, sem bytes do comprovante ou autoria inferida.'}),
+  op('abastecimentos','get','/api/veiculos/{id}/abastecimentos','HistoricoAbastecimentos',gestor,{runtimeValidation:true,query:parametrosAbastecimentos,errors:[400,401,403,404,500],notes:'SCRUM-186: histórico de abastecimentos por data ASC/id ASC, paginado, período civil inclusivo. Veículo inexistente retorna 404.'}),
+  op('abastecimentos','post','/api/abastecimentos/{id}/comprovante','RespostaAnexo',gestor,{body:'CriarComprovante',multipart:true,runtimeValidation:true,errors:[400,401,403,404,413,415,500],notes:'SCRUM-187: arquivo PDF/JPEG/PNG até 5 MiB; vínculo exclusivamente pelo caminho, infraestrutura compartilhada, auditoria e bytes atômicos.'}),
   op('abastecimentos','post','/api/abastecimentos','RespostaAbastecimento',gestor,{body:'CriarAbastecimento',errors:[400,401,403,404,409,413,415,500]}),
   op('anotacoes','post','/api/anotacoes','RespostaAnotacao',['ADM','GESTOR_FROTA','ATENDENTE_SVO','SOLICITANTE_INTERNO','MOTORISTA'],{
     body:'CriarAnotacao',runtimeValidation:true,errors:[400,401,403,404,413,415,500],
