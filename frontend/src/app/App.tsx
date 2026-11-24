@@ -1,4 +1,3 @@
-
 // App do perfil Administrador e Gestor de Frota.
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { ComponentType } from "react";
@@ -39,6 +38,13 @@ const Notificacoes = lazy(() =>
   import("../features/notificacoes/Notificacoes").then((module) => ({
     default: module.Notificacoes,
   })),
+);
+
+// Acesso dedicado ao portal de viagens do motorista.
+const ROTA_LOGIN_MOTORISTA = "/motorista/login";
+
+const ViagensMotorista = lazy(() =>
+  import("../pages/motorista/Viagens"),
 );
 
 // Páginas administrativas
@@ -296,6 +302,12 @@ function AppContent({
       };
     }
 
+    if (caminho === ROTA_LOGIN_MOTORISTA) {
+      return () => {
+        ativa = false;
+      };
+    }
+
     const tokenAoIniciar = obterToken();
 
     if (!tokenAoIniciar) {
@@ -377,6 +389,10 @@ function AppContent({
   }, [caminho, previewSvo, onSessaoConfirmada]);
 
   if (previewSvo) return null;
+
+  if (caminho === ROTA_LOGIN_MOTORISTA) {
+    return <ViagensMotorista />;
+  }
 
   // Tela de login
   if (caminho === ROTAS.login) {

@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { navegar } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
