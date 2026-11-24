@@ -798,4 +798,3 @@ function AppContent({
     </LayoutOperacional>
   );
 }
-
