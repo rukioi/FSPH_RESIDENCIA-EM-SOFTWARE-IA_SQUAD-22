@@ -1,28 +1,36 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
-import { readdirSync } from 'node:fs';
+import { createHash, randomUUID } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { command, database, root, verifiedSql, verifyContainer } from './verify-test-db.js';
 
 const { containerId } = verifyContainer();
+const supabase = resolve(root, 'backend/src/database/supabase');
+const migrations = readdirSync(resolve(supabase, 'migrations'))
+  .filter(name => /^\d+_[a-z0-9_-]+\.sql$/.test(name)).sort().map(name => {
+    const sql = readFileSync(resolve(supabase, 'migrations', name), 'utf8').replaceAll('\r\n', '\n');
+    return { name, sql, sha256: createHash('sha256').update(sql).digest('hex') };
+  });
 const source = await verifiedSql(true);
 try {
-  const directory = resolve(root, 'backend/src/database/supabase/migrations');
-  const migrations = readdirSync(directory).filter(name => /^\d+_[a-z0-9_-]+\.sql$/.test(name)).sort();
-  const history = await source<{ name: string }[]>`SELECT name FROM fsph_test_harness.migrations ORDER BY name`;
+  const history = await source<{ name: string; sha256: string }[]>
+    `SELECT name, sha256 FROM fsph_test_harness.migrations ORDER BY name COLLATE "C"`;
   assert.ok(migrations.length > 0, 'Nenhuma migration encontrada.');
-  assert.deepEqual(history.map(row => row.name).sort(), migrations, 'Execute db:test:prepare antes do ensaio.');
+  assert.deepEqual([...history], migrations.map(({ name, sha256 }) => ({ name, sha256 })),
+    'Execute db:test:prepare antes do ensaio.');
 } finally {
   await source.end();
 }
 
 const suffix = randomUUID().replaceAll('-', '');
 const restored = 'fsph_s10_restore_' + suffix;
+const legacy = 'fsph_s10_legacy_' + suffix;
 const archive = '/tmp/' + restored + '.dump';
 const restoreList = '/tmp/' + restored + '.list';
 const schemas = ['--schema=public', '--schema=fsph_test_harness'];
 const connection = ['--host=/var/run/postgresql', '--username=supabase_admin', '--no-password'];
-const docker = (program: string, args: string[]) => command('docker', ['exec', containerId, program, ...args]);
+const docker = (program: string, args: string[], input?: string) =>
+  command('docker', ['exec', ...(input === undefined ? [] : ['-i']), containerId, program, ...args], input);
 const query = (db: string, sql: string) => docker('psql', [
   ...connection, '--no-psqlrc', '--no-align', '--tuples-only', '--set=ON_ERROR_STOP=1',
   '--dbname=' + db, '--command=' + sql,
@@ -76,7 +84,7 @@ function compareSchema(original: ReturnType<typeof schemaDefinition>, restoredDb
 }
 
 /** Compara contagem e SHA-256 das linhas completas, sem imprimir dados ou depender da ordem física. */
-function fingerprints(db: string) {
+function fingerprints(db: string, legacyProjection = false) {
   const tables = query(db, `
     SELECT schemaname || '.' || tablename FROM pg_catalog.pg_tables
     WHERE schemaname IN ('public', 'fsph_test_harness')
@@ -84,57 +92,144 @@ function fingerprints(db: string) {
   `).split(/\r?\n/);
   return Object.fromEntries(tables.map(table => {
     assert.match(table, /^(public|fsph_test_harness)\.[a-z_][a-z0-9_]*$/);
+    const projection = legacyProjection && table === 'public.abastecimento'
+      ? "to_jsonb(row_data) - 'criado_por_id'" : 'to_jsonb(row_data)';
     const result = query(db, `
       SELECT count(*) || '|' || encode(sha256(convert_to(
         coalesce(string_agg(digest, '' ORDER BY digest), ''), 'UTF8')), 'hex')
-      FROM (SELECT encode(sha256(convert_to(to_jsonb(row_data)::text, 'UTF8')), 'hex') AS digest
+      FROM (SELECT encode(sha256(convert_to((${projection})::text, 'UTF8')), 'hex') AS digest
         FROM ${table} AS row_data) AS rows
     `);
     return [table, result];
   }));
 }
 
-let created = false;
-try {
-  const before = fingerprints(database);
-  assert.match(before['public.usuario'] ?? '', /^[1-9]\d*\|/, 'Execute db:test:prepare com o seed sintético.');
-  const originalSchema = schemaDefinition(database);
-  const startBackup = performance.now();
-  docker('pg_dump', [...connection, ...schemas, '--format=custom', '--file=' + archive, '--dbname=' + database]);
-  const backupMs = Math.round(performance.now() - startBackup);
+function transaction(db: string, sql: string) {
+  docker('psql', [...connection, '--no-psqlrc', '--set=ON_ERROR_STOP=1',
+    '--dbname=' + db, '--single-transaction', '--file=-'], sql);
+}
 
-  docker('createdb', [...connection, '--template=template0', restored]);
-  created = true;
+function applyMigrations(db: string, entries: typeof migrations) {
+  for (const { name, sql, sha256 } of entries) {
+    // Nome e hash vêm apenas do manifesto local validado acima.
+    transaction(db, sql + `\nINSERT INTO fsph_test_harness.migrations VALUES ('${name}', '${sha256}');`);
+  }
+}
+
+function backup(db: string) {
+  const started = performance.now();
+  docker('pg_dump', [...connection, ...schemas, '--format=custom', '--file=' + archive, '--dbname=' + db]);
+  return Math.round(performance.now() - started);
+}
+
+function restore() {
   const startRestore = performance.now();
   // template0 já tem a ACL padrão de public. Preserve essa base e aplique as
   // entradas de proprietário, comentário e ACL que o dump inclui para o schema.
   const entries = docker('pg_restore', ['--list', archive]).split(/\r?\n/);
   const publicSchema = /^\d+;\s+\d+\s+\d+\s+SCHEMA - public\s/;
-  assert.equal(entries.filter(line => publicSchema.test(line)).length, 1);
   const list = entries.filter(line => !publicSchema.test(line)).join('\n');
   docker('sh', ['-c', 'printf "%s" "$1" > "$2"', 'restore-list', list, restoreList]);
   docker('pg_restore', [
     ...connection, '--use-list=' + restoreList, '--exit-on-error', '--single-transaction',
     '--dbname=' + restored, archive,
   ]);
-  const restoreMs = Math.round(performance.now() - startRestore);
+  return Math.round(performance.now() - startRestore);
+}
 
-  compareSchema(originalSchema, restored);
-  assert.deepEqual(fingerprints(restored), before, 'Há divergência no conteúdo restaurado.');
-  console.log('SCRUM-204 backup e restore isolados', JSON.stringify({
-    postgres: query(restored, 'SHOW server_version'),
-    migrations: Number(before['fsph_test_harness.migrations'].split('|')[0]),
-    tabelasPublicas: Object.keys(before).filter(table => table.startsWith('public.')).length,
-    tabelasComparadas: Object.keys(before).length,
-    esquemaIdentico: true,
-    contagensESha256Identicos: true,
-    backupMs,
-    restoreMs,
-  }));
-} finally {
+function withTestDatabase(db: string, run: () => void) {
+  docker('createdb', [...connection, '--template=template0', db]);
   try {
-    if (created) docker('dropdb', [...connection, restored]);
+    run();
   } finally {
-    docker('rm', ['-f', '--', archive, restoreList]);
+    docker('dropdb', [...connection, db]);
   }
+}
+
+function verifyRecovery(db: string, checkUpgrade?: () => void) {
+  const before = fingerprints(db);
+  assert.match(before['public.usuario'] ?? '', /^[1-9]\d*\|/, 'O ensaio exige dados sintéticos.');
+  const originalSchema = schemaDefinition(db);
+  const backupMs = backup(db);
+  checkUpgrade?.();
+
+  withTestDatabase(restored, () => {
+    const restoreMs = restore();
+    compareSchema(originalSchema, restored);
+    assert.deepEqual(fingerprints(restored), before, 'Há divergência no conteúdo restaurado.');
+    console.log('SCRUM-204 backup e restore isolados', JSON.stringify({
+      postgres: query(restored, 'SHOW server_version'),
+      migrations: Number(before['fsph_test_harness.migrations'].split('|')[0]),
+      tabelasPublicas: Object.keys(before).filter(table => table.startsWith('public.')).length,
+      tabelasComparadas: Object.keys(before).length,
+      esquemaIdentico: true,
+      contagensESha256Identicos: true,
+      backupMs,
+      restoreMs,
+    }));
+  });
+}
+
+function rehearseUpgrade() {
+  const revision = '20261111000000_add_tipo_evento_log_atividade.sql';
+  const cutoff = migrations.findIndex(({ name }) => name === revision) + 1;
+  assert.ok(cutoff > 0 && cutoff < migrations.length, 'O manifesto deve conter a revisão anterior e as pendências.');
+  const pending = migrations.slice(cutoff);
+  transaction(legacy, `
+    CREATE SCHEMA fsph_test_harness;
+    CREATE TABLE fsph_test_harness.migrations (name text PRIMARY KEY, sha256 text NOT NULL);
+  `);
+  applyMigrations(legacy, migrations.slice(0, cutoff));
+  transaction(legacy, readFileSync(resolve(supabase, 'seed.sql'), 'utf8'));
+  transaction(legacy, readFileSync(resolve(root, 'backend/tests/database/fixtures/scrum-204-legacy-files.sql'), 'utf8'));
+  const before = fingerprints(legacy);
+  for (const table of ['documento_veiculo', 'abastecimento_comprovante', 'viagem_evidencia']) {
+    assert.match(before['public.' + table] ?? '', /^1\|/, 'Fixture de arquivo ausente: ' + table);
+  }
+
+  verifyRecovery(legacy, () => {
+    applyMigrations(legacy, pending);
+    compareSchema(schemaDefinition(database), legacy);
+    const after = fingerprints(legacy, true);
+    for (const [table, digest] of Object.entries(before)) {
+      if (table.startsWith('public.')) assert.equal(after[table], digest, 'Dados legados alterados: ' + table);
+    }
+    assert.equal(query(legacy, `
+      SELECT count(*) FROM public.abastecimento WHERE criado_por_id IS NOT NULL
+    `), '0', 'Autoria indevidamente preenchida no legado.');
+    for (const table of ['anexo', 'documento_historico', 'anotacao']) {
+      assert.match(after['public.' + table] ?? '', /^0\|/, 'A migration não deve copiar dados para ' + table);
+    }
+    assert.equal(query(legacy, `SELECT count(*) FROM fsph_test_harness.migrations`), String(migrations.length));
+
+    transaction(legacy, `
+      INSERT INTO public.abastecimento
+        (id, veiculo_id, litragem, valor_total, data_abastecimento, criado_por_id)
+      VALUES (-20401, -27001, 12, 72, '2026-01-16', -27002);
+    `);
+    const beforeRollback = fingerprints(legacy);
+    const schemaBeforeRollback = schemaDefinition(legacy);
+    const rollback = [
+      '20261114000000_db_s9_01_abastecimentos_rf40_validate.sql',
+      '20261113000000_db_s9_01_abastecimentos_rf40.sql',
+    ].map(name => readFileSync(resolve(supabase, 'rollbacks', name), 'utf8')).join('\n');
+    assert.throws(() => transaction(legacy, rollback), /Rollback SCRUM-185 recusado/);
+    compareSchema(schemaBeforeRollback, legacy);
+    assert.deepEqual(fingerprints(legacy), beforeRollback, 'A recusa do rollback deve preservar inclusive o novo registro.');
+    console.log('SCRUM-204 upgrade isolado', JSON.stringify({
+      revisaoAnterior: revision,
+      migrationsPendentes: pending.map(({ name }) => name),
+      tabelasLegadasComparadas: Object.keys(before).filter(table => table.startsWith('public.')).length,
+      esquemaFinalConferido: true,
+      autoriaLegadaPreservada: true,
+      rollbackRecusadoSemPerda: true,
+    }));
+  });
+}
+
+try {
+  if (process.argv.includes('--upgrade')) withTestDatabase(legacy, rehearseUpgrade);
+  else verifyRecovery(database);
+} finally {
+  docker('rm', ['-f', '--', archive, restoreList]);
 }
