@@ -1,6 +1,7 @@
 export const ROTAS = {
   notificacoes: "/notificacoes",
   login: "/login",
+  loginMotorista: "/motorista/login",
 
   // Administrador
   dashboard: "/admin/dashboard",
