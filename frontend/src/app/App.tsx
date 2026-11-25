@@ -6,7 +6,7 @@ import { NotificacoesProvider } from "../features/notificacoes/NotificacoesConte
 import "../shared/styles/tema.css";
 import "../shared/styles/hierarquia.css";
 
-import { Link, navegar, useCaminho } from "./routes/router";
+import { Link, definirModoAdm, navegar, useCaminho } from "./routes/router";
 import {
   ROTAS,
   lerDetalheSvo,
@@ -21,7 +21,10 @@ import { GestorLayout } from "../layouts/gestor/GestorLayout";
 import { SvoLayout } from "../layouts/svo/SvoLayout";
 import { SolicitanteLayout } from "../layouts/solicitante/SolicitanteLayout";
 
-import { perfilPodeAcessar } from "../shared/services/access.service";
+import {
+  perfilPodeAcessar,
+  rotaConhecida,
+} from "../shared/services/access.service";
 import {
   buscarSessao,
   destinoDoPerfil,
@@ -331,6 +334,9 @@ function AppContent({
       .then((usuario) => {
         if (!ativa || obterToken() !== tokenAoIniciar) return;
 
+        // ADM usa as telas do Gestor, mas com endereços /admin/... na barra.
+        definirModoAdm(usuario?.perfil === "ADM");
+
         onSessaoConfirmada(
           usuario
             ? {
@@ -363,7 +369,8 @@ function AppContent({
 
         if (
           caminho === ROTAS.login ||
-          !perfilPodeAcessar(caminho, usuario.perfil)
+          (rotaConhecida(caminho) &&
+            !perfilPodeAcessar(caminho, usuario.perfil))
         ) {
           try {
             navegar(destinoDoPerfil(usuario.perfil), true);
@@ -441,12 +448,13 @@ function AppContent({
   if (
     caminhoVerificado !== caminho ||
     !sessao ||
-    !perfilPodeAcessar(caminho, sessao.perfil)
+    (rotaConhecida(caminho) &&
+      !perfilPodeAcessar(caminho, sessao.perfil))
   ) {
     if (
       sessao &&
-      perfilPodeAcessar(caminho, sessao.perfil) &&
-      caminho.startsWith("/gestor/")
+      ["ADM", "GESTOR_FROTA"].includes(sessao.perfil) &&
+      perfilPodeAcessar(caminho, sessao.perfil)
     ) {
       const LayoutCarregamento =
         sessao.perfil === "ADM" ? AdminLayout : GestorLayout;

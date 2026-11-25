@@ -1,7 +1,7 @@
 import { useSidebar } from '../../shared/components/useSidebar'
 import { MarcaInstitucional } from '../../shared/components/MarcaInstitucional'
 import { Sininho } from '../../features/notificacoes/Sininho'
-import { useRef, useState } from 'react'
+import { Suspense, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { navegar, useCaminho } from '../../app/routes/router'
 import { ROTAS } from '../../app/routes/rotas'
@@ -43,13 +43,14 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
   // Menu aberto por padrão no computador e fechado no celular
   const { menuAberto, setMenuAberto, menuMovel } = useSidebar()
 
-  // Item ativo segue a rota atual (inclusive detalhe/edição: /gestor/solicitacoes/...)
+  // Item ativo segue somente a URL, inclusive em detalhes, edição e relatórios.
   const caminho = useCaminho()
-  const [itemClicado, setItemClicado] = useState('Dashboard')
   const itemAtivo =
     caminho === '/svo' ? 'SVO' :
-    itensMenu.find((item) => item.rota && (caminho === item.rota || caminho.startsWith(item.rota + '/')))?.nome ??
-    itemClicado
+    [...itensMenu]
+      .sort((a, b) => (b.rota?.length ?? 0) - (a.rota?.length ?? 0))
+      .find((item) => item.rota && (caminho === item.rota || caminho.startsWith(item.rota + '/')))
+      ?.nome ?? 'Página não encontrada'
 
   return (
     <div className={`${menuAberto ? 'shell shell--gestor shell--aberto' : 'shell shell--gestor'}${itemAtivo === 'Motoristas' ? ' shell--motoristas' : ''}`}>
@@ -84,7 +85,6 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
           : 'menu__item'
       }
       onClick={() => {
-        setItemClicado(item.nome)
         if (item.rota) {
           navegar(item.rota)
           if (menuMovel) setMenuAberto(false)
@@ -155,7 +155,11 @@ export function GestorLayout({ children, usuario: sessao }: { children: ReactNod
 
         <div className="faixa" />
 
-        <main className="conteudo">{children}</main>
+        <main className="conteudo">
+          <Suspense fallback={<p role="status">Carregando página…</p>}>
+            {children}
+          </Suspense>
+        </main>
       </div>
       <dialog ref={perfilRef} className="perfil-modal" aria-labelledby="perfil-titulo">
         <Perfil usuario={sessao} />
