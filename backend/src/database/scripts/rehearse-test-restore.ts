@@ -19,6 +19,7 @@ try {
 const suffix = randomUUID().replaceAll('-', '');
 const restored = 'fsph_s10_restore_' + suffix;
 const archive = '/tmp/' + restored + '.dump';
+const restoreList = '/tmp/' + restored + '.list';
 const schemas = ['--schema=public', '--schema=fsph_test_harness'];
 const connection = ['--host=/var/run/postgresql', '--username=supabase_admin', '--no-password'];
 const docker = (program: string, args: string[]) => command('docker', ['exec', containerId, program, ...args]);
@@ -49,12 +50,20 @@ function schemaDefinition(db: string) {
     .filter(line => !/^\\(?:un)?restrict /.test(line))
     .map(line => line.replace(/^(\s*CONSTRAINT .*? CHECK) \(.*\)(,?)$/, '$1 (definicao_comparada_no_catalogo)$2')
       .replace(/^(ALTER TABLE .* ADD CONSTRAINT .*? CHECK) \(.*\)( NOT VALID)?;$/, '$1 (definicao_comparada_no_catalogo)$2;'));
-  return { checks, dump };
+  const publicAcl = query(db, `
+    SELECT grantor::regrole, grantee, privilege_type, is_grantable
+    FROM pg_namespace n
+    CROSS JOIN LATERAL aclexplode(coalesce(n.nspacl, acldefault('n', n.nspowner)))
+    WHERE n.nspname = 'public'
+    ORDER BY 1, 2, 3, 4
+  `);
+  return { checks, dump, publicAcl };
 }
 
 function compareSchema(original: ReturnType<typeof schemaDefinition>, restoredDb: string) {
   const recovered = schemaDefinition(restoredDb);
   assert.deepEqual(recovered.checks, original.checks, 'As restrições CHECK restauradas diferem da origem.');
+  assert.equal(recovered.publicAcl, original.publicAcl, 'As permissões do schema public diferem da origem.');
   const firstDifference = original.dump.findIndex((line, index) => line !== recovered.dump[index]);
   assert.ok(firstDifference === -1 && original.dump.length === recovered.dump.length,
     'A definição restaurada diverge da origem: ' + JSON.stringify({
@@ -97,8 +106,15 @@ try {
   docker('createdb', [...connection, '--template=template0', restored]);
   created = true;
   const startRestore = performance.now();
+  // template0 já tem a ACL padrão de public. Preserve essa base e aplique as
+  // entradas de proprietário, comentário e ACL que o dump inclui para o schema.
+  const entries = docker('pg_restore', ['--list', archive]).split(/\r?\n/);
+  const publicSchema = /^\d+;\s+\d+\s+\d+\s+SCHEMA - public\s/;
+  assert.equal(entries.filter(line => publicSchema.test(line)).length, 1);
+  const list = entries.filter(line => !publicSchema.test(line)).join('\n');
+  docker('sh', ['-c', 'printf "%s" "$1" > "$2"', 'restore-list', list, restoreList]);
   docker('pg_restore', [
-    ...connection, '--clean', '--if-exists', '--exit-on-error', '--single-transaction',
+    ...connection, '--use-list=' + restoreList, '--exit-on-error', '--single-transaction',
     '--dbname=' + restored, archive,
   ]);
   const restoreMs = Math.round(performance.now() - startRestore);
@@ -119,6 +135,6 @@ try {
   try {
     if (created) docker('dropdb', [...connection, restored]);
   } finally {
-    docker('rm', ['-f', '--', archive]);
+    docker('rm', ['-f', '--', archive, restoreList]);
   }
 }
