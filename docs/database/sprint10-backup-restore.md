@@ -20,6 +20,8 @@ O arquivo de backup e o banco de restauração ficam dentro do container verific
 
 O ensaio fixa a revisão anterior em `20261111000000_add_tipo_evento_log_atividade.sql`. Ela já aceita os status do seed e os formatos de arquivo legados em documentos, comprovantes de abastecimento e evidências de viagem. O script aplica as migrations até esse ponto em um banco novo, carrega o seed T1 e as [fixtures de arquivo](../../backend/tests/database/fixtures/scrum-204-legacy-files.sql) e captura o backup antes de avançar.
 
+Ao preparar essa revisão, o ensaio cadastra uma solicitação antes de `20261104000001`. Após a migration do enum, confirma que a linha `PENDENTE` ficou idêntica e o PostgreSQL passou a aceitar `APROVADA`.
+
 | Pendência na revisão anterior | Dependência e resultado esperado |
 | --- | --- |
 | `20261112000000` | Cria anexos, histórico e anotações com vínculos ao modelo existente. Os bytes legados continuam nas tabelas de origem. |

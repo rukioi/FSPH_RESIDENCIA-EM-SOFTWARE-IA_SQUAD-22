@@ -13,8 +13,9 @@ const migrations = readdirSync(resolve(supabase, 'migrations'))
   });
 const source = await verifiedSql(true);
 try {
-  const history = await source<{ name: string; sha256: string }[]>
-    `SELECT name, sha256 FROM fsph_test_harness.migrations ORDER BY name COLLATE "C"`;
+  const history = await source<{ name: string; sha256: string }[]>`
+    SELECT name, sha256 FROM fsph_test_harness.migrations ORDER BY name COLLATE "C"
+  `;
   assert.ok(migrations.length > 0, 'Nenhuma migration encontrada.');
   assert.deepEqual([...history], migrations.map(({ name, sha256 }) => ({ name, sha256 })),
     'Execute db:test:prepare antes do ensaio.');
@@ -173,13 +174,26 @@ function verifyRecovery(db: string, checkUpgrade?: () => void) {
 function rehearseUpgrade() {
   const revision = '20261111000000_add_tipo_evento_log_atividade.sql';
   const cutoff = migrations.findIndex(({ name }) => name === revision) + 1;
-  assert.ok(cutoff > 0 && cutoff < migrations.length, 'O manifesto deve conter a revisão anterior e as pendências.');
+  const approval = migrations.findIndex(({ name }) => name === '20261104000001_add_status_aprovada.sql');
+  assert.ok(approval > 0 && approval < cutoff && cutoff < migrations.length, 'Verifique as revisões no manifesto.');
   const pending = migrations.slice(cutoff);
   transaction(legacy, `
     CREATE SCHEMA fsph_test_harness;
     CREATE TABLE fsph_test_harness.migrations (name text PRIMARY KEY, sha256 text NOT NULL);
   `);
-  applyMigrations(legacy, migrations.slice(0, cutoff));
+  applyMigrations(legacy, migrations.slice(0, approval));
+  transaction(legacy, `
+    INSERT INTO public.solicitacao_viagem
+      (id, codigo, origem, destino, data_hora_saida, status)
+    VALUES (-20401, 'S10-204-ENUM', 'Origem fictícia', 'Destino fictício', '2026-01-15 12:00:00', 'PENDENTE');
+  `);
+  const legacyRequest = 'SELECT to_jsonb(s) FROM public.solicitacao_viagem s WHERE id = -20401';
+  const requestBeforeEnum = query(legacy, legacyRequest);
+  assert.notEqual(requestBeforeEnum, '');
+  applyMigrations(legacy, migrations.slice(approval, approval + 1));
+  assert.equal(query(legacy, legacyRequest), requestBeforeEnum, 'A expansão do enum alterou a solicitação legada.');
+  assert.equal(query(legacy, "SELECT 'APROVADA'::public.status_solicitacao"), 'APROVADA');
+  applyMigrations(legacy, migrations.slice(approval + 1, cutoff));
   transaction(legacy, readFileSync(resolve(supabase, 'seed.sql'), 'utf8'));
   transaction(legacy, readFileSync(resolve(root, 'backend/tests/database/fixtures/scrum-204-legacy-files.sql'), 'utf8'));
   const before = fingerprints(legacy);
@@ -221,6 +235,7 @@ function rehearseUpgrade() {
       migrationsPendentes: pending.map(({ name }) => name),
       tabelasLegadasComparadas: Object.keys(before).filter(table => table.startsWith('public.')).length,
       esquemaFinalConferido: true,
+      statusPreservadoNaExpansaoDoEnum: true,
       autoriaLegadaPreservada: true,
       rollbackRecusadoSemPerda: true,
     }));
