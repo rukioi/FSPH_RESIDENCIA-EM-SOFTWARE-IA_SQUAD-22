@@ -30,28 +30,40 @@ const query = (db: string, sql: string) => docker('psql', [
 function schemaDefinition(db: string) {
   // PostgreSQL pode achatar grupos associativos ao recriar um CHECK.
   // Compare sua definição com a formatação de precedência do próprio servidor.
-  const checks = query(db, `
+  const checks = JSON.parse(query(db, `
     SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname, t.relname, c.conname,
       pg_get_constraintdef(c.oid, true)) ORDER BY n.nspname, t.relname, c.conname), '[]'::jsonb)
     FROM pg_constraint c
     JOIN pg_class t ON t.oid = c.conrelid
     JOIN pg_namespace n ON n.oid = t.relnamespace
     WHERE c.contype = 'c' AND n.nspname IN ('public', 'fsph_test_harness')
-  `);
+  `)) as [string, string, string, string][];
+  // O restore pode aplicar o mesmo cast text[] aos dois literais individualmente.
+  const vinculo = checks.find(([schema, table, name]) =>
+    schema === 'public' && table === 'veiculo' && name === 'veiculo_vinculo_check');
+  if (vinculo?.[3] === "CHECK (vinculo::text = ANY (ARRAY['PROPRIO'::character varying, 'LOCADO'::character varying]::text[]))") {
+    vinculo[3] = "CHECK (vinculo::text = ANY (ARRAY['PROPRIO'::character varying::text, 'LOCADO'::character varying::text]))";
+  }
   const dump = docker('pg_dump', [...connection, ...schemas, '--schema-only', '--dbname=' + db])
     .split(/\r?\n/)
     .filter(line => !/^\\(?:un)?restrict /.test(line))
     .map(line => line.replace(/^(\s*CONSTRAINT .*? CHECK) \(.*\)(,?)$/, '$1 (definicao_comparada_no_catalogo)$2')
-      .replace(/^(ALTER TABLE .* ADD CONSTRAINT .*? CHECK) \(.*\);$/, '$1 (definicao_comparada_no_catalogo);'));
+      .replace(/^(ALTER TABLE .* ADD CONSTRAINT .*? CHECK) \(.*\)( NOT VALID)?;$/, '$1 (definicao_comparada_no_catalogo)$2;'));
   return { checks, dump };
 }
 
 function compareSchema(original: ReturnType<typeof schemaDefinition>, restoredDb: string) {
   const recovered = schemaDefinition(restoredDb);
-  assert.equal(recovered.checks, original.checks, 'As restrições CHECK restauradas diferem da origem.');
+  assert.deepEqual(recovered.checks, original.checks, 'As restrições CHECK restauradas diferem da origem.');
   const firstDifference = original.dump.findIndex((line, index) => line !== recovered.dump[index]);
   assert.ok(firstDifference === -1 && original.dump.length === recovered.dump.length,
-    'A definição restaurada diverge da origem na linha ' + (firstDifference + 1) + '.');
+    'A definição restaurada diverge da origem: ' + JSON.stringify({
+      linha: firstDifference + 1,
+      origem: original.dump[firstDifference]?.slice(0, 150),
+      destino: recovered.dump[firstDifference]?.slice(0, 150),
+      linhasOrigem: original.dump.length,
+      linhasDestino: recovered.dump.length,
+    }));
 }
 
 /** Compara contagem e SHA-256 das linhas completas, sem imprimir dados ou depender da ordem física. */
