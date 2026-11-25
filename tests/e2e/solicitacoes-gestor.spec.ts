@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
+  await page.route(url => url.pathname === '/api/anotacoes', async route => {
+    expect(route.request().method()).toBe('GET');
+    expect(Object.fromEntries(new URL(route.request().url()).searchParams)).toEqual({
+      tipoRegistro: 'SOLICITACAO_VIAGEM', registroId: '1', page: '1', limit: '20',
+    });
+    await route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0 } } });
+  });
   await page.route(url => url.pathname === '/api/anexos', async route => {
     expect(route.request().method()).toBe('GET');
     expect(Object.fromEntries(new URL(route.request().url()).searchParams)).toEqual({

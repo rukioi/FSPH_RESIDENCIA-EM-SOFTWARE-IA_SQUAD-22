@@ -40,13 +40,6 @@ const Notificacoes = lazy(() =>
   })),
 );
 
-// Acesso dedicado ao portal de viagens do motorista.
-const ROTA_LOGIN_MOTORISTA = "/motorista/login";
-
-const ViagensMotorista = lazy(() =>
-  import("../pages/motorista/Viagens"),
-);
-
 // Páginas administrativas
 const Login = lazy(() =>
   import("../pages/login/Login").then((module) => ({
@@ -302,7 +295,7 @@ function AppContent({
       };
     }
 
-    if (caminho === ROTA_LOGIN_MOTORISTA) {
+    if (caminho === ROTAS.loginMotorista) {
       return () => {
         ativa = false;
       };
@@ -390,13 +383,13 @@ function AppContent({
 
   if (previewSvo) return null;
 
-  if (caminho === ROTA_LOGIN_MOTORISTA) {
-    return <ViagensMotorista />;
+  if (caminho === ROTAS.loginMotorista) {
+    return <Login key={ROTAS.loginMotorista} acessoMotorista />;
   }
 
   // Tela de login
   if (caminho === ROTAS.login) {
-    return <Login />;
+    return <Login key={ROTAS.login} />;
   }
 
   if (!obterToken()) {

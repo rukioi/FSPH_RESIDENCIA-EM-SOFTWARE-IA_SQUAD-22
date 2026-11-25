@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { LoginLayout } from '../../layouts/login/LoginLayout'
 import { Icone } from '../../shared/components/Icone'
 import { navegar } from '../../app/routes/router'
+import { ROTAS } from '../../app/routes/rotas'
 import { EMAIL_REGEX, entrar } from '../../shared/services/auth.service'
 import './Login.css'
 
@@ -16,8 +17,7 @@ function validar(email: string, senha: string): Erros {
   return erros
 }
 
-export function Login() {
-  const [acessoMotorista, setAcessoMotorista] = useState(false)
+export function Login({ acessoMotorista = false }: { acessoMotorista?: boolean }) {
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
@@ -163,14 +163,7 @@ export function Login() {
           <button
             type="button"
             className="login__trocar"
-            onClick={() => {
-              if (acessoMotorista) {
-                setAcessoMotorista(false)
-                setErroLogin('')
-                return
-              }
-              navegar('/motorista/login')
-            }}
+            onClick={() => navegar(acessoMotorista ? ROTAS.login : ROTAS.loginMotorista)}
           >
             {acessoMotorista ? 'Voltar ao acesso geral' : 'Entrar como motorista'}
             <span aria-hidden="true">→</span>
