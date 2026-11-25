@@ -28,8 +28,30 @@ const query = (db: string, sql: string) => docker('psql', [
 ]).trim();
 
 function schemaDefinition(db: string) {
-  return docker('pg_dump', [...connection, ...schemas, '--schema-only', '--dbname=' + db])
-    .split(/\r?\n/).filter(line => !/^\\(?:un)?restrict /.test(line)).join('\n');
+  // PostgreSQL pode achatar grupos associativos ao recriar um CHECK.
+  // Compare sua definição com a formatação de precedência do próprio servidor.
+  const checks = query(db, `
+    SELECT coalesce(jsonb_agg(jsonb_build_array(n.nspname, t.relname, c.conname,
+      pg_get_constraintdef(c.oid, true)) ORDER BY n.nspname, t.relname, c.conname), '[]'::jsonb)
+    FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    WHERE c.contype = 'c' AND n.nspname IN ('public', 'fsph_test_harness')
+  `);
+  const dump = docker('pg_dump', [...connection, ...schemas, '--schema-only', '--dbname=' + db])
+    .split(/\r?\n/)
+    .filter(line => !/^\\(?:un)?restrict /.test(line))
+    .map(line => line.replace(/^(\s*CONSTRAINT .*? CHECK) \(.*\)(,?)$/, '$1 (definicao_comparada_no_catalogo)$2')
+      .replace(/^(ALTER TABLE .* ADD CONSTRAINT .*? CHECK) \(.*\);$/, '$1 (definicao_comparada_no_catalogo);'));
+  return { checks, dump };
+}
+
+function compareSchema(original: ReturnType<typeof schemaDefinition>, restoredDb: string) {
+  const recovered = schemaDefinition(restoredDb);
+  assert.equal(recovered.checks, original.checks, 'As restrições CHECK restauradas diferem da origem.');
+  const firstDifference = original.dump.findIndex((line, index) => line !== recovered.dump[index]);
+  assert.ok(firstDifference === -1 && original.dump.length === recovered.dump.length,
+    'A definição restaurada diverge da origem na linha ' + (firstDifference + 1) + '.');
 }
 
 /** Compara contagem e SHA-256 das linhas completas, sem imprimir dados ou depender da ordem física. */
@@ -69,7 +91,7 @@ try {
   ]);
   const restoreMs = Math.round(performance.now() - startRestore);
 
-  assert.equal(schemaDefinition(restored), originalSchema, 'O esquema restaurado difere da origem.');
+  compareSchema(originalSchema, restored);
   assert.deepEqual(fingerprints(restored), before, 'Há divergência no conteúdo restaurado.');
   console.log('SCRUM-204 backup e restore isolados', JSON.stringify({
     postgres: query(restored, 'SHOW server_version'),

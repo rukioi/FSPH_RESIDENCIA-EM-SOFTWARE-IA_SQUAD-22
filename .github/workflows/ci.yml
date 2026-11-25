@@ -36,11 +36,11 @@ jobs:
       - name: Ensaiar backup e restauração no PostgreSQL isolado
         run: npm run db:test:restore
       - run: npm run db:docs:check
+      - run: npm run test:db
       - run: npm run api:check
       - run: npm run client:check
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test:db
       - run: npm test
       - run: npm run build
       - run: npm run test:e2e
