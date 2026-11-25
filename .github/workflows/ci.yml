@@ -33,6 +33,8 @@ jobs:
       - name: Provisionar e confirmar banco exclusivo do harness
         run: npm run db:test:start
       - run: npm run db:test:prepare
+      - name: Ensaiar backup e restauração no PostgreSQL isolado
+        run: npm run db:test:restore
       - run: npm run db:docs:check
       - run: npm run api:check
       - run: npm run client:check
