@@ -91,9 +91,10 @@ test('multipart liga a primeira versão ao anexo privado e conserva os bytes leg
 });
 
 test('nome aceito só pelo multipart legado preserva cadastro e bytes sem gerar anexo incompatível',async()=>{
-  const response=await enviarDocumentoComArquivo('.');expect(response.status).toBe(201);
+  const nomeLegado = '   ';
+  const response=await enviarDocumentoComArquivo(nomeLegado);expect(response.status).toBe(201);
   const {data}=await response.json();
-  expect(data.arquivo_nome).toBe('.');
+  expect(data.arquivo_nome).toBe(nomeLegado);
   expect((await fixture.sql`SELECT arquivo_dados FROM documento_veiculo WHERE id=${data.id}`)[0].arquivo_dados).toEqual(pngAnexo);
   const historico=await(await get(`/api/documentos/${data.id}/historico`)).json();
   expect(historico.data[0]).toMatchObject({ versao: 1, anexoId: null });
