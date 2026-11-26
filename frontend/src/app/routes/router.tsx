@@ -56,7 +56,7 @@ function caminhoLogico(caminho: string): string {
 function sincronizarUrl() {
   const atual = window.location.pathname
   let correta = atual
-  if (modoAdm && compartilhada(atual, '/gestor')) correta = enderecoVisivel(atual)
+  if (modoAdm) correta = enderecoVisivel(atual)
   // Fora do modo ADM, /admin/<tela compartilhada> volta para /gestor/ e passa pelo controle de acesso normal.
   if (!modoAdm && compartilhada(atual, '/admin')) correta = '/gestor' + atual.slice('/admin'.length)
   if (correta !== atual) {

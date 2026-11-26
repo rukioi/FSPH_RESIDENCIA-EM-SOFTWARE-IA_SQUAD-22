@@ -71,23 +71,25 @@ export function rotaSolicitacao(base: string, id: string, editar = false) {
 }
 
 /**
- * Lê caminhos com parâmetro, ex.: "/gestor/solicitacoes/TRP-1024/editar".
- * Retorna null quando o caminho não começa com a base informada.
+ * Lê detalhes/edição por ID numérico, ex.: "/gestor/solicitacoes/12/editar".
+ * Reconhecimento, acesso e seleção da tela usam esta mesma validação.
  */
 export function lerRotaSolicitacao(caminho: string, base: string) {
   if (!caminho.startsWith(base + "/")) return null;
   const partes = caminho
     .slice(base.length + 1)
-    .split("/")
-    .filter(Boolean);
+    .split("/");
   if (partes.length === 0 || partes.length > 2) return null;
   if (partes.length === 2 && partes[1] !== "editar") return null;
   let id: string;
   try {
-    id = decodeURIComponent(partes[0]);
+    const parteId = partes[0];
+    if (parteId === undefined) return null;
+    id = decodeURIComponent(parteId);
   } catch {
     return null;
   }
+  if (!/^[0-9]+$/.test(id)) return null;
   return { id, editar: partes[1] === "editar" };
 }
 

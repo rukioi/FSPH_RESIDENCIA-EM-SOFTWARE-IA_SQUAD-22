@@ -38,10 +38,10 @@ export function rotaConhecida(caminho: string): boolean {
   if (perfisPorRota[caminho]) return true
 
   const solicitacaoGestor = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
-  if (solicitacaoGestor && /^[0-9]+$/.test(solicitacaoGestor.id)) return true
+  if (solicitacaoGestor) return true
 
   const solicitacaoSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)
-  if (solicitacaoSolicitante && /^[0-9]+$/.test(solicitacaoSolicitante.id)) return true
+  if (solicitacaoSolicitante) return true
 
   return (
     lerRotaDetalheAbastecimento(caminho) !== null ||
@@ -53,8 +53,13 @@ export function rotaConhecida(caminho: string): boolean {
 /** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
   const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor);
-  if (solicitacao && /^[0-9]+$/.test(solicitacao.id)) {
-    return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil);
+  if (solicitacao) {
+    return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false;
+  }
+
+  const solicitacaoSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes);
+  if (solicitacaoSolicitante) {
+    return perfisPorRota[ROTAS.minhasSolicitacoes]?.includes(perfil) ?? false;
   }
 
   if (lerRotaDetalheAbastecimento(caminho) !== null) {
