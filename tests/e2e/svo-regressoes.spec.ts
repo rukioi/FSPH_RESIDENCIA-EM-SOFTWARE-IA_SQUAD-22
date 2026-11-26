@@ -69,6 +69,18 @@ async function abrir(page: Page) {
 for (const width of [390, 768, 1280]) {
   test.describe(`${width}px`, () => {
     test.use({ viewport: { width, height: 900 } });
+    test('detalhe mantém estilos em acesso direto e reload', async ({ page }, info) => {
+      await preparar(page);
+      await page.goto('/svo/ordens/7');
+      for (let recarga = 0; recarga < 2; recarga++) {
+        await expect(page.getByRole('heading', { name: '#OC-7', exact: true })).toBeVisible();
+        await expect(page.locator('.svo-pagina')).toHaveCSS('display', 'grid');
+        await expect(page.locator('.svo-painel').first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        if (recarga === 0) await page.reload();
+      }
+      await page.screenshot({ path: info.outputPath(`svo-detalhe-reload-${width}.png`), fullPage: true });
+    });
     for (const status of [403, 404]) test(`Triagem remove dados após ${status}`, async ({ page }) => {
       const estado = await preparar(page);
       await page.goto('/svo/solicitacoes/71/triagem');

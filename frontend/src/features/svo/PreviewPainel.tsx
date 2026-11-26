@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import './PreviewSvo.css'
 
 export function Pagina({ titulo, descricao, acao, children }: {
   titulo: string; descricao?: string; acao?: ReactNode; children: ReactNode
