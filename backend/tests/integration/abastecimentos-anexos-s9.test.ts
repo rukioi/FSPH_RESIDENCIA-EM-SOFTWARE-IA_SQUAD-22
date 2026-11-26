@@ -4,6 +4,7 @@ import { request } from 'node:http';
 import { createApp } from '../../src/app.js';
 import { anexosSchemas } from '../../src/modules/anexos/anexos.schemas.js';
 import { falharAuditoriaAnexo, pngAnexo, prepararAnexos } from '../helpers/anexos-fixture.js';
+import { verificarDownloadPrivado } from '../helpers/download-privado.js';
 
 const server=createApp();
 let fixture:Awaited<ReturnType<typeof prepararAnexos>>;
@@ -39,11 +40,7 @@ test.each(['image/png','image/jpeg','application/pdf'])('comprovante %s persiste
   for(let reload=0;reload<2;reload++){
     const detalhe=await(await get('/api/abastecimentos/92194')).json();
     expect(detalhe.data.comprovante_nome).toBe('comprovante-privado');
-    const download=await get(caminho);
-    expect(download.status).toBe(200);
-    expect(download.headers.get('content-type')).toBe(tipo);
-    expect(download.headers.get('cache-control')).toBe('private, no-store');
-    expect(Buffer.from(await download.arrayBuffer())).toEqual(bytes);
+    await verificarDownloadPrivado(await get(caminho), bytes, tipo, 'arquivo');
     expect((await(await get('/api/anexos?tipoRegistro=ABASTECIMENTO&registroId=92194')).json()).data).toEqual([data]);
   }
   expect((await get('/api/abastecimentos/92195/comprovante')).status).toBe(404);
@@ -59,6 +56,49 @@ test('reenvio acrescenta histórico, devolve último confirmado e não duplica l
   expect(lista.data[0].comprovante_nome).toBe('novo.pdf');
   expect(Buffer.from(await(await get(caminho)).arrayBuffer())).toEqual(pdf);
   expect(Buffer.from(await(await get('/api/anexos/'+primeiro.data.id)).arrayBuffer())).toEqual(pngAnexo);
+});
+
+test('fallback do comprovante distingue ausência, negação e falha real da fonte prioritária', async () => {
+  const jpeg = Buffer.from('ffd8ff00ffd9', 'hex');
+  await fixture.sql`INSERT INTO public.abastecimento_comprovante (abastecimento_id, nome, tipo, dados)
+    VALUES (92194, 'legado.jpg', 'image/jpeg', ${jpeg})`;
+  try {
+    await expect(fixture.sql`INSERT INTO public.abastecimento_comprovante (abastecimento_id, nome, tipo, dados)
+      VALUES (92194, 'duplicado.jpg', 'image/jpeg', ${jpeg})`).rejects.toMatchObject({ code: '23505' });
+    await verificarDownloadPrivado(await get(caminho, 'GESTOR_FROTA'), jpeg, 'image/jpeg', 'comprovante');
+    expect((await get(caminho, 'MOTORISTA')).status).toBe(403);
+    expect((await get(caminho, null)).status).toBe(401);
+
+    const uploads = await Promise.all([
+      enviar(pngAnexo, 'image/png', 'recente.png', 'GESTOR_FROTA'),
+      enviar(Buffer.from('%PDF-1.7 fixture'), 'application/pdf', 'recente.pdf'),
+    ]);
+    for (const response of uploads) {
+      expect(response.status).toBe(201);
+      await response.json();
+    }
+    const anexos = await fixture.sql<{ dados: Buffer; tipo: string }[]>`
+      SELECT dados, tipo FROM public.anexo WHERE abastecimento_id=92194 ORDER BY criado_em DESC, id DESC
+    `;
+    expect(anexos).toHaveLength(2);
+    await verificarDownloadPrivado(await get(caminho), anexos[0].dados, anexos[0].tipo, 'arquivo');
+    const [legado] = await fixture.sql`SELECT dados FROM public.abastecimento_comprovante WHERE abastecimento_id=92194`;
+    expect(legado.dados).toEqual(jpeg);
+
+    // Harness verificado e suíte serial. A leitura real falha enquanto a coluna
+    // tem outro nome, embora o comprovante legado continue disponível.
+    await fixture.admin`ALTER TABLE public.anexo RENAME COLUMN dados TO dados_s247_falha`;
+    try {
+      const falha = await get(caminho);
+      expect(falha.status).toBe(500);
+      expect(await falha.json()).toMatchObject({ error: { code: 'ERRO_INTERNO' } });
+    } finally {
+      await fixture.admin`ALTER TABLE public.anexo RENAME COLUMN dados_s247_falha TO dados`;
+    }
+    await verificarDownloadPrivado(await get(caminho), anexos[0].dados, anexos[0].tipo, 'arquivo');
+  } finally {
+    await fixture.sql`DELETE FROM public.abastecimento_comprovante WHERE abastecimento_id=92194`;
+  }
 });
 
 test('401/403 usam perfil atual; 404 não fabrica vínculo e ID do form não substitui o path',async()=>{

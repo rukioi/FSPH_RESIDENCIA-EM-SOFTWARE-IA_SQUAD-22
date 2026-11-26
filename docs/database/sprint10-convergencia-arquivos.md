@@ -110,3 +110,50 @@ rollback atômico da inserção. O backup do estado pós-cópia é restaurado em
 outro banco descartável, com comparação de schema, permissões, contagens e
 SHA-256. O log registra volume lógico copiado, variação física, tempos de
 backup e restore e as exclusões por categoria.
+
+## Regressão binária e transição de leitura · SCRUM-247
+
+Os caminhos, perfis e códigos estão no [inventário de API](../api/inventory.md)
+e no [OpenAPI](../api/openapi.yaml). A regressão usa fixtures HTTP e SQL no
+PostgreSQL Docker, junto de `npm test`, e compara bytes, SHA-256, tamanho e
+headers com o comportamento de cada rota.
+
+| Download | Origem e consumidor | Contrato preservado no ensaio |
+| --- | --- | --- |
+| `GET /api/abastecimentos/{id}/comprovante` | Último anexo compartilhado para o abastecimento. Na ausência dele, imagem legada única. Consumido pela listagem e pelo detalhe via `abastecimentos.service.ts`. | PDF/JPEG/PNG no anexo e JPEG/PNG no legado. O nome fixo do header é `arquivo` ou `comprovante` conforme a fonte. Dois envios concorrentes preservam o histórico e a resposta segue a ordenação confirmada em SQL. |
+| `GET /api/anexos/{id}` | Anexo comum, incluindo o `anexoId` de uma versão documental. Consumido pela interface de anexos por `anexos.service.ts`. | PDF/JPEG/PNG, `attachment; filename="arquivo"`. O download valida sessão, perfil e vínculo atuais. O histórico mantém o ID do mesmo documento e a autorização continua por registro. |
+| `GET /api/viagens/evidencias/{id}` | Evidência original versionada em `viagem_evidencia`, disponível no cliente gerado. | JPEG/PNG, `attachment; filename="evidencia"`. As duas versões mantêm os IDs, a autoria, o momento e os bytes originais de cada versão. A reatribuição revoga o acesso do motorista anterior e libera o do motorista atual. |
+
+Os downloads mantêm `Cache-Control: private, no-store`,
+`X-Content-Type-Options: nosniff`, tipo e comprimento do arquivo. O ensaio
+verifica ausência de redirecionamento e de header `Location`. Para o
+comprovante, a autorização vem antes das fontes. Se a consulta do anexo
+compartilhado falhar, a resposta é 500 mesmo com uma imagem legada válida.
+Quando a consulta volta a funcionar, a mesma prioridade é confirmada sem
+nova escrita.
+
+### Etapas propostas para troca de origem
+
+1. **Preparar em ambiente autorizado.** Verificar histórico, ACL/RLS, papel
+   runtime, capacidade para coexistência e recuperação do backup. A ponte de
+   fotos ainda existe só no piloto descartável. Uma eventual ponte persistente
+   requer migration revisada, prova de upgrade e evidência equivalente à do
+   piloto. Continuar a registrar novas versões no fluxo de origem.
+2. **Comparar antes da ativação.** Em lote pequeno, conferir vínculo, papel
+   atual, IDs do domínio, momento, versão, autor, data e paridade de bytes,
+   MIME, tamanho e SHA-256. Manter contagens por motivo de exclusão sem
+   exportar arquivos ou dados pessoais. Preservar os nomes de download e a
+   política de cache de cada rota. Uma evidência de domínio mantém sua
+   autorização mesmo que tenha cópia em `anexo`.
+3. **Ativar por domínio após aprovação.** Manter a escolha de origem
+   reversível. Ausência de mapeamento para um recurso autorizado pode usar os
+   bytes da origem. Negação, FK incompatível, divergência de integridade e erro
+   de banco precisam ser observáveis e devem interromper a leitura pela ponte.
+   Medir a taxa de fallback, falhas e divergências antes de ampliar o lote.
+4. **Retornar se houver regressão.** Restaurar a leitura do domínio pela
+   origem preservada, manter as duas cópias e repetir as verificações de
+   autorização e integridade. Para reversão de esquema com dados, usar a
+   guarda e o procedimento de backup e restore. Excluir arquivos ou tabelas
+   depende de decisão de retenção e autorização específica. O ensaio atual
+   comprova a leitura legada, a prioridade real do comprovante e a recuperação
+   do piloto, com a transição de fotos reservada a uma implantação aprovada.
