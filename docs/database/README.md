@@ -234,3 +234,8 @@ estavam pendentes. Ele contém 14 tabelas, 146 colunas, 8 enums, 77 constraints 
 
 Ambiente, provas e limites estão em
 [sprint8-viagem-execucao](./sprint8-viagem-execucao.md).
+
+## Sprint 10 · Convergência de arquivos
+
+O [inventário de convergência de arquivos](./sprint10-convergencia-arquivos.md)
+registra o mapeamento do legado e as condições para o piloto da Sprint 10.
