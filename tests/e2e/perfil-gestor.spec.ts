@@ -61,6 +61,12 @@ for (const width of [390, 768, 1280]) {
     await page.route('**/api/auth/sessao', route => route.fulfill({ json: { data: {
       id: '42', nome: 'Gestora Exemplo', email: 'gestora@example.invalid', perfil: 'GESTOR_FROTA',
     } } }))
+    await page.route(url => /^\/api\/motoristas\/12\/(escalas|impedimentos|transicoes)$/.test(url.pathname), route => {
+      const url = new URL(route.request().url())
+      const meta = { page: Number(url.searchParams.get('page')), limit: Number(url.searchParams.get('limit')), total: 0 }
+      const situacao = url.pathname.endsWith('/transicoes') ? { situacao: { motoristaId: '12', inativo: false } } : {}
+      return route.fulfill({ json: { data: [], meta, ...situacao } })
+    })
     await page.route('**/api/motoristas', route => route.fulfill({ json: { data: [{
       id: '12', usuario_id: null, nome: 'Motorista Exemplo', cnh: '12345678901', categoria_cnh: 'B',
       validade_cnh: '2099-01-01', status: 'DISPONIVEL', criado_em: null, cpf: null, telefone: null,
@@ -74,12 +80,14 @@ for (const width of [390, 768, 1280]) {
     await detalhes.focus()
     await expect(detalhes).toBeFocused()
     await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/\/gestor\/motoristas\/12$/)
     await expect(page.getByRole('heading', { name: 'Motorista Exemplo' })).toBeVisible()
     await expect(page.getByText('Pendências documentais')).toBeVisible()
     await expect(page.getByText('Histórico de chamados/rotas')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: info.outputPath(`motorista-perfil-${width}.png`), fullPage: true })
     await page.locator('.motorista-voltar').click()
+    await expect(page).toHaveURL(/\/gestor\/motoristas$/)
     await expect(page.getByRole('button', { name: 'Ver detalhes' })).toBeVisible()
   })
 }
