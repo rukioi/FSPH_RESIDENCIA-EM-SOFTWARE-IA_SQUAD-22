@@ -38,10 +38,8 @@ type Motorista = MotoristaDto & {
   historico_chamados?: HistoricoMotorista[]; historico_rotas?: HistoricoMotorista[];
 };
 
-// Novo: cadastro com e-mail do usuário MOTORISTA a ser vinculado.
-type CriarMotoristaComEmail = CriarMotoristaDto & { email?: string | null };
-
 type StatusFormularioMotorista = NonNullable<CriarMotoristaDto['status']>;
+const categoriasFormulario = ["A", "B", "C", "D", "E"] as const satisfies readonly CriarMotoristaDto['categoria_cnh'][];
 
 type NovoMotorista = {
   nome: string;
@@ -95,6 +93,10 @@ function categoriaCnh(motorista: Motorista) {
   return motorista.categoria_cnh ?? motorista.cnh_categoria ?? "Não informada";
 }
 
+function categoriaParaFormulario(valor: string): NovoMotorista['categoria_cnh'] {
+  return categoriasFormulario.find(categoria => categoria === valor) ?? "";
+}
+
 function formatarDataInput(valor?: string | null) {
   if (!valor) return "";
   if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return valor;
@@ -119,7 +121,7 @@ function motoristaParaFormulario(motorista: Motorista): NovoMotorista {
     telefone: motorista.telefone ?? "",
     email: motorista.email ?? "",
     cnh: motorista.numero_cnh ?? motorista.cnh ?? "",
-    categoria_cnh: categoriaCnh(motorista) !== "Não informada" ? categoriaCnh(motorista) : "A",
+    categoria_cnh: categoriaParaFormulario(categoriaCnh(motorista)),
     validade_cnh: formatarDataInput(motorista.validade_cnh),
     status: statusValido,
   };
@@ -221,8 +223,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
   const [busca, setBusca] = useState("");
   const [filtroDisponibilidade, setFiltroDisponibilidade] = useState("TODOS");
   const [filtroCnh, setFiltroCnh] = useState("TODOS");
-  const [motoristaSelecionado, setMotoristaSelecionado] =
-    useState<Motorista | null>(null);
+  const motoristaSelecionado = motoristaId ? motoristas.find(item => item.id === motoristaId) : undefined;
   const [motoristaEmEdicao, setMotoristaEmEdicao] =
     useState<Motorista | null>(null);
   const [menuMotoristaAberto, setMenuMotoristaAberto] = useState<string | null>(
@@ -336,58 +337,24 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
       const telefoneLimpo = novoMotorista.telefone.trim() || null;
       const statusSeguro: StatusFormularioMotorista = novoMotorista.status ?? "DISPONIVEL";
 
-      if (motoristaEmEdicao) {
-        const atualizado: Motorista = {
-          ...motoristaEmEdicao,
-          nome: novoMotorista.nome.trim(),
-          cpf: cpfLimpo,
-          telefone: telefoneLimpo,
-          email: emailLimpo,
-          cnh: novoMotorista.cnh.trim(),
-          numero_cnh: novoMotorista.cnh.trim(),
-          categoria_cnh: novoMotorista.categoria_cnh as CriarMotoristaDto['categoria_cnh'],
-          cnh_categoria: novoMotorista.categoria_cnh,
-          validade_cnh: novoMotorista.validade_cnh,
-          status: statusSeguro,
-        };
-
-        setMotoristas((atuais) =>
-          atuais.map((item) =>
-            item.id === motoristaEmEdicao.id ? atualizado : item,
-          ),
-        );
-        if (motoristaSelecionado?.id === motoristaEmEdicao.id) {
-          setMotoristaSelecionado(atualizado);
-        }
-        setAviso(
-          emailLimpo
-            ? `Dados de ${atualizado.nome} atualizados e vinculados a ${emailLimpo}.`
-            : `Dados de ${atualizado.nome} atualizados.`,
-        );
-        setNovoMotorista(cadastroInicial);
-        setMotoristaEmEdicao(null);
-        setModalCadastroAberto(false);
-        return;
-      }
-
-      // Novo: o e-mail vai junto para o backend vincular o usuário MOTORISTA.
-      const entrada: CriarMotoristaComEmail = {
+      const entrada = {
         nome: novoMotorista.nome.trim(),
         cnh: novoMotorista.cnh.trim(),
-        categoria_cnh: novoMotorista.categoria_cnh as CriarMotoristaDto['categoria_cnh'],
+        categoria_cnh: novoMotorista.categoria_cnh,
         validade_cnh: novoMotorista.validade_cnh,
         status: statusSeguro,
         cpf: cpfLimpo,
         telefone: telefoneLimpo,
-        email: emailLimpo,
       };
-      const motoristaCriado = await salvarMotorista(entrada);
-      setMotoristas((atuais) => [motoristaCriado, ...atuais]);
-      setAviso(
-        entrada.email
-          ? `Motorista cadastrado e vinculado ao acesso ${entrada.email}.`
-          : 'Motorista cadastrado com sucesso.',
-      );
+      const motoristaSalvo = motoristaEmEdicao
+        ? await atualizarMotorista(motoristaEmEdicao.id, entrada)
+        : await salvarMotorista({ ...entrada, email: emailLimpo });
+      if (!vivo.current || obterToken() !== token) return;
+      setAviso(motoristaEmEdicao
+        ? `Dados de ${motoristaSalvo.nome} atualizados.`
+        : motoristaSalvo.email
+          ? `Motorista cadastrado e vinculado ao acesso ${motoristaSalvo.email}.`
+          : 'Motorista cadastrado com sucesso.');
       setNovoMotorista(cadastroInicial);
       setModalCadastroAberto(false);
       setMotoristaEmEdicao(null);
@@ -415,10 +382,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
     setErroRemocao('');
     try {
       await excluirMotorista(confirmacaoRemocao.motorista.id);
-      setMotoristas(atuais => atuais.filter(item => item.id !== confirmacaoRemocao.motorista.id));
-      if (motoristaSelecionado?.id === confirmacaoRemocao.motorista.id) {
-        setMotoristaSelecionado(null);
-      }
+      if (!vivo.current || obterToken() !== token) return;
       setAviso(`Motorista ${confirmacaoRemocao.motorista.nome} removido com sucesso.`);
       setConfirmacaoRemocao(null);
     } catch (erroEnvio) {
@@ -792,6 +756,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
                     type="email"
                     placeholder="motorista@frota.gov.br"
                     autoComplete="off"
+                    readOnly={editando}
                     value={novoMotorista.email}
                     onChange={(evento) =>
                       setNovoMotorista({
@@ -800,7 +765,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
                       })
                     }
                   />
-                  <small>Precisa ser um usuário com perfil Motorista.</small>
+                  <small>{editando ? "O vínculo é definido no cadastro." : "Precisa ser um usuário com perfil Motorista."}</small>
                 </label>
 
                 <label>
@@ -825,12 +790,12 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
                     onChange={(evento) =>
                       setNovoMotorista({
                         ...novoMotorista,
-                        categoria_cnh: ["A", "B", "C", "D", "E"].includes(evento.target.value) ? evento.target.value as CriarMotoristaDto["categoria_cnh"] : "",
+                        categoria_cnh: categoriaParaFormulario(evento.target.value),
                       })
                     }
                   >
                     <option value="" disabled>Selecione a categoria</option>
-                    {["A", "B", "C", "D", "E"].map(
+                    {categoriasFormulario.map(
                       (categoria) => (
                         <option key={categoria} value={categoria}>
                           {categoria}
@@ -910,7 +875,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
               </footer>
             </form>
           </section>
-        </DialogMotorista>
+        </div>
       )}
 
       <section

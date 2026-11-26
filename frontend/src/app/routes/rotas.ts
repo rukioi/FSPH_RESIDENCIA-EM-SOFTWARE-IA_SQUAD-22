@@ -145,3 +145,19 @@ export function lerRotaHistoricoAbastecimentosVeiculo(caminho: string) {
 
   return resultado ? resultado[1] : null;
 }
+
+/** Lê o identificador BIGINT da rota de detalhe sem convertê-lo em Number. */
+export function lerRotaMotorista(caminho: string): string | null {
+  const prefixo = `${ROTAS.motoristasGestor}/`;
+  if (!caminho.startsWith(prefixo)) return null;
+  const id = caminho.slice(prefixo.length);
+  if (!/^\d+$/.test(id) || BigInt(id) > 9223372036854775807n) return null;
+  return BigInt(id).toString();
+}
+
+/** Monta a URL de detalhe usando a mesma validação do roteador. */
+export function rotaMotorista(id: string): string {
+  const idValidado = lerRotaMotorista(`${ROTAS.motoristasGestor}/${id}`);
+  if (idValidado === null) throw new Error('ID de motorista inválido.');
+  return `${ROTAS.motoristasGestor}/${idValidado}`;
+}
