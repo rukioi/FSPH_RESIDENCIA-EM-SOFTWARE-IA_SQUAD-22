@@ -2,7 +2,7 @@ import type {z} from 'zod';
 import {ErroHttp} from '../../shared/http/errors.js';
 import {sql} from '../../database/connection.js';
 import {consultarRecursosDisponiveis} from '../alocacao/alocacao.repository.js';
-import { condicaoImpedimento, faixaInstantes } from '../alocacao/alocacao.elegibilidade.js';
+import { motoristasImpedidos } from '../alocacao/alocacao.elegibilidade.js';
 
 /** SCRUM-241: separa candidato com escala integral de dado de escala ausente. */
 export interface CoberturaMotoristas { comEscalaIntegral: number; semEscalaIntegral: number; impedidos: number }
@@ -57,15 +57,17 @@ export async function consultarIndicadores(query:ConsultaDashboard,comResumo:boo
       `;
       motoristasCandidatos = candidatos.length;
       // SCRUM-241: escala EM_ESCALA vigente cobrindo toda a janela; lacuna = dado insuficiente.
-      const janela = faixaInstantes(tx, intervalo);
-      const [cobertura] = await tx<{ com: number; impedidos: number }[]>`SELECT
-        (SELECT count(*)::int FROM public.motorista m WHERE m.id = ANY(${candidatos.map(c => c.id)}::bigint[])
+      const [cobertura] = await tx<{ com: number }[]>`WITH janela AS (SELECT tstzrange(
+          (${intervalo.inicio}::text::timestamp AT TIME ZONE 'America/Maceio'),
+          (${intervalo.fim}::text::timestamp AT TIME ZONE 'America/Maceio'), '[)') AS r)
+        SELECT count(*)::int AS com FROM public.motorista m, janela j
+        WHERE m.id = ANY(${candidatos.map(c => c.id)}::bigint[])
           AND coalesce((SELECT range_agg(tstzrange(e.inicio, e.fim, '[)')) FROM public.escala_motorista e
             WHERE e.motorista_id = m.id AND e.estado = 'VIGENTE' AND e.situacao = 'EM_ESCALA'
-              AND tstzrange(e.inicio, e.fim, '[)') && ${janela}) @> ${janela}, false)) AS com,
-        (SELECT count(*)::int FROM public.motorista m WHERE ${condicaoImpedimento(tx, tx`m.id`, janela)}) AS impedidos`;
+              AND tstzrange(e.inicio, e.fim, '[)') && j.r) @> j.r, false)`;
+      const impedidos = await motoristasImpedidos(tx, null, intervalo);
       coberturaMotoristas = { comEscalaIntegral: cobertura.com, semEscalaIntegral: candidatos.length - cobertura.com,
-        impedidos: cobertura.impedidos };
+        impedidos: impedidos.size };
     }
     const livres=recursos.filter(r=>r.tipo==='veiculo').map(r=>r.id);
     // Sem autorização para incorporar frota marcada SVO ao recorte administrativo.

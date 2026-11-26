@@ -1,5 +1,5 @@
 import type postgres from 'postgres';
-import { condicaoImpedimento, faixaInstantes, impedimentoMotorista } from './alocacao.elegibilidade.js';
+import { motoristasImpedidos } from './alocacao.elegibilidade.js';
 
 export interface IntervaloReserva { inicio: string; fim: string }
 export type ResultadoDisponibilidade = 'disponivel' | 'referencia_inexistente' | 'recurso_inelegivel' | 'motorista_impedido' | 'conflito_alocacao';
@@ -11,8 +11,6 @@ export async function verificarDisponibilidade(tx: postgres.TransactionSql, moto
   const veiculos = await tx`SELECT id, status FROM public.veiculo WHERE id=${veiculoId} FOR UPDATE`;
   if (motoristas.length !== 1 || veiculos.length !== 1) return 'referencia_inexistente';
   if (motoristas[0].status !== 'DISPONIVEL' || veiculos[0].status !== 'DISPONIVEL') return 'recurso_inelegivel';
-  // SCRUM-240: inativação, ausência ou FORA_DE_ESCALA no intervalo; dado ausente não bloqueia.
-  if (await impedimentoMotorista(tx, motoristaId, intervalo)) return 'motorista_impedido';
   // Os locks dos recursos serializam ambos os fluxos. Não bloquear linhas de outros
   // pedidos/ordens aqui: isso inverteria a ordem de locks e permitiria deadlock.
   const ordens = await tx`SELECT id FROM public.ordem_coleta
@@ -28,7 +26,9 @@ export async function verificarDisponibilidade(tx: postgres.TransactionSql, moto
         OR data_hora_retorno_previsto <= data_hora_saida
         OR (data_hora_saida < ${intervalo?.fim ?? null}::text::timestamp
           AND data_hora_retorno_previsto > ${intervalo?.inicio ?? null}::text::timestamp)) LIMIT 1`;
-  return reservas.length ? 'conflito_alocacao' : 'disponivel';
+  if (reservas.length) return 'conflito_alocacao';
+  // SCRUM-240: consulta própria, após os locks; dado de escala ausente não bloqueia.
+  return (await motoristasImpedidos(tx, [motoristaId], intervalo)).size ? 'motorista_impedido' : 'disponivel';
 }
 
 /** Bloqueia todos os motoristas (ordenados por BIGINT), depois veículos, mantendo a ordem dos demais fluxos. */
@@ -43,7 +43,7 @@ export interface RecursoDisponivel {tipo:'motorista'|'veiculo';id:string;nome:st
 
 /** Consulta informativa sem locks; usa os mesmos estados, impedimentos e intervalo da validação transacional. */
 export async function consultarRecursosDisponiveis(tx: postgres.TransactionSql, intervalo: IntervaloReserva): Promise<RecursoDisponivel[]> {
-  return tx<RecursoDisponivel[]>`WITH recursos AS (
+  const recursos = await tx<RecursoDisponivel[]>`WITH recursos AS (
     SELECT 'motorista'::text AS tipo,id,nome,NULL::text AS placa,NULL::text AS modelo,status::text AS status FROM public.motorista
     UNION ALL SELECT 'veiculo',id,NULL::text,placa,modelo,status::text FROM public.veiculo)
     SELECT r.tipo,r.id::text,r.nome,r.placa,r.modelo FROM recursos r WHERE r.status='DISPONIVEL'
@@ -55,6 +55,8 @@ export async function consultarRecursosDisponiveis(tx: postgres.TransactionSql, 
           AND (CASE WHEN r.tipo='motorista' THEN s.motorista_id ELSE s.veiculo_id END)=r.id
           AND (s.status='EM_ANDAMENTO' OR s.data_hora_retorno_previsto IS NULL OR s.data_hora_retorno_previsto<=s.data_hora_saida
             OR (s.data_hora_saida<${intervalo.fim}::text::timestamp AND s.data_hora_retorno_previsto>${intervalo.inicio}::text::timestamp)))
-      AND NOT (r.tipo='motorista' AND ${condicaoImpedimento(tx, tx`r.id`, faixaInstantes(tx, intervalo))})
     ORDER BY r.tipo,r.id`;
+  // SCRUM-240: mesmo predicado da escrita, aplicado aos motoristas candidatos.
+  const impedidos = await motoristasImpedidos(tx, recursos.filter(r => r.tipo === 'motorista').map(r => r.id), intervalo);
+  return recursos.filter(r => r.tipo !== 'motorista' || !impedidos.has(r.id));
 }

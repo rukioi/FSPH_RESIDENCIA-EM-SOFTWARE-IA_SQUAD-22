@@ -20,6 +20,8 @@ beforeEach(() => {
     if (query.includes('SELECT usuario_id::text FROM public.motorista')) return [{usuario_id:'99'}];
     if (query.includes('SELECT ativo,perfil FROM public.usuario')) return [{ativo:true,perfil:'MOTORISTA'}];
     if (query.includes('SELECT status,')) return [{status:'APROVADA',...intervalo,retorno_valido:true}];
+    // SCRUM-240: nenhum impedimento conhecido no cenário padrão.
+    if (query.includes('motorista_transicao_profissional')) return [];
     if (query.includes('FROM public.motorista') || query.includes('FROM public.veiculo')) return [{id:'12',status:'DISPONIVEL'}];
     if (query.includes('UPDATE public.solicitacao_viagem')) return [resultado];
     if (query.includes('INSERT INTO public.viagem')) return [{id:'1'}];
@@ -38,10 +40,13 @@ test('agendamento bloqueia pedido, motorista e veículo antes de conferir confli
   expect(queries[2]).toContain('public.veiculo'); expect(queries[2]).toContain('FOR UPDATE');
   expect(queries[3]).toContain('EM_TRANSPORTE');
   expect(queries[4]).toContain('AGENDADA');
-  expect(queries[7]).toContain("WHERE id=? AND status='APROVADA'");
-  expect(mocks.tx.mock.calls[7].slice(1)).toEqual(['12','34',intervalo.fim,'1024']);
-  expect(queries[8]).toContain('INSERT INTO public.viagem');
-  expect(mocks.tx.mock.calls[9].slice(1)).toEqual(['42',['Agendou a solicitação de transporte ID 1024'],['solicitacao_viagem_agendada'],['1024']]);
+  // SCRUM-240: impedimento é consulta própria, depois dos locks e dos conflitos.
+  expect(queries[5]).toContain('motorista_transicao_profissional');
+  expect(mocks.tx.mock.calls[5].slice(1)).toEqual([intervalo.inicio,intervalo.inicio,intervalo.fim,['12'],['12']]);
+  expect(queries[8]).toContain("WHERE id=? AND status='APROVADA'");
+  expect(mocks.tx.mock.calls[8].slice(1)).toEqual(['12','34',intervalo.fim,'1024']);
+  expect(queries[9]).toContain('INSERT INTO public.viagem');
+  expect(mocks.tx.mock.calls[10].slice(1)).toEqual(['42',['Agendou a solicitação de transporte ID 1024'],['solicitacao_viagem_agendada'],['1024']]);
 });
 
 test.each([['ausente',[],404],['pendente',[{status:'PENDENTE'}],409],['agendada',[{status:'AGENDADA'}],409],['retorno inválido',[{status:'APROVADA',retorno_valido:false}],400]])('não agenda pedido %s', async (_caso,rows,status) => {
