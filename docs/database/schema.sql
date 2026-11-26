@@ -28,10 +28,18 @@ CREATE SEQUENCE public."documento_historico_id_seq" AS bigint INCREMENT BY 1 MIN
 ALTER SEQUENCE public."documento_historico_id_seq" OWNER TO "supabase_admin";
 CREATE SEQUENCE public."documento_veiculo_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
 ALTER SEQUENCE public."documento_veiculo_id_seq" OWNER TO "postgres";
+CREATE SEQUENCE public."escala_motorista_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
+ALTER SEQUENCE public."escala_motorista_id_seq" OWNER TO "supabase_admin";
+CREATE SEQUENCE public."habilitacao_categoria_veiculo_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
+ALTER SEQUENCE public."habilitacao_categoria_veiculo_id_seq" OWNER TO "supabase_admin";
+CREATE SEQUENCE public."indisponibilidade_motorista_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
+ALTER SEQUENCE public."indisponibilidade_motorista_id_seq" OWNER TO "supabase_admin";
 CREATE SEQUENCE public."log_atividade_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
 ALTER SEQUENCE public."log_atividade_id_seq" OWNER TO "postgres";
 CREATE SEQUENCE public."motorista_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
 ALTER SEQUENCE public."motorista_id_seq" OWNER TO "postgres";
+CREATE SEQUENCE public."motorista_transicao_profissional_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
+ALTER SEQUENCE public."motorista_transicao_profissional_id_seq" OWNER TO "supabase_admin";
 CREATE SEQUENCE public."notificacao_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
 ALTER SEQUENCE public."notificacao_id_seq" OWNER TO "supabase_admin";
 CREATE SEQUENCE public."ordem_coleta_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
@@ -129,6 +137,46 @@ CREATE TABLE public."documento_veiculo" (
   "arquivo_tipo" character varying(100)
 );
 ALTER TABLE public."documento_veiculo" OWNER TO "postgres";
+CREATE TABLE public."escala_motorista" (
+  "id" bigint DEFAULT nextval('escala_motorista_id_seq'::regclass) NOT NULL,
+  "motorista_id" bigint NOT NULL,
+  "inicio" timestamp with time zone NOT NULL,
+  "fim" timestamp with time zone NOT NULL,
+  "situacao" text NOT NULL,
+  "estado" text DEFAULT 'VIGENTE'::text NOT NULL,
+  "autor_id" bigint NOT NULL,
+  "criado_em" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  "cancelado_por_id" bigint,
+  "cancelado_em" timestamp with time zone,
+  "motivo_cancelamento" text
+);
+ALTER TABLE public."escala_motorista" OWNER TO "supabase_admin";
+CREATE TABLE public."habilitacao_categoria_veiculo" (
+  "id" bigint DEFAULT nextval('habilitacao_categoria_veiculo_id_seq'::regclass) NOT NULL,
+  "categoria_cnh" character varying(5) NOT NULL,
+  "classe_veicular" text NOT NULL,
+  "permitido" boolean NOT NULL,
+  "fonte_normativa" text NOT NULL,
+  "vigencia_inicio" date NOT NULL,
+  "vigencia_fim" date,
+  "autor_id" bigint NOT NULL,
+  "criado_em" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
+);
+ALTER TABLE public."habilitacao_categoria_veiculo" OWNER TO "supabase_admin";
+CREATE TABLE public."indisponibilidade_motorista" (
+  "id" bigint DEFAULT nextval('indisponibilidade_motorista_id_seq'::regclass) NOT NULL,
+  "motorista_id" bigint NOT NULL,
+  "tipo" text NOT NULL,
+  "inicio" timestamp with time zone NOT NULL,
+  "fim" timestamp with time zone,
+  "estado" text DEFAULT 'VIGENTE'::text NOT NULL,
+  "autor_id" bigint NOT NULL,
+  "criado_em" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  "cancelado_por_id" bigint,
+  "cancelado_em" timestamp with time zone,
+  "motivo_cancelamento" text
+);
+ALTER TABLE public."indisponibilidade_motorista" OWNER TO "supabase_admin";
 CREATE TABLE public."log_atividade" (
   "id" bigint DEFAULT nextval('log_atividade_id_seq'::regclass) NOT NULL,
   "usuario_id" bigint,
@@ -151,6 +199,17 @@ CREATE TABLE public."motorista" (
   "telefone" character varying(20)
 );
 ALTER TABLE public."motorista" OWNER TO "postgres";
+CREATE TABLE public."motorista_transicao_profissional" (
+  "id" bigint DEFAULT nextval('motorista_transicao_profissional_id_seq'::regclass) NOT NULL,
+  "motorista_id" bigint NOT NULL,
+  "versao" integer NOT NULL,
+  "versao_anterior" integer,
+  "acao" text NOT NULL,
+  "motivo" text NOT NULL,
+  "autor_id" bigint NOT NULL,
+  "criado_em" timestamp with time zone DEFAULT clock_timestamp() NOT NULL
+);
+ALTER TABLE public."motorista_transicao_profissional" OWNER TO "supabase_admin";
 CREATE TABLE public."notificacao" (
   "id" bigint DEFAULT nextval('notificacao_id_seq'::regclass) NOT NULL,
   "usuario_id" bigint NOT NULL,
@@ -292,8 +351,12 @@ ALTER SEQUENCE public."anexo_id_seq" OWNED BY public."anexo"."id";
 ALTER SEQUENCE public."anotacao_id_seq" OWNED BY public."anotacao"."id";
 ALTER SEQUENCE public."documento_historico_id_seq" OWNED BY public."documento_historico"."id";
 ALTER SEQUENCE public."documento_veiculo_id_seq" OWNED BY public."documento_veiculo"."id";
+ALTER SEQUENCE public."escala_motorista_id_seq" OWNED BY public."escala_motorista"."id";
+ALTER SEQUENCE public."habilitacao_categoria_veiculo_id_seq" OWNED BY public."habilitacao_categoria_veiculo"."id";
+ALTER SEQUENCE public."indisponibilidade_motorista_id_seq" OWNED BY public."indisponibilidade_motorista"."id";
 ALTER SEQUENCE public."log_atividade_id_seq" OWNED BY public."log_atividade"."id";
 ALTER SEQUENCE public."motorista_id_seq" OWNED BY public."motorista"."id";
+ALTER SEQUENCE public."motorista_transicao_profissional_id_seq" OWNED BY public."motorista_transicao_profissional"."id";
 ALTER SEQUENCE public."notificacao_id_seq" OWNED BY public."notificacao"."id";
 ALTER SEQUENCE public."ordem_coleta_id_seq" OWNED BY public."ordem_coleta"."id";
 ALTER SEQUENCE public."solicitacao_obito_id_seq" OWNED BY public."solicitacao_obito"."id";
@@ -330,11 +393,36 @@ ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_pke
 ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_registro_check" CHECK (num_nonnulls(documento_veiculo_id, motorista_id) = 1);
 ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_versao_check" CHECK (versao >= 1);
 ALTER TABLE public."documento_veiculo" ADD CONSTRAINT "documento_veiculo_pkey" PRIMARY KEY (id);
+ALTER TABLE public."escala_motorista" ADD CONSTRAINT "escala_motorista_cancelamento_check" CHECK (estado = 'VIGENTE'::text AND cancelado_por_id IS NULL AND cancelado_em IS NULL AND motivo_cancelamento IS NULL OR estado = 'CANCELADA'::text AND cancelado_por_id IS NOT NULL AND cancelado_em IS NOT NULL AND cancelado_em >= criado_em AND motivo_cancelamento IS NOT NULL AND char_length(btrim(motivo_cancelamento)) >= 1 AND char_length(btrim(motivo_cancelamento)) <= 500);
+ALTER TABLE public."escala_motorista" ADD CONSTRAINT "escala_motorista_estado_check" CHECK (estado = ANY (ARRAY['VIGENTE'::text, 'CANCELADA'::text]));
+ALTER TABLE public."escala_motorista" ADD CONSTRAINT "escala_motorista_intervalo_check" CHECK (isfinite(inicio) AND isfinite(fim) AND inicio < fim);
+ALTER TABLE public."escala_motorista" ADD CONSTRAINT "escala_motorista_pkey" PRIMARY KEY (id);
+ALTER TABLE public."escala_motorista" ADD CONSTRAINT "escala_motorista_sem_sobreposicao" EXCLUDE USING gist (int8range(motorista_id, motorista_id, '[]'::text) WITH =, tstzrange(inicio, fim, '[)'::text) WITH &&) WHERE (estado = 'VIGENTE'::text);
+ALTER TABLE public."escala_motorista" ADD CONSTRAINT "escala_motorista_situacao_check" CHECK (situacao = ANY (ARRAY['EM_ESCALA'::text, 'FORA_DE_ESCALA'::text]));
+ALTER TABLE public."habilitacao_categoria_veiculo" ADD CONSTRAINT "habilitacao_categoria_veiculo_categoria_cnh_check" CHECK (categoria_cnh::text = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text, 'E'::text]));
+ALTER TABLE public."habilitacao_categoria_veiculo" ADD CONSTRAINT "habilitacao_categoria_veiculo_classe_veicular_check" CHECK (char_length(btrim(classe_veicular)) >= 1 AND char_length(btrim(classe_veicular)) <= 100);
+ALTER TABLE public."habilitacao_categoria_veiculo" ADD CONSTRAINT "habilitacao_categoria_veiculo_fonte_normativa_check" CHECK (char_length(btrim(fonte_normativa)) >= 1 AND char_length(btrim(fonte_normativa)) <= 500);
+ALTER TABLE public."habilitacao_categoria_veiculo" ADD CONSTRAINT "habilitacao_categoria_veiculo_pkey" PRIMARY KEY (id);
+ALTER TABLE public."habilitacao_categoria_veiculo" ADD CONSTRAINT "habilitacao_categoria_veiculo_vigencia_check" CHECK (isfinite(vigencia_inicio) AND (vigencia_fim IS NULL OR isfinite(vigencia_fim) AND vigencia_inicio < vigencia_fim));
+ALTER TABLE public."habilitacao_categoria_veiculo" ADD CONSTRAINT "habilitacao_categoria_veiculo_vigencia_key" UNIQUE (categoria_cnh, classe_veicular, vigencia_inicio);
+ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_cancelamento_check" CHECK (estado = 'VIGENTE'::text AND cancelado_por_id IS NULL AND cancelado_em IS NULL AND motivo_cancelamento IS NULL OR estado = 'CANCELADA'::text AND cancelado_por_id IS NOT NULL AND cancelado_em IS NOT NULL AND cancelado_em >= criado_em AND motivo_cancelamento IS NOT NULL AND char_length(btrim(motivo_cancelamento)) >= 1 AND char_length(btrim(motivo_cancelamento)) <= 500);
+ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_estado_check" CHECK (estado = ANY (ARRAY['VIGENTE'::text, 'CANCELADA'::text]));
+ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_intervalo_check" CHECK (isfinite(inicio) AND (fim IS NULL OR isfinite(fim) AND inicio < fim));
+ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_pkey" PRIMARY KEY (id);
+ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_sem_sobreposicao" EXCLUDE USING gist (int8range(motorista_id, motorista_id, '[]'::text) WITH =, tstzrange(inicio, fim, '[)'::text) WITH &&) WHERE (estado = 'VIGENTE'::text);
+ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_tipo_check" CHECK (tipo = ANY (ARRAY['FOLGA'::text, 'AFASTADO'::text]));
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_pkey" PRIMARY KEY (id);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_cnh_key" UNIQUE (cnh);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_cpf_key" UNIQUE (cpf);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_pkey" PRIMARY KEY (id);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_usuario_id_key" UNIQUE (usuario_id);
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_acao_check" CHECK (acao = ANY (ARRAY['INATIVACAO'::text, 'REATIVACAO'::text]));
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_alternancia_check" CHECK ((acao = 'INATIVACAO'::text) = ((versao % 2) = 1));
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_motivo_check" CHECK (char_length(btrim(motivo)) >= 1 AND char_length(btrim(motivo)) <= 1000);
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_pkey" PRIMARY KEY (id);
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_sequencia_check" CHECK (versao = 1 AND versao_anterior IS NULL OR versao > 1 AND versao_anterior IS NOT NULL AND versao_anterior = (versao - 1));
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_versao_check" CHECK (versao >= 1);
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_versao_key" UNIQUE (motorista_id, versao);
 ALTER TABLE public."notificacao" ADD CONSTRAINT "notificacao_categoria_check" CHECK (categoria = ANY (ARRAY['informacao'::text, 'atencao'::text, 'urgente'::text, 'sucesso'::text]));
 ALTER TABLE public."notificacao" ADD CONSTRAINT "notificacao_demanda_check" CHECK (tipo IS NULL OR viagem_id IS NOT NULL AND chave ~~ (((('viagem:'::text || viagem_id::text) || ':'::text) || lower(tipo)) || ':%'::text));
 ALTER TABLE public."notificacao" ADD CONSTRAINT "notificacao_pkey" PRIMARY KEY (id);
@@ -400,10 +488,20 @@ ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_aut
 ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_documento_veiculo_id_fkey" FOREIGN KEY (documento_veiculo_id) REFERENCES documento_veiculo(id);
 ALTER TABLE public."documento_historico" ADD CONSTRAINT "documento_historico_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
 ALTER TABLE public."documento_veiculo" ADD CONSTRAINT "documento_veiculo_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id);
+ALTER TABLE public."escala_motorista" ADD CONSTRAINT "escala_motorista_autor_id_fkey" FOREIGN KEY (autor_id) REFERENCES usuario(id);
+ALTER TABLE public."escala_motorista" ADD CONSTRAINT "escala_motorista_cancelado_por_id_fkey" FOREIGN KEY (cancelado_por_id) REFERENCES usuario(id);
+ALTER TABLE public."escala_motorista" ADD CONSTRAINT "escala_motorista_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
+ALTER TABLE public."habilitacao_categoria_veiculo" ADD CONSTRAINT "habilitacao_categoria_veiculo_autor_id_fkey" FOREIGN KEY (autor_id) REFERENCES usuario(id);
+ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_autor_id_fkey" FOREIGN KEY (autor_id) REFERENCES usuario(id);
+ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_cancelado_por_id_fkey" FOREIGN KEY (cancelado_por_id) REFERENCES usuario(id);
+ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "fk_log_atividade_usuario" FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL;
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_solicitacao_viagem_id_fkey" FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id);
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuario(id);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE;
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_anterior_fk" FOREIGN KEY (motorista_id, versao_anterior) REFERENCES motorista_transicao_profissional(motorista_id, versao);
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_autor_id_fkey" FOREIGN KEY (autor_id) REFERENCES usuario(id);
+ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
 ALTER TABLE public."notificacao" ADD CONSTRAINT "notificacao_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE;
 ALTER TABLE public."notificacao" ADD CONSTRAINT "notificacao_viagem_fk" FOREIGN KEY (viagem_id) REFERENCES viagem(id);
 ALTER TABLE public."ordem_coleta" ADD CONSTRAINT "ordem_coleta_motorista_id_fkey" FOREIGN KEY (motorista_id) REFERENCES motorista(id);
@@ -439,6 +537,8 @@ CREATE INDEX anotacao_veiculo_idx ON public.anotacao USING btree (veiculo_id, cr
 CREATE INDEX anotacao_viagem_idx ON public.anotacao USING btree (viagem_id, criado_em DESC, id DESC) WHERE (viagem_id IS NOT NULL);
 CREATE INDEX documento_historico_vencimento_idx ON public.documento_historico USING btree (data_vencimento, id);
 CREATE INDEX documento_veiculo_vencimento_idx ON public.documento_veiculo USING btree (data_vencimento, id);
+CREATE INDEX escala_motorista_motorista_idx ON public.escala_motorista USING btree (motorista_id, inicio, id);
+CREATE INDEX indisponibilidade_motorista_motorista_idx ON public.indisponibilidade_motorista USING btree (motorista_id, inicio, id);
 CREATE INDEX idx_log_atividade_solicitacao_viagem_id ON public.log_atividade USING btree (solicitacao_viagem_id);
 CREATE INDEX motorista_validade_cnh_idx ON public.motorista USING btree (validade_cnh, id);
 CREATE INDEX notificacao_caixa_idx ON public.notificacao USING btree (usuario_id, criado_em DESC, id DESC);
@@ -613,6 +713,69 @@ GRANT TRUNCATE ON TABLE public."documento_veiculo" TO "service_role";
 GRANT REFERENCES ON TABLE public."documento_veiculo" TO "service_role";
 GRANT TRIGGER ON TABLE public."documento_veiculo" TO "service_role";
 GRANT MAINTAIN ON TABLE public."documento_veiculo" TO "service_role";
+ALTER TABLE public."escala_motorista" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."escala_motorista" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."escala_motorista" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."escala_motorista" TO "postgres";
+GRANT SELECT ON TABLE public."escala_motorista" TO "postgres";
+GRANT REFERENCES ON TABLE public."escala_motorista" TO "postgres";
+GRANT TRIGGER ON TABLE public."escala_motorista" TO "postgres";
+GRANT MAINTAIN ON TABLE public."escala_motorista" TO "postgres";
+GRANT INSERT ON TABLE public."escala_motorista" TO "service_role";
+GRANT SELECT ON TABLE public."escala_motorista" TO "service_role";
+GRANT REFERENCES ON TABLE public."escala_motorista" TO "service_role";
+GRANT TRIGGER ON TABLE public."escala_motorista" TO "service_role";
+GRANT MAINTAIN ON TABLE public."escala_motorista" TO "service_role";
+GRANT INSERT ON TABLE public."escala_motorista" TO "supabase_admin";
+GRANT SELECT ON TABLE public."escala_motorista" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."escala_motorista" TO "supabase_admin";
+GRANT DELETE ON TABLE public."escala_motorista" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."escala_motorista" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."escala_motorista" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."escala_motorista" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."escala_motorista" TO "supabase_admin";
+ALTER TABLE public."habilitacao_categoria_veiculo" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."habilitacao_categoria_veiculo" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."habilitacao_categoria_veiculo" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."habilitacao_categoria_veiculo" TO "postgres";
+GRANT SELECT ON TABLE public."habilitacao_categoria_veiculo" TO "postgres";
+GRANT REFERENCES ON TABLE public."habilitacao_categoria_veiculo" TO "postgres";
+GRANT TRIGGER ON TABLE public."habilitacao_categoria_veiculo" TO "postgres";
+GRANT MAINTAIN ON TABLE public."habilitacao_categoria_veiculo" TO "postgres";
+GRANT INSERT ON TABLE public."habilitacao_categoria_veiculo" TO "service_role";
+GRANT SELECT ON TABLE public."habilitacao_categoria_veiculo" TO "service_role";
+GRANT REFERENCES ON TABLE public."habilitacao_categoria_veiculo" TO "service_role";
+GRANT TRIGGER ON TABLE public."habilitacao_categoria_veiculo" TO "service_role";
+GRANT MAINTAIN ON TABLE public."habilitacao_categoria_veiculo" TO "service_role";
+GRANT INSERT ON TABLE public."habilitacao_categoria_veiculo" TO "supabase_admin";
+GRANT SELECT ON TABLE public."habilitacao_categoria_veiculo" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."habilitacao_categoria_veiculo" TO "supabase_admin";
+GRANT DELETE ON TABLE public."habilitacao_categoria_veiculo" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."habilitacao_categoria_veiculo" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."habilitacao_categoria_veiculo" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."habilitacao_categoria_veiculo" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."habilitacao_categoria_veiculo" TO "supabase_admin";
+ALTER TABLE public."indisponibilidade_motorista" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."indisponibilidade_motorista" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."indisponibilidade_motorista" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."indisponibilidade_motorista" TO "postgres";
+GRANT SELECT ON TABLE public."indisponibilidade_motorista" TO "postgres";
+GRANT REFERENCES ON TABLE public."indisponibilidade_motorista" TO "postgres";
+GRANT TRIGGER ON TABLE public."indisponibilidade_motorista" TO "postgres";
+GRANT MAINTAIN ON TABLE public."indisponibilidade_motorista" TO "postgres";
+GRANT INSERT ON TABLE public."indisponibilidade_motorista" TO "service_role";
+GRANT SELECT ON TABLE public."indisponibilidade_motorista" TO "service_role";
+GRANT REFERENCES ON TABLE public."indisponibilidade_motorista" TO "service_role";
+GRANT TRIGGER ON TABLE public."indisponibilidade_motorista" TO "service_role";
+GRANT MAINTAIN ON TABLE public."indisponibilidade_motorista" TO "service_role";
+GRANT INSERT ON TABLE public."indisponibilidade_motorista" TO "supabase_admin";
+GRANT SELECT ON TABLE public."indisponibilidade_motorista" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."indisponibilidade_motorista" TO "supabase_admin";
+GRANT DELETE ON TABLE public."indisponibilidade_motorista" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."indisponibilidade_motorista" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."indisponibilidade_motorista" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."indisponibilidade_motorista" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."indisponibilidade_motorista" TO "supabase_admin";
 ALTER TABLE public."log_atividade" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public."log_atividade" NO FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public."log_atividade" FROM PUBLIC, postgres, anon, authenticated, service_role;
@@ -683,6 +846,27 @@ GRANT TRUNCATE ON TABLE public."motorista" TO "service_role";
 GRANT REFERENCES ON TABLE public."motorista" TO "service_role";
 GRANT TRIGGER ON TABLE public."motorista" TO "service_role";
 GRANT MAINTAIN ON TABLE public."motorista" TO "service_role";
+ALTER TABLE public."motorista_transicao_profissional" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."motorista_transicao_profissional" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."motorista_transicao_profissional" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."motorista_transicao_profissional" TO "postgres";
+GRANT SELECT ON TABLE public."motorista_transicao_profissional" TO "postgres";
+GRANT REFERENCES ON TABLE public."motorista_transicao_profissional" TO "postgres";
+GRANT TRIGGER ON TABLE public."motorista_transicao_profissional" TO "postgres";
+GRANT MAINTAIN ON TABLE public."motorista_transicao_profissional" TO "postgres";
+GRANT INSERT ON TABLE public."motorista_transicao_profissional" TO "service_role";
+GRANT SELECT ON TABLE public."motorista_transicao_profissional" TO "service_role";
+GRANT REFERENCES ON TABLE public."motorista_transicao_profissional" TO "service_role";
+GRANT TRIGGER ON TABLE public."motorista_transicao_profissional" TO "service_role";
+GRANT MAINTAIN ON TABLE public."motorista_transicao_profissional" TO "service_role";
+GRANT INSERT ON TABLE public."motorista_transicao_profissional" TO "supabase_admin";
+GRANT SELECT ON TABLE public."motorista_transicao_profissional" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."motorista_transicao_profissional" TO "supabase_admin";
+GRANT DELETE ON TABLE public."motorista_transicao_profissional" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."motorista_transicao_profissional" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."motorista_transicao_profissional" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."motorista_transicao_profissional" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."motorista_transicao_profissional" TO "supabase_admin";
 ALTER TABLE public."notificacao" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."notificacao" NO FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public."notificacao" FROM PUBLIC, postgres, anon, authenticated, service_role;
@@ -1018,6 +1202,36 @@ GRANT USAGE ON SEQUENCE public."documento_veiculo_id_seq" TO "postgres";
 GRANT SELECT ON SEQUENCE public."documento_veiculo_id_seq" TO "service_role";
 GRANT UPDATE ON SEQUENCE public."documento_veiculo_id_seq" TO "service_role";
 GRANT USAGE ON SEQUENCE public."documento_veiculo_id_seq" TO "service_role";
+REVOKE ALL ON SEQUENCE public."escala_motorista_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT SELECT ON SEQUENCE public."escala_motorista_id_seq" TO "postgres";
+GRANT UPDATE ON SEQUENCE public."escala_motorista_id_seq" TO "postgres";
+GRANT USAGE ON SEQUENCE public."escala_motorista_id_seq" TO "postgres";
+GRANT SELECT ON SEQUENCE public."escala_motorista_id_seq" TO "service_role";
+GRANT UPDATE ON SEQUENCE public."escala_motorista_id_seq" TO "service_role";
+GRANT USAGE ON SEQUENCE public."escala_motorista_id_seq" TO "service_role";
+GRANT SELECT ON SEQUENCE public."escala_motorista_id_seq" TO "supabase_admin";
+GRANT UPDATE ON SEQUENCE public."escala_motorista_id_seq" TO "supabase_admin";
+GRANT USAGE ON SEQUENCE public."escala_motorista_id_seq" TO "supabase_admin";
+REVOKE ALL ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT SELECT ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" TO "postgres";
+GRANT UPDATE ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" TO "postgres";
+GRANT USAGE ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" TO "postgres";
+GRANT SELECT ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" TO "service_role";
+GRANT UPDATE ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" TO "service_role";
+GRANT USAGE ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" TO "service_role";
+GRANT SELECT ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" TO "supabase_admin";
+GRANT UPDATE ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" TO "supabase_admin";
+GRANT USAGE ON SEQUENCE public."habilitacao_categoria_veiculo_id_seq" TO "supabase_admin";
+REVOKE ALL ON SEQUENCE public."indisponibilidade_motorista_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT SELECT ON SEQUENCE public."indisponibilidade_motorista_id_seq" TO "postgres";
+GRANT UPDATE ON SEQUENCE public."indisponibilidade_motorista_id_seq" TO "postgres";
+GRANT USAGE ON SEQUENCE public."indisponibilidade_motorista_id_seq" TO "postgres";
+GRANT SELECT ON SEQUENCE public."indisponibilidade_motorista_id_seq" TO "service_role";
+GRANT UPDATE ON SEQUENCE public."indisponibilidade_motorista_id_seq" TO "service_role";
+GRANT USAGE ON SEQUENCE public."indisponibilidade_motorista_id_seq" TO "service_role";
+GRANT SELECT ON SEQUENCE public."indisponibilidade_motorista_id_seq" TO "supabase_admin";
+GRANT UPDATE ON SEQUENCE public."indisponibilidade_motorista_id_seq" TO "supabase_admin";
+GRANT USAGE ON SEQUENCE public."indisponibilidade_motorista_id_seq" TO "supabase_admin";
 REVOKE ALL ON SEQUENCE public."log_atividade_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
 GRANT SELECT ON SEQUENCE public."log_atividade_id_seq" TO "anon";
 GRANT UPDATE ON SEQUENCE public."log_atividade_id_seq" TO "anon";
@@ -1044,6 +1258,16 @@ GRANT USAGE ON SEQUENCE public."motorista_id_seq" TO "postgres";
 GRANT SELECT ON SEQUENCE public."motorista_id_seq" TO "service_role";
 GRANT UPDATE ON SEQUENCE public."motorista_id_seq" TO "service_role";
 GRANT USAGE ON SEQUENCE public."motorista_id_seq" TO "service_role";
+REVOKE ALL ON SEQUENCE public."motorista_transicao_profissional_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT SELECT ON SEQUENCE public."motorista_transicao_profissional_id_seq" TO "postgres";
+GRANT UPDATE ON SEQUENCE public."motorista_transicao_profissional_id_seq" TO "postgres";
+GRANT USAGE ON SEQUENCE public."motorista_transicao_profissional_id_seq" TO "postgres";
+GRANT SELECT ON SEQUENCE public."motorista_transicao_profissional_id_seq" TO "service_role";
+GRANT UPDATE ON SEQUENCE public."motorista_transicao_profissional_id_seq" TO "service_role";
+GRANT USAGE ON SEQUENCE public."motorista_transicao_profissional_id_seq" TO "service_role";
+GRANT SELECT ON SEQUENCE public."motorista_transicao_profissional_id_seq" TO "supabase_admin";
+GRANT UPDATE ON SEQUENCE public."motorista_transicao_profissional_id_seq" TO "supabase_admin";
+GRANT USAGE ON SEQUENCE public."motorista_transicao_profissional_id_seq" TO "supabase_admin";
 REVOKE ALL ON SEQUENCE public."notificacao_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
 GRANT SELECT ON SEQUENCE public."notificacao_id_seq" TO "postgres";
 GRANT UPDATE ON SEQUENCE public."notificacao_id_seq" TO "postgres";

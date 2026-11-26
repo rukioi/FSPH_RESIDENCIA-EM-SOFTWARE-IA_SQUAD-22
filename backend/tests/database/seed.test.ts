@@ -10,8 +10,10 @@ afterAll(async () => { await sql?.end(); });
 
 // Tabelas protegidas sem fixtures no seed: seus dados só nascem nos testes (rollback/limpeza).
 // A reversão de DB-S8-01 exige evidência/correção vazias, então não recebem fixture.
+// SCRUM-219: o rollback também exige escala, ausência, matriz e transição vazias.
 const semFixtures = ['abastecimento_comprovante', 'notificacao', 'viagem_correcao', 'viagem_evidencia',
-  'anexo', 'documento_historico', 'anotacao'];
+  'anexo', 'documento_historico', 'anotacao', 'escala_motorista', 'indisponibilidade_motorista',
+  'habilitacao_categoria_veiculo', 'motorista_transicao_profissional'];
 
 test('duas preparações não duplicam nem modificam fixtures, sequências ou migrations', async () => {
   async function snapshot() {
