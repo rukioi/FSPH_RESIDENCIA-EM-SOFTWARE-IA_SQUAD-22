@@ -6,5 +6,5 @@
     "noEmit": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["../src/**/*.ts", "./**/*.ts", "../../api/**/*.ts"]
+  "include": ["../src/**/*.ts", "./**/*.ts", "../../api/**/*.ts", "../../frontend/netlify/server/**/*.ts"]
 }

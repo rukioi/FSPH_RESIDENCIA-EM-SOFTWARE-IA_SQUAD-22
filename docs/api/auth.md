@@ -135,10 +135,10 @@ em texto ou HTML nunca aparece como erro de parsing na tela: é convertida para
 `ApiError` com status, código `HTTP_<status>` e mensagem em pt-BR. Token só é salvo
 após validar a resposta de login e o destino autorizado do perfil.
 
-A função Vercel encaminha `/api/*` ao backend existente. Sem token, `/sessao`
-responde 401 JSON; 404 textual da Vercel indica função/roteamento ausente. Variáveis
-de servidor e novo deploy são necessários conforme o [README](../../README.md#preview-na-vercel).
-Não há confirmação de conexão remota ao banco nesta correção.
+O Netlify Server e a função Vercel encaminham `/api/*` ao backend existente, fora
+do fallback da SPA. Sem token, `/sessao` responde 401 JSON; um 404 HTML da
+hospedagem indica que a requisição não chegou ao backend. Veja os requisitos de
+publicação no [README](../../README.md#publicação-no-netlify).
 
 ## O que a entrega não faz
 

@@ -81,6 +81,22 @@ locais ficam em test-results/. Compilados backend/dist/ e frontend/dist/ são lo
 ignorados pelo Git. Preview do frontend não inclui proxy de API; publicação não
 é definida por esse comando.
 
+## Publicação no Netlify
+
+O projeto mantém a base na raiz e o diretório do pacote Netlify em `frontend`.
+O [netlify.toml](./netlify.toml) publica `frontend/dist` e reescreve somente caminhos
+de telas. O [Netlify Server](./frontend/netlify/server/index.ts) usa Node 24 e
+atende `/api` e `/api/*` pelo mesmo backend do desenvolvimento, sem o proxy do
+Vite e sem carregar arquivos de ambiente. A inicialização agendada de lembretes
+do servidor local não é executada nessa entrada.
+
+`DATABASE_URL` e `JWT_SECRET` devem estar disponíveis no escopo Functions do
+contexto publicado. O login usa a base PostgreSQL existente; o deploy não cria
+contas nem aplica migrations. Para verificar o roteamento sem credenciais,
+`POST /api/auth/login` com `{}` deve retornar `400 ENTRADA_INVALIDA` em JSON e
+`GET /api/auth/sessao` sem token deve retornar `401 NAO_AUTENTICADO` em JSON.
+Essas sondas não comprovam a conexão ao banco.
+
 ## Preview na Vercel
 
 [vercel.json](./vercel.json) fixa Vite na raiz do monorepo, instala pelo lockfile,
