@@ -4,6 +4,7 @@ import type {AddressInfo} from 'node:net';
 import {createApp} from '../../src/app.js';
 import {prepararAnexos,falharAuditoriaAnexo,pngAnexo} from '../helpers/documentos-fixture.js';
 import {gestaoDocumentalSchemas} from '../../src/modules/documentos/documentos.gestao.schemas.js';
+import {verificarDownloadPrivado} from '../helpers/download-privado.js';
 const server=createApp();let fixture:Awaited<ReturnType<typeof prepararAnexos>>;let base:string;
 beforeAll(async()=>{fixture=await prepararAnexos();await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));base=`http://127.0.0.1:${(server.address() as AddressInfo).port}`;});
 afterEach(async()=>{
@@ -85,9 +86,7 @@ test('multipart liga a primeira versão ao anexo privado e conserva os bytes leg
     nome: 'fixture.png', tamanho: pngAnexo.length, sha256: createHash('sha256').update(pngAnexo).digest('hex') });
   expect((await get(`/api/anexos/${anexoId}`,null)).status).toBe(401);
   expect((await get(`/api/anexos/${anexoId}`,'MOTORISTA')).status).toBe(403);
-  const resposta=await get(`/api/anexos/${anexoId}`,'GESTOR_FROTA');
-  expect(resposta.status).toBe(200);
-  expect(Buffer.from(await resposta.arrayBuffer())).toEqual(pngAnexo);
+  await verificarDownloadPrivado(await get(`/api/anexos/${anexoId}`,'GESTOR_FROTA'), pngAnexo, 'image/png', 'arquivo');
 });
 
 test('nome aceito só pelo multipart legado preserva cadastro e bytes sem gerar anexo incompatível',async()=>{
