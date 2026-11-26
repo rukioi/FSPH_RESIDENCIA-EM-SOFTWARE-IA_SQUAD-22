@@ -44,6 +44,12 @@ test.each([
   const [row] = await fixture.sql`SELECT ${fixture.sql(coluna)} AS vinculo,dados,autor_id,sha256
     FROM anexo WHERE id=${data.id}`;
   expect(row).toMatchObject({ vinculo: id, dados: pngAnexo, sha256: data.sha256, autor_id: data.autorId });
+  if (tipo === 'VIAGEM') {
+    const [viagem] = await fixture.sql`SELECT status, km_inicial,
+      (SELECT count(*)::int FROM public.viagem_evidencia WHERE viagem_id=${id}) AS evidencias
+      FROM public.viagem WHERE id=${id}`;
+    expect(viagem).toEqual({ status: 'AGENDADA', km_inicial: null, evidencias: 0 });
+  }
   for (let reload = 0; reload < 2; reload++) {
     const list = await get(consulta(tipo, id), ator);
     expect(list.status).toBe(200);

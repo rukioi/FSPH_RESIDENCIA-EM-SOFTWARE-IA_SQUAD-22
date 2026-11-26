@@ -1,8 +1,6 @@
-import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type postgres from 'postgres';
 import { sql } from '../../database/connection.js';
 import type { UsuarioAutenticado } from '../../security/jwt.js';
 import { ErroHttp } from '../../shared/http/errors.js';
@@ -10,19 +8,16 @@ import { ErroCorpoRequisicao } from '../../shared/http/body.js';
 import { registrarAtividades } from '../auditoria/auditoria.service.js';
 import { receberUpload, type ArquivoDocumento } from '../documentos/documentos.upload.js';
 import { anexosSchemas, consultaAnexos, registroId, vinculoAnexo, type VinculoRegistro } from './anexos.schemas.js';
+import { gravarAnexo, limiteAnexoBytes, metadadosAnexoSql, nomeValidoAnexo, type LinhaAnexo } from './anexos.repository.js';
 import { autorizarRegistro, conferirPerfilRegistro, registros, registroAusente } from './registros.acesso.js';
 
 const invalido = () => new ErroHttp(400, 'DADOS_INVALIDOS', 'Confira o tipo de registro, identificador e campos do upload.');
-const colunas = Object.values(registros).map(r => r.coluna);
-const projecao = (tx: postgres.TransactionSql) => tx`id,nome,tipo,tamanho,sha256,autor_id,criado_em,${tx(colunas)}`;
-type Linha = { id: string; nome: string; tipo: string; tamanho: number; sha256: string;
-  autor_id: string; criado_em: Date } & Partial<Record<typeof colunas[number], string | null>>;
-function vinculoDaLinha(linha: Linha): VinculoRegistro {
+function vinculoDaLinha(linha: LinhaAnexo): VinculoRegistro {
   const entry = Object.entries(registros).find(([, r]) => linha[r.coluna] != null);
   if (!entry) throw new Error('Vínculo persistido ausente.');
   return vinculoAnexo.parse({ tipoRegistro: entry[0], registroId: linha[entry[1].coluna] });
 }
-const dto = (linha: Linha) => anexosSchemas.MetadadosAnexo.parse({ id: linha.id, nome: linha.nome,
+const dto = (linha: LinhaAnexo) => anexosSchemas.MetadadosAnexo.parse({ id: linha.id, nome: linha.nome,
   tipo: linha.tipo, tamanho: linha.tamanho, sha256: linha.sha256, autorId: linha.autor_id,
   criadoEm: linha.criado_em.toISOString(), ...vinculoDaLinha(linha) });
 
@@ -58,11 +53,10 @@ export async function lerAnexo(req: IncomingMessage, fixo?: VinculoRegistro) {
 /** Confere nome e assinatura contra MIME; não usa nomes recebidos como caminhos. */
 function validarArquivo(arquivo: ArquivoDocumento) {
   const { nome, tipo, conteudo } = arquivo;
-  if (nome.length > 255 || !nome.trim() || /[/\\]/u.test(nome)
-    || [...nome].some(c => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127) || ['.', '..'].includes(nome)) {
+  if (!nomeValidoAnexo(nome)) {
     throw new ErroHttp(400, 'NOME_INVALIDO', 'Informe um nome de arquivo sem caminhos ou caracteres de controle.');
   }
-  if (conteudo.length > 5242880) throw new ErroHttp(413, 'CORPO_MUITO_GRANDE', 'O arquivo deve ter no máximo 5 MiB.');
+  if (conteudo.length > limiteAnexoBytes) throw new ErroHttp(413, 'CORPO_MUITO_GRANDE', 'O arquivo deve ter no máximo 5 MiB.');
   const assinaturas: Record<string, Buffer> = { 'application/pdf': Buffer.from('%PDF-'),
     'image/png': Buffer.from('89504e470d0a1a0a', 'hex'), 'image/jpeg': Buffer.from('ffd8ff', 'hex') };
   const assinatura = assinaturas[tipo];
@@ -77,10 +71,7 @@ export async function salvarAnexo(usuario: UsuarioAutenticado, vinculo: VinculoR
   conferirPerfilRegistro(usuario, vinculo.tipoRegistro);
   return sql.begin(async tx => {
     await autorizarRegistro(tx, usuario, vinculo);
-    const registro = { [registros[vinculo.tipoRegistro].coluna]: vinculo.registroId,
-      nome: arquivo.nome, tipo: arquivo.tipo, dados: arquivo.conteudo, tamanho: arquivo.conteudo.length,
-      sha256: createHash('sha256').update(arquivo.conteudo).digest('hex'), autor_id: usuario.id };
-    const [linha] = await tx<Linha[]>`INSERT INTO public.anexo ${tx(registro)} RETURNING ${projecao(tx)}`;
+    const linha = await gravarAnexo(tx, vinculo, usuario.id, arquivo, limiteAnexoBytes);
     await registrarAtividades(tx, usuario.id, [{ operacao: 'anexo_criado', recursoId: linha.id }]);
     return { data: dto(linha) };
   });
@@ -92,7 +83,7 @@ export async function listarAnexos(usuario: UsuarioAutenticado, params: URLSearc
   return sql.begin('isolation level repeatable read', async tx => {
     await autorizarRegistro(tx, usuario, q);
     const coluna = tx(registros[q.tipoRegistro].coluna);
-    const rows = await tx<Linha[]>`SELECT ${projecao(tx)} FROM public.anexo WHERE ${coluna}=${q.registroId}
+    const rows = await tx<LinhaAnexo[]>`SELECT ${metadadosAnexoSql(tx)} FROM public.anexo WHERE ${coluna}=${q.registroId}
       ORDER BY criado_em DESC,id DESC LIMIT ${q.limit} OFFSET ${(q.page - 1) * q.limit}`;
     const [total] = await tx`SELECT count(*)::int AS n FROM public.anexo WHERE ${coluna}=${q.registroId}`;
     return anexosSchemas.ListaAnexos.parse({ data: rows.map(dto), meta: { page: q.page, limit: q.limit, total: total.n } });
@@ -103,7 +94,7 @@ export async function listarAnexos(usuario: UsuarioAutenticado, params: URLSearc
 export async function consultarAnexo(usuario: UsuarioAutenticado, id: string) {
   if (!registroId.safeParse(id).success) throw registroAusente();
   return sql.begin(async tx => {
-    const [linha] = await tx<Linha[]>`SELECT ${projecao(tx)} FROM public.anexo WHERE id=${id}`;
+    const [linha] = await tx<LinhaAnexo[]>`SELECT ${metadadosAnexoSql(tx)} FROM public.anexo WHERE id=${id}`;
     if (!linha) throw registroAusente();
     await autorizarRegistro(tx, usuario, vinculoDaLinha(linha));
     const [conteudo] = await tx<{ dados: Buffer }[]>`SELECT dados FROM public.anexo WHERE id=${id}`;

@@ -63,6 +63,14 @@ registro. A autorização bloqueia o registro durante a operação. Upload e
 CPF, token ou conteúdo. Cada POST confirmado acrescenta um anexo; não há retry
 automático nem promessa de idempotência/deduplicação de uploads.
 
+O repositório interno usa a transação do domínio para gravar nome, MIME, bytes,
+SHA-256 e vínculo. Nas rotas genéricas e no upload multipart de comprovante,
+o chamador autoriza e bloqueia o recurso antes da escrita. O cadastro multipart
+de documento cria o registro, grava o anexo elegível e registra a versão com
+o ID do anexo na mesma transação. Para fotos obrigatórias de viagem, o fluxo de
+execução e o limite de 1 MiB continuam aplicáveis. A ponte de convergência
+de evidências segue no ensaio da SCRUM-245 até a decisão de cutover. [Documentos](./documentos-s9.md) · [Ensaio de convergência](../database/sprint10-convergencia-arquivos.md)
+
 | Status | Situação |
 | --- | --- |
 | 400 | Campos, vínculo, ID ou nome inválidos |
