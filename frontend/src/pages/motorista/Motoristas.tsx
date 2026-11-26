@@ -6,10 +6,10 @@ import { useConsultaMotorista } from '../../features/motoristas/useConsultaMotor
 import { MotoristaDisponibilidade } from '../../features/motoristas/MotoristaDisponibilidade';
 import { BotaoMotorista, DialogMotorista } from '../../features/motoristas/DialogMotorista';
 import { navegar } from '../../app/routes/router';
-import { ROTAS, rotaMotorista } from '../../app/routes/rotas';
+import { ROTAS } from '../../app/routes/rotas';
 import { obterToken } from '../../shared/services/auth.service';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { buscarMotoristas, cadastrarMotorista as salvarMotorista, editarMotorista as atualizarMotorista, removerMotorista as excluirMotorista } from "../../shared/services/motoristas.service";
+import { buscarMotoristas, cadastrarMotorista as salvarMotorista, removerMotorista as excluirMotorista } from "../../shared/services/motoristas.service";
 import type { MotoristaDto, CriarMotoristaDto } from "../../shared/services/motoristas.service";
 import "./Motoristas.css";
 import '../../shared/styles/cartao-identidade.css';
@@ -42,6 +42,7 @@ type Motorista = MotoristaDto & {
 type CriarMotoristaComEmail = CriarMotoristaDto & { email?: string | null };
 
 type StatusFormularioMotorista = NonNullable<CriarMotoristaDto['status']>;
+type CategoriaCnhFormulario = NonNullable<CriarMotoristaDto['categoria_cnh']> | '';
 
 type NovoMotorista = {
   nome: string;
@@ -49,7 +50,7 @@ type NovoMotorista = {
   telefone: string;
   email: string;
   cnh: string;
-  categoria_cnh: CriarMotoristaDto['categoria_cnh'] | '';
+  categoria_cnh: CategoriaCnhFormulario;
   validade_cnh: string;
   status: StatusFormularioMotorista;
 };
@@ -73,6 +74,14 @@ const statusLegiveis: Record<string, string> = {
   AFASTADO: "Afastado",
 };
 
+const categoriasCnhValidas: ReadonlyArray<NonNullable<CriarMotoristaDto['categoria_cnh']>> = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+];
+
 function normalizar(valor?: string | null) {
   return (valor ?? "")
     .trim()
@@ -93,6 +102,18 @@ function classeStatus(status?: string | null) {
 
 function categoriaCnh(motorista: Motorista) {
   return motorista.categoria_cnh ?? motorista.cnh_categoria ?? "Não informada";
+}
+
+function categoriaCnhFormulario(motorista: Motorista): CategoriaCnhFormulario {
+  const valor = normalizar(motorista.categoria_cnh ?? motorista.cnh_categoria);
+  return categoriasCnhValidas.find((cat) => cat === valor) ?? "A";
+}
+
+function rotaDetalheMotorista(id: string | number | undefined) {
+  const base = ROTAS.motoristasGestor;
+  return id !== undefined && id !== null && String(id) !== ""
+    ? `${base}/${encodeURIComponent(String(id))}`
+    : base;
 }
 
 function formatarDataInput(valor?: string | null) {
@@ -119,7 +140,7 @@ function motoristaParaFormulario(motorista: Motorista): NovoMotorista {
     telefone: motorista.telefone ?? "",
     email: motorista.email ?? "",
     cnh: motorista.numero_cnh ?? motorista.cnh ?? "",
-    categoria_cnh: categoriaCnh(motorista) !== "Não informada" ? categoriaCnh(motorista) : "A",
+    categoria_cnh: categoriaCnhFormulario(motorista),
     validade_cnh: formatarDataInput(motorista.validade_cnh),
     status: statusValido,
   };
@@ -351,11 +372,6 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
           status: statusSeguro,
         };
 
-        setMotoristas((atuais) =>
-          atuais.map((item) =>
-            item.id === motoristaEmEdicao.id ? atualizado : item,
-          ),
-        );
         if (motoristaSelecionado?.id === motoristaEmEdicao.id) {
           setMotoristaSelecionado(atualizado);
         }
@@ -367,6 +383,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
         setNovoMotorista(cadastroInicial);
         setMotoristaEmEdicao(null);
         setModalCadastroAberto(false);
+        retry();
         return;
       }
 
@@ -381,8 +398,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
         telefone: telefoneLimpo,
         email: emailLimpo,
       };
-      const motoristaCriado = await salvarMotorista(entrada);
-      setMotoristas((atuais) => [motoristaCriado, ...atuais]);
+      await salvarMotorista(entrada);
       setAviso(
         entrada.email
           ? `Motorista cadastrado e vinculado ao acesso ${entrada.email}.`
@@ -391,6 +407,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
       setNovoMotorista(cadastroInicial);
       setModalCadastroAberto(false);
       setMotoristaEmEdicao(null);
+      retry();
     } catch (erroEnvio) {
       if (!vivo.current || obterToken() !== token) return;
       setErroCadastro(
@@ -415,12 +432,12 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
     setErroRemocao('');
     try {
       await excluirMotorista(confirmacaoRemocao.motorista.id);
-      setMotoristas(atuais => atuais.filter(item => item.id !== confirmacaoRemocao.motorista.id));
       if (motoristaSelecionado?.id === confirmacaoRemocao.motorista.id) {
         setMotoristaSelecionado(null);
       }
       setAviso(`Motorista ${confirmacaoRemocao.motorista.nome} removido com sucesso.`);
       setConfirmacaoRemocao(null);
+      retry();
     } catch (erroEnvio) {
       if (!vivo.current || obterToken() !== token) return;
       setErroRemocao(erroEnvio instanceof Error ? erroEnvio.message : 'Não foi possível remover o motorista.');
@@ -910,7 +927,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
               </footer>
             </form>
           </section>
-        </DialogMotorista>
+        </div>
       )}
 
       <section
@@ -1166,7 +1183,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
                     className="motorista-detalhes-botao"
                     onClick={() => {
                       setMenuMotoristaAberto(null);
-                      navegar(rotaMotorista(motorista.id));
+                      navegar(rotaDetalheMotorista(motorista.id));
                     }}
                   >
                     Ver detalhes
@@ -1253,7 +1270,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
                           </svg>
                           <span>Remover</span>
                         </button>
-                        <button type="button" className="motorista-card__menu-item" role="menuitem" onClick={() => { setMenuMotoristaAberto(null); navegar(rotaMotorista(motorista.id)); }}>
+                        <button type="button" className="motorista-card__menu-item" role="menuitem" onClick={() => { setMenuMotoristaAberto(null); navegar(rotaDetalheMotorista(motorista.id)); }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 15h2M14 15h2" /></svg>
                           Escalas e situação profissional
                         </button>
