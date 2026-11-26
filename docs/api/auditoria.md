@@ -128,6 +128,9 @@ O histórico do pedido consulta exclusivamente a nova referência estruturada.
 | Agendamento institucional (SCRUM-139) | Agendou a solicitação de transporte ID n | Recursos, retorno, estado e atividade atômicos |
 | Edição institucional (SCRUM-155) | Editou a solicitação de transporte ID n | Campos, estado PENDENTE e atividade do editor na mesma transação |
 | Reagendamento institucional (SCRUM-156) | Reagendou a solicitação de transporte ID n | Troca de reserva e atividade do ator na mesma transação |
+| Escala de motorista (SCRUM-239) | Registrou/Cancelou escala ID n do motorista ID m | Período + atividade; motivo de cancelamento não é copiado |
+| Impedimento de motorista (SCRUM-239) | Registrou/Cancelou impedimento ID n do motorista ID m | Ausência + atividade; sem dado clínico |
+| Inativação/reativação profissional (SCRUM-239) | Inativou/Reativou profissionalmente o motorista ID m | Transição + atividade; motivo fica só na transição; conta não muda |
 
 Preserva usuario_id/descricao/data_hora e as duas FKs atuais. Descrições novas de
 usuário passam a pt-BR e usam ID em vez de email; as SVO permanecem compatíveis.

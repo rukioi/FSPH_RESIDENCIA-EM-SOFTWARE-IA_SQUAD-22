@@ -1,5 +1,5 @@
 import { indicadoresAbastecimentos, indicadoresAbastecimentosAntesDeConsumo, notasListagemAbastecimentos, parametrosAbastecimentos, abastecimentosSchemas, notaIndicadoresAbastecimentos, notaIndicadoresAntesDeConsumo } from '../backend/src/modules/abastecimentos/abastecimentos.schemas.js';
-import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoAntesDeCandidatos, dashboardConsolidadoAntesDeConsumo, dashboardConsolidadoAntesPeriodoSvo, dashboardConsolidadoAntesRf46, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardAntesDeCandidatos, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo, notaDashboardAntesRf46, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
+import { dashboardConsolidadoAntesDeAbastecimentos, dashboardConsolidadoAntesDeCandidatos, dashboardConsolidadoAntesDeCobertura, dashboardConsolidadoAntesDeConsumo, dashboardConsolidadoAntesPeriodoSvo, dashboardConsolidadoAntesRf46, dashboardConsolidadoSchemas, notaDashboardAntesDeAbastecimentos, notaDashboardAntesDeCandidatos, notaDashboardAntesDeConsumo, notaDashboardAntesPeriodoSvo, notaDashboardAntesRf46, notaDashboardConsolidado } from '../backend/src/modules/dashboard/dashboard.consolidado.schemas.js';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -236,7 +236,10 @@ export function checkCompatibility(previous: Document, current: Document) {
       void periodoDialect;
       const { $schema: candidatosDialect, ...antesDeCandidatos } = z.toJSONSchema(dashboardConsolidadoAntesDeCandidatos, { io: 'input' });
       void candidatosDialect;
-      const anteriorReconhecido = [anterior, antesRf46, antesConsumo, antesPeriodoSvo, antesDeCandidatos].some(legado => JSON.stringify(legado) === JSON.stringify(schema));
+      // SCRUM-241: cobertura de escala aditiva sobre a contagem provisória de candidatos.
+      const { $schema: coberturaDialect, ...antesDeCobertura } = z.toJSONSchema(dashboardConsolidadoAntesDeCobertura, { io: 'input' });
+      void coberturaDialect;
+      const anteriorReconhecido = [anterior, antesRf46, antesConsumo, antesPeriodoSvo, antesDeCandidatos, antesDeCobertura].some(legado => JSON.stringify(legado) === JSON.stringify(schema));
       if (anteriorReconhecido && JSON.stringify(candidate) === JSON.stringify(atual)) {
         candidate = structuredClone(schema);
       }

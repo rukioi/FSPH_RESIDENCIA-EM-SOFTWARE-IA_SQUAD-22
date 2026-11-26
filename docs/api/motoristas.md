@@ -132,3 +132,45 @@ Conta inativa/inexistente ou token inválido: 401 NAO_AUTENTICADO. Perfil efetiv
 fora da lista existente: 403 ACESSO_NEGADO. Falha de consulta não usa claims como
 fallback e recebe 500 do tratamento comum. As listas de permissão e operações
 permanecem as documentadas acima. Ver [identidade compartilhada](./README.md#identidade-e-usuários--29).
+
+## Escalas, impedimentos e inativação — SCRUM-239/240
+
+Somente ADM e GESTOR_FROTA, inclusive leitura (decisão do responsável em 25/11).
+ATENDENTE_SVO e demais perfis recebem 403. Autor e instante vêm da sessão e do banco;
+campos extras ou autoria enviada pelo cliente retornam 400.
+
+| Método e caminho | Corpo | Sucesso existente |
+| --- | --- | --- |
+| GET /api/motoristas/:id/escalas | não | 200, lista paginada |
+| POST /api/motoristas/:id/escalas | JSON | 201, registro |
+| POST /api/motoristas/:id/escalas/:registroId/cancelamento | JSON | 200, registro |
+| GET /api/motoristas/:id/impedimentos | não | 200, lista paginada |
+| POST /api/motoristas/:id/impedimentos | JSON | 201, registro |
+| POST /api/motoristas/:id/impedimentos/:registroId/cancelamento | JSON | 200, registro |
+| GET /api/motoristas/:id/transicoes | não | 200, lista paginada com situação profissional |
+| POST /api/motoristas/:id/inativacao | JSON | 201, transição |
+| POST /api/motoristas/:id/reativacao | JSON | 201, transição |
+
+Escala exige início, fim e situação (EM_ESCALA ou FORA_DE_ESCALA). Impedimento exige
+tipo (FOLGA ou AFASTADO) e início; o fim é opcional. Cancelamento, inativação e
+reativação exigem motivo. As listas aceitam página, limite e, nas escalas e nos
+impedimentos, início e fim informados juntos. Os schemas completos estão no
+contrato gerado.
+
+Datas são ISO 8601 com fuso; períodos são `[inicio, fim)`. Lacuna entre períodos
+vigentes é dado ausente, não folga nem disponibilidade. Impedimento não tem campo
+livre clínico; o motivo de inativação é administrativo e não deve conter diagnóstico.
+
+Conflitos 409: `ESCALA_SOBREPOSTA`, `IMPEDIMENTO_SOBREPOSTO`, `REGISTRO_JA_CANCELADO`,
+`MOTORISTA_JA_INATIVO`, `MOTORISTA_NAO_INATIVO`. O DELETE do cadastro retorna
+`409 HISTORICO_DISPONIBILIDADE_EXISTENTE` quando há qualquer dessas trilhas.
+
+Inativação não altera `usuario.ativo`, `motorista.status` nem reservas já feitas
+(sem regra homologada para cancelá-las). Novos agendamentos, reagendamentos e
+despachos SVO passam a recusar o motorista (SCRUM-240). Registro e alocação tomam o
+mesmo lock do motorista, então uma inativação concorrente com um agendamento é
+serializada. A listagem `GET /api/motoristas` não muda.
+
+Elegibilidade (SCRUM-240): só bloqueiam impedimentos conhecidos (inativação, ausência
+vigente, `FORA_DE_ESCALA` no intervalo). Falta de escala e a matriz CNH × classe
+veicular, ainda sem classe no cadastro de veículos, ficam indeterminadas e não bloqueiam.

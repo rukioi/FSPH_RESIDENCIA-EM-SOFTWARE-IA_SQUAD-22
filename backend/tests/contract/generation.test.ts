@@ -76,8 +76,9 @@ test('migração #30 permite somente 404 comum de abastecimento e sua descriçã
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
-test('inventory preserves 101 operations and pathname limits',()=>{
-  expect(operations).toHaveLength(101);
+test('inventory preserves 110 operations and pathname limits',()=>{
+  // SCRUM-220: +9 operações de escala, impedimento e transição profissional.
+  expect(operations).toHaveLength(110);
   for (const method of ['patch','post'] as const) {
     expect(operations.filter(o => o.method === method && o.path === '/api/svo/solicitacoes/{id}/triagem')).toHaveLength(1);
   }
@@ -109,6 +110,9 @@ test('inventory preserves previous operations and includes document and attachme
     "get /api/documentos/{id}",
     "get /api/documentos/{id}/historico",
     "get /api/motoristas",
+    "get /api/motoristas/{id}/escalas",
+    "get /api/motoristas/{id}/impedimentos",
+    "get /api/motoristas/{id}/transicoes",
     "get /api/notificacoes",
     "get /api/relatorios",
     "get /api/relatorios/recursos",
@@ -156,6 +160,12 @@ test('inventory preserves previous operations and includes document and attachme
     "post /api/auth/login",
     "post /api/documentos",
     "post /api/motoristas",
+    "post /api/motoristas/{id}/escalas",
+    "post /api/motoristas/{id}/escalas/{registroId}/cancelamento",
+    "post /api/motoristas/{id}/impedimentos",
+    "post /api/motoristas/{id}/impedimentos/{registroId}/cancelamento",
+    "post /api/motoristas/{id}/inativacao",
+    "post /api/motoristas/{id}/reativacao",
     "post /api/notificacoes/ler-todas",
     "post /api/notificacoes/sincronizar",
     "post /api/notificacoes/{id}/ler",
@@ -183,11 +193,11 @@ test('inventory preserves previous operations and includes document and attachme
     'patch /api/viagens/{id}/corrigir-quilometragem', 'patch /api/viagens/{id}/encerrar', 'patch /api/viagens/{id}/iniciar',
     'patch /api/viagens/{id}/validar', 'post /api/viagens',
   ].sort());
-  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(90);
+  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(99);
   expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
-    const path = operation.path.replace('{id}','123');
+    const path = operation.path.replace('{id}','123').replace('{registroId}','456');
     expect(routePattern(operation).test(path)).toBe(true);
     expect(routePattern(operation).test(path+'/')).toBe(operation.modulo==='usuarios');
     expect(routePattern(operation).test(path+'/extra')).toBe(false);

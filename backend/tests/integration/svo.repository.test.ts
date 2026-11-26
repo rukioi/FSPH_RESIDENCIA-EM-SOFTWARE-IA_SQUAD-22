@@ -46,6 +46,8 @@ test('BE-S5-02 despacha ordem, motorista e veículo elegíveis na mesma transaç
     .mockResolvedValueOnce([{ id: 3, status: 'DISPONIVEL' }] as never)
     .mockResolvedValueOnce([] as never)
     .mockResolvedValueOnce([] as never)
+    // SCRUM-240: nenhum impedimento conhecido.
+    .mockResolvedValueOnce([] as never)
     .mockResolvedValueOnce([
       {
         id: 1,
@@ -72,8 +74,10 @@ test('BE-S5-02 despacha ordem, motorista e veículo elegíveis na mesma transaç
   });
 
   const consultas = textosSql();
-  expect(consultas).toHaveLength(6);
+  // SCRUM-240: +1 consulta de impedimento, sem novo lock.
+  expect(consultas).toHaveLength(7);
   expect(consultas.filter((consulta) => consulta.includes('FOR UPDATE'))).toHaveLength(3);
+  expect(consultas[5]).toContain('motorista_transicao_profissional');
   expect(consultas.some(consulta => consulta.includes('public.solicitacao_viagem'))).toBe(true);
   expect(consultas.some(consulta => consulta.includes('EM_TRANSPORTE'))).toBe(true);
   expect(consultas.some((consulta) => consulta.includes('PENDENTE_ALOCACAO'))).toBe(true);

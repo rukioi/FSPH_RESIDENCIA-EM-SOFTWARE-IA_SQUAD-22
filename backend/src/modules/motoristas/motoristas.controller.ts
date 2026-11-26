@@ -519,7 +519,7 @@ export async function atualizarMotorista(
   }
 }
 
-/** Remove cadastros sem histórico de CNH e preserva versões já registradas. */
+/** Remove cadastros sem histórico de CNH/disponibilidade e preserva versões já registradas. */
 export async function deletarMotorista(
   _req: IncomingMessage,
   res: ServerResponse,
@@ -534,6 +534,12 @@ export async function deletarMotorista(
         SELECT 1 FROM public.documento_historico WHERE motorista_id = ${id}
       ) AS existe`;
       if (historico.existe) return 'HISTORICO';
+      // SCRUM-239: escala, impedimento e transição são trilhas preservadas.
+      const [disponibilidade] = await tx`SELECT
+        EXISTS (SELECT 1 FROM public.escala_motorista WHERE motorista_id = ${id})
+        OR EXISTS (SELECT 1 FROM public.indisponibilidade_motorista WHERE motorista_id = ${id})
+        OR EXISTS (SELECT 1 FROM public.motorista_transicao_profissional WHERE motorista_id = ${id}) AS existe`;
+      if (disponibilidade.existe) return 'DISPONIBILIDADE';
 
       await tx`DELETE FROM public.motorista WHERE id = ${id}`;
       return 'REMOVIDO';
@@ -541,6 +547,10 @@ export async function deletarMotorista(
 
     if (resultado === 'AUSENTE') {
       return enviarErro(res, 404, 'NAO_ENCONTRADO', 'Motorista não encontrado.');
+    }
+    if (resultado === 'DISPONIBILIDADE') {
+      return enviarErro(res, 409, 'HISTORICO_DISPONIBILIDADE_EXISTENTE',
+        'Não é possível remover o motorista porque ele possui escala, impedimento ou inativação registrada.');
     }
     if (resultado === 'HISTORICO') {
       return enviarErro(res, 409, 'HISTORICO_CNH_EXISTENTE',

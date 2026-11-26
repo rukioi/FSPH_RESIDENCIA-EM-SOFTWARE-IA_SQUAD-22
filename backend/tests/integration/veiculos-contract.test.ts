@@ -36,7 +36,7 @@ function call(path:string,method='GET',body?:unknown,token=admin) {
 }
 test('todas as operações protegidas do inventário mantêm 401 e a correlação',async()=>{
   for (const operation of operations.filter(o=>o.perfis.length)) {
-    const response = await fetch(base+operation.path.replace('{id}','1'),{method:operation.method.toUpperCase()});
+    const response = await fetch(base+operation.path.replace('{id}','1').replace('{registroId}','1'),{method:operation.method.toUpperCase()});
     expect(response.status,operation.id).toBe(401);
     expect(response.headers.get('X-Request-Id')).toMatch(/^[a-f0-9-]{36}$/);
   }

@@ -138,3 +138,5 @@ Testes HTTP reais verificam agendamento, IDs assinados, horários, duplicidade, 
 O agendamento cria uma viagem AGENDADA vinculada à solicitação, ao motorista e ao veículo na mesma transação da reserva e auditoria. Uma viagem preexistente impede o agendamento com 409. Saída e retorno previstos permanecem na solicitação; início e fim reais da viagem não são preenchidos no agendamento. A unicidade por solicitação impede duplicação concorrente.
 
 O motorista selecionado deve possuir conta de usuário vinculada e ativa; caso contrário, o agendamento ou reagendamento retorna HTTP 409. A verificação é feita na transação da reserva.
+
+SCRUM-240: motorista com impedimento conhecido no intervalo da reserva (inativação profissional, ausência `FOLGA`/`AFASTADO` vigente ou escala `FORA_DE_ESCALA` sobreposta) retorna `409 MOTORISTA_IMPEDIDO`, verificado após os locks. Ausência de escala registrada não bloqueia; a matriz CNH × classe veicular não é avaliada.

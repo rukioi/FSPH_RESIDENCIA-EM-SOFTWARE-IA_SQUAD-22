@@ -7,6 +7,9 @@ export type EventoAtividade =
   | { operacao: 'abastecimento_criado'; recursoId: string }
   | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'anotacao_criada'; recursoId: string }
+  | { operacao: 'motorista_escala_registrada' | 'motorista_escala_cancelada'; recursoId: string; motoristaId: string }
+  | { operacao: 'motorista_impedimento_registrado' | 'motorista_impedimento_cancelado'; recursoId: string; motoristaId: string }
+  | { operacao: 'motorista_inativado' | 'motorista_reativado'; recursoId: string }
   | { operacao: 'anexo_criado'; recursoId: string }
   | { operacao: 'documento_versionado' | 'cnh_versionada'; recursoId: string }
   | { operacao: 'usuario_status'; recursoId: string; ativo: boolean }
@@ -43,6 +46,13 @@ function descrever(evento: EventoAtividade): string {
   switch (evento.operacao) {
     case 'abastecimento_criado': return `Registrou abastecimento ID ${id}`;
     case 'anotacao_criada': return `Registrou anotação ID ${id}`;
+    // SCRUM-239: sem motivo/texto livre na trilha; o motivo fica no registro próprio.
+    case 'motorista_escala_registrada': return `Registrou escala ID ${id} do motorista ID ${identificador(evento.motoristaId)}`;
+    case 'motorista_escala_cancelada': return `Cancelou escala ID ${id} do motorista ID ${identificador(evento.motoristaId)}`;
+    case 'motorista_impedimento_registrado': return `Registrou impedimento ID ${id} do motorista ID ${identificador(evento.motoristaId)}`;
+    case 'motorista_impedimento_cancelado': return `Cancelou impedimento ID ${id} do motorista ID ${identificador(evento.motoristaId)}`;
+    case 'motorista_inativado': return `Inativou profissionalmente o motorista ID ${id}`;
+    case 'motorista_reativado': return `Reativou profissionalmente o motorista ID ${id}`;
     case 'anexo_criado': return `Anexou arquivo ID ${id}`;
     case 'documento_versionado': return `Registrou versão do documento ID ${id}`;
     case 'cnh_versionada': return `Registrou versão da CNH do motorista ID ${id}`;

@@ -1,3 +1,4 @@
+import { motoristasImpedidos } from '../alocacao/alocacao.elegibilidade.js';
 import { sql } from '../../database/connection.js';
 import { registrarAtividades } from '../auditoria/auditoria.service.js';
 
@@ -30,6 +31,8 @@ export async function recursosDisponiveisSvo() {
           WHERE sv.motorista_id=m.id AND sv.status IN ('AGENDADA','PRONTA_PARA_INICIAR','EM_ANDAMENTO'))
       ORDER BY m.id
     `;
+    // SCRUM-240: impedimento conhecido no instante atual, pelo predicado da escrita.
+    const impedidos = await motoristasImpedidos(tx, motoristas.map(m => String(m.id)), null);
     const veiculos = await tx`
       SELECT v.id::text AS id, v.placa, v.modelo,
         COALESCE(SUM(oc.quantidade_corpos),0)::int AS ocupacao,
@@ -46,7 +49,7 @@ export async function recursosDisponiveisSvo() {
       GROUP BY v.id, v.placa, v.modelo ORDER BY v.id
     `;
     return {
-      motoristas: motoristas.map(m => ({ id:String(m.id), nome:String(m.nome) })),
+      motoristas: motoristas.filter(m => !impedidos.has(String(m.id))).map(m => ({ id:String(m.id), nome:String(m.nome) })),
       veiculos: veiculos.map(v => ({ id:String(v.id), placa:String(v.placa), modelo:String(v.modelo),
         ocupacao:num(v.ocupacao), capacidade:4 as const,
         disponivel:num(v.sem_quantidade)===0 && num(v.ocupacao)<4 &&
@@ -108,6 +111,8 @@ export async function prepararDespacho(dados: {ordemId:number;motoristaId:number
     if (!m || !v) return {tipo:'referencia_inexistente' as const};
     if (m.status!=='DISPONIVEL' || m.cnh_valida!==true || m.usuario_ativo!==true || m.perfil!=='MOTORISTA' ||
         !s10(v) || v.status!=='DISPONIVEL') return {tipo:'recurso_inelegivel' as const};
+    // SCRUM-240: impedimento conhecido no instante do despacho; dado ausente não bloqueia.
+    if ((await motoristasImpedidos(tx, [String(dados.motoristaId)], null)).size) return {tipo:'recurso_inelegivel' as const};
     const [documentos] = await tx`
       SELECT COUNT(*)::int AS total FROM public.documento_veiculo d WHERE d.veiculo_id=${dados.veiculoId}
         AND (d.status_regular IS DISTINCT FROM TRUE

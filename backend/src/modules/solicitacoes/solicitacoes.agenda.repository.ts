@@ -61,6 +61,7 @@ export async function reagendarSolicitacao(id:string,atorId:string,dados:z.infer
     const disponibilidade=await verificarDisponibilidade(tx,dados.motoristaId,dados.veiculoId,intervalo,id);
     if (disponibilidade==='referencia_inexistente') throw new ErroHttp(404,'REFERENCIA_INEXISTENTE','Motorista ou veículo não encontrado.');
     if (disponibilidade==='recurso_inelegivel') throw new ErroHttp(409,'RECURSO_INDISPONIVEL','Motorista ou veículo não está disponível.');
+    if (disponibilidade==='motorista_impedido') throw new ErroHttp(409,'MOTORISTA_IMPEDIDO','O motorista está inativado, ausente ou fora de escala no período.');
     if (disponibilidade==='conflito_alocacao') throw new ErroHttp(409,'CONFLITO_ALOCACAO','Motorista ou veículo possui uma alocação conflitante.');
     await validarContaMotorista(tx,dados.motoristaId);
     const [row]=await tx<z.infer<typeof agendamentoSolicitacao>[]>`UPDATE public.solicitacao_viagem
