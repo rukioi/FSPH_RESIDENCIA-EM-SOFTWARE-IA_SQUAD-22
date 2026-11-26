@@ -176,12 +176,12 @@ export async function rejeitarSolicitacao(
 }
 
 /** Consulta as solicitações agendadas em determinado intervalo. */
-export async function buscarAgenda(filtros: FiltrosAgenda) {
+export async function buscarAgenda(filtros: FiltrosAgenda, signal?: AbortSignal) {
   const query = criarQuery(filtros);
 
   return requestApi(
     `/api/solicitacoes-viagem/agenda${query}`,
-    { method: 'GET' },
+    { method: 'GET', ...(signal ? { signal } : {}) },
     valor => parseResponse(
       solicitacoesSchemas.RespostaAgendaViagem,
       valor,

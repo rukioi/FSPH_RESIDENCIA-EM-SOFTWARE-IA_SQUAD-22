@@ -1,8 +1,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { navegar } from '../../app/routes/router'
 import { rotaSolicitacao } from '../../app/routes/rotas'
+import { lerRetornoAgenda, navegarComRetornoAgenda } from './retornoAgenda'
 import { Icone } from '../../shared/components/Icone'
 import { Anexos } from '../../shared/components/Anexos'
 import { Anotacoes } from '../../shared/components/Anotacoes'
@@ -119,6 +119,9 @@ export function DetalheSolicitacao({
   rotuloVoltar,
   autor,
 }: Props) {
+  const retornoAgenda = perfil === 'gestor' ? lerRetornoAgenda() : null
+  const destinoVoltar = retornoAgenda?.caminho ?? base
+  const textoVoltar = retornoAgenda ? 'Voltar ao calendário' : rotuloVoltar
   const [dados, setDados] = useState<DadosDetalhe | null>(null)
   const [historico, setHistorico] = useState<DadosHistorico['data']>([])
   const [erroHistorico, setErroHistorico] = useState(false)
@@ -231,9 +234,9 @@ export function DetalheSolicitacao({
           type="button"
           className="btn btn--secundario"
           style={{ marginTop: 16 }}
-          onClick={() => navegar(base)}
+          onClick={() => navegarComRetornoAgenda(destinoVoltar, retornoAgenda)}
         >
-          {rotuloVoltar}
+          {textoVoltar}
         </button>
       </div>
     )
@@ -248,9 +251,9 @@ export function DetalheSolicitacao({
           type="button"
           className="btn btn--secundario"
           style={{ marginTop: 16 }}
-          onClick={() => navegar(base)}
+          onClick={() => navegarComRetornoAgenda(destinoVoltar, retornoAgenda)}
         >
-          {rotuloVoltar}
+          {textoVoltar}
         </button>
       </div>
     )
@@ -281,9 +284,9 @@ export function DetalheSolicitacao({
       <button
         type="button"
         className="sol-voltar"
-        onClick={() => navegar(base)}
+        onClick={() => navegarComRetornoAgenda(destinoVoltar, retornoAgenda)}
       >
-        <Icone nome="seta" tamanho={18} /> {rotuloVoltar}
+        <Icone nome="seta" tamanho={18} /> {textoVoltar}
       </button>
 
       <div className="pagina__topo">
@@ -355,7 +358,7 @@ export function DetalheSolicitacao({
                   type="button"
                   className="btn btn--secundario"
                   onClick={() =>
-                    navegar(rotaSolicitacao(base, s.id, true))
+                    navegarComRetornoAgenda(rotaSolicitacao(base, s.id, true), retornoAgenda)
                   }
                 >
                   <Icone nome="editar" tamanho={18} />

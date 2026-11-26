@@ -21,7 +21,7 @@ export function Notificacoes() {
       <button type="button" className="btn btn--secundario" disabled={loading || !!error || salvando || !data.meta.naoLidas}
         onClick={()=>void caixa.ler()}>{salvando?'Salvando…':'Marcar todas como lidas'}</button>
     </header>
-    {erroAcao && <div role="alert" className="notificacoes__erro">{erroAcao} <button className="btn" onClick={()=>caixa.retry()}>Atualizar caixa</button></div>}
+    {erroAcao && <div role="alert" className="notificacoes__erro">{erroAcao} <button type="button" className="btn" onClick={()=>caixa.retry()}>Atualizar caixa</button></div>}
     <div className="notificacoes__caixa" aria-busy={loading || salvando}>
       <div className="notificacoes__filtros">
         <div role="group" aria-label="Filtrar notificações" className="notificacoes__segmentos">
