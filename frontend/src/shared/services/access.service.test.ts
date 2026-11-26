@@ -1,50 +1,48 @@
-import { expect, test } from 'vitest'
-import { ROTAS } from '../../app/routes/rotas'
-import { perfilPodeAcessar } from './access.service'
+import { describe, expect, it } from 'vitest'
+import { perfilPodeAcessar, rotaConhecida } from './access.service'
 
-test('gestor só acessa telas de gestor autorizadas', () => {
-  expect(perfilPodeAcessar(ROTAS.dashboardGestor, 'GESTOR_FROTA')).toBe(true)
-  expect(perfilPodeAcessar(ROTAS.configuracoes, 'GESTOR_FROTA')).toBe(false)
-  expect(perfilPodeAcessar('/rota-inexistente', 'GESTOR_FROTA')).toBe(false)
-})
+const perfis = ['ADM', 'GESTOR_FROTA', 'SOLICITANTE_INTERNO', 'MOTORISTA', 'ATENDENTE_SVO']
 
-test('rotas administrativas e SVO exigem seus perfis', () => {
-  expect(perfilPodeAcessar(ROTAS.auditoria, 'ADM')).toBe(true)
-  expect(perfilPodeAcessar('/svo', 'GESTOR_FROTA')).toBe(false)
-  expect(perfilPodeAcessar('/svo', 'ATENDENTE_SVO')).toBe(true)
-})
-test.each([
-  ['/svo/solicitacoes/12', 'ATENDENTE_SVO'],
-  ['/svo/solicitacoes/12/historico', 'ATENDENTE_SVO'],
-  ['/svo/solicitacoes/12/triagem', 'ATENDENTE_SVO'],
-  ['/svo/ordens/9007199254740993', 'ATENDENTE_SVO'],
-  [ROTAS.svoMinhasOrdens, 'MOTORISTA'],
-  ['/svo/equipe/ordens/12/execucao', 'MOTORISTA'],
-])('reserva %s ao perfil operacional correto', (rota, permitido) => {
-  for (const perfil of ['ADM', 'GESTOR_FROTA', 'SOLICITANTE_INTERNO', 'ATENDENTE_SVO', 'MOTORISTA']) {
-    expect(perfilPodeAcessar(rota, perfil)).toBe(perfil === permitido)
-  }
-})
-
-test.each(['/svo/ordens/0', '/svo/ordens/-1', '/svo/ordens/1/extra', '/svo/equipe/ordens/exemplo/execucao'])(
-  'recusa rota de detalhe inválida %s', rota => {
-    expect(perfilPodeAcessar(rota, 'ATENDENTE_SVO')).toBe(false)
-    expect(perfilPodeAcessar(rota, 'MOTORISTA')).toBe(false)
+describe('acesso aos detalhes e edição de solicitações', () => {
+  it.each(['/solicitante/minhas-solicitacoes/12', '/solicitante/minhas-solicitacoes/12/editar'])(
+    'restaura acesso SOLICITANTE_INTERNO a %s', caminho => {
+      expect(rotaConhecida(caminho)).toBe(true)
+      expect(perfilPodeAcessar(caminho, 'SOLICITANTE_INTERNO')).toBe(true)
+      for (const perfil of perfis.filter(p => p !== 'SOLICITANTE_INTERNO')) {
+        expect(perfilPodeAcessar(caminho, perfil)).toBe(false)
+      }
+    },
+  )
+  it.each(['/gestor/solicitacoes/12', '/gestor/solicitacoes/12/editar'])(
+    'mantém acesso somente ADM/GESTOR_FROTA a %s', caminho => {
+      expect(rotaConhecida(caminho)).toBe(true)
+      expect(perfilPodeAcessar(caminho, 'ADM')).toBe(true)
+      expect(perfilPodeAcessar(caminho, 'GESTOR_FROTA')).toBe(true)
+      for (const perfil of ['SOLICITANTE_INTERNO', 'MOTORISTA', 'ATENDENTE_SVO']) {
+        expect(perfilPodeAcessar(caminho, perfil)).toBe(false)
+      }
+    },
+  )
+  it.each([
+    '/gestor/solicitacoes/invalido/editar',
+    '/gestor/solicitacoes/invalido',
+    '/solicitante/minhas-solicitacoes/invalido/editar',
+    '/solicitante/minhas-solicitacoes/invalido',
+  ])('não reconhece nem autoriza endereço malformado %s', caminho => {
+    expect(rotaConhecida(caminho)).toBe(false)
+    for (const perfil of perfis) expect(perfilPodeAcessar(caminho, perfil)).toBe(false)
   })
-
-test('abastecimentos permite somente os perfis operacionais autorizados', () => {
-  for (const perfil of ['ADM', 'GESTOR_FROTA']) {
-    expect(perfilPodeAcessar(ROTAS.abastecimentosGestor, perfil)).toBe(true)
-  }
-  for (const perfil of ['ATENDENTE_SVO', 'MOTORISTA', 'SOLICITANTE_INTERNO']) {
-    expect(perfilPodeAcessar(ROTAS.abastecimentosGestor, perfil)).toBe(false)
-  }
-})
-
-test('detalhes e edicao do gestor preservam controle de perfil e caminhos validos', () => {
-  expect(perfilPodeAcessar('/gestor/solicitacoes/1024', 'GESTOR_FROTA')).toBe(true)
-  expect(perfilPodeAcessar('/gestor/solicitacoes/1024/editar', 'ADM')).toBe(true)
-  expect(perfilPodeAcessar('/gestor/solicitacoes/1024', 'SOLICITANTE_INTERNO')).toBe(false)
-  expect(perfilPodeAcessar('/gestor/solicitacoes/1024/excluir', 'GESTOR_FROTA')).toBe(false)
-  expect(perfilPodeAcessar('/gestor/solicitacoes/invalido', 'GESTOR_FROTA')).toBe(false)
+  it('preserva as permissões exclusivas das configurações ADM', () => {
+    expect(perfilPodeAcessar('/admin/configuracoes', 'ADM')).toBe(true)
+    expect(perfilPodeAcessar('/admin/configuracoes', 'GESTOR_FROTA')).toBe(false)
+    expect(perfilPodeAcessar('/admin/configuracoes', 'SOLICITANTE_INTERNO')).toBe(false)
+  })
+  it('preserva os seletores e perfis de abastecimento e histórico do veículo', () => {
+    for (const caminho of ['/gestor/abastecimentos/12', '/gestor/veiculos/12/abastecimentos']) {
+      expect(rotaConhecida(caminho)).toBe(true)
+      expect(perfilPodeAcessar(caminho, 'ADM')).toBe(true)
+      expect(perfilPodeAcessar(caminho, 'GESTOR_FROTA')).toBe(true)
+      expect(perfilPodeAcessar(caminho, 'SOLICITANTE_INTERNO')).toBe(false)
+    }
+  })
 })

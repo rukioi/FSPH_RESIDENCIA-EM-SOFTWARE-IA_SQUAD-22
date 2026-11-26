@@ -17,6 +17,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.veiculosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.motoristasGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.abastecimentosGestor]: ['ADM', 'GESTOR_FROTA'],
+  [ROTAS.indicadoresAbastecimentosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.solicitacoesGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.calendarioGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],
@@ -32,18 +33,33 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.svoOrdens]: ['ATENDENTE_SVO'],
 }
 
+/** Distingue uma URL inexistente de uma rota conhecida sem permissão. */
+export function rotaConhecida(caminho: string): boolean {
+  if (perfisPorRota[caminho]) return true
+
+  const solicitacaoGestor = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
+  if (solicitacaoGestor) return true
+
+  const solicitacaoSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)
+  if (solicitacaoSolicitante) return true
+
+  return (
+    lerRotaDetalheAbastecimento(caminho) !== null ||
+    lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null ||
+    lerDetalheSvo(caminho) !== null
+  )
+}
+
 /** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
   const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor);
-  if (solicitacao && /^[0-9]+$/.test(solicitacao.id)) {
-    return perfisPorRota[ROTAS.solicitacoesGestor].includes(perfil);
+  if (solicitacao) {
+    return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false;
   }
 
-  // Detalhe/edição da própria solicitação: /solicitante/minhas-solicitacoes/:id(/editar).
-  // O backend continua conferindo se a solicitação pertence ao solicitante.
-  const solicitacaoPropria = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes);
-  if (solicitacaoPropria && /^[0-9]+$/.test(solicitacaoPropria.id)) {
-    return perfisPorRota[ROTAS.minhasSolicitacoes].includes(perfil);
+  const solicitacaoSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes);
+  if (solicitacaoSolicitante) {
+    return perfisPorRota[ROTAS.minhasSolicitacoes]?.includes(perfil) ?? false;
   }
 
   if (lerRotaDetalheAbastecimento(caminho) !== null) {

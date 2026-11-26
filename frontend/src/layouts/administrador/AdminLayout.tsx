@@ -1,7 +1,7 @@
 import { useSidebar } from '../../shared/components/useSidebar'
 import { MarcaInstitucional } from '../../shared/components/MarcaInstitucional'
 import { Sininho } from '../../features/notificacoes/Sininho'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
 import { Icone } from '../../shared/components/Icone'
 import type { NomeIcone } from '../../shared/components/Icone'
@@ -20,7 +20,6 @@ const itensMenu: ItemMenu[] = [
   { nome: 'Calendário', icone: 'calendario', rota: ROTAS.calendarioGestor },
   { nome: 'Veículos', icone: 'veiculos', rota: ROTAS.veiculosGestor },
   { nome: 'Motoristas', icone: 'motoristas', rota: ROTAS.motoristasGestor },
-  { nome: 'SVO', icone: 'svo', rota: ROTAS.svoDashboard },
   { nome: 'Documentos', icone: 'documentos', rota: ROTAS.documentosAdm },
   { nome: 'Abastecimentos', icone: 'abastecimentos', rota: ROTAS.abastecimentosGestor },
   { nome: 'Relatórios', icone: 'relatorios', rota: ROTAS.relatoriosGestor },
@@ -77,7 +76,11 @@ export function AdminLayout({ children, usuario: sessao }: { children: ReactNode
   const inicioArraste = useRef<number | null>(null)
 
   const todos = [...itensMenu, itemConfiguracoes]
-  const itemAtivo = todos.find((i) => i.rota === caminho)?.nome ?? 'Dashboard'
+  // A rota mais específica mantém o item correto ativo em detalhes, edição e relatórios.
+  const itemAtivo = [...todos]
+    .sort((a, b) => (b.rota?.length ?? 0) - (a.rota?.length ?? 0))
+    .find((item) => item.rota && (caminho === item.rota || caminho.startsWith(item.rota + '/')))
+    ?.nome
 
   // Esc fecha a gaveta no celular
   useEffect(() => {
@@ -110,7 +113,7 @@ export function AdminLayout({ children, usuario: sessao }: { children: ReactNode
 
   function sair() {
     encerrarSessao()
-    navegar(ROTAS.login)
+    navegar(ROTAS.login, true)
   }
 
   return (
@@ -175,7 +178,7 @@ export function AdminLayout({ children, usuario: sessao }: { children: ReactNode
           </button>
 
           <p className="cabecalho__caminho">
-            Gestão de Frotas / <strong>{itemAtivo}</strong>
+            Gestão de Frotas / <strong>{itemAtivo ?? 'Página não encontrada'}</strong>
           </p>
 
           <div className="cabecalho__direita">
@@ -196,7 +199,11 @@ export function AdminLayout({ children, usuario: sessao }: { children: ReactNode
 
         <div className="faixa" />
 
-        <main className="conteudo">{children}</main>
+        <main className="conteudo">
+          <Suspense fallback={<p role="status">Carregando página…</p>}>
+            {children}
+          </Suspense>
+        </main>
       </div>
     </div>
   )
