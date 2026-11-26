@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { buscarRecursosRelatorios, buscarRelatorio, statusPorRelatorio, type ConsultaRelatorio } from '../../shared/services/relatorios.service';
+import { buscarRecursosRelatorios, buscarRelatorio, recursoRelatorioValido, statusPorRelatorio, type ConsultaRelatorio } from '../../shared/services/relatorios.service';
 import { useRemoteData } from '../../shared/api/useRemoteData';
 import { errorMessage } from '../../shared/api/errors';
 import { Select } from '../../shared/components/Select';
@@ -61,9 +61,15 @@ export function Relatorios({tipoInicial = 'viagens'}: {tipoInicial?: ConsultaRel
         <label className="campo" htmlFor="relatorio-inicio">Data inicial<DatePicker id="relatorio-inicio" required value={filtros.inicio} onChange={e=>setFiltros({...filtros,inicio:e.target.value})}/></label>
         <label className="campo" htmlFor="relatorio-fim">Data final<DatePicker id="relatorio-fim" min={filtros.inicio} required value={filtros.fim} onChange={e=>setFiltros({...filtros,fim:e.target.value})}/></label>
         <label className="campo" htmlFor="relatorio-veiculo">Veículo<Select id="relatorio-veiculo" value={filtros.veiculoId ?? ''} disabled={recursos.loading || !!recursos.error} onChange={e=>setFiltros({...filtros,veiculoId:e.target.value || undefined})}>
-          <option value="">Todos os veículos</option>{recursos.data.veiculos.map(v=><option key={v.id} value={v.id}>{v.placa} · {v.modelo}</option>)}</Select></label>
+          <option value="">Todos os veículos</option>{recursos.data.veiculos.map(v=>{
+            const valido = recursoRelatorioValido('veiculoId', v.id);
+            return <option key={v.id} value={v.id} disabled={!valido}>{v.placa} · {v.modelo}{!valido && ' · Indisponível para consulta'}</option>;
+          })}</Select></label>
         <label className="campo" htmlFor="relatorio-motorista">Motorista<Select id="relatorio-motorista" value={filtros.motoristaId ?? ''} disabled={recursos.loading || !!recursos.error} onChange={e=>setFiltros({...filtros,motoristaId:e.target.value || undefined})}>
-          <option value="">Todos os motoristas</option>{recursos.data.motoristas.map(m=><option key={m.id} value={m.id}>{m.nome}</option>)}</Select></label>
+          <option value="">Todos os motoristas</option>{recursos.data.motoristas.map(m=>{
+            const valido = recursoRelatorioValido('motoristaId', m.id);
+            return <option key={m.id} value={m.id} disabled={!valido}>{m.nome}{!valido && ' · Indisponível para consulta'}</option>;
+          })}</Select></label>
         {statusPorRelatorio[filtros.tipo].length>0 && <label className="campo" htmlFor="relatorio-status">Status<Select id="relatorio-status" value={filtros.status ?? ''} onChange={e=>setFiltros({...filtros,status:e.target.value || undefined})}>
           <option value="">Todos os status</option>{statusPorRelatorio[filtros.tipo].map(status=><option key={status} value={status}>{statusTexto[status]}</option>)}</Select></label>}
       </div><div className="relatorios__gerar"><p>Até 366 dias, incluindo a data final. Limite de 5.000 registros por consulta.</p><button type="submit" className="btn btn--primario">Gerar relatório</button></div></fieldset>

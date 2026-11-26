@@ -29,7 +29,9 @@ for (const width of [390, 768, 1280]) test(`SCRUM-250/251 relatório real, SQL, 
   await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible();
   const menu = page.getByRole('button', { name: /Expandir menu/ });
   if (await menu.isVisible()) await menu.click();
+  const catalogoPendente = page.waitForResponse(r => new URL(r.url()).pathname === '/api/relatorios/recursos');
   await page.getByRole('button', { name: 'Relatórios', exact: true }).click();
+  const catalogo = (await (await catalogoPendente).json()).data as { veiculos: { id: string }[]; motoristas: { id: string }[] };
   await expect(page.getByRole('heading', { name: 'Relatórios operacionais' })).toBeVisible();
   async function gerar() {
     await page.getByRole('textbox', { name: 'Data inicial Abrir calendário', exact: true }).fill('01/05/2097');
@@ -43,6 +45,58 @@ for (const width of [390, 768, 1280]) test(`SCRUM-250/251 relatório real, SQL, 
     const { data } = await http.json();
     expect(data.resumo).toEqual({ registros: 60, kmConcluidos: 580, semQuilometragem: 0 });
     return data as { linhas: { codigo: string }[] };
+  }
+  await gerar();
+  // O catálogo real inclui a baseline negativa: não alterar a fixture nem aceitar IDs fora do contrato.
+  const consultas: string[] = [];
+  page.on('request', request => {
+    if (new URL(request.url()).pathname === '/api/relatorios') consultas.push(request.url());
+  });
+  for (const [nome, campo, itens] of [
+    ['Veículo', 'veiculoId', catalogo.veiculos],
+    ['Motorista', 'motoristaId', catalogo.motoristas],
+  ] as const) {
+    await selecionarOpcao(page.getByRole('combobox', { name: nome === 'Veículo' ? 'Motorista' : 'Veículo', exact: true }), '');
+    const controle = page.getByRole('combobox', { name: new RegExp('^' + nome + '( |$)') });
+    expect(itens.filter(item => BigInt(item.id) < 0)).toHaveLength(4);
+    expect(itens.some(item => item.id === String(relatorioS10.veiculo))).toBe(true);
+    for (const item of [{ id: '' }, ...itens]) {
+      await controle.click();
+      const lista = page.getByRole('listbox').filter({ visible: true });
+      const opcao = lista.locator(`[role="option"][data-value="${item.id}"]`);
+      if (item.id && BigInt(item.id) < 0) {
+        await expect(opcao).toHaveAttribute('aria-disabled', 'true');
+        await expect(opcao).toContainText('Indisponível para consulta');
+        const valorAnterior = await controle.textContent();
+        const consultasAntes = consultas.length;
+        // Clique físico: o próprio componente deve ignorar a opção, sem force/evento fabricado.
+        await opcao.scrollIntoViewIfNeeded();
+        const caixa = (await opcao.boundingBox())!;
+        await page.mouse.click(caixa.x + caixa.width / 2, caixa.y + caixa.height / 2);
+        await expect(controle).toHaveText(valorAnterior!);
+        await expect(lista).toBeVisible();
+        await controle.press('Home');
+        for (let i = 0; i <= itens.length; i++) {
+          await controle.press('ArrowDown');
+          const ativa = page.locator(`[id="${await controle.getAttribute('aria-activedescendant')}"]`);
+          await expect(ativa).not.toHaveAttribute('aria-disabled', 'true');
+        }
+        await controle.press('Escape');
+        await expect(controle).toBeFocused();
+        expect(consultas).toHaveLength(consultasAntes);
+        await expect(page.getByRole('alert')).toHaveCount(0);
+      } else {
+        await expect(opcao).not.toHaveAttribute('aria-disabled', 'true');
+        await opcao.click();
+        const resposta = page.waitForResponse(r => new URL(r.url()).pathname === '/api/relatorios');
+        await page.getByRole('button', { name: 'Gerar relatório', exact: true }).press('Enter');
+        const http = await resposta;
+        expect(http.status()).toBe(200);
+        expect(new URL(http.url()).searchParams.get(campo)).toBe(item.id || null);
+        expect((await http.json()).data.resumo).toEqual({ registros: 60, kmConcluidos: 580, semQuilometragem: 0 });
+      }
+    }
+    await selecionarOpcao(controle, '');
   }
   const dados = await gerar();
   const [db] = await cenario.sql`SELECT count(*)::int AS registros, sum(km_final-km_inicial)::int AS km FROM public.viagem WHERE veiculo_id=7250001 AND status='CONCLUIDA'`;
