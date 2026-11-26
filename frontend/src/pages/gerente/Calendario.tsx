@@ -1,12 +1,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
-import { navegar } from '../../app/routes/router'
 import { ROTAS, rotaSolicitacao } from '../../app/routes/rotas'
 import { IconeGestor as Icone } from '../../shared/components/IconeGestor'
 import { buscarAgenda } from '../../shared/services/solicitacoes.service'
+import { errorMessage } from '../../shared/api/errors'
 import { formatarData } from '../../features/solicitacoes/regras'
 import type { Solicitacao } from '../../features/solicitacoes/regras'
 import { StatusSolicitacao } from '../../features/solicitacoes/StatusSolicitacao'
+import { guardarRetornoAgenda, lerRetornoAgenda, navegarComRetornoAgenda } from '../../features/solicitacoes/retornoAgenda'
 import './Calendario.css'
 
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -21,7 +22,7 @@ const iso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 const deIso = (s: string) => {
-  const [a, m, d] = s.split('-').map(Number)
+  const [a = 1970, m = 1, d = 1] = s.split('-').map(Number)
   return new Date(a, m - 1, d)
 }
 
@@ -29,7 +30,14 @@ const somarDias = (d: Date, n: number) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
 
 type ItemAgenda = Awaited<ReturnType<typeof buscarAgenda>>['data'][number]
-type Compromisso = Solicitacao & { codigoExibicao: string }
+type Compromisso = Solicitacao & {
+  codigoExibicao: string
+  saida: string
+  retornoPrevisto: string | null
+}
+const dataLocal = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Maceio', year: 'numeric', month: '2-digit', day: '2-digit',
+})
 
 function mapearAgendamento(item: ItemAgenda): Compromisso {
   const dataSaida = new Date(item.dataHoraSaida)
@@ -37,12 +45,15 @@ function mapearAgendamento(item: ItemAgenda): Compromisso {
   return {
     id: String(item.id),
     codigoExibicao: item.codigoExibicao,
+    saida: item.dataHoraSaida,
+    retornoPrevisto: item.dataHoraRetornoPrevisto,
     solicitante: '—',
     instituicao: '—',
-    data: iso(dataSaida),
+    data: dataLocal.format(dataSaida),
     horario: dataSaida.toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'America/Maceio',
     }),
     origem: item.origem,
     destino: item.destino,
@@ -66,9 +77,14 @@ export function Calendario() {
   const [erro, setErro] = useState('')
   const [tentativa, setTentativa] = useState(0)
 
-  const [selecionado, setSelecionado] = useState(() => iso(new Date()))
-  const [visao, setVisao] = useState<'mes' | 'semana' | 'dia'>('mes')
-  const [mostrarFinsDeSemana, setMostrarFinsDeSemana] = useState(true)
+  const [retornoAgenda] = useState(lerRetornoAgenda)
+  const [selecionado, setSelecionado] = useState(() => retornoAgenda?.selecionado ?? iso(new Date()))
+  const [visao, setVisao] = useState<'mes' | 'semana' | 'dia'>(() => retornoAgenda?.visao ?? 'mes')
+  const [mostrarFinsDeSemana, setMostrarFinsDeSemana] = useState(() => retornoAgenda?.mostrarFinsDeSemana ?? true)
+
+  useEffect(() => {
+    guardarRetornoAgenda({ caminho: ROTAS.calendarioGestor, selecionado, visao, mostrarFinsDeSemana })
+  }, [selecionado, visao, mostrarFinsDeSemana])
 
   const ref = deIso(selecionado)
 
@@ -85,11 +101,11 @@ export function Calendario() {
 
     if (visao === 'semana') {
       const inicio = somarDias(referencia, -referencia.getDay())
-      const fim = somarDias(inicio, 6)
+      const fim = somarDias(inicio, 7)
 
       return {
         inicio: `${iso(inicio)}T00:00:00-03:00`,
-        fim: `${iso(fim)}T23:59:59.999999-03:00`,
+        fim: `${iso(fim)}T00:00:00-03:00`,
       }
     }
 
@@ -102,18 +118,18 @@ export function Calendario() {
     const fim = new Date(
       referencia.getFullYear(),
       referencia.getMonth() + 1,
-      0,
+      1,
     )
 
     return {
       inicio: `${iso(inicio)}T00:00:00-03:00`,
-      fim: `${iso(fim)}T23:59:59.999999-03:00`,
+      fim: `${iso(fim)}T00:00:00-03:00`,
     }
   }, [selecionado, visao])
 
   // Busca os agendamentos do período selecionado.
   useEffect(() => {
-    let ativo = true
+    const controller = new AbortController()
 
     async function carregarAgendamentos() {
       setCarregando(true)
@@ -125,44 +141,36 @@ export function Calendario() {
           fim: intervalo.fim,
           page: 1,
           limit: 100,
-        })
+        }, controller.signal)
 
         const totalPaginas = Math.ceil(
           primeiraPagina.meta.total / primeiraPagina.meta.limit,
         )
 
-        const outrasPaginas = await Promise.all(
-          Array.from(
-            { length: Math.max(0, totalPaginas - 1) },
-            (_, indice) =>
-              buscarAgenda({
-                inicio: intervalo.inicio,
-                fim: intervalo.fim,
-                page: indice + 2,
-                limit: 100,
-              }),
-          ),
-        )
+        const outrasPaginas: typeof primeiraPagina[] = []
+        // Limita requisições simultâneas e cancela a sequência ao trocar de período.
+        for (let page = 2; page <= totalPaginas; page++) {
+          if (controller.signal.aborted) return
+          outrasPaginas.push(await buscarAgenda({
+            inicio: intervalo.inicio, fim: intervalo.fim, page, limit: 100,
+          }, controller.signal))
+        }
 
         const agendamentos = [
           ...primeiraPagina.data,
           ...outrasPaginas.flatMap((pagina) => pagina.data),
         ]
 
-        if (ativo) {
-          setTodas(agendamentos.map(mapearAgendamento))
+        if (!controller.signal.aborted) {
+          setTodas([...new Map(agendamentos.map(item => [String(item.id), item])).values()].map(mapearAgendamento))
         }
       } catch (erroApi) {
-        if (ativo) {
+        if (!controller.signal.aborted) {
           setTodas([])
-          setErro(
-            erroApi instanceof Error
-              ? erroApi.message
-              : 'Não foi possível carregar os agendamentos.',
-          )
+          setErro(errorMessage(erroApi))
         }
       } finally {
-        if (ativo) {
+        if (!controller.signal.aborted) {
           setCarregando(false)
         }
       }
@@ -171,26 +179,29 @@ export function Calendario() {
     void carregarAgendamentos()
 
     return () => {
-      ativo = false
+      controller.abort()
     }
   }, [intervalo.inicio, intervalo.fim, tentativa])
 
   const porDia = useMemo(() => {
     const mapa = new Map<string, Compromisso[]>()
 
-    todas.forEach((solicitacao) => {
-      mapa.set(solicitacao.data, [
-        ...(mapa.get(solicitacao.data) ?? []),
-        solicitacao,
-      ])
-    })
+    // A API retorna reservas que intersectam o período, inclusive as iniciadas antes dele.
+    for (let dia = deIso(intervalo.inicio.slice(0, 10));
+      iso(dia) < intervalo.fim.slice(0, 10); dia = somarDias(dia, 1)) {
+      const chave = iso(dia)
+      const inicioDia = Date.parse(`${chave}T00:00:00-03:00`)
+      const fimDia = Date.parse(`${iso(somarDias(dia, 1))}T00:00:00-03:00`)
+      mapa.set(chave, todas.filter(item => Date.parse(item.saida) < fimDia
+        && (item.retornoPrevisto === null || Date.parse(item.retornoPrevisto) > inicioDia)))
+    }
 
     mapa.forEach((lista) =>
       lista.sort((a, b) => a.horario.localeCompare(b.horario)),
     )
 
     return mapa
-  }, [todas])
+  }, [todas, intervalo.inicio, intervalo.fim])
 
   // Dias exibidos (null = célula vazia antes do dia 1).
   const dias: (Date | null)[] = useMemo(() => {
@@ -432,11 +443,9 @@ export function Calendario() {
                     type="button"
                     className="cal__item"
                     onClick={() =>
-                      navegar(
-                        rotaSolicitacao(
-                          ROTAS.solicitacoesGestor,
-                          solicitacao.id,
-                        ),
+                      navegarComRetornoAgenda(
+                        rotaSolicitacao(ROTAS.solicitacoesGestor, solicitacao.id),
+                        { caminho: ROTAS.calendarioGestor, selecionado, visao, mostrarFinsDeSemana },
                       )
                     }
                   >
@@ -452,6 +461,9 @@ export function Calendario() {
                       {solicitacao.origem} → {solicitacao.destino}
                     </span>
                     {solicitacao.finalidade && <span className="cal__finalidade">{solicitacao.finalidade}</span>}
+                    <span className="cal__finalidade">Retorno previsto: {solicitacao.retornoPrevisto
+                      ? new Date(solicitacao.retornoPrevisto).toLocaleString('pt-BR', { timeZone: 'America/Maceio' })
+                      : 'Não informado'}</span>
 
                     <span className="cal__recursos">
                       <span>
