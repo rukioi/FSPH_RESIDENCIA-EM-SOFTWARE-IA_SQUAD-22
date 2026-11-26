@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 101 operações.
+Gerado por api:generate; não editar manualmente. 110 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -85,6 +85,15 @@ Gerado por api:generate; não editar manualmente. 101 operações.
 | PUT | /api/motoristas/{id} | ADM, GESTOR_FROTA | EditarMotorista | 200 RespostaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | PATCH | /api/motoristas/{id} | ADM, GESTOR_FROTA | EditarMotorista | 200 RespostaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | DELETE | /api/motoristas/{id} | ADM, GESTOR_FROTA | sem corpo | 200 Exclusao | 401, 403, 404, 409, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| GET | /api/motoristas/{id}/escalas | ADM, GESTOR_FROTA | sem corpo | 200 ListaEscalasMotorista | 400, 401, 403, 404, 500, 405 | validado | SCRUM-239. Ordem inicio DESC, id DESC. inicio/fim juntos filtram sobreposição com [inicio,fim). Lacuna entre registros VIGENTES é dado ausente, não folga nem disponibilidade. |
+| POST | /api/motoristas/{id}/escalas | ADM, GESTOR_FROTA | CriarEscalaMotorista | 201 RespostaEscalaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | SCRUM-239. Período [inicio,fim) EM_ESCALA/FORA_DE_ESCALA; autor e instante pelo servidor. 409 ESCALA_SOBREPOSTA. |
+| POST | /api/motoristas/{id}/escalas/{registroId}/cancelamento | ADM, GESTOR_FROTA | CancelarRegistroMotorista | 200 RespostaEscalaMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | SCRUM-239. Cancela registro VIGENTE com motivo; não apaga. 409 REGISTRO_JA_CANCELADO. |
+| GET | /api/motoristas/{id}/impedimentos | ADM, GESTOR_FROTA | sem corpo | 200 ListaImpedimentosMotorista | 400, 401, 403, 404, 500, 405 | validado | SCRUM-239. Ordem inicio DESC, id DESC. inicio/fim juntos filtram sobreposição com [inicio,fim). Lacuna entre registros VIGENTES é dado ausente, não folga nem disponibilidade. |
+| POST | /api/motoristas/{id}/impedimentos | ADM, GESTOR_FROTA | CriarImpedimentoMotorista | 201 RespostaImpedimentoMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | SCRUM-239. FOLGA/AFASTADO, fim nulo = término não informado; sem campo clínico. 409 IMPEDIMENTO_SOBREPOSTO. |
+| POST | /api/motoristas/{id}/impedimentos/{registroId}/cancelamento | ADM, GESTOR_FROTA | CancelarRegistroMotorista | 200 RespostaImpedimentoMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | SCRUM-239. Cancela registro VIGENTE com motivo; não apaga. 409 REGISTRO_JA_CANCELADO. |
+| GET | /api/motoristas/{id}/transicoes | ADM, GESTOR_FROTA | sem corpo | 200 ListaTransicoesMotorista | 400, 401, 403, 404, 500, 405 | validado | SCRUM-239. Histórico append-only em versão DESC; situacao.inativo deriva da última transição. |
+| POST | /api/motoristas/{id}/inativacao | ADM, GESTOR_FROTA | MotivoTransicaoMotorista | 201 RespostaTransicaoMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | SCRUM-239. Motivo obrigatório. Não altera conta, status nem reservas existentes; novas alocações são recusadas (MOTORISTA_IMPEDIDO). 409 MOTORISTA_JA_INATIVO. |
+| POST | /api/motoristas/{id}/reativacao | ADM, GESTOR_FROTA | MotivoTransicaoMotorista | 201 RespostaTransicaoMotorista | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | SCRUM-239. Motivo obrigatório. 409 MOTORISTA_NAO_INATIVO. |
 | GET | /api/abastecimentos/{id}/comprovante | ADM, GESTOR_FROTA | sem corpo | 200 ComprovanteAbastecimento | 401, 403, 404, 500, 405 | legado | PDF/JPEG/PNG privados: último anexo compartilhado, com fallback do comprovante legado. Acesso autenticado. |
 | GET | /api/abastecimentos/indicadores | ADM, GESTOR_FROTA | sem corpo | 200 IndicadoresAbastecimentos | 400, 401, 403, 404, 500, 405 | validado | SCRUM-188: agregação de registros reais no período civil inclusivo, com filtro por veículo. Consumo cheio a cheio em km/L, com insuficiência explícita. |
 | GET | /api/abastecimentos | ADM, GESTOR_FROTA | sem corpo | 200 ListaAbastecimentos | 400, 401, 403, 404, 500, 405 | validado | SCRUM-186: sem filtros preserva lista completa por id DESC; filtros reconhecidos ativam paginação por data DESC/id DESC. Período civil inclusivo. Parâmetros desconhecidos continuam ignorados. |

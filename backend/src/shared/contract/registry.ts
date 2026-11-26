@@ -13,6 +13,7 @@ import { authSchemas } from '../../modules/auth/auth.schemas.js';
 import { usuariosSchemas } from '../../modules/usuarios/usuarios.schemas.js';
 import { auditoriaSchemas } from '../../modules/auditoria/auditoria.schemas.js';
 import { motoristasSchemas } from '../../modules/motoristas/motoristas.schemas.js';
+import { motoristasDisponibilidadeSchemas } from '../../modules/motoristas/motoristas.disponibilidade.schemas.js';
 import { abastecimentosSchemas, notasListagemAbastecimentos, parametrosAbastecimentos, notaIndicadoresAbastecimentos, parametrosIndicadoresAbastecimentos } from '../../modules/abastecimentos/abastecimentos.schemas.js';
 import { alertasDocumentais, gestaoDocumentalSchemas, parametrosDocumentais, tipoDocumental } from '../../modules/documentos/documentos.gestao.schemas.js';
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
@@ -26,7 +27,7 @@ import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicita
 
 export const schemas = { ...dashboardConsolidadoSchemas, ...anotacoesSchemas, ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
-  ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas,
+  ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas, ...motoristasDisponibilidadeSchemas,
   ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, AlertasDocumentais: alertasDocumentais, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
 export type SchemaName = keyof typeof schemas;
 export type Modulo = 'anotacoes'| 'anexos'| 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
@@ -208,6 +209,28 @@ export const operations: Operacao[] = [
   op('motoristas','post','/api/motoristas','RespostaMotorista',gestor,{body:'CriarMotorista',errors:[400,401,403,409,413,415,500]}),
   ...(['put','patch'] as const).map(method=>op('motoristas',method,'/api/motoristas/{id}','RespostaMotorista',gestor,{body:'EditarMotorista',errors:[400,401,403,404,409,413,415,500]})),
   op('motoristas','delete','/api/motoristas/{id}','Exclusao',gestor,{errors:[401,403,404,409,500]}),
+  ...(['escalas','impedimentos'] as const).flatMap(recurso=>{
+    const [lista,resposta,corpo]=recurso==='escalas'?['ListaEscalasMotorista','RespostaEscalaMotorista','CriarEscalaMotorista'] as const
+      :['ListaImpedimentosMotorista','RespostaImpedimentoMotorista','CriarImpedimentoMotorista'] as const;
+    const periodo={name:'inicio',required:false,schema:z.iso.datetime({offset:true})};
+    return [
+      op('motoristas','get',`/api/motoristas/{id}/${recurso}`,lista,gestor,{runtimeValidation:true,errors:[400,401,403,404,500],
+        query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)},periodo,{...periodo,name:'fim'}],
+        notes:'SCRUM-239. Ordem inicio DESC, id DESC. inicio/fim juntos filtram sobreposição com [inicio,fim). Lacuna entre registros VIGENTES é dado ausente, não folga nem disponibilidade.'}),
+      op('motoristas','post',`/api/motoristas/{id}/${recurso}`,resposta,gestor,{body:corpo,runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],
+        notes:recurso==='escalas'?'SCRUM-239. Período [inicio,fim) EM_ESCALA/FORA_DE_ESCALA; autor e instante pelo servidor. 409 ESCALA_SOBREPOSTA.'
+          :'SCRUM-239. FOLGA/AFASTADO, fim nulo = término não informado; sem campo clínico. 409 IMPEDIMENTO_SOBREPOSTO.'}),
+      op('motoristas','post',`/api/motoristas/{id}/${recurso}/{registroId}/cancelamento`,resposta,gestor,{status:200,body:'CancelarRegistroMotorista',runtimeValidation:true,
+        errors:[400,401,403,404,409,413,415,500],notes:'SCRUM-239. Cancela registro VIGENTE com motivo; não apaga. 409 REGISTRO_JA_CANCELADO.'}),
+    ];
+  }),
+  op('motoristas','get','/api/motoristas/{id}/transicoes','ListaTransicoesMotorista',gestor,{runtimeValidation:true,errors:[400,401,403,404,500],
+    query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}],
+    notes:'SCRUM-239. Histórico append-only em versão DESC; situacao.inativo deriva da última transição.'}),
+  ...(['inativacao','reativacao'] as const).map(acao=>op('motoristas','post',`/api/motoristas/{id}/${acao}`,'RespostaTransicaoMotorista',gestor,{
+    body:'MotivoTransicaoMotorista',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],
+    notes:acao==='inativacao'?'SCRUM-239. Motivo obrigatório. Não altera conta, status nem reservas existentes; novas alocações são recusadas (MOTORISTA_IMPEDIDO). 409 MOTORISTA_JA_INATIVO.'
+      :'SCRUM-239. Motivo obrigatório. 409 MOTORISTA_NAO_INATIVO.'})),
   op('abastecimentos','get','/api/abastecimentos/{id}/comprovante','ComprovanteAbastecimento',gestor,{errors:[401,403,404,500],notes:'PDF/JPEG/PNG privados: último anexo compartilhado, com fallback do comprovante legado. Acesso autenticado.'}),
   op('abastecimentos','get','/api/abastecimentos/indicadores','IndicadoresAbastecimentos',gestor,{
     runtimeValidation:true,query:parametrosIndicadoresAbastecimentos,errors:[400,401,403,404,500],
@@ -253,7 +276,8 @@ export const operations: Operacao[] = [
 /** Mantém correspondência exata com os caminhos existentes, inclusive a barra opcional de usuários. */
 export function routePattern(operation: Operacao): RegExp {
   const path = operation.path.replace(/\{id\}/g, operation.modulo === 'viagens' ? '-?[0-9]+' : '[0-9]+');
-  return new RegExp('^' + path + (operation.modulo === 'usuarios' && path.includes('[0-9]+') ? '/?' : '') + '$');
+  const comRegistro = path.replace(/\{registroId\}/g, '[0-9]+');
+  return new RegExp('^' + comRegistro + (operation.modulo === 'usuarios' && comRegistro.includes('[0-9]+') ? '/?' : '') + '$');
 }
 
 /** Informa somente operações que efetivamente aplicam seus schemas no caminho HTTP. */

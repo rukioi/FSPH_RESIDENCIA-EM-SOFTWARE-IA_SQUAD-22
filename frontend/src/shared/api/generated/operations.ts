@@ -324,6 +324,42 @@ export const apiOperations = {
     "method": "DELETE",
     "path": "/api/motoristas/{id}"
   },
+  "motoristas_get__api_motoristas_id_escalas": {
+    "method": "GET",
+    "path": "/api/motoristas/{id}/escalas"
+  },
+  "motoristas_post__api_motoristas_id_escalas": {
+    "method": "POST",
+    "path": "/api/motoristas/{id}/escalas"
+  },
+  "motoristas_post__api_motoristas_id_escalas_registroId_cancelamento": {
+    "method": "POST",
+    "path": "/api/motoristas/{id}/escalas/{registroId}/cancelamento"
+  },
+  "motoristas_get__api_motoristas_id_impedimentos": {
+    "method": "GET",
+    "path": "/api/motoristas/{id}/impedimentos"
+  },
+  "motoristas_post__api_motoristas_id_impedimentos": {
+    "method": "POST",
+    "path": "/api/motoristas/{id}/impedimentos"
+  },
+  "motoristas_post__api_motoristas_id_impedimentos_registroId_cancelamento": {
+    "method": "POST",
+    "path": "/api/motoristas/{id}/impedimentos/{registroId}/cancelamento"
+  },
+  "motoristas_get__api_motoristas_id_transicoes": {
+    "method": "GET",
+    "path": "/api/motoristas/{id}/transicoes"
+  },
+  "motoristas_post__api_motoristas_id_inativacao": {
+    "method": "POST",
+    "path": "/api/motoristas/{id}/inativacao"
+  },
+  "motoristas_post__api_motoristas_id_reativacao": {
+    "method": "POST",
+    "path": "/api/motoristas/{id}/reativacao"
+  },
   "abastecimentos_get__api_abastecimentos_id_comprovante": {
     "method": "GET",
     "path": "/api/abastecimentos/{id}/comprovante"

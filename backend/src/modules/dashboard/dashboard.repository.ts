@@ -2,6 +2,10 @@ import type {z} from 'zod';
 import {ErroHttp} from '../../shared/http/errors.js';
 import {sql} from '../../database/connection.js';
 import {consultarRecursosDisponiveis} from '../alocacao/alocacao.repository.js';
+import { condicaoImpedimento, faixaInstantes } from '../alocacao/alocacao.elegibilidade.js';
+
+/** SCRUM-241: separa candidato com escala integral de dado de escala ausente. */
+export interface CoberturaMotoristas { comEscalaIntegral: number; semEscalaIntegral: number; impedidos: number }
 import type {ConsultaDashboard,periodoDashboard} from './dashboard.indicadores.schemas.js';
 
 /** Usa um único snapshot; o período é da saída local, não do instante civil desconhecido dos logs. */
@@ -35,10 +39,11 @@ export async function consultarIndicadores(query:ConsultaDashboard,comResumo:boo
       ORDER BY data_hora_saida,id LIMIT 5`;
     const recursos=await consultarRecursosDisponiveis(tx,intervalo);
     let motoristasCandidatos: number | undefined;
+    let coberturaMotoristas: CoberturaMotoristas | undefined;
     if (incluirMotoristasCandidatos) {
       const ids = recursos.filter(recurso => recurso.tipo === 'motorista').map(recurso => recurso.id);
-      const [contagem] = await tx<{ total: number }[]>`
-        SELECT count(*)::int AS total
+      const candidatos = await tx<{ id: string }[]>`
+        SELECT m.id::text AS id
         FROM public.motorista m
         JOIN public.usuario u ON u.id = m.usuario_id
         WHERE m.id = ANY(${ids}::bigint[])
@@ -50,7 +55,17 @@ export async function consultarIndicadores(query:ConsultaDashboard,comResumo:boo
             (${intervalo.fim}::text::timestamp - interval '1 microsecond')::date
           )
       `;
-      motoristasCandidatos = contagem.total;
+      motoristasCandidatos = candidatos.length;
+      // SCRUM-241: escala EM_ESCALA vigente cobrindo toda a janela; lacuna = dado insuficiente.
+      const janela = faixaInstantes(tx, intervalo);
+      const [cobertura] = await tx<{ com: number; impedidos: number }[]>`SELECT
+        (SELECT count(*)::int FROM public.motorista m WHERE m.id = ANY(${candidatos.map(c => c.id)}::bigint[])
+          AND coalesce((SELECT range_agg(tstzrange(e.inicio, e.fim, '[)')) FROM public.escala_motorista e
+            WHERE e.motorista_id = m.id AND e.estado = 'VIGENTE' AND e.situacao = 'EM_ESCALA'
+              AND tstzrange(e.inicio, e.fim, '[)') && ${janela}) @> ${janela}, false)) AS com,
+        (SELECT count(*)::int FROM public.motorista m WHERE ${condicaoImpedimento(tx, tx`m.id`, janela)}) AS impedidos`;
+      coberturaMotoristas = { comEscalaIntegral: cobertura.com, semEscalaIntegral: candidatos.length - cobertura.com,
+        impedidos: cobertura.impedidos };
     }
     const livres=recursos.filter(r=>r.tipo==='veiculo').map(r=>r.id);
     // Sem autorização para incorporar frota marcada SVO ao recorte administrativo.
@@ -66,7 +81,7 @@ export async function consultarIndicadores(query:ConsultaDashboard,comResumo:boo
       WHERE s.data_hora_saida>=${intervalo.inicio}::text::timestamp AND s.data_hora_saida<${intervalo.fim}::text::timestamp
       AND l.descricao IN ('Aprovou a solicitação de transporte ID '||s.id,'Reprovou a solicitação de transporte ID '||s.id)
       ORDER BY l.data_hora DESC NULLS LAST,l.id DESC LIMIT 5`;
-    return {graficos,motoristasCandidatos,resumo:{...graficos,proximasViagens,motoristasDisponiveis:cadastroMotoristas.existente?null:0,
+    return {graficos,motoristasCandidatos,coberturaMotoristas,resumo:{...graficos,proximasViagens,motoristasDisponiveis:cadastroMotoristas.existente?null:0,
       motoristasDisponiveisMotivo:cadastroMotoristas.existente?'Disponibilidade indeterminada: faltam jornada/escala confiáveis e regras de elegibilidade por CNH para todo o intervalo.':null,
       indicadores:{periodo,pendentes:fila.total,aprovadas:solicitacoesPorStatus.find(r=>r.status==='APROVADA')?.total??0,
         reprovadas:solicitacoesPorStatus.find(r=>r.status==='REPROVADA')?.total??0,veiculosDisponiveis:veiculos.total,

@@ -19,6 +19,6 @@ export async function obterIndicadores(params:URLSearchParams,resumo:boolean){
 
 /** Obtém o resumo legado e o indicador provisório no mesmo snapshot. */
 export async function obterIndicadoresConsolidados(params: URLSearchParams) {
-  const { resumo, motoristasCandidatos } = await consultarPorPeriodo(params, true, true);
-  return { gestao: dashboardSchemas.DashboardGestorIndicadores.parse({ data: resumo }).data, motoristasCandidatos };
+  const { resumo, motoristasCandidatos, coberturaMotoristas } = await consultarPorPeriodo(params, true, true);
+  return { gestao: dashboardSchemas.DashboardGestorIndicadores.parse({ data: resumo }).data, motoristasCandidatos, coberturaMotoristas };
 }

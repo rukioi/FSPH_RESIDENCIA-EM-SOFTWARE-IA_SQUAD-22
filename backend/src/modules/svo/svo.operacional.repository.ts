@@ -1,3 +1,4 @@
+import { condicaoImpedimento, faixaInstantes, impedimentoMotorista } from '../alocacao/alocacao.elegibilidade.js';
 import { sql } from '../../database/connection.js';
 import { registrarAtividades } from '../auditoria/auditoria.service.js';
 
@@ -28,6 +29,7 @@ export async function recursosDisponiveisSvo() {
           WHERE oc.motorista_id=m.id AND oc.status IN ('EM_DESLOCAMENTO','EM_TRANSPORTE'))
         AND NOT EXISTS (SELECT 1 FROM public.solicitacao_viagem sv
           WHERE sv.motorista_id=m.id AND sv.status IN ('AGENDADA','PRONTA_PARA_INICIAR','EM_ANDAMENTO'))
+        AND NOT ${condicaoImpedimento(tx, tx`m.id`, faixaInstantes(tx, null))}
       ORDER BY m.id
     `;
     const veiculos = await tx`
@@ -108,6 +110,8 @@ export async function prepararDespacho(dados: {ordemId:number;motoristaId:number
     if (!m || !v) return {tipo:'referencia_inexistente' as const};
     if (m.status!=='DISPONIVEL' || m.cnh_valida!==true || m.usuario_ativo!==true || m.perfil!=='MOTORISTA' ||
         !s10(v) || v.status!=='DISPONIVEL') return {tipo:'recurso_inelegivel' as const};
+    // SCRUM-240: impedimento conhecido no instante do despacho; dado ausente não bloqueia.
+    if (await impedimentoMotorista(tx, String(dados.motoristaId), null)) return {tipo:'recurso_inelegivel' as const};
     const [documentos] = await tx`
       SELECT COUNT(*)::int AS total FROM public.documento_veiculo d WHERE d.veiculo_id=${dados.veiculoId}
         AND (d.status_regular IS DISTINCT FROM TRUE

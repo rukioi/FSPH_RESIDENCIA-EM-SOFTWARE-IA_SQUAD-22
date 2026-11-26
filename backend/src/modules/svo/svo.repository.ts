@@ -272,7 +272,8 @@ export async function despacharOrdem(
       }
 
       const disponibilidade = await verificarDisponibilidade(transacao, String(dados.motoristaId), String(dados.veiculoId), null);
-      if (disponibilidade !== 'disponivel') return { tipo: disponibilidade };
+      // Impedimento SCRUM-240 usa a resposta SVO existente de recurso inelegível.
+      if (disponibilidade !== 'disponivel') return { tipo: disponibilidade === 'motorista_impedido' ? 'recurso_inelegivel' : disponibilidade };
 
       const atualizadas = await transacao`
         UPDATE public.ordem_coleta

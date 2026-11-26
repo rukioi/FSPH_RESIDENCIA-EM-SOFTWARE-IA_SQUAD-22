@@ -16,7 +16,7 @@ A contagem de viagens executadas inclui registros cujo início real cai no perí
 
 ## Disponibilidade provisória de motoristas
 
-A visão de ADM e Gestor retorna `disponibilidadeMotoristas` com `estado: PROVISORIA`, `candidatos` e `motivo: SEM_ESCALA_E_MATRIZ_CNH`. O total é informativo e inclui apenas motoristas com status atual `DISPONIVEL`, conta ativa de motorista, CNH preenchida e validade que cobre hoje e o último dia civil da janela.
+A visão de ADM e Gestor retorna `disponibilidadeMotoristas` com `estado: PROVISORIA`, `candidatos` e `motivo: SEM_ESCALA_E_MATRIZ_CNH`. O total é informativo e inclui apenas motoristas com status atual `DISPONIVEL`, conta ativa de motorista, CNH preenchida e validade que cobre hoje e o último dia civil da janela. SCRUM-241 exclui de `candidatos` quem tem impedimento conhecido na janela (inativação, ausência ou `FORA_DE_ESCALA`) e acrescenta `cobertura`: `comEscalaIntegral` (escala `EM_ESCALA` vigente cobre toda a janela), `semEscalaIntegral` (dado de escala insuficiente, não indisponibilidade) e `impedidos`. `motivo` passa a `SEM_MATRIZ_CNH` só quando há candidatos e todos têm escala integral; `estado` continua `PROVISORIA` porque a aptidão por veículo não é avaliada. Zero com `semEscalaIntegral = 0` é zero real pelos critérios conhecidos.
 
 A consulta reutiliza os bloqueios de alocação existentes. Ordens SVO em deslocamento ou transporte, viagens institucionais em andamento e reservas com sobreposição retiram o motorista do total. Reservas ativas sem retorno confiável bloqueiam de forma conservadora. O período é inclusivo no início e exclusivo no fim. O contador usa o cadastro atual e serve para identificar candidatos às consultas de gestão.
 

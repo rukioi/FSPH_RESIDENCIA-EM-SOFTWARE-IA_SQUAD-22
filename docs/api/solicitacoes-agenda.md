@@ -175,3 +175,5 @@ Testes unitários e HTTP reais verificam filtros, limites, isolamento, intervalo
 O reagendamento atualiza na mesma transação os recursos da viagem vinculada AGENDADA e os horários previstos da solicitação. Viagem em outro estado ou com recursos inconsistentes bloqueia a operação com 409. Solicitações legadas sem viagem continuam sem viagem; não ocorre criação histórica automática.
 
 O motorista selecionado deve possuir conta de usuário vinculada e ativa; caso contrário, o agendamento ou reagendamento retorna HTTP 409. A verificação é feita na transação da reserva.
+
+SCRUM-240: motorista com impedimento conhecido no intervalo da reserva (inativação profissional, ausência `FOLGA`/`AFASTADO` vigente ou escala `FORA_DE_ESCALA` sobreposta) retorna `409 MOTORISTA_IMPEDIDO`, verificado após os locks. Ausência de escala registrada não bloqueia; a matriz CNH × classe veicular não é avaliada. A consulta `/disponibilidade` omite esses motoristas pelo mesmo predicado.

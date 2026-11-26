@@ -27,7 +27,7 @@ export async function obterDashboardConsolidado(perfil:string,params:URLSearchPa
     return dashboardConsolidadoSchemas.DashboardConsolidado.parse({data:{visao:'SVO',operacional,filas,atividades:atividades.data}});
   }
   if(!['ADM','GESTOR_FROTA'].includes(perfil))throw new ErroHttp(403,'ACESSO_NEGADO','Acesso não permitido.');
-  const { gestao, motoristasCandidatos } = await obterIndicadoresConsolidados(params);
+  const { gestao, motoristasCandidatos, coberturaMotoristas } = await obterIndicadoresConsolidados(params);
   const periodo=gestao.periodo;
   const complemento=await sql.begin('isolation level repeatable read read only',async tx=>{
     const porStatus = await tx<{status:string|null;total:number}[]>`
@@ -55,6 +55,8 @@ export async function obterDashboardConsolidado(perfil:string,params:URLSearchPa
     disponibilidadeMotoristas: {
       estado: 'PROVISORIA',
       candidatos: motoristasCandidatos,
-      motivo: 'SEM_ESCALA_E_MATRIZ_CNH',
+      // Escala só sai do motivo quando há candidatos e todos têm escala integral na janela.
+      motivo: motoristasCandidatos && coberturaMotoristas?.semEscalaIntegral === 0 ? 'SEM_MATRIZ_CNH' : 'SEM_ESCALA_E_MATRIZ_CNH',
+      cobertura: coberturaMotoristas,
     }}});
 }

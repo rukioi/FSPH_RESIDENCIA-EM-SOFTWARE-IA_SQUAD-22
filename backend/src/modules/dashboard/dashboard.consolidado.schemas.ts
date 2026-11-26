@@ -25,8 +25,23 @@ const gestaoComCandidatos = gestao.extend({
     motivo: z.literal('SEM_ESCALA_E_MATRIZ_CNH'),
   }).describe('Contagem indicativa de candidatos para consulta da gestão, sem confirmação de escala ou aptidão por veículo.'),
 });
+export const dashboardConsolidadoAntesDeCobertura = dados(z.discriminatedUnion('visao', [gestaoComCandidatos, svoComPeriodoPersonalizado]));
+// SCRUM-241: aditivo. Campos anteriores mantêm tipo; motivo ganha SEM_MATRIZ_CNH quando há
+// candidatos e a escala cobre a janela de todos eles. A matriz segue inaplicável: estado continua PROVISORIA.
+const gestaoComCobertura = gestao.extend({
+  disponibilidadeMotoristas: z.object({
+    estado: z.literal('PROVISORIA'),
+    candidatos: quantidade.describe('Motoristas com cadastro disponível, conta ativa e CNH vigente, sem bloqueio ou impedimento conhecido (inativação, ausência, fora de escala) na janela.'),
+    motivo: z.enum(['SEM_ESCALA_E_MATRIZ_CNH', 'SEM_MATRIZ_CNH']),
+    cobertura: z.object({
+      comEscalaIntegral: quantidade.describe('Candidatos com escala EM_ESCALA vigente cobrindo toda a janela.'),
+      semEscalaIntegral: quantidade.describe('Candidatos sem escala registrada para parte ou toda a janela: dado insuficiente, não indisponibilidade.'),
+      impedidos: quantidade.describe('Motoristas com impedimento conhecido na janela; não entram em candidatos.'),
+    }),
+  }).describe('Contagem indicativa de candidatos para consulta da gestão. Zero com semEscalaIntegral=0 é zero real pelos critérios conhecidos; aptidão por veículo não é avaliada.'),
+});
 export const dashboardConsolidadoSchemas = {
-  DashboardConsolidado: dados(z.discriminatedUnion('visao', [gestaoComCandidatos, svoComPeriodoPersonalizado])),
+  DashboardConsolidado: dados(z.discriminatedUnion('visao', [gestaoComCobertura, svoComPeriodoPersonalizado])),
 };
 // Forma anterior, usada apenas pelo gate para reconhecer a troca exata da fonte de abastecimentos.
 const gestaoAntesDeConsumo = gestao.extend({ abastecimentos: indicadoresAbastecimentosAntesDeConsumo.shape.data });

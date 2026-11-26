@@ -258,6 +258,16 @@ export interface ApiSchemas {
   RespostaMotorista: RespostaMotorista;
   CriarMotorista: CriarMotorista;
   EditarMotorista: EditarMotorista;
+  CriarEscalaMotorista: CriarEscalaMotorista;
+  CriarImpedimentoMotorista: CriarImpedimentoMotorista;
+  CancelarRegistroMotorista: CancelarRegistroMotorista;
+  MotivoTransicaoMotorista: MotivoTransicaoMotorista;
+  RespostaEscalaMotorista: RespostaEscalaMotorista;
+  ListaEscalasMotorista: ListaEscalasMotorista;
+  RespostaImpedimentoMotorista: RespostaImpedimentoMotorista;
+  ListaImpedimentosMotorista: ListaImpedimentosMotorista;
+  RespostaTransicaoMotorista: RespostaTransicaoMotorista;
+  ListaTransicoesMotorista: ListaTransicoesMotorista;
   DetalheAbastecimento: DetalheAbastecimento;
   RespostaDetalheAbastecimento: RespostaDetalheAbastecimento;
   ListaAbastecimentos: ListaAbastecimentos;
@@ -566,15 +576,29 @@ export interface DashboardConsolidado {
           };
         };
         /**
-         * Contagem indicativa de candidatos para consulta da gestão, sem confirmação de escala ou aptidão por veículo.
+         * Contagem indicativa de candidatos para consulta da gestão. Zero com semEscalaIntegral=0 é zero real pelos critérios conhecidos; aptidão por veículo não é avaliada.
          */
         disponibilidadeMotoristas: {
           estado: 'PROVISORIA';
           /**
-           * Motoristas com cadastro disponível, conta ativa e CNH vigente, sem bloqueio registrado na janela.
+           * Motoristas com cadastro disponível, conta ativa e CNH vigente, sem bloqueio ou impedimento conhecido (inativação, ausência, fora de escala) na janela.
            */
           candidatos: number;
-          motivo: 'SEM_ESCALA_E_MATRIZ_CNH';
+          motivo: 'SEM_ESCALA_E_MATRIZ_CNH' | 'SEM_MATRIZ_CNH';
+          cobertura: {
+            /**
+             * Candidatos com escala EM_ESCALA vigente cobrindo toda a janela.
+             */
+            comEscalaIntegral: number;
+            /**
+             * Candidatos sem escala registrada para parte ou toda a janela: dado insuficiente, não indisponibilidade.
+             */
+            semEscalaIntegral: number;
+            /**
+             * Motoristas com impedimento conhecido na janela; não entram em candidatos.
+             */
+            impedidos: number;
+          };
         };
       }
     | {
@@ -1475,6 +1499,260 @@ export interface EditarMotorista {
   status?: 'DISPONIVEL' | 'EM_VIAGEM' | 'FOLGA' | 'AFASTADO';
   cpf?: string | null;
   telefone?: string | null;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CriarEscalaMotorista".
+ */
+export interface CriarEscalaMotorista {
+  /**
+   * ISO 8601 com fuso; persistido como timestamptz.
+   */
+  inicio: string;
+  /**
+   * ISO 8601 com fuso; persistido como timestamptz.
+   */
+  fim: string;
+  situacao: 'EM_ESCALA' | 'FORA_DE_ESCALA';
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CriarImpedimentoMotorista".
+ */
+export interface CriarImpedimentoMotorista {
+  tipo: 'FOLGA' | 'AFASTADO';
+  /**
+   * ISO 8601 com fuso; persistido como timestamptz.
+   */
+  inicio: string;
+  fim?: string | null;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CancelarRegistroMotorista".
+ */
+export interface CancelarRegistroMotorista {
+  motivo: string;
+}
+/**
+ * Motivo administrativo obrigatório. Não registrar diagnóstico ou dado médico.
+ *
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "MotivoTransicaoMotorista".
+ */
+export interface MotivoTransicaoMotorista {
+  motivo: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaEscalaMotorista".
+ */
+export interface RespostaEscalaMotorista {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    motoristaId: string;
+    inicio: string;
+    fim: string;
+    situacao: 'EM_ESCALA' | 'FORA_DE_ESCALA';
+    estado: 'VIGENTE' | 'CANCELADA';
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+    cancelamento: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      autorId: string;
+      em: string;
+      motivo: string;
+    } | null;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaEscalasMotorista".
+ */
+export interface ListaEscalasMotorista {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    motoristaId: string;
+    inicio: string;
+    fim: string;
+    situacao: 'EM_ESCALA' | 'FORA_DE_ESCALA';
+    estado: 'VIGENTE' | 'CANCELADA';
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+    cancelamento: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      autorId: string;
+      em: string;
+      motivo: string;
+    } | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaImpedimentoMotorista".
+ */
+export interface RespostaImpedimentoMotorista {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    motoristaId: string;
+    tipo: 'FOLGA' | 'AFASTADO';
+    inicio: string;
+    /**
+     * null = término não informado.
+     */
+    fim: string | null;
+    estado: 'VIGENTE' | 'CANCELADA';
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+    cancelamento: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      autorId: string;
+      em: string;
+      motivo: string;
+    } | null;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaImpedimentosMotorista".
+ */
+export interface ListaImpedimentosMotorista {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    motoristaId: string;
+    tipo: 'FOLGA' | 'AFASTADO';
+    inicio: string;
+    /**
+     * null = término não informado.
+     */
+    fim: string | null;
+    estado: 'VIGENTE' | 'CANCELADA';
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+    cancelamento: {
+      /**
+       * BIGINT serializado pelo postgres como string; não converter para Number.
+       */
+      autorId: string;
+      em: string;
+      motivo: string;
+    } | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaTransicaoMotorista".
+ */
+export interface RespostaTransicaoMotorista {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    motoristaId: string;
+    versao: number;
+    acao: 'INATIVACAO' | 'REATIVACAO';
+    motivo: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaTransicoesMotorista".
+ */
+export interface ListaTransicoesMotorista {
+  data: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    id: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    motoristaId: string;
+    versao: number;
+    acao: 'INATIVACAO' | 'REATIVACAO';
+    motivo: string;
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    autorId: string;
+    criadoEm: string;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+  situacao: {
+    /**
+     * BIGINT serializado pelo postgres como string; não converter para Number.
+     */
+    motoristaId: string;
+    /**
+     * Somente pela última transição registrada; sem transição = nunca inativado por este fluxo.
+     */
+    inativo: boolean;
+  };
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -3144,6 +3422,15 @@ export interface ApiOperations {
   'motoristas_put__api_motoristas_id_': { body: ApiSchemas['EditarMotorista']; response: ApiSchemas['RespostaMotorista'] };
   'motoristas_patch__api_motoristas_id_': { body: ApiSchemas['EditarMotorista']; response: ApiSchemas['RespostaMotorista'] };
   'motoristas_delete__api_motoristas_id_': { body: undefined; response: ApiSchemas['Exclusao'] };
+  'motoristas_get__api_motoristas_id_escalas': { body: undefined; response: ApiSchemas['ListaEscalasMotorista'] };
+  'motoristas_post__api_motoristas_id_escalas': { body: ApiSchemas['CriarEscalaMotorista']; response: ApiSchemas['RespostaEscalaMotorista'] };
+  'motoristas_post__api_motoristas_id_escalas_registroId_cancelamento': { body: ApiSchemas['CancelarRegistroMotorista']; response: ApiSchemas['RespostaEscalaMotorista'] };
+  'motoristas_get__api_motoristas_id_impedimentos': { body: undefined; response: ApiSchemas['ListaImpedimentosMotorista'] };
+  'motoristas_post__api_motoristas_id_impedimentos': { body: ApiSchemas['CriarImpedimentoMotorista']; response: ApiSchemas['RespostaImpedimentoMotorista'] };
+  'motoristas_post__api_motoristas_id_impedimentos_registroId_cancelamento': { body: ApiSchemas['CancelarRegistroMotorista']; response: ApiSchemas['RespostaImpedimentoMotorista'] };
+  'motoristas_get__api_motoristas_id_transicoes': { body: undefined; response: ApiSchemas['ListaTransicoesMotorista'] };
+  'motoristas_post__api_motoristas_id_inativacao': { body: ApiSchemas['MotivoTransicaoMotorista']; response: ApiSchemas['RespostaTransicaoMotorista'] };
+  'motoristas_post__api_motoristas_id_reativacao': { body: ApiSchemas['MotivoTransicaoMotorista']; response: ApiSchemas['RespostaTransicaoMotorista'] };
   'abastecimentos_get__api_abastecimentos_id_comprovante': { body: undefined; response: Blob };
   'abastecimentos_post__api_abastecimentos_id_comprovante': { body: FormData; response: ApiSchemas['RespostaAnexo'] };
   'abastecimentos_get__api_abastecimentos_indicadores': { body: undefined; response: ApiSchemas['IndicadoresAbastecimentos'] };
