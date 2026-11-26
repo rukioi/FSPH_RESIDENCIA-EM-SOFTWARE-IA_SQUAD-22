@@ -93,6 +93,16 @@ export function lerRotaSolicitacao(caminho: string, base: string) {
   if (!/^[0-9]+$/.test(id)) return null;
   return { id, editar: partes[1] === "editar" };
 }
+/** Monta "/gestor/solicitacoes/:id/aprovar". */
+export function rotaAprovarSolicitacao(id: string) {
+  return `${ROTAS.solicitacoesGestor}/${encodeURIComponent(id)}/aprovar`;
+}
+
+/** Lê "/gestor/solicitacoes/:id/aprovar" e devolve o ID numérico. */
+export function lerRotaAprovarSolicitacao(caminho: string) {
+  const resultado = /^\/gestor\/solicitacoes\/([0-9]+)\/aprovar$/.exec(caminho);
+ return resultado ? resultado[1] : null;
+}
 
 export function rotaDetalheAbastecimento(id: string) {
   if (!/^[1-9]\d*$/.test(id)) {

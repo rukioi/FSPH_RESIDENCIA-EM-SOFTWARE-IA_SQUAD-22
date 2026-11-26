@@ -3,12 +3,11 @@ import { Select } from '../../shared/components/Select';
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { navegar } from '../../app/routes/router'
-import { ROTAS, rotaSolicitacao } from '../../app/routes/rotas'
+import { ROTAS, rotaSolicitacao, rotaAprovarSolicitacao } from '../../app/routes/rotas'
 import { IconeGestor as Icone } from '../../shared/components/IconeGestor'
 import { Paginacao, usePaginacao } from '../../shared/components/Paginacao'
 import {
   listarSolicitacoes,
-  aprovarSolicitacao,
   rejeitarSolicitacao,
 } from '../../shared/services/solicitacoes.service'
 import { STATUS, formatarData } from '../../features/solicitacoes/regras'
@@ -157,22 +156,19 @@ export function Solicitacoes() {
 
   const pag = usePaginacao(filtradas, 8)
 
-  async function analisar(id: string, novoStatus: 'aprovar' | 'rejeitar') {
-    let motivo = ''
+  // A aprovação agora acontece na tela de escolha de veículo e motorista.
+  async function rejeitar(id: string) {
+    const resposta = window.prompt(
+      'Informe a justificativa para rejeitar esta solicitação:',
+    )
 
-    if (novoStatus === 'rejeitar') {
-      const resposta = window.prompt(
-        'Informe a justificativa para rejeitar esta solicitação:',
-      )
+    if (resposta === null) return
 
-      if (resposta === null) return
+    const motivo = resposta.trim()
 
-      motivo = resposta.trim()
-
-      if (!motivo) {
-        setAviso('A justificativa é obrigatória para rejeitar uma solicitação.')
-        return
-      }
+    if (!motivo) {
+      setAviso('A justificativa é obrigatória para rejeitar uma solicitação.')
+      return
     }
 
     if (processandoId) return
@@ -182,16 +178,11 @@ export function Solicitacoes() {
       setErro('')
       setAviso('')
 
-      if (novoStatus === 'aprovar') {
-        await aprovarSolicitacao(id)
-        setAviso(`Solicitação #${id} aprovada com sucesso.`)
-      } else {
-        await rejeitarSolicitacao(id, motivo)
-        setAviso(`Solicitação #${id} rejeitada com sucesso.`)
-      }
+      await rejeitarSolicitacao(id, motivo)
+      setAviso(`Solicitação #${id} rejeitada com sucesso.`)
 
       setLista((atual) => atual.map((item) => item.id === id
-        ? { ...item, status: novoStatus === 'aprovar' ? 'Aprovada' : 'Recusada' }
+        ? { ...item, status: 'Recusada' }
         : item))
       // Atualiza a lista com o estado confirmado pelo backend.
       setAtualizacao((valor) => valor + 1)
@@ -359,7 +350,7 @@ export function Solicitacoes() {
                                 aria-label={`Aprovar #${s.codigo}`}
                                 title="Aprovar"
                                 disabled={Boolean(processandoId)}
-                                onClick={() => void analisar(s.id, 'aprovar')}
+                                onClick={() => navegar(rotaAprovarSolicitacao(s.id))}
                               >
                                 <Icone nome="check" tamanho={18} />
                               </button>
@@ -370,11 +361,24 @@ export function Solicitacoes() {
                                 aria-label={`Rejeitar #${s.codigo}`}
                                 title="Rejeitar"
                                 disabled={Boolean(processandoId)}
-                                onClick={() => void analisar(s.id, 'rejeitar')}
+                                onClick={() => void rejeitar(s.id)}
                               >
                                 <Icone nome="fechar" tamanho={18} />
                               </button>
                             </>
+                          )}
+
+                          {/* Aprovada sem veículo/motorista: permite concluir o agendamento */}
+                          {s.status === 'Aprovada' && (
+                            <button
+                              type="button"
+                              className="sol-acao sol-acao--aprovar"
+                              aria-label={`Escolher veículo e motorista para #${s.codigo}`}
+                              title="Escolher veículo e motorista"
+                              onClick={() => navegar(rotaAprovarSolicitacao(s.id))}
+                            >
+                              <Icone nome="calendario" tamanho={18} />
+                            </button>
                           )}
 
                           {(s.status === 'Pendente' || s.status === 'Aprovada') && (

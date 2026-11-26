@@ -1,11 +1,9 @@
 // App do perfil Administrador e Gestor de Frota.
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { ComponentType } from "react";
-
 import { NotificacoesProvider } from "../features/notificacoes/NotificacoesContext";
 import "../shared/styles/tema.css";
 import "../shared/styles/hierarquia.css";
-
 import { Link, definirModoAdm, navegar, useCaminho } from "./routes/router";
 import {
   ROTAS,
@@ -13,14 +11,13 @@ import {
   lerRotaDetalheAbastecimento,
   lerRotaHistoricoAbastecimentosVeiculo,
   lerRotaSolicitacao,
+  lerRotaAprovarSolicitacao,
 } from "./routes/rotas";
 import { AuthSkeleton } from "./AuthSkeleton";
-
 import { AdminLayout } from "../layouts/administrador/AdminLayout";
 import { GestorLayout } from "../layouts/gestor/GestorLayout";
 import { SvoLayout } from "../layouts/svo/SvoLayout";
 import { SolicitanteLayout } from "../layouts/solicitante/SolicitanteLayout";
-
 import {
   perfilPodeAcessar,
   rotaConhecida,
@@ -32,97 +29,83 @@ import {
   sair,
 } from "../shared/services/auth.service";
 import type { UsuarioSessao } from "../shared/services/auth.service";
-
 import type { ConsultaRelatorio } from "../shared/services/relatorios.service";
 import { telaPreviewSvo } from "../features/svo/preview";
-
 // Notificações
 const Notificacoes = lazy(() =>
   import("../features/notificacoes/Notificacoes").then((module) => ({
     default: module.Notificacoes,
   })),
 );
-
 // Páginas administrativas
 const Login = lazy(() =>
   import("../pages/login/Login").then((module) => ({
     default: module.Login,
   })),
 );
-
+// Portal do motorista (login próprio + viagens), exportado como default
+const ViagensMotorista = lazy(() => import("../pages/motorista/Viagens"));
 const DashboardAdmin = lazy(() =>
   import("../pages/administrador/DashboardAdm").then((module) => ({
     default: module.DashboardAdmin,
   })),
 );
-
 const Configuracoes = lazy(() =>
   import("../pages/administrador/Configuracoes").then((module) => ({
     default: module.Configuracoes,
   })),
 );
-
 const Auditoria = lazy(() =>
   import("../pages/administrador/Auditoria").then((module) => ({
     default: module.Auditoria,
   })),
 );
-
 const DocumentosAdm = lazy(() =>
   import("../pages/administrador/DocumentosAdm").then((module) => ({
     default: module.DocumentosAdm,
   })),
 );
-
 // Páginas do Gestor
 const Dashboard = lazy(() =>
   import("../pages/gerente/DashboardGestor").then((module) => ({
     default: module.Dashboard,
   })),
 );
-
 const DocumentosGestor = lazy(() =>
   import("../pages/gerente/DocumentosGestor").then((module) => ({
     default: module.DocumentosGestor,
   })),
 );
-
 const Veiculos = lazy(() =>
   import("../pages/veiculos/Veiculos").then((module) => ({
     default: module.Veiculos,
   })),
 );
-
 const Motoristas = lazy(() =>
   import("../pages/motorista/Motoristas").then((module) => ({
     default: module.Motoristas,
   })),
 );
-
 const Abastecimentos = lazy(() =>
   import("../pages/abastecimentos/Abastecimentos").then((module) => ({
     default: module.Abastecimentos,
   })),
 );
-
 const Relatorios = lazy(() =>
   import("../features/relatorios/Relatorios").then((module) => ({
     default: module.Relatorios,
   })),
 );
-
 const DetalheAbastecimento = lazy(() =>
   import("../pages/abastecimentos/DetalheAbastecimento").then((module) => ({
     default: module.DetalheAbastecimento,
   })),
 );
-
 const HistoricoAbastecimentos = lazy(() =>
   import("../pages/abastecimentos/HistoricoAbastecimentos").then((module) => ({
     default: module.HistoricoAbastecimentos,
   })),
 );
-
 const IndicadoresAbastecimentos = lazy(() =>
   import("../pages/abastecimentos/IndicadoresAbastecimentos").then(
     (module) => ({
@@ -130,99 +113,88 @@ const IndicadoresAbastecimentos = lazy(() =>
     }),
   ),
 );
-
 // Solicitações
 const Solicitacoes = lazy(() =>
   import("../pages/gerente/Solicitacoes").then((module) => ({
     default: module.Solicitacoes,
   })),
 );
-
 const Calendario = lazy(() =>
   import("../pages/gerente/Calendario").then((module) => ({
     default: module.Calendario,
   })),
 );
-
+const AprovarSolicitacao = lazy(() =>
+  import("../features/solicitacoes/AprovarSolicitacao").then((module) => ({
+    default: module.AprovarSolicitacao,
+  })),
+);
 const NovaSolicitacao = lazy(() =>
   import("../pages/solicitante/NovaSolicitacao").then((module) => ({
     default: module.NovaSolicitacao,
   })),
 );
-
 const MinhasSolicitacoes = lazy(() =>
   import("../pages/solicitante/MinhasSolicitacoes").then((module) => ({
     default: module.MinhasSolicitacoes,
   })),
 );
-
 const DetalheSolicitacao = lazy(() =>
   import("../features/solicitacoes/DetalheSolicitacao").then((module) => ({
     default: module.DetalheSolicitacao,
   })),
 );
-
 const EditarSolicitacao = lazy(() =>
   import("../features/solicitacoes/EditarSolicitacao").then((module) => ({
     default: module.EditarSolicitacao,
   })),
 );
-
 // SVO
 const MinhasOrdensSvo = lazy(() =>
   import("../features/svo/EquipeSvo").then((module) => ({
     default: module.MinhasOrdensSvo,
   })),
 );
-
 const ExecucaoSvo = lazy(() =>
   import("../features/svo/EquipeSvo").then((module) => ({
     default: module.ExecucaoSvo,
   })),
 );
-
 const DetalheSolicitacaoSvo = lazy(() =>
   import("../features/svo/DetalhesSvo").then((module) => ({
     default: module.DetalheSolicitacao,
   })),
 );
-
 const DetalheOrdem = lazy(() =>
   import("../features/svo/DetalhesSvo").then((module) => ({
     default: module.DetalheOrdem,
   })),
 );
-
 const Svo = lazy(() =>
   import("../features/svo/Svo").then((module) => ({
     default: module.Svo,
   })),
 );
-
 const CadastroSolicitacaoSvo = lazy(() =>
   import("../features/svo/SvoOperacional").then((module) => ({
     default: module.CadastroSolicitacaoSvo,
   })),
 );
-
 const ListaOrdensIntegrada = lazy(() =>
   import("../features/svo/SvoOperacional").then((module) => ({
     default: module.ListaOrdensIntegrada,
   })),
 );
-
 const ListaSolicitacoesIntegrada = lazy(() =>
   import("../features/svo/SvoOperacional").then((module) => ({
     default: module.ListaSolicitacoesIntegrada,
   })),
 );
-
 const TriagemSvo = lazy(() =>
   import("../features/svo/SvoOperacional").then((module) => ({
     default: module.TriagemSvo,
   })),
 );
-
 // Páginas administrativas associadas diretamente às rotas
 const paginas: Record<string, ComponentType> = {
   [ROTAS.dashboard]: DashboardAdmin,
@@ -230,18 +202,15 @@ const paginas: Record<string, ComponentType> = {
   [ROTAS.auditoria]: Auditoria,
   [ROTAS.documentosAdm]: DocumentosAdm,
 };
-
 /** Confirma a sessão da rota atual antes de montar qualquer página protegida. */
 export function App() {
   const caminho = useCaminho();
   const token = obterToken();
-
   const [confirmacao, setConfirmacao] = useState<{
     caminho: string;
     token: string;
     perfil: string;
   } | null>(null);
-
   const ativo = Boolean(
     token &&
       caminho !== ROTAS.login &&
@@ -249,7 +218,6 @@ export function App() {
       confirmacao.caminho === caminho &&
       perfilPodeAcessar(caminho, confirmacao.perfil),
   );
-
   return (
     <NotificacoesProvider key={token ?? "sem-sessao"} ativo={ativo}>
       <Suspense
@@ -264,7 +232,6 @@ export function App() {
     </NotificacoesProvider>
   );
 }
-
 function AppContent({
   onSessaoConfirmada,
 }: {
@@ -277,40 +244,31 @@ function AppContent({
   ) => void;
 }) {
   const caminho = useCaminho();
-
   const [sessao, setSessao] = useState<UsuarioSessao | null>(null);
-
   const [caminhoVerificado, setCaminhoVerificado] = useState<string | null>(
     null,
   );
   const [tentativaSessao, setTentativaSessao] = useState(0);
-
   const previewSvo =
     import.meta.env.DEV && telaPreviewSvo(caminho) !== null;
-
   useEffect(() => {
     if (previewSvo) {
       window.location.reload();
       return;
     }
-
+    // O portal do motorista cuida do próprio login e sessão.
     if (caminho === ROTAS.loginMotorista) return;
-
     const tokenAoIniciar = obterToken();
-
     if (!tokenAoIniciar) {
       onSessaoConfirmada(null);
       sair();
       setSessao(null);
       setCaminhoVerificado(null);
-
       if (caminho !== ROTAS.login) {
         navegar(ROTAS.login, true);
       }
-
       return;
     }
-
     setCaminhoVerificado(null);
     const controller = new AbortController();
     const cancelar = () => controller.abort();
@@ -319,14 +277,11 @@ function AppContent({
     };
     window.addEventListener("pagehide", cancelar);
     window.addEventListener("pageshow", restaurar);
-
     void buscarSessao(controller.signal)
       .then((usuario) => {
         if (controller.signal.aborted || obterToken() !== tokenAoIniciar) return;
-
         // ADM usa as telas do Gestor, mas com endereços /admin/... na barra.
         definirModoAdm(usuario?.perfil === "ADM");
-
         onSessaoConfirmada(
           usuario
             ? {
@@ -336,27 +291,21 @@ function AppContent({
               }
             : null,
         );
-
         setSessao(usuario);
         setCaminhoVerificado(caminho);
-
         if (!usuario) {
           sair();
-
           if (caminho !== ROTAS.login) {
             navegar(ROTAS.login, true);
           }
-
           return;
         }
-
         if (
           caminho.startsWith("/svo/") &&
           ["ATENDENTE_SVO", "MOTORISTA"].includes(usuario.perfil)
         ) {
           return;
         }
-
         if (
           caminho === ROTAS.login ||
           (rotaConhecida(caminho) &&
@@ -372,36 +321,30 @@ function AppContent({
       })
       .catch(() => {
         if (controller.signal.aborted || obterToken() !== tokenAoIniciar) return;
-
         onSessaoConfirmada(null);
         sair();
         setSessao(null);
         setCaminhoVerificado(null);
         navegar(ROTAS.login, true);
       });
-
     return () => {
       cancelar();
       window.removeEventListener("pagehide", cancelar);
       window.removeEventListener("pageshow", restaurar);
     };
   }, [caminho, previewSvo, onSessaoConfirmada, tentativaSessao]);
-
   if (previewSvo) return null;
-
+  // "Entrar como motorista" abre o portal de viagens do motorista
   if (caminho === ROTAS.loginMotorista) {
-    return <Login key={ROTAS.loginMotorista} acessoMotorista />;
+    return <ViagensMotorista key={ROTAS.loginMotorista} />;
   }
-
   // Tela de login
   if (caminho === ROTAS.login) {
     return <Login key={ROTAS.login} />;
   }
-
   if (!obterToken()) {
     return <Login />;
   }
-
   // Acesso especial às telas do SVO
   if (
     caminhoVerificado === caminho &&
@@ -413,19 +356,16 @@ function AppContent({
     const conhecida =
       Object.values(ROTAS).some((rota) => rota === caminho) ||
       lerDetalheSvo(caminho);
-
     return (
       <SvoLayout usuario={sessao}>
         <h1>
           {conhecida ? "Acesso negado" : "Página não encontrada"}
         </h1>
-
         <p role="alert">
           {conhecida
             ? "Seu perfil não tem acesso a esta página."
             : "Confira o endereço da página."}
         </p>
-
         <Link
           className="svo-atalho"
           para={destinoDoPerfil(sessao.perfil)}
@@ -435,7 +375,6 @@ function AppContent({
       </SvoLayout>
     );
   }
-
   // Enquanto a sessão é confirmada, mantém o layout correspondente ao perfil.
   if (
     caminhoVerificado !== caminho ||
@@ -450,21 +389,17 @@ function AppContent({
     ) {
       const LayoutCarregamento =
         sessao.perfil === "ADM" ? AdminLayout : GestorLayout;
-
       return (
         <LayoutCarregamento usuario={sessao}>
           <AuthSkeleton caminho={caminho} somenteConteudo />
         </LayoutCarregamento>
       );
     }
-
     return <AuthSkeleton caminho={caminho} />;
   }
-
   // Layout operacional: ADM usa AdminLayout; Gestor usa GestorLayout.
   const LayoutOperacional =
     sessao.perfil === "ADM" ? AdminLayout : GestorLayout;
-
   // Notificações
   if (caminho === ROTAS.notificacoes) {
     const Layout =
@@ -473,14 +408,12 @@ function AppContent({
         : sessao.perfil === "SOLICITANTE_INTERNO"
           ? SolicitanteLayout
           : GestorLayout;
-
     return (
       <Layout usuario={sessao}>
         <Notificacoes />
       </Layout>
     );
   }
-
   // Relatórios
   const tiposRelatorio: Record<string, ConsultaRelatorio["tipo"]> = {
     [ROTAS.relatoriosGestor]: "viagens",
@@ -490,13 +423,11 @@ function AppContent({
     [ROTAS.relatorioAbastecimentos]: "abastecimentos",
     [ROTAS.svoRelatorios]: "svo",
   };
-
   if (tiposRelatorio[caminho]) {
     const Layout =
       caminho === ROTAS.svoRelatorios
         ? SvoLayout
         : LayoutOperacional;
-
     return (
       <Layout usuario={sessao}>
         <Relatorios
@@ -506,7 +437,6 @@ function AppContent({
       </Layout>
     );
   }
-
   // Dashboard do Gestor
   if (caminho === ROTAS.dashboardGestor) {
     return (
@@ -515,7 +445,6 @@ function AppContent({
       </LayoutOperacional>
     );
   }
-
   // Documentos do Gestor
   if (caminho === ROTAS.documentosGestor) {
     return (
@@ -524,7 +453,6 @@ function AppContent({
       </LayoutOperacional>
     );
   }
-
   // Veículos
   if (caminho === ROTAS.veiculosGestor) {
     return (
@@ -535,16 +463,13 @@ function AppContent({
         >
           Relatório de veículos
         </Link>
-
         <Veiculos />
       </LayoutOperacional>
     );
   }
-
   // Histórico de abastecimentos por veículo
   const historicoVeiculoId =
     lerRotaHistoricoAbastecimentosVeiculo(caminho);
-
   if (historicoVeiculoId !== null) {
     return (
       <LayoutOperacional usuario={sessao}>
@@ -555,7 +480,6 @@ function AppContent({
       </LayoutOperacional>
     );
   }
-
   // Motoristas
   if (caminho === ROTAS.motoristasGestor) {
     return (
@@ -566,12 +490,10 @@ function AppContent({
         >
           Relatório de motoristas
         </Link>
-
         <Motoristas />
       </LayoutOperacional>
     );
   }
-
   // Abastecimentos
   if (caminho === ROTAS.abastecimentosGestor) {
     return (
@@ -582,12 +504,10 @@ function AppContent({
         >
           Relatório de abastecimentos
         </Link>
-
         <Abastecimentos />
       </LayoutOperacional>
     );
   }
-
   // Indicadores de abastecimentos
   if (caminho === ROTAS.indicadoresAbastecimentosGestor) {
     return (
@@ -596,10 +516,8 @@ function AppContent({
       </LayoutOperacional>
     );
   }
-
   // Detalhe de abastecimento
   const abastecimentoId = lerRotaDetalheAbastecimento(caminho);
-
   if (abastecimentoId !== null) {
     return (
       <LayoutOperacional usuario={sessao}>
@@ -610,7 +528,6 @@ function AppContent({
       </LayoutOperacional>
     );
   }
-
   // Solicitações do Gestor
   if (caminho === ROTAS.solicitacoesGestor) {
     return (
@@ -621,12 +538,10 @@ function AppContent({
         >
           Relatório de solicitações
         </Link>
-
         <Solicitacoes />
       </LayoutOperacional>
     );
   }
-
   // Calendário do Gestor
   if (caminho === ROTAS.calendarioGestor) {
     return (
@@ -635,13 +550,20 @@ function AppContent({
       </LayoutOperacional>
     );
   }
-
+  // /gestor/solicitacoes/:id/aprovar (escolha de veículo e motorista)
+  const aprovacaoId = lerRotaAprovarSolicitacao(caminho);
+  if (aprovacaoId !== null) {
+    return (
+      <LayoutOperacional usuario={sessao}>
+        <AprovarSolicitacao key={aprovacaoId} id={aprovacaoId} />
+      </LayoutOperacional>
+    );
+  }
   // /gestor/solicitacoes/:id e /gestor/solicitacoes/:id/editar
   const rotaGestor = lerRotaSolicitacao(
     caminho,
     ROTAS.solicitacoesGestor,
   );
-
   if (rotaGestor) {
     return (
       <LayoutOperacional usuario={sessao}>
@@ -668,7 +590,6 @@ function AppContent({
       </LayoutOperacional>
     );
   }
-
   // Nova Solicitação do Solicitante
   if (caminho === ROTAS.novaSolicitacao) {
     return (
@@ -677,7 +598,6 @@ function AppContent({
       </SolicitanteLayout>
     );
   }
-
   // Minhas Solicitações
   if (caminho === ROTAS.minhasSolicitacoes) {
     return (
@@ -686,13 +606,11 @@ function AppContent({
       </SolicitanteLayout>
     );
   }
-
   // /solicitante/minhas-solicitacoes/:id e /:id/editar
   const rotaSolicitante = lerRotaSolicitacao(
     caminho,
     ROTAS.minhasSolicitacoes,
   );
-
   if (rotaSolicitante) {
     return (
       <SolicitanteLayout usuario={sessao}>
@@ -719,19 +637,15 @@ function AppContent({
       </SolicitanteLayout>
     );
   }
-
   // Telas do SVO
   const detalhe = lerDetalheSvo(caminho);
-
   const paginasSvo: Record<string, ComponentType> = {
     [ROTAS.svoNovaSolicitacao]: CadastroSolicitacaoSvo,
     [ROTAS.svoSolicitacoes]: ListaSolicitacoesIntegrada,
     [ROTAS.svoOrdens]: ListaOrdensIntegrada,
     [ROTAS.svoMinhasOrdens]: MinhasOrdensSvo,
   };
-
   const PaginaSvo = paginasSvo[caminho];
-
   if (PaginaSvo) {
     return (
       <SvoLayout usuario={sessao}>
@@ -739,20 +653,15 @@ function AppContent({
       </SvoLayout>
     );
   }
-
   if (detalhe) {
     const { id, tela } = detalhe;
-
     return (
       <SvoLayout usuario={sessao} key={caminho}>
         {tela === "solicitacao" && (
           <DetalheSolicitacaoSvo id={id} />
         )}
-
         {tela === "triagem" && <TriagemSvo id={id} />}
-
         {tela === "ordem" && <DetalheOrdem id={id} />}
-
         {tela === "execucao" && (
           <ExecucaoSvo
             id={id}
@@ -762,7 +671,6 @@ function AppContent({
       </SvoLayout>
     );
   }
-
   if (
     caminho === ROTAS.svoRaiz ||
     caminho === ROTAS.svoDashboard
@@ -773,10 +681,8 @@ function AppContent({
       </SvoLayout>
     );
   }
-
   // Páginas administrativas, incluindo Documentos do ADM
   const Pagina = paginas[caminho];
-
   if (Pagina) {
     return (
       <AdminLayout usuario={sessao}>
@@ -784,7 +690,6 @@ function AppContent({
       </AdminLayout>
     );
   }
-
   // Rota não encontrada: não abre mais o Dashboard por engano.
   return (
     <LayoutOperacional usuario={sessao}>

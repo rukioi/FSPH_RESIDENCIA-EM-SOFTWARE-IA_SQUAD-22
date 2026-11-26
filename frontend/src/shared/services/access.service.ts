@@ -1,4 +1,11 @@
-import { ROTAS, lerDetalheSvo, lerRotaSolicitacao, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo } from '../../app/routes/rotas'
+import {
+  ROTAS,
+  lerDetalheSvo,
+  lerRotaSolicitacao,
+  lerRotaAprovarSolicitacao,
+  lerRotaDetalheAbastecimento,
+  lerRotaHistoricoAbastecimentosVeiculo,
+} from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
   [ROTAS.relatoriosGestor]: ['ADM','GESTOR_FROTA'],
@@ -37,6 +44,9 @@ const perfisPorRota: Record<string, string[]> = {
 export function rotaConhecida(caminho: string): boolean {
   if (perfisPorRota[caminho]) return true
 
+  // Novo: tela de aprovação "/gestor/solicitacoes/:id/aprovar"
+  if (lerRotaAprovarSolicitacao(caminho) !== null) return true
+
   const solicitacaoGestor = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
   if (solicitacaoGestor) return true
 
@@ -52,6 +62,11 @@ export function rotaConhecida(caminho: string): boolean {
 
 /** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
+  // Novo: aprovação segue as mesmas permissões da lista de solicitações do gestor
+  if (lerRotaAprovarSolicitacao(caminho) !== null) {
+    return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false;
+  }
+
   const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor);
   if (solicitacao) {
     return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false;

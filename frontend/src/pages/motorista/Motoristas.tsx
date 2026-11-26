@@ -27,10 +27,13 @@ type PendenciaDocumental = {
 // Modelo visual; os campos de transporte vêm do contrato gerado.
 type Motorista = MotoristaDto & {
   codigo?: string; matricula?: string; chamadas_realizadas?: number | string;
-  cnh_categoria?: string; numero_cnh?: string; email?: string; pendencias?: number | string;
+  cnh_categoria?: string; numero_cnh?: string; email?: string | null; pendencias?: number | string;
   pendencias_documentais?: PendenciaDocumental[] | string[];
   historico_chamados?: HistoricoMotorista[]; historico_rotas?: HistoricoMotorista[];
 };
+
+// Novo: cadastro com e-mail do usuário MOTORISTA a ser vinculado.
+type CriarMotoristaComEmail = CriarMotoristaDto & { email?: string | null };
 
 type NovoMotorista = {
   nome: string;
@@ -58,6 +61,7 @@ const statusLegiveis: Record<string, string> = {
   DISPONIVEL: "Disponível",
   EM_VIAGEM: "Em viagem",
   INDISPONIVEL: "Indisponível",
+  FOLGA: "Folga",
   AFASTADO: "Afastado",
 };
 
@@ -185,7 +189,6 @@ export function Motoristas() {
   const [novoMotorista, setNovoMotorista] =
     useState<NovoMotorista>(cadastroInicial);
 
-
   useEffect(() => {
     if (menuMotoristaAberto === null) return;
 
@@ -250,16 +253,22 @@ export function Motoristas() {
     setSalvandoCadastro(true);
 
     try {
-      const entrada: CriarMotoristaDto = {
+      // Novo: o e-mail vai junto para o backend vincular o usuário MOTORISTA.
+      const entrada: CriarMotoristaComEmail = {
         nome: novoMotorista.nome.trim(), cnh: novoMotorista.cnh.trim(),
         categoria_cnh: novoMotorista.categoria_cnh as CriarMotoristaDto['categoria_cnh'],
         validade_cnh: novoMotorista.validade_cnh,
         status: novoMotorista.status as CriarMotoristaDto['status'],
         cpf: novoMotorista.cpf.trim() || null, telefone: novoMotorista.telefone.trim() || null,
+        email: novoMotorista.email.trim().toLowerCase() || null,
       };
       const motoristaCriado = await salvarMotorista(entrada);
       setMotoristas((atuais) => [motoristaCriado, ...atuais]);
-      setAviso('Motorista cadastrado com sucesso.');
+      setAviso(
+        entrada.email
+          ? `Motorista cadastrado e vinculado ao acesso ${entrada.email}.`
+          : 'Motorista cadastrado com sucesso.',
+      );
       setNovoMotorista(cadastroInicial);
       setModalCadastroAberto(false);
     } catch (erroEnvio) {
@@ -387,8 +396,8 @@ export function Motoristas() {
               <strong>{motorista.telefone || "Não informado"}</strong>
             </div>
             <div>
-              <span>E-MAIL</span>
-              <strong>{motorista.email || "Não informado"}</strong>
+              <span>E-MAIL DE ACESSO</span>
+              <strong>{motorista.email || "Sem acesso vinculado"}</strong>
             </div>
             <div>
               <span>CNH</span>
@@ -641,11 +650,13 @@ export function Motoristas() {
                   />
                 </label>
 
+                {/* Novo: e-mail do usuário MOTORISTA que terá acesso às viagens */}
                 <label>
-                  E-mail (integração indisponível)
+                  E-mail de acesso (opcional)
                   <input
                     type="email"
-                    disabled
+                    placeholder="motorista@frota.gov.br"
+                    autoComplete="off"
                     value={novoMotorista.email}
                     onChange={(evento) =>
                       setNovoMotorista({
@@ -654,6 +665,7 @@ export function Motoristas() {
                       })
                     }
                   />
+                  <small>Precisa ser um usuário com perfil Motorista.</small>
                 </label>
 
                 <label>
@@ -720,7 +732,7 @@ export function Motoristas() {
                   >
                     <option value="DISPONIVEL">Disponível</option>
                     <option value="EM_VIAGEM">Em viagem</option>
-                    <option value="INDISPONIVEL">Indisponível</option>
+                    <option value="FOLGA">Folga</option>
                     <option value="AFASTADO">Afastado</option>
                   </Select>
                 </label>
@@ -844,7 +856,7 @@ export function Motoristas() {
             <option value="TODOS">Disponibilidade: todas</option>
             <option value="DISPONIVEL">Disponível</option>
             <option value="EM_VIAGEM">Em viagem</option>
-            <option value="INDISPONIVEL">Indisponível</option>
+            <option value="FOLGA">Folga</option>
             <option value="AFASTADO">Afastado</option>
           </Select>
         </label>
@@ -998,7 +1010,7 @@ export function Motoristas() {
                         strokeLinejoin="round"
                       />
                     </svg>
-                    <span>{motorista.email || "E-mail não informado"}</span>
+                    <span>{motorista.email || "Sem acesso vinculado"}</span>
                   </span>
 
                   <span className="motorista-contato__pendencias">
