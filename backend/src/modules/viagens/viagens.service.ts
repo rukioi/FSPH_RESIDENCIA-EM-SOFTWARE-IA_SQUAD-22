@@ -7,6 +7,63 @@ import { idRecursoSchema } from '../solicitacoes/solicitacoes.schemas.js';
 import { criarViagemSchema, consultaMinhasViagens, viagemMotorista, executarViagemSchema, execucaoViagemSchema, validacaoViagemSchema, consultaViagensSchema, consultaHistoricoViagemSchema, detalheViagemSchema, eventoViagemSchema } from './viagens.schemas.js';
 import { obterViagemPorSolicitacao, consultarMinhasViagens, executarViagem, validarViagem, listarViagens, detalharViagem, historicoViagem, listarCorrecoes, listarEvidencias, baixarEvidencia } from './viagens.repository.js';
 
+function normalizarFotoExecucao(rawFoto: unknown, acao: 'iniciar' | 'concluir'): unknown {
+  if (typeof rawFoto === 'string' && rawFoto.trim()) {
+    const trimmed = rawFoto.trim();
+    const match = trimmed.match(/^data:([^;]+);base64,(.+)$/);
+    const tipoBruto = (match?.[1] ?? 'image/jpeg').toLowerCase();
+    const tipo = tipoBruto === 'image/jpg' ? 'image/jpeg' : tipoBruto;
+    const dados = match?.[2] ?? trimmed;
+    const extensao = tipo === 'image/png' ? 'png' : tipo === 'image/webp' ? 'webp' : 'jpg';
+    return {
+      nome: `odometro-${acao === 'iniciar' ? 'inicial' : 'final'}.${extensao}`,
+      tipo,
+      dados,
+    };
+  }
+  if (typeof rawFoto === 'object' && rawFoto !== null && !Array.isArray(rawFoto)) {
+    const obj = rawFoto as Record<string, unknown>;
+    if (typeof obj.dados === 'string' && obj.dados.startsWith('data:')) {
+      const match = obj.dados.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        const tipoBruto = match[1].toLowerCase();
+        return {
+          nome: typeof obj.nome === 'string' && obj.nome.trim() ? obj.nome.trim() : `odometro-${acao === 'iniciar' ? 'inicial' : 'final'}.jpg`,
+          tipo: tipoBruto === 'image/jpg' ? 'image/jpeg' : tipoBruto,
+          dados: match[2],
+        };
+      }
+    }
+    if (typeof obj.tipo === 'string' && obj.tipo.toLowerCase() === 'image/jpg') {
+      return { ...obj, tipo: 'image/jpeg' };
+    }
+  }
+  return rawFoto;
+}
+
+function normalizarCorpoExecucao(body: unknown, acao: 'iniciar' | 'concluir'): unknown {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return body;
+  }
+  const raw = body as Record<string, unknown>;
+  const kmBruto =
+    raw.quilometragem ??
+    (acao === 'iniciar' ? raw.kmInicial : raw.kmFinal) ??
+    raw.km;
+  const kmNumero = typeof kmBruto === 'string' ? Number(kmBruto.trim().replace(',', '.')) : Number(kmBruto);
+  const quilometragem = Number.isFinite(kmNumero) ? Math.round(kmNumero) : kmBruto;
+
+  const fotoBruta =
+    raw.foto ??
+    (acao === 'iniciar' ? raw.fotoOdometroInicial : raw.fotoOdometroFinal) ??
+    raw.fotoOdometro;
+
+  return {
+    quilometragem,
+    foto: normalizarFotoExecucao(fotoBruta, acao),
+  };
+}
+
 /** Valida filtros e restringe a consulta à identidade efetiva da sessão. */
 export async function listarMinhasViagens(query: unknown, usuario: UsuarioAutenticado) {
   if (usuario.perfil !== 'MOTORISTA') throw new ErroHttp(403, 'ACESSO_NEGADO', 'Acesso não permitido.');
@@ -27,7 +84,7 @@ export async function criarOuConsultar(body:unknown,usuario:UsuarioAutenticado) 
 /** Valida a ação antes de executar sua transação. */
 export async function executar(id:string, acao:'iniciar'|'concluir', body:unknown, usuario:UsuarioAutenticado) {
   if(usuario.perfil!=='MOTORISTA') throw new ErroHttp(403,'ACESSO_NEGADO','Acesso não permitido.');
-  const dados=executarViagemSchema.safeParse(body);
+  const dados=executarViagemSchema.safeParse(normalizarCorpoExecucao(body,acao));
   if(!dados.success || !idRecursoSchema.safeParse(id).success) throw new ErroHttp(400,'DADOS_INVALIDOS','Revise os dados informados.');
   return execucaoViagemSchema.parse(await executarViagem(id,usuario.id,acao,dados.data.quilometragem,dados.data.foto));
 }

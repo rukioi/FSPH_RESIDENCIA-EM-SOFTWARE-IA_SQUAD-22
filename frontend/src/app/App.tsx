@@ -590,12 +590,15 @@ function AppContent({
       </LayoutOperacional>
     );
   }
-  // Nova Solicitação do Solicitante
+  // Nova Solicitação
   if (caminho === ROTAS.novaSolicitacao) {
+    const Layout = ["ADM", "GESTOR_FROTA"].includes(sessao.perfil)
+      ? LayoutOperacional
+      : SolicitanteLayout;
     return (
-      <SolicitanteLayout usuario={sessao}>
+      <Layout usuario={sessao}>
         <NovaSolicitacao usuario={sessao} />
-      </SolicitanteLayout>
+      </Layout>
     );
   }
   // Minhas Solicitações

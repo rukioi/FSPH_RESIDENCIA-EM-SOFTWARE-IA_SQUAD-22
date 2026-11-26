@@ -7,6 +7,7 @@ import {
   aprovarSolicitacao,
   buscarDetalheSolicitacao,
   buscarDisponibilidade,
+  listarSolicitacoes,
 } from '../../shared/services/solicitacoes.service'
 import { buscarMotoristas, type MotoristaDto } from '../../shared/services/motoristas.service'
 import { buscarVeiculos, type VeiculoDto } from '../../shared/services/veiculos.service'
@@ -15,9 +16,16 @@ import '../../features/solicitacoes/solicitacoes.css'
 import './AprovarSolicitacao.css'
 
 type Detalhe = Awaited<ReturnType<typeof buscarDetalheSolicitacao>>
+type SolicitacaoItem = Record<string, unknown>
 
 /** Fuso institucional usado pelo backend (America/Maceio). */
 const OFFSET = '-03:00'
+
+/** Quantidade máxima de solicitações/viagens atribuídas ao mesmo motorista. */
+const LIMITE_VIAGENS_MOTORISTA = 3
+
+/** Status que não ocupam vaga ativa de solicitação/corrida. */
+const STATUS_ENCERRADOS = new Set(['CONCLUIDA', 'CONCLUIDO', 'CANCELADA', 'CANCELADO', 'REPROVADA', 'REPROVADO'])
 
 const STATUS_MOTORISTA: Record<string, string> = {
   DISPONIVEL: 'Disponível',
@@ -28,7 +36,8 @@ const STATUS_MOTORISTA: Record<string, string> = {
 
 const STATUS_VEICULO: Record<string, string> = {
   DISPONIVEL: 'Disponível',
-  EM_VIAGEM: 'Em viagem',
+  EM_VIAGEM: 'Em uso',
+  EM_USO: 'Em uso',
   EM_MANUTENCAO: 'Em manutenção',
   INDISPONIVEL: 'Indisponível',
 }
@@ -49,10 +58,126 @@ function somarHoras(data: string, horario: string, horas: number) {
   return { data: base.toISOString().slice(0, 10), horario: base.toISOString().slice(11, 16) }
 }
 
+/** Normaliza o retorno de listarSolicitacoes para array de itens. */
+function extrairListaSolicitacoes(resposta: unknown): SolicitacaoItem[] {
+  if (Array.isArray(resposta)) {
+    return resposta as SolicitacaoItem[]
+  }
+  if (resposta && typeof resposta === 'object') {
+    const obj = resposta as Record<string, unknown>
+    for (const chave of ['itens', 'items', 'data', 'solicitacoes', 'resultados', 'content']) {
+      if (Array.isArray(obj[chave])) {
+        return obj[chave] as SolicitacaoItem[]
+      }
+    }
+  }
+  return []
+}
+
+/** Extrai o ID do motorista vinculado a uma solicitação, se houver. */
+function extrairMotoristaIdSolicitacao(sol: SolicitacaoItem): string | null {
+  const motoristaObj = sol.motorista as Record<string, unknown> | undefined
+  const bruto =
+    sol.motoristaId ??
+    sol.motorista_id ??
+    motoristaObj?.id ??
+    null
+
+  if (bruto === null || bruto === undefined || bruto === '') return null
+  return String(bruto)
+}
+
+/** Extrai o ID do veículo vinculado a uma solicitação, se houver. */
+function extrairVeiculoIdSolicitacao(sol: SolicitacaoItem): string | null {
+  const veiculoObj = sol.veiculo as Record<string, unknown> | undefined
+  const bruto =
+    sol.veiculoId ??
+    sol.veiculo_id ??
+    veiculoObj?.id ??
+    null
+
+  if (bruto === null || bruto === undefined || bruto === '') return null
+  return String(bruto)
+}
+
+/** Conta solicitações ativas atribuídas ao motorista a partir da lista de solicitações (ou fallback no DTO). */
+function contarSolicitacoesDoMotorista(
+  motorista: MotoristaDto,
+  solicitacoes: SolicitacaoItem[],
+  solicitacaoAtualId: string,
+  contagemPorSolicitacoesCarregou: boolean,
+): number {
+  const idMotorista = String(motorista.id)
+
+  if (contagemPorSolicitacoesCarregou) {
+    let total = 0
+    for (const sol of solicitacoes) {
+      const solId = String(sol.id ?? '')
+      if (solId && solId === String(solicitacaoAtualId)) continue
+
+      const status = String(sol.status ?? '').toUpperCase()
+      if (STATUS_ENCERRADOS.has(status)) continue
+
+      if (extrairMotoristaIdSolicitacao(sol) === idMotorista) {
+        total += 1
+      }
+    }
+    return total
+  }
+
+  const reg = motorista as unknown as Record<string, unknown>
+  const candidatos = [
+    reg.solicitacoesAtribuidas,
+    reg.solicitacoes_atribuidas,
+    reg.viagensAtribuidas,
+    reg.viagens_atribuidas,
+    reg.totalViagens,
+    reg.total_viagens,
+  ]
+  for (const valor of candidatos) {
+    if (typeof valor === 'number' && Number.isFinite(valor) && valor >= 0) {
+      return Math.floor(valor)
+    }
+  }
+  return 0
+}
+
+/** Verifica se o veículo está atrelado a alguma corrida/solicitação ativa. */
+function veiculoEstaEmUso(
+  veiculo: VeiculoDto,
+  solicitacoes: SolicitacaoItem[],
+  solicitacaoAtualId: string,
+  solicitacoesCarregadas: boolean,
+): boolean {
+  const statusVeiculo = String(veiculo.status ?? '').toUpperCase()
+  if (statusVeiculo === 'EM_VIAGEM' || statusVeiculo === 'EM_USO') {
+    return true
+  }
+
+  if (solicitacoesCarregadas) {
+    const idVeiculo = String(veiculo.id)
+    for (const sol of solicitacoes) {
+      const solId = String(sol.id ?? '')
+      if (solId && solId === String(solicitacaoAtualId)) continue
+
+      const statusSol = String(sol.status ?? '').toUpperCase()
+      if (STATUS_ENCERRADOS.has(statusSol)) continue
+
+      if (extrairVeiculoIdSolicitacao(sol) === idVeiculo) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
 export function AprovarSolicitacao({ id }: { id: string }) {
   const [detalhe, setDetalhe] = useState<Detalhe | null>(null)
   const [motoristas, setMotoristas] = useState<MotoristaDto[]>([])
   const [veiculos, setVeiculos] = useState<VeiculoDto[]>([])
+  const [solicitacoes, setSolicitacoes] = useState<SolicitacaoItem[]>([])
+  const [solicitacoesCarregadas, setSolicitacoesCarregadas] = useState(false)
   const [disponiveis, setDisponiveis] = useState<{ motoristas: Set<string>; veiculos: Set<string> } | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [consultandoDisp, setConsultandoDisp] = useState(false)
@@ -66,22 +191,27 @@ export function AprovarSolicitacao({ id }: { id: string }) {
   const [retornoData, setRetornoData] = useState('')
   const [retornoHorario, setRetornoHorario] = useState('')
 
-  // Carrega a solicitação e os cadastros de veículos e motoristas.
+  // Carrega a solicitação, os cadastros de veículos/motoristas e as solicitações para contagem.
   useEffect(() => {
     let ativo = true
     async function carregar() {
       try {
         setCarregando(true)
         setErro('')
-        const [sol, listaMotoristas, listaVeiculos] = await Promise.all([
+        const [sol, listaMotoristas, listaVeiculos, respostaSolicitacoes] = await Promise.all([
           buscarDetalheSolicitacao(id),
           buscarMotoristas(),
           buscarVeiculos(),
+          (listarSolicitacoes as () => Promise<unknown>)().catch(() => null),
         ])
         if (!ativo) return
         setDetalhe(sol)
         setMotoristas(listaMotoristas)
         setVeiculos(listaVeiculos)
+        if (respostaSolicitacoes !== null) {
+          setSolicitacoes(extrairListaSolicitacoes(respostaSolicitacoes))
+          setSolicitacoesCarregadas(true)
+        }
         // Sugere retorno 2h após a saída; o gestor pode ajustar.
         const saida = separar(sol.dataHoraSaida)
         const retorno = sol.dataHoraRetornoPrevisto
@@ -127,12 +257,62 @@ export function AprovarSolicitacao({ id }: { id: string }) {
     return () => { ativo = false; window.clearTimeout(timer) }
   }, [detalhe, retornoIso, retornoValido])
 
+  const passageiros = detalhe?.qtdPassageiros ?? 1
+
+  const listaVeiculos = useMemo(() => veiculos
+    .filter((v) => !v.is_svo)
+    .map((v) => {
+      const capacidadeOk = v.capacidade_passageiros == null || v.capacidade_passageiros >= passageiros
+      const emUso = veiculoEstaEmUso(v, solicitacoes, id, solicitacoesCarregadas)
+      const livre = (disponiveis?.veiculos.has(String(v.id)) ?? false) && !emUso
+      const selecionavel = livre && capacidadeOk
+
+      let motivo = 'Disponível'
+      if (!capacidadeOk) {
+        motivo = `Capacidade ${v.capacidade_passageiros}`
+      } else if (emUso) {
+        motivo = 'Em uso'
+      } else if (!livre) {
+        motivo = v.status && v.status !== 'DISPONIVEL' ? STATUS_VEICULO[v.status] : 'Ocupado no horário'
+      }
+
+      return { ...v, id: String(v.id), emUso, selecionavel, motivo }
+    })
+    .sort((a, b) => Number(b.selecionavel) - Number(a.selecionavel)), [veiculos, solicitacoes, id, solicitacoesCarregadas, disponiveis, passageiros])
+
+  const listaMotoristas = useMemo(() => motoristas
+    .map((m) => {
+      const viagensAtuais = contarSolicitacoesDoMotorista(m, solicitacoes, id, solicitacoesCarregadas)
+      const dentroDoLimite = viagensAtuais < LIMITE_VIAGENS_MOTORISTA
+      const bloqueadoPorStatus = m.status === 'FOLGA' || m.status === 'AFASTADO'
+      const livreNaConsulta = disponiveis?.motoristas.has(String(m.id)) ?? false
+      const selecionavel = dentroDoLimite && !bloqueadoPorStatus && (livreNaConsulta || viagensAtuais > 0)
+
+      let motivo = `Disponível (${viagensAtuais}/${LIMITE_VIAGENS_MOTORISTA} viagens)`
+      if (!dentroDoLimite) {
+        motivo = `Limite (${viagensAtuais}/${LIMITE_VIAGENS_MOTORISTA})`
+      } else if (bloqueadoPorStatus && m.status) {
+        motivo = STATUS_MOTORISTA[m.status] ?? 'Indisponível'
+      } else if (!selecionavel) {
+        motivo = `Indisponível (${viagensAtuais}/${LIMITE_VIAGENS_MOTORISTA})`
+      }
+
+      return {
+        ...m,
+        id: String(m.id),
+        viagensAtuais,
+        selecionavel,
+        motivo,
+      }
+    })
+    .sort((a, b) => Number(b.selecionavel) - Number(a.selecionavel) || a.viagensAtuais - b.viagensAtuais), [motoristas, solicitacoes, id, solicitacoesCarregadas, disponiveis])
+
   // Se a seleção deixar de estar disponível (ex.: mudou o retorno), limpa.
   useEffect(() => {
     if (!disponiveis) return
-    if (veiculoId && !disponiveis.veiculos.has(veiculoId)) setVeiculoId('')
-    if (motoristaId && !disponiveis.motoristas.has(motoristaId)) setMotoristaId('')
-  }, [disponiveis, veiculoId, motoristaId])
+    if (veiculoId && !listaVeiculos.some((v) => v.id === veiculoId && v.selecionavel)) setVeiculoId('')
+    if (motoristaId && !listaMotoristas.some((m) => m.id === motoristaId && m.selecionavel)) setMotoristaId('')
+  }, [disponiveis, veiculoId, motoristaId, listaVeiculos, listaMotoristas])
 
   // Modal: fecha com Esc (exceto durante o envio) e trava a rolagem da página.
   useEffect(() => {
@@ -148,28 +328,6 @@ export function AprovarSolicitacao({ id }: { id: string }) {
       document.removeEventListener('keydown', aoPressionarTecla)
     }
   }, [modalAberto, enviando])
-
-  const passageiros = detalhe?.qtdPassageiros ?? 1
-
-  const listaVeiculos = useMemo(() => veiculos
-    .filter((v) => !v.is_svo)
-    .map((v) => {
-      const capacidadeOk = v.capacidade_passageiros == null || v.capacidade_passageiros >= passageiros
-      const livre = disponiveis?.veiculos.has(String(v.id)) ?? false
-      const motivo = !capacidadeOk
-        ? `Capacidade ${v.capacidade_passageiros}`
-        : livre ? 'Disponível' : (v.status && v.status !== 'DISPONIVEL' ? STATUS_VEICULO[v.status] : 'Ocupado no horário')
-      return { ...v, id: String(v.id), selecionavel: livre && capacidadeOk, motivo }
-    })
-    .sort((a, b) => Number(b.selecionavel) - Number(a.selecionavel)), [veiculos, disponiveis, passageiros])
-
-  const listaMotoristas = useMemo(() => motoristas
-    .map((m) => {
-      const livre = disponiveis?.motoristas.has(String(m.id)) ?? false
-      const motivo = livre ? 'Disponível' : (m.status && m.status !== 'DISPONIVEL' ? STATUS_MOTORISTA[m.status] : 'Indisponível')
-      return { ...m, id: String(m.id), selecionavel: livre, motivo }
-    })
-    .sort((a, b) => Number(b.selecionavel) - Number(a.selecionavel)), [motoristas, disponiveis])
 
   const veiculoSel = listaVeiculos.find((v) => v.id === veiculoId)
   const motoristaSel = listaMotoristas.find((m) => m.id === motoristaId)
@@ -250,7 +408,7 @@ export function AprovarSolicitacao({ id }: { id: string }) {
       <div className="pagina__topo">
         <div>
           <h1 className="pagina__titulo">Aprovar solicitação {detalhe.codigoExibicao}</h1>
-          <p className="pagina__descricao">Selecione o veículo e o motorista disponíveis para o atendimento.</p>
+          <p className="pagina__descricao">Selecione o veículo e o motorista disponíveis para o atendimento (até {LIMITE_VIAGENS_MOTORISTA} viagens por motorista).</p>
         </div>
       </div>
 
@@ -282,7 +440,7 @@ export function AprovarSolicitacao({ id }: { id: string }) {
             <div className="sol-cartao__topo">
               <div>
                 <h2>1. Selecionar veículo</h2>
-                <p>Somente veículos disponíveis podem ser selecionados.</p>
+                <p>Veículos já atrelados a uma corrida ficam marcados como Em uso.</p>
               </div>
             </div>
             <div className="sol-cartao__corpo aprovar__opcoes" role="radiogroup" aria-label="Veículos">
@@ -302,7 +460,17 @@ export function AprovarSolicitacao({ id }: { id: string }) {
                   <span className="aprovar__info">
                     <strong>{v.modelo}</strong>
                     <span>
-                      <em className={v.selecionavel ? 'aprovar__tag aprovar__tag--ok' : 'aprovar__tag'}>{v.motivo}</em>
+                      <em
+                        className={
+                          v.emUso
+                            ? 'aprovar__tag aprovar__tag--em-uso'
+                            : v.selecionavel
+                              ? 'aprovar__tag aprovar__tag--ok'
+                              : 'aprovar__tag'
+                        }
+                      >
+                        {v.motivo}
+                      </em>
                       {v.placa}{v.capacidade_passageiros ? ` · ${v.capacidade_passageiros} lugares` : ''}
                     </span>
                   </span>
@@ -315,7 +483,7 @@ export function AprovarSolicitacao({ id }: { id: string }) {
             <div className="sol-cartao__topo">
               <div>
                 <h2>2. Selecionar motorista</h2>
-                <p>Somente motoristas disponíveis podem ser selecionados.</p>
+                <p>É possível atribuir até {LIMITE_VIAGENS_MOTORISTA} viagens ao mesmo motorista.</p>
               </div>
             </div>
             <div className="sol-cartao__corpo aprovar__opcoes" role="radiogroup" aria-label="Motoristas">
@@ -334,7 +502,9 @@ export function AprovarSolicitacao({ id }: { id: string }) {
                   <span className="aprovar__info">
                     <strong>{m.nome}</strong>
                     <span>
-                      <em className={m.selecionavel ? 'aprovar__tag aprovar__tag--ok' : 'aprovar__tag'}>{m.motivo}</em>
+                      <em className={m.selecionavel ? 'aprovar__tag aprovar__tag--ok aprovar__tag--motorista' : 'aprovar__tag aprovar__tag--motorista'}>
+                        {m.motivo}
+                      </em>
                       CNH {m.categoria_cnh}
                     </span>
                   </span>
@@ -355,7 +525,7 @@ export function AprovarSolicitacao({ id }: { id: string }) {
             <div><dt>Horário</dt><dd>{saida.horario}</dd></div>
             <div><dt>Retorno previsto</dt><dd>{retornoValido ? `${formatarData(retornoData)} · ${retornoHorario}` : '—'}</dd></div>
             <div><dt>Veículo selecionado</dt><dd>{veiculoSel ? `${veiculoSel.modelo} · ${veiculoSel.placa}` : 'Não selecionado'}</dd></div>
-            <div><dt>Motorista selecionado</dt><dd>{motoristaSel?.nome ?? 'Não selecionado'}</dd></div>
+            <div><dt>Motorista selecionado</dt><dd>{motoristaSel ? `${motoristaSel.nome} (${motoristaSel.viagensAtuais}/${LIMITE_VIAGENS_MOTORISTA})` : 'Não selecionado'}</dd></div>
           </dl>
           <div className="aprovar__acoes">
             <button type="button" className="btn btn--primario" disabled={!podeConfirmar} onClick={abrirModal}>
@@ -385,7 +555,7 @@ export function AprovarSolicitacao({ id }: { id: string }) {
             <dl className="aprovar-modal__resumo">
               <div><dt>Chamado</dt><dd>{detalhe.codigoExibicao}</dd></div>
               <div><dt>Veículo</dt><dd>{veiculoSel.placa} · {veiculoSel.modelo}</dd></div>
-              <div><dt>Motorista</dt><dd>{motoristaSel.nome}</dd></div>
+              <div><dt>Motorista</dt><dd>{motoristaSel.nome} ({motoristaSel.viagensAtuais + 1}/{LIMITE_VIAGENS_MOTORISTA})</dd></div>
               <div><dt>Data</dt><dd>{formatarData(saida.data)}</dd></div>
               <div><dt>Horário</dt><dd>{saida.horario}</dd></div>
             </dl>

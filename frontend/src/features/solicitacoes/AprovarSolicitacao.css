@@ -64,22 +64,30 @@
 }
 .aprovar__info > span {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 12px;
   color: var(--texto-suave);
 }
 .aprovar__tag {
-  padding: 2px 8px;
+  padding: 2px 7px;
   border: 1px solid var(--borda);
   border-radius: 6px;
   font-style: normal;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.2;
 }
 .aprovar__tag--ok {
   border-color: transparent;
   background: #e3f5ea;
   color: var(--verde);
+}
+.aprovar__tag--motorista {
+  font-size: 11px;
+  line-height: 1.15;
+  padding: 2px 6px;
+  white-space: nowrap;
 }
 .aprovar__resumo {
   position: sticky;

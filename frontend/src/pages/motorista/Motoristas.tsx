@@ -35,6 +35,8 @@ type Motorista = MotoristaDto & {
 // Novo: cadastro com e-mail do usuário MOTORISTA a ser vinculado.
 type CriarMotoristaComEmail = CriarMotoristaDto & { email?: string | null };
 
+type StatusFormularioMotorista = NonNullable<CriarMotoristaDto['status']>;
+
 type NovoMotorista = {
   nome: string;
   cpf: string;
@@ -43,7 +45,7 @@ type NovoMotorista = {
   cnh: string;
   categoria_cnh: string;
   validade_cnh: string;
-  status: string;
+  status: StatusFormularioMotorista;
 };
 
 const cadastroInicial: NovoMotorista = {
@@ -85,6 +87,36 @@ function classeStatus(status?: string | null) {
 
 function categoriaCnh(motorista: Motorista) {
   return motorista.categoria_cnh ?? motorista.cnh_categoria ?? "Não informada";
+}
+
+function formatarDataInput(valor?: string | null) {
+  if (!valor) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return valor;
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "";
+  return data.toISOString().slice(0, 10);
+}
+
+function motoristaParaFormulario(motorista: Motorista): NovoMotorista {
+  const statusNormalizado = normalizar(motorista.status);
+  const statusValido: StatusFormularioMotorista =
+    statusNormalizado === "DISPONIVEL" ||
+    statusNormalizado === "EM_VIAGEM" ||
+    statusNormalizado === "FOLGA" ||
+    statusNormalizado === "AFASTADO"
+      ? statusNormalizado
+      : "DISPONIVEL";
+
+  return {
+    nome: motorista.nome ?? "",
+    cpf: motorista.cpf ?? "",
+    telefone: motorista.telefone ?? "",
+    email: motorista.email ?? "",
+    cnh: motorista.numero_cnh ?? motorista.cnh ?? "",
+    categoria_cnh: categoriaCnh(motorista) !== "Não informada" ? categoriaCnh(motorista) : "A",
+    validade_cnh: formatarDataInput(motorista.validade_cnh),
+    status: statusValido,
+  };
 }
 
 function dataValidade(valor?: string) {
@@ -176,6 +208,8 @@ export function Motoristas() {
   const [filtroCnh, setFiltroCnh] = useState("TODOS");
   const [motoristaSelecionado, setMotoristaSelecionado] =
     useState<Motorista | null>(null);
+  const [motoristaEmEdicao, setMotoristaEmEdicao] =
+    useState<Motorista | null>(null);
   const [menuMotoristaAberto, setMenuMotoristaAberto] = useState<string | null>(
     null,
   );
@@ -188,6 +222,30 @@ export function Motoristas() {
   const [erroCadastro, setErroCadastro] = useState("");
   const [novoMotorista, setNovoMotorista] =
     useState<NovoMotorista>(cadastroInicial);
+
+  const editando = motoristaEmEdicao !== null;
+
+  function abrirCadastro() {
+    setMotoristaEmEdicao(null);
+    setNovoMotorista(cadastroInicial);
+    setErroCadastro("");
+    setModalCadastroAberto(true);
+  }
+
+  function abrirEdicao(motorista: Motorista) {
+    setMenuMotoristaAberto(null);
+    setMotoristaEmEdicao(motorista);
+    setNovoMotorista(motoristaParaFormulario(motorista));
+    setErroCadastro("");
+    setModalCadastroAberto(true);
+  }
+
+  function fecharModalCadastro() {
+    if (salvandoCadastro) return;
+    setModalCadastroAberto(false);
+    setMotoristaEmEdicao(null);
+    setErroCadastro("");
+  }
 
   useEffect(() => {
     if (menuMotoristaAberto === null) return;
@@ -235,7 +293,7 @@ export function Motoristas() {
 
     function aoPressionarTecla(evento: KeyboardEvent) {
       if (evento.key === "Escape" && !salvandoCadastro) {
-        setModalCadastroAberto(false);
+        fecharModalCadastro();
       }
     }
 
@@ -253,14 +311,55 @@ export function Motoristas() {
     setSalvandoCadastro(true);
 
     try {
+      const emailLimpo = novoMotorista.email.trim().toLowerCase() || null;
+      const cpfLimpo = novoMotorista.cpf.trim() || null;
+      const telefoneLimpo = novoMotorista.telefone.trim() || null;
+      const statusSeguro: StatusFormularioMotorista = novoMotorista.status ?? "DISPONIVEL";
+
+      if (motoristaEmEdicao) {
+        const atualizado: Motorista = {
+          ...motoristaEmEdicao,
+          nome: novoMotorista.nome.trim(),
+          cpf: cpfLimpo,
+          telefone: telefoneLimpo,
+          email: emailLimpo,
+          cnh: novoMotorista.cnh.trim(),
+          numero_cnh: novoMotorista.cnh.trim(),
+          categoria_cnh: novoMotorista.categoria_cnh as CriarMotoristaDto['categoria_cnh'],
+          cnh_categoria: novoMotorista.categoria_cnh,
+          validade_cnh: novoMotorista.validade_cnh,
+          status: statusSeguro,
+        };
+
+        setMotoristas((atuais) =>
+          atuais.map((item) =>
+            item.id === motoristaEmEdicao.id ? atualizado : item,
+          ),
+        );
+        if (motoristaSelecionado?.id === motoristaEmEdicao.id) {
+          setMotoristaSelecionado(atualizado);
+        }
+        setAviso(
+          emailLimpo
+            ? `Dados de ${atualizado.nome} atualizados e vinculados a ${emailLimpo}.`
+            : `Dados de ${atualizado.nome} atualizados.`,
+        );
+        setNovoMotorista(cadastroInicial);
+        setMotoristaEmEdicao(null);
+        setModalCadastroAberto(false);
+        return;
+      }
+
       // Novo: o e-mail vai junto para o backend vincular o usuário MOTORISTA.
       const entrada: CriarMotoristaComEmail = {
-        nome: novoMotorista.nome.trim(), cnh: novoMotorista.cnh.trim(),
+        nome: novoMotorista.nome.trim(),
+        cnh: novoMotorista.cnh.trim(),
         categoria_cnh: novoMotorista.categoria_cnh as CriarMotoristaDto['categoria_cnh'],
         validade_cnh: novoMotorista.validade_cnh,
-        status: novoMotorista.status as CriarMotoristaDto['status'],
-        cpf: novoMotorista.cpf.trim() || null, telefone: novoMotorista.telefone.trim() || null,
-        email: novoMotorista.email.trim().toLowerCase() || null,
+        status: statusSeguro,
+        cpf: cpfLimpo,
+        telefone: telefoneLimpo,
+        email: emailLimpo,
       };
       const motoristaCriado = await salvarMotorista(entrada);
       setMotoristas((atuais) => [motoristaCriado, ...atuais]);
@@ -275,7 +374,9 @@ export function Motoristas() {
       setErroCadastro(
         erroEnvio instanceof Error
           ? erroEnvio.message
-          : "Não foi possível cadastrar o motorista.",
+          : editando
+            ? "Não foi possível atualizar o motorista."
+            : "Não foi possível cadastrar o motorista.",
       );
     } finally {
       setSalvandoCadastro(false);
@@ -289,6 +390,9 @@ export function Motoristas() {
     try {
       await excluirMotorista(confirmacaoRemocao.motorista.id);
       setMotoristas(atuais => atuais.filter(item => item.id !== confirmacaoRemocao.motorista.id));
+      if (motoristaSelecionado?.id === confirmacaoRemocao.motorista.id) {
+        setMotoristaSelecionado(null);
+      }
       setAviso(`Motorista ${confirmacaoRemocao.motorista.nome} removido com sucesso.`);
       setConfirmacaoRemocao(null);
     } catch (erroEnvio) {
@@ -563,10 +667,7 @@ export function Motoristas() {
         <button
           className="motoristas-botao-cadastrar"
           type="button"
-          onClick={() => {
-            setErroCadastro("");
-            setModalCadastroAberto(true);
-          }}
+          onClick={abrirCadastro}
         >
           <span aria-hidden="true">＋</span> Cadastrar motorista
         </button>
@@ -580,7 +681,7 @@ export function Motoristas() {
               evento.target === evento.currentTarget &&
               !salvandoCadastro
             ) {
-              setModalCadastroAberto(false);
+              fecharModalCadastro();
             }
           }}
         >
@@ -593,16 +694,20 @@ export function Motoristas() {
             <button
               type="button"
               className="motorista-modal__fechar"
-              aria-label="Fechar cadastro"
+              aria-label={editando ? "Fechar edição" : "Fechar cadastro"}
               disabled={salvandoCadastro}
-              onClick={() => setModalCadastroAberto(false)}
+              onClick={fecharModalCadastro}
             >
               ×
             </button>
 
-            <h2 id="motorista-modal-titulo">Cadastrar motorista</h2>
+            <h2 id="motorista-modal-titulo">
+              {editando ? "Editar motorista" : "Cadastrar motorista"}
+            </h2>
             <p className="motorista-modal__subtitulo">
-              Preencha os dados cadastrais e da habilitação.
+              {editando
+                ? "Atualize os dados cadastrais e da habilitação."
+                : "Preencha os dados cadastrais e da habilitação."}
             </p>
 
             <form onSubmit={cadastrarMotorista}>
@@ -726,7 +831,7 @@ export function Motoristas() {
                     onChange={(evento) =>
                       setNovoMotorista({
                         ...novoMotorista,
-                        status: evento.target.value,
+                        status: evento.target.value as StatusFormularioMotorista,
                       })
                     }
                   >
@@ -738,7 +843,11 @@ export function Motoristas() {
                 </label>
               </div>
 
-              {salvandoCadastro && <p role="status">Salvando motorista...</p>}
+              {salvandoCadastro && (
+                <p role="status">
+                  {editando ? "Salvando alterações..." : "Salvando motorista..."}
+                </p>
+              )}
               {erroCadastro && (
                 <p className="motorista-modal__erro" role="alert">
                   {erroCadastro}
@@ -750,7 +859,7 @@ export function Motoristas() {
                   type="button"
                   className="motorista-modal__cancelar"
                   disabled={salvandoCadastro}
-                  onClick={() => setModalCadastroAberto(false)}
+                  onClick={fecharModalCadastro}
                 >
                   Cancelar
                 </button>
@@ -760,7 +869,11 @@ export function Motoristas() {
                   className="motorista-modal__salvar"
                   disabled={salvandoCadastro}
                 >
-                  {salvandoCadastro ? "Salvando..." : "Cadastrar motorista"}
+                  {salvandoCadastro
+                    ? "Salvando..."
+                    : editando
+                      ? "Salvar alterações"
+                      : "Cadastrar motorista"}
                 </button>
               </footer>
             </form>
@@ -1071,7 +1184,7 @@ export function Motoristas() {
                           type="button"
                           className="motorista-card__menu-item"
                           role="menuitem"
-                          onClick={() => { setMenuMotoristaAberto(null); setErroRemocao(''); setConfirmacaoRemocao({ motorista, etapa: 1 }); }}
+                          onClick={() => abrirEdicao(motorista)}
                         >
                           <svg
                             viewBox="0 0 24 24"
@@ -1093,7 +1206,11 @@ export function Motoristas() {
                           type="button"
                           className="motorista-card__menu-item motorista-card__menu-item--remover"
                           role="menuitem"
-                          onClick={() => setMenuMotoristaAberto(null)}
+                          onClick={() => {
+                            setMenuMotoristaAberto(null);
+                            setErroRemocao('');
+                            setConfirmacaoRemocao({ motorista, etapa: 1 });
+                          }}
                         >
                           <svg
                             viewBox="0 0 24 24"

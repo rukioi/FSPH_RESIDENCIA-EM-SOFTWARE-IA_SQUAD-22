@@ -27,7 +27,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.indicadoresAbastecimentosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.solicitacoesGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.calendarioGestor]: ['ADM', 'GESTOR_FROTA'],
-  [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],
+  [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO', 'ADM', 'GESTOR_FROTA'],
   [ROTAS.minhasSolicitacoes]: ['SOLICITANTE_INTERNO'],
   [ROTAS.documentosGestor]: ['ADM', 'GESTOR_FROTA'],
 
