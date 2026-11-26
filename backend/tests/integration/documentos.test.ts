@@ -16,7 +16,12 @@ vi.mock('../../src/database/connection.js', () => ({
 
 import { sql } from '../../src/config/db.js';
 vi.mock('../../src/modules/documentos/documentos.historico.js',()=>({registrarVersaoDocumental:vi.fn()}));
+vi.mock('../../src/modules/anexos/anexos.repository.js', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../src/modules/anexos/anexos.repository.js')>(),
+  gravarAnexo: vi.fn().mockResolvedValue({ id: '52' }),
+}));
 import { createApp } from '../../src/app.js';
+import { gravarAnexo } from '../../src/modules/anexos/anexos.repository.js';
 import {
   criarDocumento,
   buscarPendenciasDocumentos,
@@ -476,6 +481,8 @@ test('BE-S6-02 recebe PDF por multipart e prepara cadastro no banco', async () =
   expect(parametros).toContain('documento.pdf');
   expect(parametros).toContain('application/pdf');
   expect(parametros).toContainEqual(pdf);
+  expect(gravarAnexo).toHaveBeenCalledWith(sql, { tipoRegistro: 'DOCUMENTO_VEICULO', registroId: 25 },
+    '-27002', { nome: 'documento.pdf', tipo: 'application/pdf', conteudo: pdf }, 5 * 1024 * 1024);
 });
 test('BE-S6-02 rejeita JSON maior que 1 MB', async () => {
   const req = Readable.from([

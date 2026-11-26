@@ -45,6 +45,19 @@ exclusão de histórico nem política nova de descarte. Corrigida a gravação m
 legada para Buffer/BYTEA: antes o texto hexadecimal era persistido como bytes de
 texto. Não há backfill ou reparo automático de arquivos históricos.
 
+No novo cadastro multipart de documento veicular, um arquivo compatível com
+os requisitos de nome e formato de `anexo` também é gravado no armazenamento
+privado. Cadastro, bytes legados, anexo privado, referência composta da versão
+1 e auditoria confirmam na mesma transação. A resposta do cadastro conserva o
+envelope legado. O histórico disponibiliza o `anexoId` no campo existente e o
+download passa pela autorização por registro para ADM/GESTOR_FROTA.
+
+Cadastros sem arquivo e com nomes que só o parser documental legado aceita
+continuam com `anexoId: null`. A origem conserva o nome e os bytes nesses
+casos. Na reversão da aplicação, o cadastro e os bytes continuam legíveis
+pelos consumidores legados e as referências válidas já gravadas continuam
+no histórico.
+
 Todas essas operações exigem **ADM/GESTOR_FROTA** atual. Motorista/solicitante/SVO:
 403; sem sessão válida: 401. Motorista não edita sua própria CNH.
 

@@ -65,13 +65,38 @@ test('cadastros legados documental e CNH capturam primeira versão atomicamente'
   expect((await(await get(`/api/documentos/${m.data.id}/historico?tipo=CNH_MOTORISTA`)).json()).data[0]).toMatchObject({versao:1,numeroCnh:'92193000001'});
 });
 
-test('multipart documental conserva bytes reais e versão, sem normalizar data inválida',async()=>{
-  const body=new FormData();body.append('veiculo_id','92194');body.append('tipo_documento','CRLV TESTE');body.append('data_vencimento','2028-02-29');
-  body.append('arquivo',new Blob([new Uint8Array(pngAnexo)],{type:'image/png'}),'fixture.png');
-  const response=await fetch(base+'/api/documentos',{method:'POST',headers:headers(),body});expect(response.status).toBe(201);
+const enviarDocumentoComArquivo = (nome: string, tipoDocumento = 'CRLV TESTE') => {
+  const body=new FormData();body.append('veiculo_id','92194');body.append('tipo_documento',tipoDocumento);body.append('data_vencimento','2028-02-29');
+  body.append('arquivo',new Blob([new Uint8Array(pngAnexo)],{type:'image/png'}),nome);
+  return fetch(base+'/api/documentos',{method:'POST',headers:headers(),body});
+};
+
+test('multipart liga a primeira versão ao anexo privado e conserva os bytes legados',async()=>{
+  const response=await enviarDocumentoComArquivo('fixture.png');expect(response.status).toBe(201);
   const {data}=await response.json();
   expect((await fixture.sql`SELECT arquivo_dados FROM documento_veiculo WHERE id=${data.id}`)[0].arquivo_dados).toEqual(pngAnexo);
-  expect((await(await get(`/api/documentos/${data.id}/historico`)).json()).meta.total).toBe(1);
+  const historico=await(await get(`/api/documentos/${data.id}/historico`)).json();
+  expect(historico.meta.total).toBe(1);
+  const { anexoId } = historico.data[0];
+  expect(anexoId).toMatch(/^[1-9]\d*$/);
+  const lista=await(await get(`/api/anexos?tipoRegistro=DOCUMENTO_VEICULO&registroId=${data.id}`)).json();
+  expect(lista.data).toHaveLength(1);
+  expect(lista.data[0]).toMatchObject({ id: anexoId, registroId: data.id, autorId: '92194',
+    nome: 'fixture.png', tamanho: pngAnexo.length, sha256: createHash('sha256').update(pngAnexo).digest('hex') });
+  expect((await get(`/api/anexos/${anexoId}`,null)).status).toBe(401);
+  expect((await get(`/api/anexos/${anexoId}`,'MOTORISTA')).status).toBe(403);
+  const resposta=await get(`/api/anexos/${anexoId}`,'GESTOR_FROTA');
+  expect(resposta.status).toBe(200);
+  expect(Buffer.from(await resposta.arrayBuffer())).toEqual(pngAnexo);
+});
+
+test('nome aceito só pelo multipart legado preserva cadastro e bytes sem gerar anexo incompatível',async()=>{
+  const response=await enviarDocumentoComArquivo('.');expect(response.status).toBe(201);
+  const {data}=await response.json();
+  expect(data.arquivo_nome).toBe('.');
+  expect((await fixture.sql`SELECT arquivo_dados FROM documento_veiculo WHERE id=${data.id}`)[0].arquivo_dados).toEqual(pngAnexo);
+  const historico=await(await get(`/api/documentos/${data.id}/historico`)).json();
+  expect(historico.data[0]).toMatchObject({ versao: 1, anexoId: null });
 });
 
 test.each(['2027-02-29','2026-04-31','2026-02-30'])('data civil inválida %s não escreve histórico',async dataValidade=>{
@@ -115,7 +140,9 @@ test('falha real de auditoria reverte alteração e versão; legado não persist
   await falharAuditoriaAnexo(fixture.admin,async()=>{
     expect((await write('/api/documentos/92194',{versao:0,dataValidade:'2029-01-01'})).status).toBe(500);
     expect((await write('/api/documentos',{veiculo_id:92194,tipo_documento:'Não deve persistir',data_vencimento:'2029-01-01'},'POST')).status).toBe(500);
+    expect((await enviarDocumentoComArquivo('rollback.png', 'Não deve persistir')).status).toBe(500);
   });
   expect((await(await get('/api/documentos/92194')).json()).data).toMatchObject({dataValidade:'2028-02-29',versao:0});
   expect(await fixture.sql`SELECT id FROM documento_veiculo WHERE tipo_documento='Não deve persistir' AND veiculo_id=92194`).toHaveLength(0);
+  expect(await fixture.sql`SELECT id FROM public.anexo WHERE autor_id=92194 AND nome='rollback.png'`).toHaveLength(0);
 });

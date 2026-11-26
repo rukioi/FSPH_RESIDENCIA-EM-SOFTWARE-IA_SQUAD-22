@@ -5,6 +5,7 @@ import { enviarDados as enviarJson, enviarErro } from '../../shared/http/json.js
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sql } from '../../config/db.js';
+import { gravarAnexo, limiteAnexoBytes, nomeValidoAnexo } from '../anexos/anexos.repository.js';
 import { receberUpload } from './documentos.upload.js';
 import { registrarVersaoDocumental } from './documentos.historico.js';
 
@@ -243,7 +244,13 @@ export async function criarDocumento(
         arquivo_tipo
     `;
 
-      await registrarVersaoDocumental(tx, 'DOCUMENTO_VEICULO', novo.id, autorId);
+      // O cadastro e seu arquivo já foram autorizados e o registro nasceu nesta transação.
+      // Nomes aceitos apenas pelo contrato antigo continuam disponíveis no legado.
+      const anexo = arquivoDocumento && nomeValidoAnexo(arquivoDocumento.nome) && !/\p{Cc}/u.test(arquivoDocumento.nome)
+        ? await gravarAnexo(tx, { tipoRegistro: 'DOCUMENTO_VEICULO', registroId: novo.id },
+          autorId, arquivoDocumento, limiteAnexoBytes)
+        : null;
+      await registrarVersaoDocumental(tx, 'DOCUMENTO_VEICULO', novo.id, autorId, anexo?.id ?? null);
       return novo;
     });
     enviarJson(res, 201, documento);

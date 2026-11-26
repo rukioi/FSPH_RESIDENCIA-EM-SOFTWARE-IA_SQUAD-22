@@ -31,6 +31,8 @@ afterAll(async () => {
         await admin.begin(async tx => {
           await tx`DELETE FROM public.documento_historico
             WHERE documento_veiculo_id IN (SELECT id FROM public.documento_veiculo WHERE veiculo_id = ${id})`;
+          await tx`DELETE FROM public.anexo
+            WHERE documento_veiculo_id IN (SELECT id FROM public.documento_veiculo WHERE veiculo_id = ${id})`;
           await tx`DELETE FROM public.documento_veiculo WHERE veiculo_id = ${id}`;
           await tx`DELETE FROM public.veiculo WHERE id = ${id}`;
         });
