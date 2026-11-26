@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { evidenciaArquivoSchema } from '../../modules/viagens/viagens.evidencias.schemas.js';
 import { command, database, root, verifiedSql, verifyContainer } from './verify-test-db.js';
 
 const { containerId } = verifyContainer();
@@ -26,6 +27,7 @@ try {
 const suffix = randomUUID().replaceAll('-', '');
 const restored = 'fsph_s10_restore_' + suffix;
 const legacy = 'fsph_s10_legacy_' + suffix;
+const pilot = 'fsph_s10_files_' + suffix;
 const archive = '/tmp/' + restored + '.dump';
 const restoreList = '/tmp/' + restored + '.list';
 const schemas = ['--schema=public', '--schema=fsph_test_harness'];
@@ -147,7 +149,7 @@ function withTestDatabase(db: string, run: () => void) {
   }
 }
 
-function verifyRecovery(db: string, checkUpgrade?: () => void) {
+function verifyRecovery(db: string, checkUpgrade?: () => void, task = 'SCRUM-204') {
   const before = fingerprints(db);
   assert.match(before['public.usuario'] ?? '', /^[1-9]\d*\|/, 'O ensaio exige dados sintéticos.');
   const originalSchema = schemaDefinition(db);
@@ -158,7 +160,7 @@ function verifyRecovery(db: string, checkUpgrade?: () => void) {
     const restoreMs = restore();
     compareSchema(originalSchema, restored);
     assert.deepEqual(fingerprints(restored), before, 'Há divergência no conteúdo restaurado.');
-    console.log('SCRUM-204 backup e restore isolados', JSON.stringify({
+    console.log(task + ' backup e restore isolados', JSON.stringify({
       postgres: query(restored, 'SHOW server_version'),
       migrations: Number(before['fsph_test_harness.migrations'].split('|')[0]),
       tabelasPublicas: Object.keys(before).filter(table => table.startsWith('public.')).length,
@@ -169,6 +171,152 @@ function verifyRecovery(db: string, checkUpgrade?: () => void) {
       restoreMs,
     }));
   });
+}
+
+function rehearseFilePilot() {
+  transaction(pilot, `
+    CREATE SCHEMA fsph_test_harness;
+    CREATE TABLE fsph_test_harness.migrations (name text PRIMARY KEY, sha256 text NOT NULL);
+  `);
+  applyMigrations(pilot, migrations);
+  transaction(pilot, readFileSync(resolve(supabase, 'seed.sql'), 'utf8'));
+  const fixtures = resolve(root, 'backend/tests/database/fixtures');
+  transaction(pilot, readFileSync(resolve(fixtures, 'scrum-245-files.sql'), 'utf8'));
+  const before = fingerprints(pilot);
+  const originalSchema = schemaDefinition(pilot);
+  compareSchema(schemaDefinition(database), pilot);
+
+  const installBridge = `
+    ALTER TABLE public.viagem_evidencia
+      ADD CONSTRAINT scrum245_evidencia_viagem_key UNIQUE (id, viagem_id);
+    ALTER TABLE public.anexo
+      ADD CONSTRAINT scrum245_anexo_viagem_key UNIQUE (id, viagem_id);
+    CREATE TABLE public.viagem_evidencia_anexo_piloto (
+      evidencia_id bigint PRIMARY KEY, viagem_id bigint NOT NULL, anexo_id bigint NOT NULL UNIQUE,
+      CONSTRAINT scrum245_origem_fk FOREIGN KEY (evidencia_id, viagem_id)
+        REFERENCES public.viagem_evidencia(id, viagem_id),
+      CONSTRAINT scrum245_destino_fk FOREIGN KEY (anexo_id, viagem_id)
+        REFERENCES public.anexo(id, viagem_id)
+    );
+    ALTER TABLE public.viagem_evidencia_anexo_piloto ENABLE ROW LEVEL SECURITY;
+    REVOKE ALL ON public.viagem_evidencia_anexo_piloto FROM PUBLIC, anon, authenticated;
+    REVOKE UPDATE, DELETE, TRUNCATE ON public.viagem_evidencia_anexo_piloto FROM postgres, service_role;
+  `;
+  const rollbackBridge = `
+    LOCK TABLE public.viagem_evidencia_anexo_piloto IN ACCESS EXCLUSIVE MODE;
+    DO $$ BEGIN
+      IF EXISTS (SELECT 1 FROM public.viagem_evidencia_anexo_piloto) THEN
+        RAISE EXCEPTION 'Rollback SCRUM-245 recusado: preserve o mapa da origem e os anexos copiados.';
+      END IF;
+    END $$;
+    DROP TABLE public.viagem_evidencia_anexo_piloto;
+    ALTER TABLE public.viagem_evidencia DROP CONSTRAINT scrum245_evidencia_viagem_key;
+    ALTER TABLE public.anexo DROP CONSTRAINT scrum245_anexo_viagem_key;
+  `;
+  transaction(pilot, installBridge);
+  transaction(pilot, rollbackBridge);
+  compareSchema(originalSchema, pilot);
+  assert.deepEqual(fingerprints(pilot), before);
+  transaction(pilot, installBridge);
+  const expanded = fingerprints(pilot);
+  const sizeQuery = `
+    SELECT pg_total_relation_size('public.anexo') + pg_total_relation_size('public.viagem_evidencia_anexo_piloto')
+  `;
+  const storageBefore = Number(query(pilot, sizeQuery));
+  const existingDocumentAttachment = "SELECT to_jsonb(a) FROM public.anexo a WHERE id=-24501";
+  const documentAttachmentBefore = query(pilot, existingDocumentAttachment);
+  assert.notEqual(documentAttachmentBefore, '');
+
+  const photos = JSON.parse(query(pilot, `
+    SELECT json_agg(json_build_object('id', id::text, 'nome', nome, 'tipo', tipo,
+      'hex', encode(dados, 'hex'), 'nomeSeguro',
+      char_length(btrim(nome)) BETWEEN 1 AND 255 AND nome !~ '[[:cntrl:]/]'
+      AND position(chr(92) in nome) = 0 AND nome NOT IN ('.', '..')) ORDER BY id)
+    FROM public.viagem_evidencia
+  `)) as { id: string; nome: string; tipo: string; hex: string; nomeSeguro: boolean }[];
+  const eligible = photos.filter(photo => photo.nomeSeguro && evidenciaArquivoSchema.safeParse({
+    nome: photo.nome, tipo: photo.tipo, dadosBase64: Buffer.from(photo.hex, 'hex').toString('base64'),
+  }).success).map(({ id }) => {
+    assert.match(id, /^-?\d{1,19}$/);
+    return id;
+  });
+  assert.deepEqual([...eligible].sort(), ['-24501', '-24502', '-24503']);
+  const ineligible = JSON.parse(query(pilot, `
+    SELECT json_build_object(
+      'documentoSemProveniencia', (SELECT count(*) FROM public.documento_veiculo WHERE arquivo_dados IS NOT NULL),
+      'comprovanteSemProveniencia', (SELECT count(*) FROM public.abastecimento_comprovante))
+  `));
+  assert.deepEqual(ineligible, { documentoSemProveniencia: 1, comprovanteSemProveniencia: 1 });
+  const copy = `
+    CREATE TEMP TABLE scrum245_elegiveis (id bigint PRIMARY KEY) ON COMMIT DROP;
+    INSERT INTO scrum245_elegiveis SELECT unnest(ARRAY[${eligible.join(',')}]::bigint[]);
+  ` + readFileSync(resolve(fixtures, 'scrum-245-copy.sql'), 'utf8');
+  assert.throws(() => transaction(pilot, copy + `\nDO $$ BEGIN RAISE EXCEPTION 'SCRUM-245 falha simulada'; END $$;`),
+    /SCRUM-245 falha simulada/);
+  assert.deepEqual(fingerprints(pilot), expanded, 'Falha parcial deixou bytes ou vínculos.');
+  transaction(pilot, copy);
+  const copied = fingerprints(pilot);
+  transaction(pilot, copy);
+  assert.deepEqual(fingerprints(pilot), copied, 'Reexecução duplicou ou alterou arquivos.');
+  for (const [table, fingerprint] of Object.entries(before)) {
+    if (table !== 'public.anexo') assert.equal(copied[table], fingerprint, 'Origem alterada: ' + table);
+  }
+  assert.match(copied['public.anexo'], /^4\|/);
+  assert.equal(query(pilot, existingDocumentAttachment), documentAttachmentBefore);
+  assert.equal(query(pilot, `
+    SELECT count(*) FROM public.viagem_evidencia_anexo_piloto p
+    JOIN public.viagem_evidencia e ON e.id=p.evidencia_id
+    JOIN public.anexo a ON a.id=p.anexo_id
+    WHERE e.id IN (-24501, -24502, -24503) AND p.viagem_id=e.viagem_id AND a.viagem_id=e.viagem_id
+      AND a.nome=e.nome AND a.tipo=e.tipo AND a.autor_id=e.enviado_por_id AND a.criado_em=e.criado_em
+      AND a.tamanho=octet_length(e.dados) AND a.sha256=encode(sha256(e.dados), 'hex') AND a.dados=e.dados
+  `), '3');
+  assert.equal(query(pilot, `
+    SELECT count(*) FROM public.viagem_evidencia_anexo_piloto p
+    JOIN public.anexo a ON a.id=p.anexo_id
+    WHERE a.sha256=(SELECT encode(sha256(dados), 'hex') FROM public.viagem_evidencia WHERE id=-24501)
+  `), '2', 'Conteúdo igual em viagens distintas deve conservar dois anexos.');
+  assert.equal(query(pilot, `
+    SELECT count(*) FROM pg_class
+    WHERE oid='public.viagem_evidencia_anexo_piloto'::regclass AND relrowsecurity
+  `), '1');
+  for (const role of ['anon', 'authenticated']) {
+    assert.throws(() => transaction(pilot, `
+      SET LOCAL ROLE ${role}; SELECT evidencia_id FROM public.viagem_evidencia_anexo_piloto;
+    `), /permission denied for table viagem_evidencia_anexo_piloto/);
+  }
+  for (const [trip, constraint] of [[-27001, /scrum245_destino_fk/], [-27002, /scrum245_origem_fk/]] as const) {
+    assert.throws(() => transaction(pilot, `
+      INSERT INTO public.anexo (id, nome, tipo, tamanho, sha256, dados, autor_id, criado_em, viagem_id)
+      SELECT -24502, nome, tipo, tamanho, sha256, dados, autor_id, criado_em, -27002 FROM public.anexo WHERE id=-24501;
+      INSERT INTO public.viagem_evidencia_anexo_piloto VALUES (-24504, ${trip}, -24502);
+    `), constraint);
+  }
+  assert.throws(() => transaction(pilot, `
+    INSERT INTO public.documento_historico
+      (id, documento_veiculo_id, versao, tipo_documento, data_vencimento, anexo_id, autor_id)
+    VALUES (-24502, -24501, 1, 'Fixture', '2030-01-15', -24501, -27002);
+  `), /documento_historico_anexo_documento_fk/);
+  assert.deepEqual(fingerprints(pilot), copied, 'Tentativas de vínculo cruzado alteraram dados.');
+
+  verifyRecovery(pilot, () => {
+    assert.throws(() => transaction(pilot, rollbackBridge), /Rollback SCRUM-245 recusado/);
+    assert.deepEqual(fingerprints(pilot), copied, 'Rollback com dados alterou arquivo ou mapa de origem.');
+  }, 'SCRUM-245');
+  console.log('SCRUM-245 piloto isolado', JSON.stringify({
+    copiados: eligible.length,
+    evidenciasInvalidas: photos.length - eligible.length,
+    ...ineligible,
+    reexecucaoSemDuplicar: true,
+    bytesETamanhoESha256Identicos: true,
+    vinculosCruzadosRecusados: true,
+    rollbackVazioVerificado: true,
+    rollbackComDadosRecusado: true,
+    payloadCopiadoBytes: Number(query(pilot, `
+      SELECT sum(a.tamanho) FROM public.anexo a JOIN public.viagem_evidencia_anexo_piloto p ON p.anexo_id=a.id
+    `)),
+    variacaoFisicaBytes: Number(query(pilot, sizeQuery)) - storageBefore,
+  }));
 }
 
 function rehearseUpgrade() {
@@ -243,7 +391,8 @@ function rehearseUpgrade() {
 }
 
 try {
-  if (process.argv.includes('--upgrade')) withTestDatabase(legacy, rehearseUpgrade);
+  if (process.argv.includes('--file-pilot')) withTestDatabase(pilot, rehearseFilePilot);
+  else if (process.argv.includes('--upgrade')) withTestDatabase(legacy, rehearseUpgrade);
   else verifyRecovery(database);
 } finally {
   docker('rm', ['-f', '--', archive, restoreList]);

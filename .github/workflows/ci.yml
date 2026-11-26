@@ -37,6 +37,8 @@ jobs:
         run: npm run db:test:restore
       - name: Ensaiar upgrade e recuperação de dados legados
         run: npm run db:test:upgrade
+      - name: Ensaiar cópia e recuperação de arquivos legados
+        run: npm run db:test:file-pilot
       - name: Auditar permissões SQL e planos de consulta no PostgreSQL isolado
         run: npm run db:test:audit
       - run: npm run db:docs:check
