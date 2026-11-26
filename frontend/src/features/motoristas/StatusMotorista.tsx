@@ -2,11 +2,11 @@ import { useCallback } from 'react';
 import { buscarImpedimentosMotorista, buscarTransicoesMotorista } from '../../shared/services/motoristas.service';
 import { useConsultaMotorista } from './useConsultaMotorista';
 
-type Periodo = { inicio: string; fim: string | null; status?: string; tipo?: string };
+type Periodo = { inicio: string; fim: string | null; estado?: string; tipo?: string };
 
 /** Ausência vigente que cobre o instante informado (registros cancelados não contam). */
 export function ausenciaVigente(itens: readonly Periodo[], agora = Date.now()): Periodo | undefined {
-  return itens.find(p => p.status !== 'CANCELADA'
+  return itens.find(p => p.estado !== 'CANCELADA'
     && new Date(p.inicio).getTime() <= agora
     && (p.fim === null || new Date(p.fim).getTime() > agora));
 }
@@ -31,6 +31,9 @@ export function StatusMotorista({ motoristaId, status, legivel, classe }: {
     return vigente?.tipo ?? null;
   }, [motoristaId]);
   const consulta = useConsultaMotorista(carregar);
+  if (consulta.carregando && consulta.data === null) return <span className="motorista-status" role="status">Consultando…</span>;
+  if (consulta.erro) return <span className="motorista-status" role="alert">Status indisponível{' '}
+    <button type="button" className="btn" onClick={evento => { evento.stopPropagation(); consulta.atualizar(); }}>Tentar novamente</button></span>;
   const efetivo = consulta.data ?? status;
   const texto = consulta.data === 'INATIVO' ? 'Inativo' : legivel(efetivo);
   return <span className={`motorista-status motorista-status--${classe(efetivo)}`}>{texto}</span>;

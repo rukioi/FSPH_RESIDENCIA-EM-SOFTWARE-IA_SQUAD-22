@@ -12,18 +12,17 @@ import { useConsultaMotorista } from './useConsultaMotorista';
 import { exibirInstante, validarPeriodo } from './datasDisponibilidade';
 import './MotoristaDisponibilidade.css';
 
-/** Limita o ano a 4 dígitos no campo de data e hora. */
 const DATA_MIN = '2000-01-01T00:00';
 const DATA_MAX = '2099-12-31T23:59';
-type PeriodoConflito = { inicio: string; fim: string | null; status?: string; situacao?: string };
+type PeriodoConflito = { inicio: string; fim: string | null; estado?: string; situacao?: string };
 const DISTANTE = '2100-01-01T00:00:00-03:00';
 function conflitantes(itens: readonly PeriodoConflito[], inicio: string, fim: string | null) {
   const a = new Date(inicio).getTime(); const b = fim ? new Date(fim).getTime() : Infinity;
-  return itens.filter(p => p.status !== 'CANCELADA' && new Date(p.inicio).getTime() < b && (p.fim === null || new Date(p.fim).getTime() > a));
+  return itens.filter(p => p.estado !== 'CANCELADA' && new Date(p.inicio).getTime() < b && (p.fim === null || new Date(p.fim).getTime() > a));
 }
 
 type Aba = 'escalas' | 'impedimentos' | 'historico';
-type Acao = { tipo: 'inativar' } | { tipo: 'reativar' } | { tipo: 'cancelarEscala'; id: string } | { tipo: 'cancelarImpedimento'; id: string };
+type Acao = { tipo: 'inativar' | 'reativar' } | { tipo: 'cancelarEscala' | 'cancelarImpedimento'; id: string };
 const nomes = { EM_ESCALA: 'Em escala', FORA_DE_ESCALA: 'Fora de escala', FOLGA: 'Folga', AFASTADO: 'Afastamento', VIGENTE: 'Vigente', CANCELADA: 'Cancelada', INATIVACAO: 'Inativação profissional', REATIVACAO: 'Reativação profissional' };
 const mensagemErro = (erro: unknown) => erro instanceof Error ? erro.message : 'Não foi possível concluir a operação. Tente novamente.';
 
@@ -104,10 +103,20 @@ function GestaoDisponibilidade({ motorista, onAtualizarCadastro }: { motorista: 
         if (!texto || texto.length > maximo) throw new Error(`Informe uma justificativa com 1 a ${maximo} caracteres, sem contar espaços nas extremidades.`);
         if ([...texto].some(c => { const n = c.charCodeAt(0); return (n < 32 && ![9, 10, 13].includes(n)) || n === 127; })) throw new Error('Remova os caracteres de controle da justificativa.');
         const atual = acao;
-        operacao = () => atual.tipo === 'inativar' ? inativarMotorista(motorista.id, texto)
-          : atual.tipo === 'reativar' ? reativarMotorista(motorista.id, texto)
-          : atual.tipo === 'cancelarEscala' ? cancelarEscalaMotorista(motorista.id, atual.id, texto)
-          : cancelarImpedimentoMotorista(motorista.id, atual.id, texto);
+        switch (atual.tipo) {
+          case 'inativar':
+            operacao = () => inativarMotorista(motorista.id, texto);
+            break;
+          case 'reativar':
+            operacao = () => reativarMotorista(motorista.id, texto);
+            break;
+          case 'cancelarEscala':
+            operacao = () => cancelarEscalaMotorista(motorista.id, atual.id, texto);
+            break;
+          case 'cancelarImpedimento':
+            operacao = () => cancelarImpedimentoMotorista(motorista.id, atual.id, texto);
+            break;
+        }
       } else {
         const periodo = validarPeriodo(inicio, fim, novoPeriodo === 'impedimentos');
         if (novoPeriodo === 'escalas') {
@@ -137,6 +146,11 @@ function GestaoDisponibilidade({ motorista, onAtualizarCadastro }: { motorista: 
           if (conflitantes((r.data as unknown as PeriodoConflito[]).filter(p => p.situacao === 'EM_ESCALA'), periodo.inicio, periodo.fim).length)
             throw new Error('O motorista está em escala nesse período. Cancele a escala ou escolha outro horário.');
         }
+      }
+      // Grava só com a mesma sessão que iniciou o envio (sem await entre a conferência e o disparo).
+      if (obterToken() !== token) {
+        if (vivo.current) { setErroModal('Sua sessão mudou ou expirou. Entre novamente para concluir o registro.'); setSalvando(false); }
+        return;
       }
       await operacao();
       if (!vivo.current || obterToken() !== token) return;
