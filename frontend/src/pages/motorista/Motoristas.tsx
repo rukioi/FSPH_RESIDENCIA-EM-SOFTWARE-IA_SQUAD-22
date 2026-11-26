@@ -1,6 +1,7 @@
 import { DatePicker } from '../../shared/components/DatePicker';
 import { Select } from '../../shared/components/Select';
 import { IconeGestor } from '../../shared/components/IconeGestor'
+import { StatusMotorista } from '../../features/motoristas/StatusMotorista'
 import { useConsultaMotorista } from '../../features/motoristas/useConsultaMotorista';
 import { MotoristaDisponibilidade } from '../../features/motoristas/MotoristaDisponibilidade';
 import { BotaoMotorista, DialogMotorista } from '../../features/motoristas/DialogMotorista';
@@ -404,13 +405,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
               <p>{motorista.email || "E-mail não informado"}</p>
             </div>
 
-            <span
-              className={`motorista-status motorista-status--${classeStatus(
-                motorista.status,
-              )}`}
-            >
-              {statusLegivel(motorista.status)}
-            </span>
+            <StatusMotorista motoristaId={motorista.id} status={motorista.status} legivel={statusLegivel} classe={classeStatus} />
           </header>
 
           <div className="motorista-detalhe-campos cartao-identidade__conteudo">
@@ -940,13 +935,7 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
                   <span className="motorista-avatar" aria-hidden="true">
                     {iniciais(motorista.nome)}
                   </span>
-                  <span
-                    className={`motorista-status motorista-status--${classeStatus(
-                      motorista.status,
-                    )}`}
-                  >
-                    {statusLegivel(motorista.status)}
-                  </span>
+                  <StatusMotorista motoristaId={motorista.id} status={motorista.status} legivel={statusLegivel} classe={classeStatus} />
                 </div>
 
                 <h2>{motorista.nome || "Motorista"}</h2>
@@ -1132,7 +1121,10 @@ function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; per
                           </svg>
                           <span>Remover</span>
                         </button>
-                        <button type="button" className="motorista-card__menu-item" role="menuitem" onClick={() => { setMenuMotoristaAberto(null); navegar(rotaMotorista(motorista.id)); }}>Escalas e situação profissional</button>
+                        <button type="button" className="motorista-card__menu-item" role="menuitem" onClick={() => { setMenuMotoristaAberto(null); navegar(rotaMotorista(motorista.id)); }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 15h2M14 15h2" /></svg>
+                          Escalas e situação profissional
+                        </button>
                       </div>
                     )}
                   </div>
