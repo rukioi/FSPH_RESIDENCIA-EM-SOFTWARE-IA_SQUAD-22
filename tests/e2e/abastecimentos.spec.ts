@@ -98,7 +98,7 @@ for (const width of [390, 768, 1280]) {
     const details = page.getByRole('dialog', { name: 'Detalhes do abastecimento' });
     await expect(details).toContainText('Fixture posto A');
     await expect(details).toContainText('Fixture E2E Abastecimento');
-    await expect(page).toHaveURL(/\/gestor\/abastecimentos$/);
+    await expect(page).toHaveURL(/\/admin\/abastecimentos$/);
     await page.screenshot({ path: info.outputPath(`abastecimento-detalhes-${width}.png`), fullPage: true });
     await page.keyboard.press('Escape');
     await expect(action).toBeFocused();

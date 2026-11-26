@@ -9,7 +9,8 @@ for (const width of [390, 768, 1280]) {
       id, codigo: `TRP-${id}`, codigoExibicao: `#TRP-${id}`, status: 'AGENDADA',
       origem: 'Sede', destino, finalidade: 'Visita institucional', qtdPassageiros: 2,
       motorista: { id: '1', nome: 'Ana Silva' }, veiculo: { id: '1', placa: 'ABC1234', modelo: 'Van' },
-      dataHoraSaida: `2026-11-${dia}T${hora}:00-03:00`, dataHoraRetornoPrevisto: null,
+      dataHoraSaida: `2026-11-${dia}T${hora}:00-03:00`,
+      dataHoraRetornoPrevisto: `2026-11-${dia}T18:00:00-03:00`,
     });
     await page.route('**/api/solicitacoes-viagem/agenda?*', route => route.fulfill({ json: {
       data: [compromisso('101', '06', '08:30', 'Unidade Centro'), compromisso('102', '06', '14:00', 'Hospital Regional'), compromisso('103', '10', '09:00', 'Unidade Norte')],
