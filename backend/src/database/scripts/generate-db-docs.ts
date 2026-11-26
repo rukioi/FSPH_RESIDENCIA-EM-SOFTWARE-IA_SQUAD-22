@@ -93,7 +93,8 @@ export function renderSchema(m: Metadata): string {
       ? "CHECK (vinculo IN ('PROPRIO', 'LOCADO'))" : c.definition;
     lines.push('ALTER TABLE public.' + q(c.table) + ' ADD CONSTRAINT ' + q(c.name) + ' ' + definition + ';');
   }
-  for (const index of m.indexes.filter(i => !m.constraints.some(c => c.table === i.table && c.name === i.name && ['p', 'u'].includes(c.type)))) {
+  // Índices de PK, UNIQUE e EXCLUDE nascem da própria constraint.
+  for (const index of m.indexes.filter(i => !m.constraints.some(c => c.table === i.table && c.name === i.name && ['p', 'u', 'x'].includes(c.type)))) {
     lines.push(index.definition + ';');
   }
   for (const t of m.tables) {

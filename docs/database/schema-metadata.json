@@ -142,6 +142,27 @@
       "forceRls": false
     },
     {
+      "acl": "{postgres=arxtm/supabase_admin,service_role=arxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "escala_motorista",
+      "owner": "supabase_admin",
+      "forceRls": false
+    },
+    {
+      "acl": "{postgres=arxtm/supabase_admin,service_role=arxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "habilitacao_categoria_veiculo",
+      "owner": "supabase_admin",
+      "forceRls": false
+    },
+    {
+      "acl": "{postgres=arxtm/supabase_admin,service_role=arxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "indisponibilidade_motorista",
+      "owner": "supabase_admin",
+      "forceRls": false
+    },
+    {
       "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
       "rls": false,
       "name": "log_atividade",
@@ -153,6 +174,13 @@
       "rls": false,
       "name": "motorista",
       "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{postgres=arxtm/supabase_admin,service_role=arxtm/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "motorista_transicao_profissional",
+      "owner": "supabase_admin",
       "forceRls": false
     },
     {
@@ -833,6 +861,316 @@
     {
       "name": "id",
       "type": "bigint",
+      "table": "escala_motorista",
+      "default": "nextval('escala_motorista_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "motorista_id",
+      "type": "bigint",
+      "table": "escala_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "inicio",
+      "type": "timestamp with time zone",
+      "table": "escala_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "fim",
+      "type": "timestamp with time zone",
+      "table": "escala_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "situacao",
+      "type": "text",
+      "table": "escala_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "estado",
+      "type": "text",
+      "table": "escala_motorista",
+      "default": "'VIGENTE'::text",
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "autor_id",
+      "type": "bigint",
+      "table": "escala_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp with time zone",
+      "table": "escala_motorista",
+      "default": "clock_timestamp()",
+      "identity": "",
+      "nullable": false,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "cancelado_por_id",
+      "type": "bigint",
+      "table": "escala_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "cancelado_em",
+      "type": "timestamp with time zone",
+      "table": "escala_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "motivo_cancelamento",
+      "type": "text",
+      "table": "escala_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "habilitacao_categoria_veiculo",
+      "default": "nextval('habilitacao_categoria_veiculo_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "categoria_cnh",
+      "type": "character varying(5)",
+      "table": "habilitacao_categoria_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "classe_veicular",
+      "type": "text",
+      "table": "habilitacao_categoria_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "permitido",
+      "type": "boolean",
+      "table": "habilitacao_categoria_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "fonte_normativa",
+      "type": "text",
+      "table": "habilitacao_categoria_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "vigencia_inicio",
+      "type": "date",
+      "table": "habilitacao_categoria_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "vigencia_fim",
+      "type": "date",
+      "table": "habilitacao_categoria_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "autor_id",
+      "type": "bigint",
+      "table": "habilitacao_categoria_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp with time zone",
+      "table": "habilitacao_categoria_veiculo",
+      "default": "clock_timestamp()",
+      "identity": "",
+      "nullable": false,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "indisponibilidade_motorista",
+      "default": "nextval('indisponibilidade_motorista_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "motorista_id",
+      "type": "bigint",
+      "table": "indisponibilidade_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "tipo",
+      "type": "text",
+      "table": "indisponibilidade_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "inicio",
+      "type": "timestamp with time zone",
+      "table": "indisponibilidade_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "fim",
+      "type": "timestamp with time zone",
+      "table": "indisponibilidade_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "estado",
+      "type": "text",
+      "table": "indisponibilidade_motorista",
+      "default": "'VIGENTE'::text",
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "autor_id",
+      "type": "bigint",
+      "table": "indisponibilidade_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp with time zone",
+      "table": "indisponibilidade_motorista",
+      "default": "clock_timestamp()",
+      "identity": "",
+      "nullable": false,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "cancelado_por_id",
+      "type": "bigint",
+      "table": "indisponibilidade_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "cancelado_em",
+      "type": "timestamp with time zone",
+      "table": "indisponibilidade_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "motivo_cancelamento",
+      "type": "text",
+      "table": "indisponibilidade_motorista",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
       "table": "log_atividade",
       "default": "nextval('log_atividade_id_seq'::regclass)",
       "identity": "",
@@ -988,6 +1326,86 @@
       "identity": "",
       "nullable": true,
       "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "motorista_transicao_profissional",
+      "default": "nextval('motorista_transicao_profissional_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "motorista_id",
+      "type": "bigint",
+      "table": "motorista_transicao_profissional",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "versao",
+      "type": "integer",
+      "table": "motorista_transicao_profissional",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "versao_anterior",
+      "type": "integer",
+      "table": "motorista_transicao_profissional",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "acao",
+      "type": "text",
+      "table": "motorista_transicao_profissional",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "motivo",
+      "type": "text",
+      "table": "motorista_transicao_profissional",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "autor_id",
+      "type": "bigint",
+      "table": "motorista_transicao_profissional",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp with time zone",
+      "table": "motorista_transicao_profissional",
+      "default": "clock_timestamp()",
+      "identity": "",
+      "nullable": false,
+      "position": 8,
       "generated": ""
     },
     {
@@ -2223,6 +2641,46 @@
       "definition": "CREATE INDEX documento_veiculo_vencimento_idx ON public.documento_veiculo USING btree (data_vencimento, id)"
     },
     {
+      "name": "escala_motorista_motorista_idx",
+      "table": "escala_motorista",
+      "definition": "CREATE INDEX escala_motorista_motorista_idx ON public.escala_motorista USING btree (motorista_id, inicio, id)"
+    },
+    {
+      "name": "escala_motorista_pkey",
+      "table": "escala_motorista",
+      "definition": "CREATE UNIQUE INDEX escala_motorista_pkey ON public.escala_motorista USING btree (id)"
+    },
+    {
+      "name": "escala_motorista_sem_sobreposicao",
+      "table": "escala_motorista",
+      "definition": "CREATE INDEX escala_motorista_sem_sobreposicao ON public.escala_motorista USING gist (int8range(motorista_id, motorista_id, '[]'::text), tstzrange(inicio, fim, '[)'::text)) WHERE (estado = 'VIGENTE'::text)"
+    },
+    {
+      "name": "habilitacao_categoria_veiculo_pkey",
+      "table": "habilitacao_categoria_veiculo",
+      "definition": "CREATE UNIQUE INDEX habilitacao_categoria_veiculo_pkey ON public.habilitacao_categoria_veiculo USING btree (id)"
+    },
+    {
+      "name": "habilitacao_categoria_veiculo_vigencia_key",
+      "table": "habilitacao_categoria_veiculo",
+      "definition": "CREATE UNIQUE INDEX habilitacao_categoria_veiculo_vigencia_key ON public.habilitacao_categoria_veiculo USING btree (categoria_cnh, classe_veicular, vigencia_inicio)"
+    },
+    {
+      "name": "indisponibilidade_motorista_motorista_idx",
+      "table": "indisponibilidade_motorista",
+      "definition": "CREATE INDEX indisponibilidade_motorista_motorista_idx ON public.indisponibilidade_motorista USING btree (motorista_id, inicio, id)"
+    },
+    {
+      "name": "indisponibilidade_motorista_pkey",
+      "table": "indisponibilidade_motorista",
+      "definition": "CREATE UNIQUE INDEX indisponibilidade_motorista_pkey ON public.indisponibilidade_motorista USING btree (id)"
+    },
+    {
+      "name": "indisponibilidade_motorista_sem_sobreposicao",
+      "table": "indisponibilidade_motorista",
+      "definition": "CREATE INDEX indisponibilidade_motorista_sem_sobreposicao ON public.indisponibilidade_motorista USING gist (int8range(motorista_id, motorista_id, '[]'::text), tstzrange(inicio, fim, '[)'::text)) WHERE (estado = 'VIGENTE'::text)"
+    },
+    {
       "name": "idx_log_atividade_solicitacao_viagem_id",
       "table": "log_atividade",
       "definition": "CREATE INDEX idx_log_atividade_solicitacao_viagem_id ON public.log_atividade USING btree (solicitacao_viagem_id)"
@@ -2256,6 +2714,16 @@
       "name": "motorista_validade_cnh_idx",
       "table": "motorista",
       "definition": "CREATE INDEX motorista_validade_cnh_idx ON public.motorista USING btree (validade_cnh, id)"
+    },
+    {
+      "name": "motorista_transicao_profissional_pkey",
+      "table": "motorista_transicao_profissional",
+      "definition": "CREATE UNIQUE INDEX motorista_transicao_profissional_pkey ON public.motorista_transicao_profissional USING btree (id)"
+    },
+    {
+      "name": "motorista_transicao_profissional_versao_key",
+      "table": "motorista_transicao_profissional",
+      "definition": "CREATE UNIQUE INDEX motorista_transicao_profissional_versao_key ON public.motorista_transicao_profissional USING btree (motorista_id, versao)"
     },
     {
       "name": "notificacao_caixa_idx",
@@ -2482,6 +2950,48 @@
       "increment": "1"
     },
     {
+      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "escala_motorista_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "supabase_admin",
+      "start": "1",
+      "table": "escala_motorista",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "habilitacao_categoria_veiculo_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "supabase_admin",
+      "start": "1",
+      "table": "habilitacao_categoria_veiculo",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "indisponibilidade_motorista_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "supabase_admin",
+      "start": "1",
+      "table": "indisponibilidade_motorista",
+      "column": "id",
+      "increment": "1"
+    },
+    {
       "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,postgres=rwU/postgres,service_role=rwU/postgres}",
       "max": "9223372036854775807",
       "min": "1",
@@ -2506,6 +3016,20 @@
       "owner": "postgres",
       "start": "1",
       "table": "motorista",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{postgres=rwU/supabase_admin,service_role=rwU/supabase_admin,supabase_admin=rwU/supabase_admin}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "motorista_transicao_profissional_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "supabase_admin",
+      "start": "1",
+      "table": "motorista_transicao_profissional",
       "column": "id",
       "increment": "1"
     },
@@ -3476,6 +4000,379 @@
       ]
     },
     {
+      "name": "escala_motorista_autor_id_fkey",
+      "type": "f",
+      "table": "escala_motorista",
+      "columns": [
+        "autor_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (autor_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "escala_motorista_cancelado_por_id_fkey",
+      "type": "f",
+      "table": "escala_motorista",
+      "columns": [
+        "cancelado_por_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (cancelado_por_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "escala_motorista_cancelamento_check",
+      "type": "c",
+      "table": "escala_motorista",
+      "columns": [
+        "estado",
+        "cancelado_por_id",
+        "cancelado_em",
+        "motivo_cancelamento",
+        "criado_em"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (estado = 'VIGENTE'::text AND cancelado_por_id IS NULL AND cancelado_em IS NULL AND motivo_cancelamento IS NULL OR estado = 'CANCELADA'::text AND cancelado_por_id IS NOT NULL AND cancelado_em IS NOT NULL AND cancelado_em >= criado_em AND motivo_cancelamento IS NOT NULL AND char_length(btrim(motivo_cancelamento)) >= 1 AND char_length(btrim(motivo_cancelamento)) <= 500)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "escala_motorista_estado_check",
+      "type": "c",
+      "table": "escala_motorista",
+      "columns": [
+        "estado"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (estado = ANY (ARRAY['VIGENTE'::text, 'CANCELADA'::text]))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "escala_motorista_intervalo_check",
+      "type": "c",
+      "table": "escala_motorista",
+      "columns": [
+        "inicio",
+        "fim"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (isfinite(inicio) AND isfinite(fim) AND inicio < fim)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "escala_motorista_motorista_id_fkey",
+      "type": "f",
+      "table": "escala_motorista",
+      "columns": [
+        "motorista_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id) REFERENCES motorista(id)",
+      "references": "motorista",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "escala_motorista_pkey",
+      "type": "p",
+      "table": "escala_motorista",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "escala_motorista_sem_sobreposicao",
+      "type": "x",
+      "table": "escala_motorista",
+      "columns": null,
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "EXCLUDE USING gist (int8range(motorista_id, motorista_id, '[]'::text) WITH =, tstzrange(inicio, fim, '[)'::text) WITH &&) WHERE (estado = 'VIGENTE'::text)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "escala_motorista_situacao_check",
+      "type": "c",
+      "table": "escala_motorista",
+      "columns": [
+        "situacao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (situacao = ANY (ARRAY['EM_ESCALA'::text, 'FORA_DE_ESCALA'::text]))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "habilitacao_categoria_veiculo_autor_id_fkey",
+      "type": "f",
+      "table": "habilitacao_categoria_veiculo",
+      "columns": [
+        "autor_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (autor_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "habilitacao_categoria_veiculo_categoria_cnh_check",
+      "type": "c",
+      "table": "habilitacao_categoria_veiculo",
+      "columns": [
+        "categoria_cnh"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (categoria_cnh::text = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text, 'E'::text]))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "habilitacao_categoria_veiculo_classe_veicular_check",
+      "type": "c",
+      "table": "habilitacao_categoria_veiculo",
+      "columns": [
+        "classe_veicular"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (char_length(btrim(classe_veicular)) >= 1 AND char_length(btrim(classe_veicular)) <= 100)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "habilitacao_categoria_veiculo_fonte_normativa_check",
+      "type": "c",
+      "table": "habilitacao_categoria_veiculo",
+      "columns": [
+        "fonte_normativa"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (char_length(btrim(fonte_normativa)) >= 1 AND char_length(btrim(fonte_normativa)) <= 500)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "habilitacao_categoria_veiculo_pkey",
+      "type": "p",
+      "table": "habilitacao_categoria_veiculo",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "habilitacao_categoria_veiculo_vigencia_check",
+      "type": "c",
+      "table": "habilitacao_categoria_veiculo",
+      "columns": [
+        "vigencia_inicio",
+        "vigencia_fim"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (isfinite(vigencia_inicio) AND (vigencia_fim IS NULL OR isfinite(vigencia_fim) AND vigencia_inicio < vigencia_fim))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "habilitacao_categoria_veiculo_vigencia_key",
+      "type": "u",
+      "table": "habilitacao_categoria_veiculo",
+      "columns": [
+        "categoria_cnh",
+        "classe_veicular",
+        "vigencia_inicio"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (categoria_cnh, classe_veicular, vigencia_inicio)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "indisponibilidade_motorista_autor_id_fkey",
+      "type": "f",
+      "table": "indisponibilidade_motorista",
+      "columns": [
+        "autor_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (autor_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "indisponibilidade_motorista_cancelado_por_id_fkey",
+      "type": "f",
+      "table": "indisponibilidade_motorista",
+      "columns": [
+        "cancelado_por_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (cancelado_por_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "indisponibilidade_motorista_cancelamento_check",
+      "type": "c",
+      "table": "indisponibilidade_motorista",
+      "columns": [
+        "estado",
+        "cancelado_por_id",
+        "cancelado_em",
+        "motivo_cancelamento",
+        "criado_em"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (estado = 'VIGENTE'::text AND cancelado_por_id IS NULL AND cancelado_em IS NULL AND motivo_cancelamento IS NULL OR estado = 'CANCELADA'::text AND cancelado_por_id IS NOT NULL AND cancelado_em IS NOT NULL AND cancelado_em >= criado_em AND motivo_cancelamento IS NOT NULL AND char_length(btrim(motivo_cancelamento)) >= 1 AND char_length(btrim(motivo_cancelamento)) <= 500)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "indisponibilidade_motorista_estado_check",
+      "type": "c",
+      "table": "indisponibilidade_motorista",
+      "columns": [
+        "estado"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (estado = ANY (ARRAY['VIGENTE'::text, 'CANCELADA'::text]))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "indisponibilidade_motorista_intervalo_check",
+      "type": "c",
+      "table": "indisponibilidade_motorista",
+      "columns": [
+        "inicio",
+        "fim"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (isfinite(inicio) AND (fim IS NULL OR isfinite(fim) AND inicio < fim))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "indisponibilidade_motorista_motorista_id_fkey",
+      "type": "f",
+      "table": "indisponibilidade_motorista",
+      "columns": [
+        "motorista_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id) REFERENCES motorista(id)",
+      "references": "motorista",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "indisponibilidade_motorista_pkey",
+      "type": "p",
+      "table": "indisponibilidade_motorista",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "indisponibilidade_motorista_sem_sobreposicao",
+      "type": "x",
+      "table": "indisponibilidade_motorista",
+      "columns": null,
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "EXCLUDE USING gist (int8range(motorista_id, motorista_id, '[]'::text) WITH =, tstzrange(inicio, fim, '[)'::text) WITH &&) WHERE (estado = 'VIGENTE'::text)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "indisponibilidade_motorista_tipo_check",
+      "type": "c",
+      "table": "indisponibilidade_motorista",
+      "columns": [
+        "tipo"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (tipo = ANY (ARRAY['FOLGA'::text, 'AFASTADO'::text]))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
       "name": "fk_log_atividade_usuario",
       "type": "f",
       "table": "log_atividade",
@@ -3606,6 +4503,157 @@
       "onUpdate": " ",
       "validated": true,
       "definition": "UNIQUE (usuario_id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_transicao_profissional_acao_check",
+      "type": "c",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "acao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (acao = ANY (ARRAY['INATIVACAO'::text, 'REATIVACAO'::text]))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_transicao_profissional_alternancia_check",
+      "type": "c",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "acao",
+        "versao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK ((acao = 'INATIVACAO'::text) = ((versao % 2) = 1))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_transicao_profissional_anterior_fk",
+      "type": "f",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "motorista_id",
+        "versao_anterior"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id, versao_anterior) REFERENCES motorista_transicao_profissional(motorista_id, versao)",
+      "references": "motorista_transicao_profissional",
+      "referencedColumns": [
+        "motorista_id",
+        "versao"
+      ]
+    },
+    {
+      "name": "motorista_transicao_profissional_autor_id_fkey",
+      "type": "f",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "autor_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (autor_id) REFERENCES usuario(id)",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "motorista_transicao_profissional_motivo_check",
+      "type": "c",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "motivo"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (char_length(btrim(motivo)) >= 1 AND char_length(btrim(motivo)) <= 1000)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_transicao_profissional_motorista_id_fkey",
+      "type": "f",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "motorista_id"
+      ],
+      "onDelete": "a",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (motorista_id) REFERENCES motorista(id)",
+      "references": "motorista",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "motorista_transicao_profissional_pkey",
+      "type": "p",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_transicao_profissional_sequencia_check",
+      "type": "c",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "versao",
+        "versao_anterior"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (versao = 1 AND versao_anterior IS NULL OR versao > 1 AND versao_anterior IS NOT NULL AND versao_anterior = (versao - 1))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_transicao_profissional_versao_check",
+      "type": "c",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "versao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (versao >= 1)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "motorista_transicao_profissional_versao_key",
+      "type": "u",
+      "table": "motorista_transicao_profissional",
+      "columns": [
+        "motorista_id",
+        "versao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "UNIQUE (motorista_id, versao)",
       "references": null,
       "referencedColumns": null
     },
