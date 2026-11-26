@@ -1396,7 +1396,7 @@ export interface Atividade {
   usuarioNome: string | null;
 }
 /**
- * CPF/telefone ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
+ * CPF/telefone/e-mail ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
  *
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "Motorista".
@@ -1418,6 +1418,7 @@ export interface Motorista {
   criado_em: string | null;
   cpf?: string | null;
   telefone?: string | null;
+  email?: string | null;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -1425,7 +1426,7 @@ export interface Motorista {
  */
 export interface Motoristas {
   /**
-   * Items: CPF/telefone ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
+   * Items: CPF/telefone/e-mail ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
    */
   data: {
     /**
@@ -1444,6 +1445,7 @@ export interface Motoristas {
     criado_em: string | null;
     cpf?: string | null;
     telefone?: string | null;
+    email?: string | null;
   }[];
 }
 /**
@@ -1452,7 +1454,7 @@ export interface Motoristas {
  */
 export interface RespostaMotorista {
   /**
-   * CPF/telefone ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
+   * CPF/telefone/e-mail ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
    */
   data: {
     /**
@@ -1471,10 +1473,11 @@ export interface RespostaMotorista {
     criado_em: string | null;
     cpf?: string | null;
     telefone?: string | null;
+    email?: string | null;
   };
 }
 /**
- * Legado não aplicado como validador HTTP: controller valida data de calendário, dígitos CPF/telefone, normaliza CPF/telefone e trim da CNH; não há validação uniforme de campos extras.
+ * Legado não aplicado como validador HTTP: controller valida data de calendário, dígitos CPF/telefone, normaliza CPF/telefone e trim da CNH; e-mail opcional vincula um usuário MOTORISTA existente.
  *
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "CriarMotorista".
@@ -1487,6 +1490,7 @@ export interface CriarMotorista {
   status?: ('DISPONIVEL' | 'EM_VIAGEM' | 'FOLGA' | 'AFASTADO') | null;
   cpf?: string | null;
   telefone?: string | null;
+  email?: string | null;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -1500,6 +1504,7 @@ export interface EditarMotorista {
   status?: 'DISPONIVEL' | 'EM_VIAGEM' | 'FOLGA' | 'AFASTADO';
   cpf?: string | null;
   telefone?: string | null;
+  email?: string | null;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -3245,13 +3250,7 @@ export interface RespostaHistoricoSolicitacaoViagem {
  * via the `definition` "ConsultarAgendaViagem".
  */
 export interface ConsultarAgendaViagem {
-  /**
-   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
-   */
   inicio: string;
-  /**
-   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
-   */
   fim: string;
   page?: string;
   limit?: string;
@@ -3261,13 +3260,7 @@ export interface ConsultarAgendaViagem {
  * via the `definition` "ConsultarDisponibilidadeViagem".
  */
 export interface ConsultarDisponibilidadeViagem {
-  /**
-   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
-   */
   inicio: string;
-  /**
-   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
-   */
   fim: string;
 }
 /**
@@ -3340,19 +3333,13 @@ export interface RespostaAgendaViagem {
 export interface RespostaDisponibilidadeViagem {
   data: {
     motoristas: {
-      /**
-       * BIGINT serializado pelo postgres como string; não converter para Number.
-       */
-      id: string;
-      nome: string;
+      id: string | number;
+      nome: string | null;
     }[];
     veiculos: {
-      /**
-       * BIGINT serializado pelo postgres como string; não converter para Number.
-       */
-      id: string;
-      placa: string;
-      modelo: string;
+      id: string | number;
+      placa: string | null;
+      modelo: string | null;
     }[];
   };
 }
