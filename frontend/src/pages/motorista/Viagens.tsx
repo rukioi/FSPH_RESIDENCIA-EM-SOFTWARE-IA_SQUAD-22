@@ -88,6 +88,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function stripControlChars(value: string): string {
+  let result = "";
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    const isControl = (code >= 0x00 && code <= 0x1f) || code === 0x7f;
+    if (!isControl) {
+      result += value[i];
+    }
+  }
+  return result;
+}
+
 function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
   try {
@@ -209,10 +221,7 @@ async function buildEvidenciaArquivo(dataUrl: string, fallbackName: string) {
     img.src = dataUrl;
   });
 
-  const controlCharsRegex = new RegExp("[\\x00-\\x1f\\x7f]", "g");
-  const cleanName = fallbackName
-    .replace(/[/\\]/g, "_")
-    .replace(controlCharsRegex, "")
+  const cleanName = stripControlChars(fallbackName.replace(/[/\\]/g, "_"))
     .replace(/\.[^.]+$/, ".jpg")
     .trim() || "odometro.jpg";
 
