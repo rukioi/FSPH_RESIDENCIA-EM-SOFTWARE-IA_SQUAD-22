@@ -14,7 +14,7 @@ afterAll(async () => { await sql?.end(); await admin?.end(); });
 const rollback = new Error('Rollback deliberado da fixture SCRUM-219');
 const tabelas = ['escala_motorista', 'indisponibilidade_motorista', 'habilitacao_categoria_veiculo',
   'motorista_transicao_profissional'];
-const versao = '20261124000000_db_s10_03_escalas_aptidao_motoristas.sql';
+const versao = '20261124000100_db_s10_03_escalas_aptidao_motoristas.sql';
 const forward = readFileSync(resolve(root, 'backend/src/database/supabase/migrations', versao), 'utf8');
 const backward = readFileSync(resolve(root, 'backend/src/database/supabase/rollbacks', versao), 'utf8');
 

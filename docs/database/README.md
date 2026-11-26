@@ -239,3 +239,59 @@ Ambiente, provas e limites estão em
 
 O [inventário de convergência de arquivos](./sprint10-convergencia-arquivos.md)
 registra o mapeamento do legado e as condições para o piloto da Sprint 10.
+
+## Sprint 10 — Especificação de manutenção (SCRUM-230)
+
+A [especificação do modelo de manutenção](./sprint10-manutencao-veiculo.md)
+registra as propostas e pendências de homologação para DB-S10-02-A.
+
+## Sprint 10 — Histórico de cancelamento e reativação (SCRUM-232)
+
+A [evolução incremental](./sprint10-manutencao-cancelamento-reativacao.md)
+documenta o upgrade da SCRUM-231 nos perfis S10, a preservação de histórico,
+ACL e RLS, e as provas de rollback. O `s10-clean` partiu das 15 versões já
+aplicadas. O schema, o DER e os metadados foram regenerados pelo harness
+após o avanço desse alvo para a versão 16.
+
+
+### SCRUM-234 — Revisão de alertas
+
+A migration 20261124000000 cria a revisão por ocorrência e tipo de alerta.
+Os 16 arquivos anteriores e seus rollbacks são preservados. O runner
+isolado mantém o corpo da migration e o checksum na mesma transação.
+O rollback correspondente é conservador e recusa se houver uma revisão
+ou um aviso da nova família. Em rollback de aplicação, preservar a tabela
+e desativar o emissor, seguindo os [procedimentos da caixa](../api/notificacoes.md).
+
+### Cadeia consolidada da Sprint 10
+
+A cadeia atual tem 18 migrations. As três versões de manutenção foram
+preservadas, incluindo a correção da FK em 20261124000000. A migration de
+Escalas e o rollback foram renumerados para 20261124000100, com conteúdo
+SQL preservado.
+
+No Supabase compartilhado, a aplicação manual registrou 18 versões,
+24 tabelas públicas e zero constraints ou índices inválidos, conforme a
+conferência do responsável. Os scripts de rollback foram mantidos sem
+execução nesse ambiente. A candidata confirmou a instalação limpa e o
+`db:docs:check` no perfil local `s10-candidata-clean`, porta 55527.
+
+### Reversão física das revisões de alerta
+
+Antes de qualquer reversão física, desligue o emissor em todos os
+processos, suspenda as escritas de manutenção e aguarde o fim das
+transações em curso. Reabertura, reativação e uma edição relevante
+podem escrever revisões mesmo com a flag desligada. Só retome
+escritas depois de confirmar que nenhuma instância em execução depende
+da tabela. Na reversão apenas da aplicação, preserve a tabela.
+
+### Perfil isolado com o nome anterior da migration de Escalas
+
+Consulte em READ ONLY `fsph_test_harness.migrations` do perfil verificado.
+Se existir `20261124000000_db_s10_03_escalas_aptidao_motoristas.sql`,
+não use `db:test:prepare` nesse banco. O runner compara nomes completos;
+o nome novo pode parecer pendente e tentar recriar as tabelas que já
+existem. Preserve esse perfil e seus dados. Escolha um perfil S10 dedicado
+e livre na lista do harness, execute `db:test:s10:provision`, confirme
+com `db:test:start` e só então execute `db:test:prepare` no novo perfil.
+Não edite o ledger antigo. Essa recuperação é exclusiva do harness local.

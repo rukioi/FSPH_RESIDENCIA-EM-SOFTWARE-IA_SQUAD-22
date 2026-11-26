@@ -1,4 +1,8 @@
+import { idValido } from '../../shared/api/bigint';
+
 export const ROTAS = {
+  manutencoesAdm: '/admin/manutencoes',
+  manutencoesGestor: '/gestor/manutencoes',
   notificacoes: "/notificacoes",
   login: "/login",
   loginMotorista: "/motorista/login",
@@ -131,6 +135,36 @@ export function lerRotaHistoricoAbastecimentosVeiculo(caminho: string) {
   return resultado ? resultado[1] : null;
 }
 
+export function baseManutencoes(perfil: string) {
+  return perfil === 'ADM' ? ROTAS.manutencoesAdm : ROTAS.manutencoesGestor;
+}
+
+function lerId(caminho: string, base: string) {
+  if (!caminho.startsWith(base + '/')) return null;
+  const id = caminho.slice(base.length + 1);
+  return idValido(id) ? id : null;
+}
+
+export function lerRotaManutencao(caminho: string) {
+  for (const base of [ROTAS.manutencoesAdm, ROTAS.manutencoesGestor]) {
+    if (caminho === base) return {base};
+    const id = lerId(caminho, base);
+    if (id !== null) return {base, id};
+  }
+  return null;
+}
+
+export function rotaDetalheManutencao(base: string, id: string) {
+  return base + '/' + encodeURIComponent(id);
+}
+
+export function rotaDetalheVeiculo(id: string) {
+  return ROTAS.veiculosGestor + '/' + encodeURIComponent(id);
+}
+
+export function lerRotaDetalheVeiculo(caminho: string) {
+  return lerId(caminho, ROTAS.veiculosGestor);
+}
 
 /** Detalhe compartilhado de motorista: mesma validação na rota, no guard e no App. */
 export function rotaMotorista(id: string): string {

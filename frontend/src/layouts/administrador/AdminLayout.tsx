@@ -22,6 +22,7 @@ const itensMenu: ItemMenu[] = [
   { nome: 'Motoristas', icone: 'motoristas', rota: ROTAS.motoristasGestor },
   { nome: 'Documentos', icone: 'documentos', rota: ROTAS.documentosAdm },
   { nome: 'Abastecimentos', icone: 'abastecimentos', rota: ROTAS.abastecimentosGestor },
+  { nome: 'Manutenções', icone: 'manutencao', rota: ROTAS.manutencoesAdm },
   { nome: 'Relatórios', icone: 'relatorios', rota: ROTAS.relatoriosGestor },
   { nome: 'Auditoria', icone: 'auditoria', rota: ROTAS.auditoria },
   { nome: 'Notificações', icone: 'notificacoes', rota: ROTAS.notificacoes },

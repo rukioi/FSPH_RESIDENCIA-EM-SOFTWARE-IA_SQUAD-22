@@ -374,8 +374,8 @@ for (const width of [390, 768, 1280]) test('Épico 06 — atendimento, duas equi
     await despachar(page, ordens[1], motoristas[1], 4);
     for (const [p, propria, alheia] of [[motoristaA, id, ordens[1]], [motoristaB, ordens[1], id]] as const) {
       await p.reload();
-      await expect(p.getByRole('link', { name: 'Abrir execução #OC-' + propria })).toBeVisible();
-      await expect(p.getByRole('link', { name: 'Abrir execução #OC-' + alheia })).toHaveCount(0);
+      await expect(p.getByRole('link', { name: 'Abrir execução #OC-' + propria, exact: true })).toBeVisible();
+      await expect(p.getByRole('link', { name: 'Abrir execução #OC-' + alheia, exact: true })).toHaveCount(0);
       await expect(p.locator('nav a')).toHaveCount(1);
       const [recusa] = await Promise.all([resposta(p, apiOrdens + '/minhas/' + alheia), p.goto(execucao(alheia))]);
       expect(recusa.status()).toBe(404);

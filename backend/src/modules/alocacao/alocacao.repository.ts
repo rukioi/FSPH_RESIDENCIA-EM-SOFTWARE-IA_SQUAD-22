@@ -1,5 +1,6 @@
 import type postgres from 'postgres';
 import { motoristasImpedidos } from './alocacao.elegibilidade.js';
+import { existeManutencaoBloqueante } from './manutencao-disponibilidade.js';
 
 export interface IntervaloReserva { inicio: string; fim: string }
 export type ResultadoDisponibilidade = 'disponivel' | 'referencia_inexistente' | 'recurso_inelegivel' | 'motorista_impedido' | 'conflito_alocacao';
@@ -25,7 +26,10 @@ export async function verificarDisponibilidade(tx: postgres.TransactionSql, moto
         OR data_hora_retorno_previsto IS NULL
         OR data_hora_retorno_previsto <= data_hora_saida
         OR (data_hora_saida < ${intervalo?.fim ?? null}::text::timestamp
-          AND data_hora_retorno_previsto > ${intervalo?.inicio ?? null}::text::timestamp)) LIMIT 1`;
+          AND data_hora_retorno_previsto > ${intervalo?.inicio ?? null}::text::timestamp))
+    UNION ALL SELECT NULL::bigint WHERE ${existeManutencaoBloqueante(tx, veiculoId, intervalo
+      ? {tipo: 'RESERVA', janela: intervalo} : {tipo: 'DESPACHO_SVO'})}
+    LIMIT 1`;
   if (reservas.length) return 'conflito_alocacao';
   // SCRUM-240: consulta própria, após os locks; dado de escala ausente não bloqueia.
   return (await motoristasImpedidos(tx, [motoristaId], intervalo)).size ? 'motorista_impedido' : 'disponivel';
@@ -55,6 +59,7 @@ export async function consultarRecursosDisponiveis(tx: postgres.TransactionSql, 
           AND (CASE WHEN r.tipo='motorista' THEN s.motorista_id ELSE s.veiculo_id END)=r.id
           AND (s.status='EM_ANDAMENTO' OR s.data_hora_retorno_previsto IS NULL OR s.data_hora_retorno_previsto<=s.data_hora_saida
             OR (s.data_hora_saida<${intervalo.fim}::text::timestamp AND s.data_hora_retorno_previsto>${intervalo.inicio}::text::timestamp)))
+      AND (r.tipo <> 'veiculo' OR NOT ${existeManutencaoBloqueante(tx, tx`r.id`, {tipo: 'RESERVA', janela: intervalo})})
     ORDER BY r.tipo,r.id`;
   // SCRUM-240: mesmo predicado da escrita, aplicado aos motoristas candidatos.
   const impedidos = await motoristasImpedidos(tx, recursos.filter(r => r.tipo === 'motorista').map(r => r.id), intervalo);

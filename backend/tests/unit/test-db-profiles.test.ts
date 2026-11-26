@@ -41,11 +41,11 @@ test('perfil de conciliação final usa identidade exclusiva',()=>{
 test('perfil desconhecido é recusado antes de qualquer conexão',()=>{
   expect(()=>probe('desconhecido',`await import('${modulePath}')`)).toThrow();
 });
-test.each(['t1','s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura','s9-conciliacao-final'])('perfil %s recusa alvo arbitrário antes de conectar',profile=>{
+test.each(['t1','s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura','s9-conciliacao-final','s10-clean','s10-upgrade','s10-rollback','s10-integracao-clean','s10-integracao-upgrade','s10-integracao-rollback','s10-integracao-fresh'])('perfil %s recusa alvo arbitrário antes de conectar',profile=>{
   const code=`import {assertTarget,testUrl} from '${modulePath}'; assertTarget(testUrl); try {assertTarget('postgresql://example.invalid/production'); throw new Error('aceitou alvo');} catch(e) {if (!String(e).includes('Alvo recusado')) throw e;} console.log('recusado')`;
   expect(probe(profile,code).trim()).toBe('recusado');
 });
-test.each(['s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura','s9-conciliacao-final'])('perfil %s rejeita alterações de checkout, container, volume, porta e nonce',profile=>{
+test.each(['s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura','s9-conciliacao-final','s10-clean','s10-upgrade','s10-rollback','s10-integracao-clean','s10-integracao-upgrade','s10-integracao-rollback','s10-integracao-fresh'])('perfil %s rejeita alterações de checkout, container, volume, porta e nonce',profile=>{
   const code = `
     import {createHash} from 'node:crypto';
     import {realpathSync} from 'node:fs';
@@ -61,6 +61,9 @@ test.each(['s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura','s9
       (m,i,v)=>m.workspace='outro', (m,i,v)=>i.Id='c'.repeat(64),
       (m,i,v)=>v.Name='outro', (m,i,v)=>i.NetworkSettings.Ports['5432/tcp'][0].HostPort='55432',
       (m,i,v)=>m.nonce='invalido', (m,i,v)=>m.marker='errado',
+      (m,i,v)=>m.database='outro', (m,i,v)=>i.Image='sha256:'+'c'.repeat(64),
+      (m,i,v)=>i.NetworkSettings.Ports['5432/tcp'][0].HostIp='0.0.0.0',
+      (m,i,v)=>i.Config.Labels['fsph.workspace']='origem-divergente',
       (m,i,v)=>v.Labels['fsph.nonce']='divergente', (m,i,v)=>i.Mounts[0].RW=false
     ]) {
       const x=structuredClone(m),y=structuredClone(info),z=structuredClone(vol);
@@ -71,4 +74,46 @@ test.each(['s9','s9-full','s9-full-repro','s9-mig-v3','s9-integracao-segura','s9
     console.log('recusado');
   `;
   expect(probe(profile,code).trim()).toBe('recusado');
+});
+
+test.each([
+  ['s10-clean', '55510', 'fsph_s10_clean'],
+  ['s10-upgrade', '55511', 'fsph_s10_upgrade'],
+  ['s10-rollback', '55512', 'fsph_s10_rollback'],
+  ['s10-integracao-clean', '55520', 'fsph_s10_integracao_clean'],
+  ['s10-integracao-upgrade', '55521', 'fsph_s10_integracao_upgrade'],
+  ['s10-integracao-rollback', '55522', 'fsph_s10_integracao_rollback'],
+  ['s10-integracao-fresh', '55523', 'fsph_s10_integracao_fresh'],
+])('perfil %s tem identidade e porta exclusivas', (profile, port, database) => {
+  const result = probe(profile, `
+    import { project, container, database, testProfile, testUrl, manifestPath } from '${modulePath}';
+    import { basename } from 'node:path';
+    const target = new URL(testUrl);
+    console.log(project, container, database, testProfile, target.hostname, target.port, basename(manifestPath));
+  `);
+  const name = 'fsph-' + profile + '-2026';
+  expect(result.trim()).toBe([name, name, database, profile, '127.0.0.1', port, profile + '.json'].join(' '));
+});
+
+test.each(['s10-clean', 's10-integracao-clean', 's10-integracao-upgrade', 's10-integracao-rollback','s10-integracao-fresh'])('Sprint 10 recusa a URL de outro perfil e a substituição do endpoint Docker (%s)', (profile) => {
+  const result = probe(profile, `
+    import { assertTarget, command, testUrl } from '${modulePath}';
+    const other = new URL(testUrl);
+    other.port = '55511';
+    try {
+      assertTarget(other.href);
+      throw new Error('URL cruzada aceita');
+    } catch (error) {
+      if (!String(error).includes('Alvo recusado')) throw error;
+    }
+    process.env.DOCKER_HOST = 'tcp://example.invalid:2375';
+    try {
+      command('docker', ['info']);
+      throw new Error('Endpoint externo aceito');
+    } catch (error) {
+      if (!String(error).includes('DOCKER_HOST')) throw error;
+    }
+    console.log('recusado');
+  `);
+  expect(result.trim()).toBe('recusado');
 });

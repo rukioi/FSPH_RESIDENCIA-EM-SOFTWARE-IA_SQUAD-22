@@ -27,7 +27,11 @@ beforeEach(() => {
   Object.assign(sql, {
     begin: vi.fn(async (...args: unknown[]) => {
       const operacao = args.at(-1) as (transacao: typeof sql) => Promise<unknown>;
-      return operacao(sql);
+      const tx = (partes: TemplateStringsArray, ...valores: unknown[]) =>
+        /^\s*(SELECT|UPDATE|INSERT|WITH)\s/.test(partes[0])
+          ? (sql as unknown as (...args: unknown[]) => Promise<unknown>)(partes, ...valores)
+          : { partes, valores };
+      return operacao(tx as unknown as typeof sql);
     }),
   });
 });
@@ -152,7 +156,10 @@ test('SCRUM-139 impede despacho SVO sobre reserva institucional, inclusive futur
     .mockResolvedValueOnce([{id:3,status:'DISPONIVEL'}]).mockResolvedValueOnce([]).mockResolvedValueOnce([{id:1024}]);
   expect(await despacharOrdem({ordemId:1,motoristaId:2,veiculoId:3})).toEqual({tipo:'conflito_alocacao'});
   expect(textosSql().some(query => query.includes('UPDATE public.ordem_coleta'))).toBe(false);
-  expect(banco().mock.calls[4].slice(1)).toEqual([null,null,'2','3',null,null,null]);
+  const parametros = banco().mock.calls[4].slice(1);
+  expect(parametros).toEqual([null,null,'2','3',null,null,null,expect.anything()]);
+  expect((parametros.at(-1) as {partes: TemplateStringsArray}).partes.join('?'))
+    .toContain('public.manutencao_veiculo');
 });
 
 test('BE-S5-02 mapeia referência rejeitada pelo banco sem erro genérico', async () => {

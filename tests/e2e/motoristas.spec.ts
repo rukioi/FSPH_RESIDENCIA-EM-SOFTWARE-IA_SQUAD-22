@@ -50,7 +50,7 @@ for(const width of [390,768,1280]) {
       await expect(page.locator('.motorista-card').filter({hasText:name})).toHaveCount(0);
     } finally {release();}
     await expect(dialog).toHaveCount(0);
-    await expect(page.getByRole('status')).toContainText('Motorista cadastrado com sucesso');
+    await expect(page.getByRole('status').filter({hasText:'Cadastro confirmado pelo servidor.'})).toBeVisible();
     await page.unroute('**/api/motoristas');
     await page.getByRole('searchbox').fill(name);
     const card=page.locator('.motorista-card').filter({hasText:name});
@@ -59,6 +59,7 @@ for(const width of [390,768,1280]) {
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`motoristas-${width}.png`),fullPage:true});
     await card.getByRole('button',{name:'Ver detalhes'}).click();
+    await expect(page).toHaveURL(/\/admin\/motoristas\/\d+$/);
     await expect(page.getByRole('heading',{name})).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`motorista-detalhes-${width}.png`),fullPage:true});
@@ -84,9 +85,11 @@ test('consulta anterior não apaga um cadastro já confirmado',async({page})=>{
   let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve;});
   let started!:()=>void;const pending=new Promise<void>(resolve=>{started=resolve;});
   let cancelled!:()=>void;const aborted=new Promise<void>(resolve=>{cancelled=resolve;});
+  let primeiraConsultaInterceptada=false;
   page.on('requestfailed',request=>{if(request.url().endsWith('/api/motoristas'))cancelled();});
   await page.route('**/api/motoristas',async route=>{
-    if(route.request().method()!=='GET')return route.continue();
+    if(route.request().method()!=='GET' || primeiraConsultaInterceptada) return route.continue();
+    primeiraConsultaInterceptada=true;
     started();await gate;
     await route.fulfill({status:200,contentType:'application/json',body:'{"data":[]}'});
   });

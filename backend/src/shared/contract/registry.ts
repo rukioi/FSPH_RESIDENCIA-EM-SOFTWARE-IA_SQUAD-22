@@ -3,6 +3,7 @@ import { anexosSchemas, registroId, tipoRegistro } from '../../modules/anexos/an
 import { anotacoesSchemas, tipoNota } from '../../modules/anotacoes/anotacoes.schemas.js';
 import { dashboardConsolidadoSchemas, notaDashboardConsolidado } from '../../modules/dashboard/dashboard.consolidado.schemas.js';
 import { z } from 'zod';
+import { manutencoesSchemas, consultaIndicadoresManutencao, consultaManutencao, consultaManutencaoVeiculo, consultaHistoricoManutencao } from '../../modules/manutencoes/manutencoes.schemas.js';
 import { viagensSchemas, statusViagemSchema } from '../../modules/viagens/viagens.schemas.js';
 import { relatoriosSchemas, consultaRelatorioSchema } from '../../modules/relatorios/relatorios.schemas.js';
 import { notificacoesSchemas } from '../../modules/notificacoes/notificacoes.schemas.js';
@@ -28,9 +29,9 @@ import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicita
 export const schemas = { ...dashboardConsolidadoSchemas, ...anotacoesSchemas, ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
   ErroUsuario: z.union([erro, erroString]), ErroOperacionalSvo: z.union([erro, erroSvo]), Exclusao: sucessoExclusao,
   ...veiculosSchemas, ...authSchemas, ...usuariosSchemas, ...auditoriaSchemas, ...motoristasSchemas, ...motoristasDisponibilidadeSchemas,
-  ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, AlertasDocumentais: alertasDocumentais, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas };
+  ...abastecimentosSchemas, ...documentosSchemas, ...gestaoDocumentalSchemas, AlertasDocumentais: alertasDocumentais, ...dashboardSchemas, ...svoSchemas, ...svoConsultasSchemas, ...svoDashboardSchemas, ...svoOperacionalSchemas, ...solicitacoesSchemas, ...manutencoesSchemas };
 export type SchemaName = keyof typeof schemas;
-export type Modulo = 'anotacoes'| 'anexos'| 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
+export type Modulo = 'manutencoes' | 'anotacoes'| 'anexos'| 'viagens'|'relatorios'|'notificacoes'|'auth'|'usuarios'|'auditoria'|'dashboard'|'svo'|'veiculos'|'motoristas'|'abastecimentos'|'documentos'|'solicitacoes';
 export interface Operacao {
   id: string; modulo: Modulo; method: 'get'|'post'|'put'|'patch'|'delete'; path: string;
   perfis: string[]; response: SchemaName; status: number; body?: SchemaName;
@@ -44,6 +45,9 @@ const op = (modulo: Modulo, method: Operacao['method'], path: string, response: 
   errors: [...(method !== 'get' && method !== 'delete' ? [400,413,415] : []), ...(perfis.length ? [401,403] : []),500],
   notes: 'Formato atual preservado; query params não declarados são ignorados.', ...options,
 });
+const parametrosManutencao = (schema: typeof consultaIndicadoresManutencao | typeof consultaManutencao | typeof consultaManutencaoVeiculo | typeof consultaHistoricoManutencao) =>
+  Object.entries(schema.shape).map(([name, value]) => ({ name, required: false, schema: value }));
+const errosEscritaManutencao = [400, 401, 403, 404, 409, 413, 415, 500];
 export const operations: Operacao[] = [
   op('viagens','post','/api/viagens','DetalheViagem',gestor,{status:200,body:'CriarViagem',runtimeValidation:true,errors:[400,401,403,404,409,413,415,500],notes:'Retorna viagem criada no agendamento; pedido sem viagem exige analise manual.'}),
   op('viagens','get','/api/viagens/pendentes-validacao','ListaViagens',gestor,{runtimeValidation:true,errors:[400,401,403,500],notes:'Viagens concluidas ainda nao validadas, com paginacao.',query:[{name:'pagina',required:false,schema:z.string().regex(/^[1-9]\d*$/)},{name:'limit',required:false,schema:z.string().regex(/^[1-9]\d*$/)}]}),
@@ -274,11 +278,28 @@ export const operations: Operacao[] = [
     notes:'SCRUM-193 RF46: fases no fuso America/Maceio por mês-calendário, sete dias e dia da validade. Lista paginada com responsável mínimo e vencidos; leitura sem efeitos.'}),
   op('documentos','get','/api/documentos/pendencias','PendenciasDocumentos',gestor),
   op('documentos','post','/api/documentos','RespostaDocumento',gestor,{body:'CriarDocumento'}),
+  op('manutencoes', 'get', '/api/manutencoes', 'ListaManutencoes', gestor,
+    {runtimeValidation: true, query: parametrosManutencao(consultaManutencao), errors: [400,401,403,500], notes: 'Lista paginada por entrada civil inclusiva em America/Maceio. Busca literal por placa, descrição e prestador.'}),
+  op('manutencoes', 'post', '/api/manutencoes', 'RespostaManutencao', gestor,
+    {runtimeValidation: true, body: 'CadastroManutencao', errors: errosEscritaManutencao, notes: 'Conflitos de disponibilidade retornam 409 e preservam compromissos existentes.'}),
+  op('manutencoes', 'get', '/api/manutencoes/indicadores', 'IndicadoresManutencao', gestor,
+    {runtimeValidation: true, query: parametrosManutencao(consultaIndicadoresManutencao), errors: [400,401,403,404,500],
+      notes: 'Estoque atual e alertas independem do período. Concluídas por conclusão efetiva, custo de não canceladas por entrada planejada. Fuso America/Maceio.'}),
+  op('manutencoes', 'get', '/api/manutencoes/{id}', 'RespostaManutencao', gestor,
+    {runtimeValidation: true, errors: [400,401,403,404,500], notes: 'Detalhe sem autoria, com versão opaca de precisão de microssegundos.'}),
+  op('manutencoes', 'patch', '/api/manutencoes/{id}', 'RespostaManutencao', gestor,
+    {runtimeValidation: true, body: 'EditarManutencao', errors: errosEscritaManutencao, notes: 'Conflitos de disponibilidade retornam 409 e preservam compromissos existentes.'}),
+  op('manutencoes', 'patch', '/api/manutencoes/{id}/status', 'RespostaManutencao', gestor,
+    {runtimeValidation: true, body: 'TransicaoManutencao', errors: errosEscritaManutencao, notes: 'Conflitos de disponibilidade retornam 409 e preservam compromissos existentes.'}),
+  op('manutencoes', 'get', '/api/veiculos/{id}/manutencoes', 'ListaManutencoes', gestor,
+    {runtimeValidation: true, query: parametrosManutencao(consultaManutencaoVeiculo), errors: [400,401,403,404,500], notes: 'Ocorrências por veículo. Veículo inexistente retorna 404.'}),
+  op('manutencoes', 'get', '/api/manutencoes/{id}/historico', 'HistoricoManutencao', gestor,
+    {runtimeValidation: true, query: parametrosManutencao(consultaHistoricoManutencao), errors: [400,401,403,404,500], notes: 'Eventos persistidos em ordem decrescente por data e ID.'}),
 ];
 
 /** Mantém correspondência exata com os caminhos existentes, inclusive a barra opcional de usuários. */
 export function routePattern(operation: Operacao): RegExp {
-  const path = operation.path.replace(/\{id\}/g, operation.modulo === 'viagens' ? '-?[0-9]+' : '[0-9]+');
+  const path = operation.path.replace(/\{id\}/g, (operation.modulo === 'viagens' || operation.modulo === 'manutencoes') ? '-?[0-9]+' : '[0-9]+');
   const comRegistro = path.replace(/\{registroId\}/g, '[0-9]+');
   return new RegExp('^' + comRegistro + (operation.modulo === 'usuarios' && comRegistro.includes('[0-9]+') ? '/?' : '') + '$');
 }

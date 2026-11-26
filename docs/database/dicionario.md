@@ -65,3 +65,33 @@ Veja a [base documental e de evidências](./sprint9-documentos-evidencias.md).
 
 As três tabelas têm RLS e grants restritos. A migration acrescenta índices
 sobre a validade dos documentos e das CNHs nas tabelas de cadastro.
+
+## Sprint 10 — DB-S10-02-B (SCRUM-231)
+
+| Objeto | Dados e relação |
+| --- | --- |
+| `manutencao_veiculo` | PK BIGINT com sequência. Veículo e autores são FKs obrigatórias sem cascata. Tipo e status usam enums próprios. A entrada e a previsão são obrigatórias e representam dias civis inclusivos em America/Maceio. Início, conclusão e cancelamento reais são TIMESTAMPTZ condicionados ao status. Quilometragem é inteira não negativa. Custo é NUMERIC sem precisão fixa, opcional e finito. Prestador e observações são opcionais. |
+| `manutencao_veiculo_historico` | PK BIGINT com sequência e FK obrigatória para a ocorrência. Cada evento de conclusão, correção de datas ou reabertura registra os estados e as datas antes e depois, autor e instante. A ocorrência pode ter vários eventos. |
+
+As duas tabelas usam RLS e ACL explícitas. O papel postgres do harness tem
+leitura e inserção nas duas tabelas e atualização na ocorrência corrente.
+O runtime compartilhado continua pendente de confirmação. Para limites de
+segurança, rollback e provas locais, veja a [entrega SCRUM-231](./sprint10-manutencao-migration-seguranca.md).
+
+### Incremento SCRUM-232 — cancelamento e reativação
+
+O histórico passa a aceitar CANCELAMENTO e REATIVACAO. Os campos
+`anterior_cancelada_em` e `posterior_cancelada_em` são TIMESTAMPTZ nullable.
+O instante é obrigatório apenas no lado cujo estado é CANCELADA.
+`anterior_iniciada_em` fica nullable e é exigido para estado anterior iniciado.
+A ocorrência corrente e os três eventos anteriores conservam suas regras.
+
+
+### Revisão de alerta de manutenção
+
+manutencao_alerta_revisao tem manutencao_id BIGINT, alerta TEXT e revisao
+BIGINT com default 1. Campos obrigatórios. A PK (manutencao_id, alerta)
+fornece o único índice. manutencao_id é FK para manutencao_veiculo com
+ON DELETE RESTRICT. alerta aceita PREVENTIVA_PROXIMA ou ATRASO, e revisao
+é positiva. A tabela inicia vazia e materializa até duas linhas por
+ocorrência. RLS habilitada, sem acesso direto de clientes.

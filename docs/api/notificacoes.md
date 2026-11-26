@@ -116,3 +116,78 @@ O processo do backend consulta viagens institucionais agendadas e grava avisos L
 A política provisória gera um aviso por viagem, motorista e horário de saída: repetidas verificações não duplicam o registro. O processamento concorrente usa bloqueio da solicitação e unicidade da caixa. Se a saída ou motorista mudar, os lembretes anteriores são identificados como desatualizados; uma nova atribuição no mesmo horário original reativa o aviso correspondente. Eventos passados não são enviados. Ao reiniciar antes da saída, o processo verifica novamente as viagens ainda dentro da janela.
 
 Para funcionar em produção, pelo menos uma instância do backend precisa permanecer ativa e com acesso ao PostgreSQL durante a janela; se todas estiverem paradas até a saída, não haverá envio retroativo. A periodicidade e a antecedência precisam ser homologadas pela equipe. A falha de uma verificação é registrada sem dados sensíveis e o processo tenta novamente no ciclo seguinte. Não é necessário chamar uma rota manualmente.
+
+## Alertas de manutenção — SCRUM-234
+
+O emissor periódico atende somente ADM e GESTOR_FROTA ativos. Os dois
+eventos são preventiva agendada que chega à janela civil [hoje, hoje+7)
+e atraso corrente. Alertas não são gravados em GET. O aviso manual de
+EM_MANUTENCAO e os eventos estruturados de viagem conservam as regras.
+
+O indicador e o emissor compartilham os critérios civis em America/Maceio.
+Cada ocorrência tem uma revisão independente por alerta. Sem linha
+persistida, a revisão é 1. O emissor a materializa antes do primeiro
+aviso. Uma mutação que abra revisão pela primeira vez persiste 2.
+
+Reabertura e reativação avançam ambos os alertas uma vez. Uma alteração
+relevante ou INICIAR avança somente alertas que saem da elegibilidade,
+comparando antes e depois no mesmo dia civil do banco, após os locks.
+Em A–B–A, a saída em B reserva a revisão seguinte mesmo entre ciclos
+do emissor. Datas continuamente elegíveis e mudanças de custo, texto,
+prestador, observações ou quilometragem preservam a revisão. Ao iniciar
+uma agendada atrasada com previsão ainda não vencida, a revisão de
+ATRASO avança e pode emitir quando a previsão vencer. Se o atraso
+continuar, a chave é preservada.
+
+Cada execução consulta lotes de até 25 ocorrências por ID crescente e
+tenta até 100 no total. O orçamento de 35 segundos impede iniciar uma nova
+tentativa após o prazo; consultas em curso têm timeout por instrução. O
+agendador Node volta a consultar no ciclo seguinte, por padrão após 60
+segundos (LEMBRETE_INTERVALO_SEGUNDOS). Avisos já entregues da revisão
+corrente deixam de ocupar o lote. Cada ocorrência usa transação própria e check
+após FOR UPDATE SKIP LOCKED. Sob o lock da ocorrência, o emissor materializa
+ou lê a revisão e trava os destinatários por ID, sem travar o veículo. As
+escritas usam a ordem veículo, ocorrência e revisões. Falhas de emissão têm tratamento
+independente dos lembretes institucionais e permitem nova tentativa no ciclo
+seguinte. A chave manutencao:<id>:<alerta>:<revisao> usa unicidade por
+destinatário e ON CONFLICT DO NOTHING, preservando inclusive lida_em.
+
+Confirmar o runtime compartilhado antes do rollout. Pausar e drenar
+as escritas de manutenção antes de atualizar as instâncias. Após validar
+a migration e substituir todos os escritores, retomar as escritas e
+ativar com MANUTENCAO_ALERTAS_ATIVOS=true. Na primeira ativação, os casos
+já elegíveis entram no lote.
+A homologação institucional formal da FSPH permanece pendente.
+
+Para reverter a aplicação, desligar a emissão, aguardar transações em curso
+e preservar a tabela. O rollback físico exige tabela vazia e ausência de
+chaves da nova família. Ele bloqueia a tabela de revisões e impede novas
+gravações na caixa durante a conferência. Com qualquer revisão ou aviso,
+recusa a remoção. A retirada definitiva com dados exige outra aprovação.
+
+### Emissão periódica na Vercel
+
+O cron de produção chama GET /api/cron/manutencao-alertas uma vez ao dia,
+a partir das 12h UTC (9h em America/Maceio). A função exige CRON_SECRET
+de servidor, com pelo menos 16 caracteres e gerado aleatoriamente, no
+Bearer enviado pela Vercel. Com MANUTENCAO_ALERTAS_ATIVOS ausente ou
+diferente de true, a chamada autenticada retorna 204 sem acessar o banco.
+
+O cron chama exclusivamente o emissor de manutenção. Retorna 200 com
+`emitidas`, `falhas`, `adiadas` e `restantes` quando o processamento termina
+sem pendências detectadas. Retorna 503 com os mesmos contadores se houver
+falha por ocorrência, lock concorrente ou trabalho além do limite. Os
+contadores não incluem identificadores ou dados de destinatários. O Node
+registra um evento operacional equivalente, sem interferir nos lembretes
+institucionais. Uma falha geral retorna 500.
+
+Ocorrências omitidas pelo limite, bloqueadas ou revertidas seguem candidatas
+na próxima execução enquanto elegíveis. A cadência diária não garante nova
+tentativa no mesmo dia. Monitore 503 e dimensione a frequência antes de
+ativar a flag. Se for necessário escoar volume superior ao limite diário,
+use o agendador Node contínuo. Ambos usam o lock por ocorrência e a
+unicidade por destinatário, preservando a primeira leitura.
+
+Antes de um rollback físico das revisões, suspenda e drene também as escritas
+de manutenção. Retome as escritas somente com instâncias que já dispensam a
+tabela. Para reverter apenas a aplicação, preserve a tabela.

@@ -78,7 +78,9 @@ for (const width of [390,768,1280]) {
     await abastecimentos.getByRole('button', {name: 'Tentar novamente'}).click();
     await expect(page.getByText('Posto teste')).toBeVisible();
     await expect(page.getByText('Outro posto')).toHaveCount(0);
-    await expect(page.getByText('A consulta de manutenção por veículo ainda não está disponível.')).toBeVisible();
+    const manutencoes = page.getByRole('region', {name: 'Manutenções do veículo', exact: true});
+    await expect(manutencoes).toBeVisible();
+    await expect(manutencoes.getByText('Nenhuma manutenção registrada para este veículo.', {exact: true})).toBeVisible();
     await expect(page.getByRole('heading',{name:`Fixture Contrato ${width}`})).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`detalhes-${width}.png`),fullPage:true});

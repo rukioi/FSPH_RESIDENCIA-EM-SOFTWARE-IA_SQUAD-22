@@ -13372,6 +13372,1161 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
+  /api/manutencoes:
+    get:
+      operationId: manutencoes_get__api_manutencoes
+      tags:
+        - manutencoes
+      description: Lista paginada por entrada civil inclusiva em America/Maceio. Busca literal por placa, descrição e prestador.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9][0-9]*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^(?:[1-9][0-9]?|100)$
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - PREVENTIVA
+              - CORRETIVA
+        - name: status
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - AGENDADA
+              - EM_ANDAMENTO
+              - CONCLUIDA
+              - CANCELADA
+        - name: inicio
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: fim
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: q
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            minLength: 1
+            maxLength: 255
+        - name: veiculoId
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            maxLength: 20
+            pattern: ^-?[0-9]+$
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaManutencoes"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    post:
+      operationId: manutencoes_post__api_manutencoes
+      tags:
+        - manutencoes
+      description: Conflitos de disponibilidade retornam 409 e preservam compromissos existentes.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CadastroManutencao"
+            example:
+              veiculoId: "-27003"
+              tipo: CORRETIVA
+              descricao: Serviço sintético
+              entrada: 2026-12-10
+              conclusaoPrevista: 2026-12-10
+              quilometragem: 0
+              custo: null
+      responses:
+        "201":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+            ETag:
+              schema:
+                type: string
+              description: Versão opaca retornada também em data.versao.
+            Location:
+              schema:
+                type: string
+              description: Caminho da ocorrência após criação e commit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaManutencao"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/manutencoes/indicadores:
+    get:
+      operationId: manutencoes_get__api_manutencoes_indicadores
+      tags:
+        - manutencoes
+      description: Estoque atual e alertas independem do período. Concluídas por conclusão efetiva, custo de não canceladas por entrada planejada. Fuso America/Maceio.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: inicio
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: fim
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: veiculoId
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            maxLength: 20
+            pattern: ^-?[0-9]+$
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - PREVENTIVA
+              - CORRETIVA
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndicadoresManutencao"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/manutencoes/{id}:
+    get:
+      operationId: manutencoes_get__api_manutencoes_id_
+      tags:
+        - manutencoes
+      description: Detalhe sem autoria, com versão opaca de precisão de microssegundos.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            maxLength: 20
+            pattern: ^-?[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+            ETag:
+              schema:
+                type: string
+              description: Versão opaca retornada também em data.versao.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaManutencao"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+    patch:
+      operationId: manutencoes_patch__api_manutencoes_id_
+      tags:
+        - manutencoes
+      description: Conflitos de disponibilidade retornam 409 e preservam compromissos existentes.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            maxLength: 20
+            pattern: ^-?[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^"[A-Za-z0-9_-]{36}"$
+          description: "Versão retornada no detalhe. Ausente ou inválida: 400. Desatualizada: 409."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditarManutencao"
+            example:
+              custo: "0.00"
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+            ETag:
+              schema:
+                type: string
+              description: Versão opaca retornada também em data.versao.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaManutencao"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/manutencoes/{id}/status:
+    patch:
+      operationId: manutencoes_patch__api_manutencoes_id_status
+      tags:
+        - manutencoes
+      description: Conflitos de disponibilidade retornam 409 e preservam compromissos existentes.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            maxLength: 20
+            pattern: ^-?[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^"[A-Za-z0-9_-]{36}"$
+          description: "Versão retornada no detalhe. Ausente ou inválida: 400. Desatualizada: 409."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransicaoManutencao"
+            example:
+              acao: REATIVAR
+              destino: AGENDADA
+              alteracoes:
+                entrada: 2026-12-10
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+            ETag:
+              schema:
+                type: string
+              description: Versão opaca retornada também em data.versao.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespostaManutencao"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "409":
+          description: Falha atual HTTP 409
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "413":
+          description: Falha atual HTTP 413
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "415":
+          description: Falha atual HTTP 415
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/veiculos/{id}/manutencoes:
+    get:
+      operationId: manutencoes_get__api_veiculos_id_manutencoes
+      tags:
+        - manutencoes
+      description: Ocorrências por veículo. Veículo inexistente retorna 404.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9][0-9]*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^(?:[1-9][0-9]?|100)$
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - PREVENTIVA
+              - CORRETIVA
+        - name: status
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            enum:
+              - AGENDADA
+              - EM_ANDAMENTO
+              - CONCLUIDA
+              - CANCELADA
+        - name: inicio
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: fim
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            format: date
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        - name: q
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            minLength: 1
+            maxLength: 255
+        - name: id
+          in: path
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            maxLength: 20
+            pattern: ^-?[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaManutencoes"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+  /api/manutencoes/{id}/historico:
+    get:
+      operationId: manutencoes_get__api_manutencoes_id_historico
+      tags:
+        - manutencoes
+      description: Eventos persistidos em ordem decrescente por data e ID.
+      security:
+        - bearerAuth: []
+      x-perfis: *a1
+      x-runtime-validation: true
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^[1-9][0-9]*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            pattern: ^(?:[1-9][0-9]?|100)$
+        - name: id
+          in: path
+          required: true
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            type: string
+            maxLength: 20
+            pattern: ^-?[0-9]+$
+          description: Identificador no caminho atual; limites numéricos variam por módulo.
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoricoManutencao"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "404":
+          description: Falha atual HTTP 404
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
 components:
   securitySchemes:
     bearerAuth:
@@ -21358,3 +22513,1121 @@ components:
             - veiculos
       required:
         - data
+    IndicadoresManutencao:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            referencia:
+              type: object
+              properties:
+                instante:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                  allOf:
+                    - not:
+                        pattern: ^0000-
+                    - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                dataCivil:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                fuso:
+                  type: string
+                  const: America/Maceio
+              required:
+                - instante
+                - dataCivil
+                - fuso
+              additionalProperties: false
+            filtros:
+              type: object
+              properties:
+                veiculoId:
+                  anyOf:
+                    - type: string
+                      maxLength: 20
+                      pattern: ^-?[0-9]+$
+                    - type: "null"
+                tipo:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - PREVENTIVA
+                        - CORRETIVA
+                    - type: "null"
+              required:
+                - veiculoId
+                - tipo
+              additionalProperties: false
+            estoqueAtual:
+              type: object
+              properties:
+                veiculosEmManutencao:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                agendadas:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                emAndamento:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                atrasadas:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+              required:
+                - veiculosEmManutencao
+                - agendadas
+                - emAndamento
+                - atrasadas
+              additionalProperties: false
+            periodo:
+              type: object
+              properties:
+                inicio:
+                  anyOf:
+                    - type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                    - type: "null"
+                fim:
+                  anyOf:
+                    - type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                    - type: "null"
+                fimExclusivo:
+                  anyOf:
+                    - anyOf:
+                        - type: string
+                          format: date-time
+                          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                          description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                          allOf:
+                            - not:
+                                pattern: ^0000-
+                            - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                        - type: string
+                          pattern: ^\+010000-01-01T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$
+                    - type: "null"
+                criterioConcluidas:
+                  type: string
+                  const: CONCLUSAO_EFETIVA
+                criterioCusto:
+                  type: string
+                  const: ENTRADA_PLANEJADA
+                concluidas:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                custo:
+                  type: object
+                  properties:
+                    totalConhecido:
+                      anyOf:
+                        - type: string
+                          pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+                        - type: "null"
+                    comCustoInformado:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    comCustoDesconhecido:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                  required:
+                    - totalConhecido
+                    - comCustoInformado
+                    - comCustoDesconhecido
+                  additionalProperties: false
+              required:
+                - inicio
+                - fim
+                - fimExclusivo
+                - criterioConcluidas
+                - criterioCusto
+                - concluidas
+                - custo
+              additionalProperties: false
+            alertas:
+              type: object
+              properties:
+                preventivasProximos7Dias:
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    limite:
+                      type: number
+                      const: 20
+                    itens:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            maxLength: 20
+                            pattern: ^-?[0-9]+$
+                          veiculo:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                maxLength: 20
+                                pattern: ^-?[0-9]+$
+                              placa:
+                                type: string
+                            required:
+                              - id
+                              - placa
+                            additionalProperties: false
+                          tipo:
+                            type: string
+                            enum:
+                              - PREVENTIVA
+                              - CORRETIVA
+                          status:
+                            type: string
+                            enum:
+                              - AGENDADA
+                              - EM_ANDAMENTO
+                          entrada:
+                            type: string
+                            format: date
+                            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                          conclusaoPrevista:
+                            type: string
+                            format: date
+                            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                        required:
+                          - id
+                          - veiculo
+                          - tipo
+                          - status
+                          - entrada
+                          - conclusaoPrevista
+                        additionalProperties: false
+                      description: No máximo 20 itens, em ordem determinística.
+                    inicio:
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                    fimExclusivo:
+                      type: string
+                      format: date
+                      pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  required:
+                    - total
+                    - limite
+                    - itens
+                    - inicio
+                    - fimExclusivo
+                  additionalProperties: false
+                atrasos:
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    limite:
+                      type: number
+                      const: 20
+                    itens:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            maxLength: 20
+                            pattern: ^-?[0-9]+$
+                          veiculo:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                maxLength: 20
+                                pattern: ^-?[0-9]+$
+                              placa:
+                                type: string
+                            required:
+                              - id
+                              - placa
+                            additionalProperties: false
+                          tipo:
+                            type: string
+                            enum:
+                              - PREVENTIVA
+                              - CORRETIVA
+                          status:
+                            type: string
+                            enum:
+                              - AGENDADA
+                              - EM_ANDAMENTO
+                          entrada:
+                            type: string
+                            format: date
+                            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                          conclusaoPrevista:
+                            type: string
+                            format: date
+                            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                        required:
+                          - id
+                          - veiculo
+                          - tipo
+                          - status
+                          - entrada
+                          - conclusaoPrevista
+                        additionalProperties: false
+                      description: No máximo 20 itens, em ordem determinística.
+                  required:
+                    - total
+                    - limite
+                    - itens
+                  additionalProperties: false
+              required:
+                - preventivasProximos7Dias
+                - atrasos
+              additionalProperties: false
+          required:
+            - referencia
+            - filtros
+            - estoqueAtual
+            - periodo
+            - alertas
+          additionalProperties: false
+      required:
+        - data
+      additionalProperties: false
+    CadastroManutencao:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum:
+            - PREVENTIVA
+            - CORRETIVA
+        descricao:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        entrada:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        conclusaoPrevista:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        quilometragem:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        prestador:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 255
+            - type: "null"
+        custo:
+          anyOf:
+            - type: string
+              pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+            - type: "null"
+        observacoes:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 2000
+            - type: "null"
+        veiculoId:
+          type: string
+          maxLength: 20
+          pattern: ^-?[0-9]+$
+        iniciarImediatamente:
+          type: boolean
+      required:
+        - tipo
+        - descricao
+        - entrada
+        - conclusaoPrevista
+        - quilometragem
+        - veiculoId
+      additionalProperties: false
+    EditarManutencao:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum:
+            - PREVENTIVA
+            - CORRETIVA
+        descricao:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        entrada:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        conclusaoPrevista:
+          type: string
+          format: date
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+        quilometragem:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        prestador:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 255
+            - type: "null"
+        custo:
+          anyOf:
+            - type: string
+              pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+            - type: "null"
+        observacoes:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 2000
+            - type: "null"
+        iniciadaEm:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+          allOf:
+            - not:
+                pattern: ^0000-
+            - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+        concluidaEm:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+          allOf:
+            - not:
+                pattern: ^0000-
+            - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+      additionalProperties: false
+      minProperties: 1
+    TransicaoManutencao:
+      oneOf:
+        - type: object
+          properties:
+            acao:
+              type: string
+              const: INICIAR
+            alteracoes:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                    - PREVENTIVA
+                    - CORRETIVA
+                descricao:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                entrada:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                conclusaoPrevista:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                quilometragem:
+                  type: integer
+                  minimum: 0
+                  maximum: 2147483647
+                prestador:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 255
+                    - type: "null"
+                custo:
+                  anyOf:
+                    - type: string
+                      pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+                    - type: "null"
+                observacoes:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 2000
+                    - type: "null"
+              additionalProperties: false
+          required:
+            - acao
+          additionalProperties: false
+        - type: object
+          properties:
+            acao:
+              type: string
+              const: CONCLUIR
+            alteracoes:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                    - PREVENTIVA
+                    - CORRETIVA
+                descricao:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                entrada:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                conclusaoPrevista:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                quilometragem:
+                  type: integer
+                  minimum: 0
+                  maximum: 2147483647
+                prestador:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 255
+                    - type: "null"
+                custo:
+                  anyOf:
+                    - type: string
+                      pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+                    - type: "null"
+                observacoes:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 2000
+                    - type: "null"
+              additionalProperties: false
+          required:
+            - acao
+          additionalProperties: false
+        - type: object
+          properties:
+            acao:
+              type: string
+              const: CANCELAR
+            alteracoes:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                    - PREVENTIVA
+                    - CORRETIVA
+                descricao:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                entrada:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                conclusaoPrevista:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                quilometragem:
+                  type: integer
+                  minimum: 0
+                  maximum: 2147483647
+                prestador:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 255
+                    - type: "null"
+                custo:
+                  anyOf:
+                    - type: string
+                      pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+                    - type: "null"
+                observacoes:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 2000
+                    - type: "null"
+              additionalProperties: false
+          required:
+            - acao
+          additionalProperties: false
+        - type: object
+          properties:
+            acao:
+              type: string
+              const: REABRIR
+            destino:
+              type: string
+              enum:
+                - AGENDADA
+                - EM_ANDAMENTO
+            alteracoes:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                    - PREVENTIVA
+                    - CORRETIVA
+                descricao:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                entrada:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                conclusaoPrevista:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                quilometragem:
+                  type: integer
+                  minimum: 0
+                  maximum: 2147483647
+                prestador:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 255
+                    - type: "null"
+                custo:
+                  anyOf:
+                    - type: string
+                      pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+                    - type: "null"
+                observacoes:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 2000
+                    - type: "null"
+              additionalProperties: false
+          required:
+            - acao
+            - destino
+          additionalProperties: false
+        - type: object
+          properties:
+            acao:
+              type: string
+              const: REATIVAR
+            destino:
+              type: string
+              enum:
+                - AGENDADA
+                - EM_ANDAMENTO
+            alteracoes:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                    - PREVENTIVA
+                    - CORRETIVA
+                descricao:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                entrada:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                conclusaoPrevista:
+                  type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                quilometragem:
+                  type: integer
+                  minimum: 0
+                  maximum: 2147483647
+                prestador:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 255
+                    - type: "null"
+                custo:
+                  anyOf:
+                    - type: string
+                      pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+                    - type: "null"
+                observacoes:
+                  anyOf:
+                    - type: string
+                      minLength: 1
+                      maxLength: 2000
+                    - type: "null"
+              additionalProperties: false
+          required:
+            - acao
+            - destino
+          additionalProperties: false
+    RespostaManutencao:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              maxLength: 20
+              pattern: ^-?[0-9]+$
+            veiculo:
+              type: object
+              properties:
+                id:
+                  type: string
+                  maxLength: 20
+                  pattern: ^-?[0-9]+$
+                placa:
+                  type: string
+                vinculo:
+                  type: string
+                  enum:
+                    - PROPRIO
+                    - LOCADO
+              required:
+                - id
+                - placa
+                - vinculo
+              additionalProperties: false
+            tipo:
+              type: string
+              enum:
+                - PREVENTIVA
+                - CORRETIVA
+            descricao:
+              type: string
+            status:
+              type: string
+              enum:
+                - AGENDADA
+                - EM_ANDAMENTO
+                - CONCLUIDA
+                - CANCELADA
+            entrada:
+              type: string
+              format: date
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            conclusaoPrevista:
+              type: string
+              format: date
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+            prestador:
+              anyOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 255
+                - type: "null"
+            custo:
+              anyOf:
+                - type: string
+                  pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+                - type: "null"
+            atrasada:
+              type: boolean
+            quilometragem:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            observacoes:
+              anyOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 2000
+                - type: "null"
+            iniciadaEm:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                  allOf:
+                    - not:
+                        pattern: ^0000-
+                    - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                - type: "null"
+            concluidaEm:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                  allOf:
+                    - not:
+                        pattern: ^0000-
+                    - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                - type: "null"
+            canceladaEm:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                  allOf:
+                    - not:
+                        pattern: ^0000-
+                    - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                - type: "null"
+            criadoEm:
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+              allOf:
+                - not:
+                    pattern: ^0000-
+                - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+            atualizadoEm:
+              type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+              allOf:
+                - not:
+                    pattern: ^0000-
+                - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+            versao:
+              type: string
+              pattern: ^"[A-Za-z0-9_-]{36}"$
+          required:
+            - id
+            - veiculo
+            - tipo
+            - descricao
+            - status
+            - entrada
+            - conclusaoPrevista
+            - prestador
+            - custo
+            - atrasada
+            - quilometragem
+            - observacoes
+            - iniciadaEm
+            - concluidaEm
+            - canceladaEm
+            - criadoEm
+            - atualizadoEm
+            - versao
+          additionalProperties: false
+      required:
+        - data
+      additionalProperties: false
+    ListaManutencoes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                maxLength: 20
+                pattern: ^-?[0-9]+$
+              veiculo:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    maxLength: 20
+                    pattern: ^-?[0-9]+$
+                  placa:
+                    type: string
+                  vinculo:
+                    type: string
+                    enum:
+                      - PROPRIO
+                      - LOCADO
+                required:
+                  - id
+                  - placa
+                  - vinculo
+                additionalProperties: false
+              tipo:
+                type: string
+                enum:
+                  - PREVENTIVA
+                  - CORRETIVA
+              descricao:
+                type: string
+              status:
+                type: string
+                enum:
+                  - AGENDADA
+                  - EM_ANDAMENTO
+                  - CONCLUIDA
+                  - CANCELADA
+              entrada:
+                type: string
+                format: date
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+              conclusaoPrevista:
+                type: string
+                format: date
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+              prestador:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                    maxLength: 255
+                  - type: "null"
+              custo:
+                anyOf:
+                  - type: string
+                    pattern: ^[0-9]{1,131072}(?:\.[0-9]{1,16383})?$
+                  - type: "null"
+              atrasada:
+                type: boolean
+            required:
+              - id
+              - veiculo
+              - tipo
+              - descricao
+              - status
+              - entrada
+              - conclusaoPrevista
+              - prestador
+              - custo
+              - atrasada
+            additionalProperties: false
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+      required:
+        - data
+        - meta
+      additionalProperties: false
+    HistoricoManutencao:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                maxLength: 20
+                pattern: ^-?[0-9]+$
+              manutencaoId:
+                type: string
+                maxLength: 20
+                pattern: ^-?[0-9]+$
+              evento:
+                type: string
+                enum:
+                  - CONCLUSAO
+                  - CORRECAO_DATAS
+                  - REABERTURA
+                  - CANCELAMENTO
+                  - REATIVACAO
+              statusAnterior:
+                type: string
+                enum:
+                  - AGENDADA
+                  - EM_ANDAMENTO
+                  - CONCLUIDA
+                  - CANCELADA
+              statusPosterior:
+                type: string
+                enum:
+                  - AGENDADA
+                  - EM_ANDAMENTO
+                  - CONCLUIDA
+                  - CANCELADA
+              anterior:
+                type: object
+                properties:
+                  entrada:
+                    type: string
+                    format: date
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  conclusaoPrevista:
+                    type: string
+                    format: date
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  iniciadaEm:
+                    anyOf:
+                      - type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                        description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                        allOf:
+                          - not:
+                              pattern: ^0000-
+                          - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                      - type: "null"
+                  concluidaEm:
+                    anyOf:
+                      - type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                        description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                        allOf:
+                          - not:
+                              pattern: ^0000-
+                          - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                      - type: "null"
+                  canceladaEm:
+                    anyOf:
+                      - type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                        description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                        allOf:
+                          - not:
+                              pattern: ^0000-
+                          - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                      - type: "null"
+                required:
+                  - entrada
+                  - conclusaoPrevista
+                  - iniciadaEm
+                  - concluidaEm
+                  - canceladaEm
+                additionalProperties: false
+              posterior:
+                type: object
+                properties:
+                  entrada:
+                    type: string
+                    format: date
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  conclusaoPrevista:
+                    type: string
+                    format: date
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                  iniciadaEm:
+                    anyOf:
+                      - type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                        description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                        allOf:
+                          - not:
+                              pattern: ^0000-
+                          - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                      - type: "null"
+                  concluidaEm:
+                    anyOf:
+                      - type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                        description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                        allOf:
+                          - not:
+                              pattern: ^0000-
+                          - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                      - type: "null"
+                  canceladaEm:
+                    anyOf:
+                      - type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                        description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                        allOf:
+                          - not:
+                              pattern: ^0000-
+                          - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+                      - type: "null"
+                required:
+                  - entrada
+                  - conclusaoPrevista
+                  - iniciadaEm
+                  - concluidaEm
+                  - canceladaEm
+                additionalProperties: false
+              autorId:
+                type: string
+                maxLength: 20
+                pattern: ^-?[0-9]+$
+              registradoEm:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+                allOf:
+                  - not:
+                      pattern: ^0000-
+                  - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+            required:
+              - id
+              - manutencaoId
+              - evento
+              - statusAnterior
+              - statusPosterior
+              - anterior
+              - posterior
+              - autorId
+              - registradoEm
+            additionalProperties: false
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+      required:
+        - data
+        - meta
+      additionalProperties: false

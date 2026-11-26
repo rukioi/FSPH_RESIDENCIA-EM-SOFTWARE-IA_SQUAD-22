@@ -1,14 +1,13 @@
 import { motoristasImpedidos } from '../alocacao/alocacao.elegibilidade.js';
 import { sql } from '../../database/connection.js';
+import { existeManutencaoBloqueante } from '../alocacao/manutencao-disponibilidade.js';
 import { registrarAtividades } from '../auditoria/auditoria.service.js';
 
 /** Ocupação reservada desde o despacho até a conclusão/cancelamento.
  * As linhas de veículo são bloqueadas antes de somar as ordens, serializando concorrentes.
  * Quantidades legadas NULL não são interpretadas como um corpo: bloqueiam novas atribuições.
  */
-const s10 = (v: Record<string, unknown>) => v.is_svo === true &&
-  String(v.vinculo) === 'PROPRIO' && String(v.marca).toUpperCase() === 'CHEVROLET' &&
-  /^S10\b/i.test(String(v.modelo)) && Number(v.capacidade_obitos) >= 4;
+const modeloS10 = '^[[:space:]]*(CHEVROLET[[:space:]]+)?S10($|[[:space:]().-])';
 
 function num(valor: unknown): number {
   const n = Number(valor);
@@ -35,6 +34,7 @@ export async function recursosDisponiveisSvo() {
     const impedidos = await motoristasImpedidos(tx, motoristas.map(m => String(m.id)), null);
     const veiculos = await tx`
       SELECT v.id::text AS id, v.placa, v.modelo,
+        ${existeManutencaoBloqueante(tx, tx`v.id`, {tipo: 'DESPACHO_SVO'})} AS manutencao,
         COALESCE(SUM(oc.quantidade_corpos),0)::int AS ocupacao,
         COUNT(*) FILTER (WHERE oc.id IS NOT NULL AND oc.quantidade_corpos IS NULL)::int AS sem_quantidade,
         EXISTS (SELECT 1 FROM public.solicitacao_viagem sv WHERE sv.veiculo_id=v.id
@@ -45,7 +45,7 @@ export async function recursosDisponiveisSvo() {
       FROM public.veiculo v LEFT JOIN public.ordem_coleta oc ON oc.veiculo_id=v.id
         AND oc.status IN ('EM_DESLOCAMENTO','EM_TRANSPORTE')
       WHERE v.is_svo=TRUE AND v.vinculo='PROPRIO' AND UPPER(v.marca)='CHEVROLET'
-        AND v.modelo ILIKE 'S10%' AND v.status='DISPONIVEL' AND v.capacidade_obitos>=4
+        AND v.modelo ~* ${modeloS10} AND v.status='DISPONIVEL' AND v.capacidade_obitos>=4
       GROUP BY v.id, v.placa, v.modelo ORDER BY v.id
     `;
     return {
@@ -53,14 +53,16 @@ export async function recursosDisponiveisSvo() {
       veiculos: veiculos.map(v => ({ id:String(v.id), placa:String(v.placa), modelo:String(v.modelo),
         ocupacao:num(v.ocupacao), capacidade:4 as const,
         disponivel:num(v.sem_quantidade)===0 && num(v.ocupacao)<4 &&
-          !v.reserva_institucional && !v.documento_irregular })),
+          !v.reserva_institucional && !v.documento_irregular && !v.manutencao })),
     };
   });
 }
 
 export async function ocupacaoSvo(id: string) {
   const [v] = await sql`
-    SELECT v.id::text AS id, v.placa, COALESCE(SUM(oc.quantidade_corpos),0)::int AS ocupacao,
+    SELECT v.id::text AS id, v.placa,
+      ${existeManutencaoBloqueante(sql, sql`v.id`, {tipo: 'DESPACHO_SVO'})} AS manutencao,
+      COALESCE(SUM(oc.quantidade_corpos),0)::int AS ocupacao,
       COUNT(*) FILTER (WHERE oc.id IS NOT NULL AND oc.quantidade_corpos IS NULL)::int AS sem_quantidade,
       EXISTS (SELECT 1 FROM public.solicitacao_viagem sv WHERE sv.veiculo_id=v.id
         AND sv.status IN ('AGENDADA','PRONTA_PARA_INICIAR','EM_ANDAMENTO')) AS reserva_institucional,
@@ -70,14 +72,14 @@ export async function ocupacaoSvo(id: string) {
     FROM public.veiculo v LEFT JOIN public.ordem_coleta oc ON oc.veiculo_id=v.id
       AND oc.status IN ('EM_DESLOCAMENTO','EM_TRANSPORTE')
     WHERE v.id=${id}::bigint AND v.is_svo=TRUE AND v.vinculo='PROPRIO'
-      AND UPPER(v.marca)='CHEVROLET' AND v.modelo ILIKE 'S10%'
+      AND UPPER(v.marca)='CHEVROLET' AND v.modelo ~* ${modeloS10}
       AND v.capacidade_obitos>=4 AND v.status='DISPONIVEL'
     GROUP BY v.id, v.placa
   `;
   if (!v) return null;
   return { id:String(v.id), placa:String(v.placa), ocupacao:num(v.ocupacao), capacidade:4 as const,
     disponivel:num(v.sem_quantidade)===0 && num(v.ocupacao)<4 &&
-      !v.reserva_institucional && !v.documento_irregular };
+      !v.reserva_institucional && !v.documento_irregular && !v.manutencao };
 }
 
 export type ResultadoDespachoS7 =
@@ -105,12 +107,14 @@ export async function prepararDespacho(dados: {ordemId:number;motoristaId:number
       WHERE m.id=${dados.motoristaId} FOR UPDATE OF m
     `;
     const [v] = await tx`
-      SELECT id, status, is_svo, vinculo, marca, modelo, capacidade_obitos
+      SELECT id, status,
+        (is_svo IS TRUE AND vinculo='PROPRIO' AND UPPER(marca)='CHEVROLET'
+          AND modelo ~* ${modeloS10} AND capacidade_obitos>=4) AS s10_elegivel
       FROM public.veiculo WHERE id=${dados.veiculoId} FOR UPDATE
     `;
     if (!m || !v) return {tipo:'referencia_inexistente' as const};
     if (m.status!=='DISPONIVEL' || m.cnh_valida!==true || m.usuario_ativo!==true || m.perfil!=='MOTORISTA' ||
-        !s10(v) || v.status!=='DISPONIVEL') return {tipo:'recurso_inelegivel' as const};
+        v.s10_elegivel !== true || v.status!=='DISPONIVEL') return {tipo:'recurso_inelegivel' as const};
     // SCRUM-240: impedimento conhecido no instante do despacho; dado ausente não bloqueia.
     if ((await motoristasImpedidos(tx, [String(dados.motoristaId)], null)).size) return {tipo:'recurso_inelegivel' as const};
     const [documentos] = await tx`
@@ -125,7 +129,8 @@ export async function prepararDespacho(dados: {ordemId:number;motoristaId:number
           AND (sv.motorista_id=${dados.motoristaId} OR sv.veiculo_id=${dados.veiculoId}))
         OR EXISTS (SELECT 1 FROM public.ordem_coleta oc
           WHERE oc.motorista_id=${dados.motoristaId}
-            AND oc.status IN ('EM_DESLOCAMENTO','EM_TRANSPORTE')) AS ocupado
+            AND oc.status IN ('EM_DESLOCAMENTO','EM_TRANSPORTE'))
+        OR ${existeManutencaoBloqueante(tx, String(dados.veiculoId), {tipo: 'DESPACHO_SVO'})} AS ocupado
     `;
     if (conflito.ocupado) return {tipo:'conflito_alocacao' as const};
     const [uso] = await tx`

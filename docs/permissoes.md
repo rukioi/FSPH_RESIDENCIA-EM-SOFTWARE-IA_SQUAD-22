@@ -94,3 +94,11 @@ BE-S8-01: listagem de viagens é exclusiva de ADM/GESTOR_FROTA; detalhes e hist�
 BE-S8-01: a consulta e o download de evidências institucionais permitem ADM, GESTOR_FROTA e MOTORISTA atribuído; evidência ou viagem inacessível retorna 404. A foto operacional obrigatória é enviada somente pelo motorista atribuído, junto ao início ou à conclusão da viagem.
 
 BE-S8-01: corrigir quilometragem de viagem concluída e consultar as versões da correção são ações exclusivas de ADM/GESTOR_FROTA.
+
+
+## Avisos de manutenção
+
+ADM e GESTOR_FROTA ativos são destinatários de alerta preventivo e de
+atraso. Os demais perfis e contas inativas ficam fora. A caixa mantém
+seu escopo por destinatário. A aplicação não recebe DELETE nem TRUNCATE
+em manutencao_alerta_revisao.

@@ -73,6 +73,7 @@ for(const width of [390,768,1280])test(`despacho usa capacidade real e mantém S
   await modal.getByRole('button',{name:'Confirmar despacho',exact:true}).press('Enter')
   await expect(modal).toHaveCount(0)
   await expect.poll(()=>state.recursos).toBeGreaterThan(before)
+  await expect(page.locator('.svo-despacho__tabela tr').filter({hasText:'#OC-7'})).toHaveCount(0)
   const reopened=await abrir(page,'8')
   await expect(reopened.locator('option[value="2"]')).toBeEnabled()
   await expect(reopened.locator('option[value="2"]')).toContainText('1/4')

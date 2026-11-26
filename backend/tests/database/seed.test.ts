@@ -14,6 +14,7 @@ afterAll(async () => { await sql?.end(); });
 const semFixtures = ['abastecimento_comprovante', 'notificacao', 'viagem_correcao', 'viagem_evidencia',
   'anexo', 'documento_historico', 'anotacao', 'escala_motorista', 'indisponibilidade_motorista',
   'habilitacao_categoria_veiculo', 'motorista_transicao_profissional'];
+const manutencaoSemSeed = ['manutencao_veiculo', 'manutencao_veiculo_historico', 'manutencao_alerta_revisao'];
 
 test('duas preparações não duplicam nem modificam fixtures, sequências ou migrations', async () => {
   async function snapshot() {
@@ -27,12 +28,17 @@ test('duas preparações não duplicam nem modificam fixtures, sequências ou mi
       const [pk] = metadata.constraints.find(c => c.table === table.name && c.type === 'p')!.columns;
       records[table.name] = await sql`select to_jsonb(t) as row from ${sql(table.name)} t order by to_jsonb(t)::text`;
       const fixtures = await sql`select ${sql(pk)} from ${sql(table.name)} where ${sql(pk)} between -27099 and -27001`;
-      if (!semFixtures.includes(table.name)) expect(fixtures.length, table.name).toBeGreaterThan(0);
+      if (manutencaoSemSeed.includes(table.name)) expect(records[table.name], table.name).toEqual([]);
+      else if (!semFixtures.includes(table.name)) expect(fixtures.length, table.name).toBeGreaterThan(0);
     }
     records.migrations = await sql`select * from fsph_test_harness.migrations order by name`;
-    for (const sequence of metadata.sequences) {
-      records[sequence.name] = await sql`select last_value::text, is_called from ${sql(sequence.name)}`;
-    }
+    // A inspeção de sequência exige SELECT, fora dos grants mínimos da manutenção.
+    const admin = await verifiedSql(true);
+    try {
+      for (const sequence of metadata.sequences) {
+        records[sequence.name] = await admin`select last_value::text, is_called from ${admin(sequence.name)}`;
+      }
+    } finally { await admin.end(); }
     return JSON.parse(JSON.stringify(records));
   }
   await prepare();

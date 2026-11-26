@@ -1,4 +1,4 @@
-import { ROTAS, lerDetalheSvo, lerRotaSolicitacao, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo, lerRotaMotorista } from '../../app/routes/rotas'
+import { ROTAS, lerRotaManutencao, lerRotaDetalheVeiculo, lerRotaMotorista, lerDetalheSvo, lerRotaSolicitacao, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
   [ROTAS.relatoriosGestor]: ['ADM','GESTOR_FROTA'],
@@ -12,6 +12,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.configuracoes]: ['ADM'],
   [ROTAS.auditoria]: ['ADM'],
   [ROTAS.documentosAdm]: ['ADM'],
+
   [ROTAS.dashboardGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.veiculosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.motoristasGestor]: ['ADM', 'GESTOR_FROTA'],
@@ -22,6 +23,8 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],
   [ROTAS.minhasSolicitacoes]: ['SOLICITANTE_INTERNO'],
   [ROTAS.documentosGestor]: ['ADM', 'GESTOR_FROTA'],
+
+  // Mantida temporariamente para links antigos.
   [ROTAS.svoRaiz]: ['ATENDENTE_SVO'],
   [ROTAS.svoDashboard]: ['ATENDENTE_SVO'],
   [ROTAS.svoSolicitacoes]: ['ATENDENTE_SVO'],
@@ -32,22 +35,47 @@ const perfisPorRota: Record<string, string[]> = {
 
 /** Distingue uma URL inexistente de uma rota conhecida sem permissão. */
 export function rotaConhecida(caminho: string): boolean {
-  if (perfisPorRota[caminho]) return true
-  if (lerRotaMotorista(caminho) !== null) return true
-  if (lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)) return true
-  if (lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)) return true
-  return lerRotaDetalheAbastecimento(caminho) !== null || lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null || lerDetalheSvo(caminho) !== null
+  if (perfisPorRota[caminho] || lerRotaManutencao(caminho) || lerRotaDetalheVeiculo(caminho) !== null || lerRotaMotorista(caminho) !== null) return true
+
+  const solicitacaoGestor = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
+  if (solicitacaoGestor) return true
+
+  const solicitacaoSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)
+  if (solicitacaoSolicitante) return true
+
+  return (
+    lerRotaDetalheAbastecimento(caminho) !== null ||
+    lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null ||
+    lerDetalheSvo(caminho) !== null
+  )
 }
 
-/** Preserva as permissões existentes; o detalhe do motorista herda as da listagem. */
+/** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
-  if (lerRotaMotorista(caminho) !== null) return perfisPorRota[ROTAS.motoristasGestor]?.includes(perfil) ?? false
-  if (lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)) return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false
-  if (lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)) return perfisPorRota[ROTAS.minhasSolicitacoes]?.includes(perfil) ?? false
-  if (lerRotaDetalheAbastecimento(caminho) !== null) return perfisPorRota[ROTAS.abastecimentosGestor]?.includes(perfil) ?? false
-  if (lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null) return perfisPorRota[ROTAS.veiculosGestor]?.includes(perfil) ?? false
+  if (lerRotaMotorista(caminho) !== null) return perfisPorRota[ROTAS.motoristasGestor].includes(perfil);
+  const manutencao = lerRotaManutencao(caminho);
+  if (manutencao) return perfil === (manutencao.base === ROTAS.manutencoesAdm ? 'ADM' : 'GESTOR_FROTA');
+  if (lerRotaDetalheVeiculo(caminho) !== null) return perfisPorRota[ROTAS.veiculosGestor].includes(perfil);
+
+  const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor);
+  if (solicitacao) {
+    return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false;
+  }
+
+  const solicitacaoSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes);
+  if (solicitacaoSolicitante) {
+    return perfisPorRota[ROTAS.minhasSolicitacoes]?.includes(perfil) ?? false;
+  }
+
+  if (lerRotaDetalheAbastecimento(caminho) !== null) {
+    return perfisPorRota[ROTAS.abastecimentosGestor].includes(perfil);
+  }
+  if (lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null) {
+    return perfisPorRota[ROTAS.veiculosGestor].includes(perfil);
+  }
+
   const perfisExatos = perfisPorRota[caminho]
   if (perfisExatos) return perfisExatos.includes(perfil)
   const detalhe = lerDetalheSvo(caminho)
-  return Boolean(detalhe && perfil === (detalhe.tela === 'execucao' ? 'MOTORISTA' : 'ATENDENTE_SVO'))
+  return !!detalhe && perfil === (detalhe.tela === 'execucao' ? 'MOTORISTA' : 'ATENDENTE_SVO')
 }

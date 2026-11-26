@@ -15,7 +15,7 @@ test('reconstrói o snapshot completo auditado, incluindo ACL/RLS e tipos exatos
   expect(metadata).toEqual(expected);
   expect(metadata.tables).toHaveLength(expected.tables.length);
   expect(metadata.columns).toHaveLength(expected.columns.length);
-  expect(metadata.enums).toHaveLength(8);
+  expect(metadata.enums).toHaveLength(10);
   expect(metadata.indexes).toHaveLength(expected.indexes.length);
   expect(metadata.constraints).toHaveLength(expected.constraints.length);
   expect(metadata.triggers).toEqual([]);
@@ -24,7 +24,7 @@ test('reconstrói o snapshot completo auditado, incluindo ACL/RLS e tipos exatos
   const protegidas = ['abastecimento_comprovante','notificacao','viagem_correcao','viagem_evidencia',
     'anexo', 'documento_historico', 'anotacao',
     // SCRUM-219: escala, indisponibilidade, matriz e transição profissional.
-    'escala_motorista', 'indisponibilidade_motorista', 'habilitacao_categoria_veiculo', 'motorista_transicao_profissional'];
+    'escala_motorista', 'indisponibilidade_motorista', 'habilitacao_categoria_veiculo', 'motorista_transicao_profissional', 'manutencao_veiculo', 'manutencao_veiculo_historico', 'manutencao_alerta_revisao'];
   expect(metadata.tables.filter(t=>!protegidas.includes(t.name)).every(t => !t.rls && !t.forceRls)).toBe(true);
   for (const nome of protegidas) expect(metadata.tables.find(t=>t.name===nome)).toMatchObject({rls:true,forceRls:false});
   expect(metadata.constraints.find(c => c.name === 'veiculo_vinculo_check')?.validated).toBe(true);

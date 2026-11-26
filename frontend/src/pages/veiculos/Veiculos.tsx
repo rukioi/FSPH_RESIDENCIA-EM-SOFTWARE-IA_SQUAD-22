@@ -7,6 +7,8 @@ import { buscarVeiculos, cadastrarVeiculo as salvarVeiculo, salvarFotoVeiculo, t
 import type { VeiculoDto } from "../../shared/services/veiculos.service";
 import { VehiclePhoto, VehiclePhotoInput } from './VehiclePhoto';
 import { VehicleDetails } from "./VehicleDetails";
+import { navegar } from '../../app/routes/router';
+import { ROTAS } from '../../app/routes/rotas';
 import { VehicleStatusBadge, vehicleTitle, vehicleTypeLabel, formatarQuilometragem } from "./VehiclePresentation";
 import "./Veiculos.css";
 
@@ -46,7 +48,7 @@ function normalizarStatus(status?: string | null) {
 }
 
 /** Apresenta a frota e confirma alteracoes somente apos resposta validada. */
-export function Veiculos() {
+export function Veiculos({veiculoId,baseManutencoes = ROTAS.manutencoesGestor}: {veiculoId?:string;baseManutencoes?:string} = {}) {
   const {data:veiculos,setData:setVeiculos,loading:carregando,error:erro,retry} = useRemoteData<Veiculo[]>(buscarVeiculos, []);
   const [erroFormulario, setErro] = useState('');
   const [aviso, setAviso] = useState('');
@@ -177,11 +179,21 @@ export function Veiculos() {
     }
   }
 
-  if (veiculoSelecionado) {
+  const selecionado = veiculoId ? veiculos.find(v => v.id === veiculoId) : veiculoSelecionado;
+  if (veiculoId && !selecionado) {
+    return <section className="veiculos-pagina">
+      <button className="btn btn--secundario" type="button" onClick={() => navegar(ROTAS.veiculosGestor)}>Voltar para veículos</button>
+      {carregando ? <p role="status">Carregando veículo...</p>
+        : erro ? <p role="alert">{erro} <button type="button" onClick={retry}>Tentar novamente</button></p>
+        : <p role="alert">Veículo não encontrado.</p>}
+    </section>;
+  }
+  if (selecionado) {
     return (
       <VehicleDetails
-        veiculo={veiculoSelecionado}
-        aoVoltar={() => setVeiculoSelecionado(null)}
+        veiculo={selecionado}
+        baseManutencoes={baseManutencoes}
+        aoVoltar={() => veiculoId ? navegar(ROTAS.veiculosGestor) : setVeiculoSelecionado(null)}
         fotoVersao={fotoVersao}
         aoSalvarFoto={() => setFotoVersao(v => v + 1)}
         aoAtualizar={(atualizado) => {

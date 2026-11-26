@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 
 const mocks=vi.hoisted(()=>({verifiedSql:vi.fn(),events:[] as string[],history:[] as {name:string;sha256:string}[],failure:''}));
-vi.mock('../../src/database/scripts/verify-test-db.js',()=>({root:process.cwd(),verifiedSql:mocks.verifiedSql}));
+vi.mock('../../src/database/scripts/verify-test-db.js',()=>({root:process.cwd(),verifiedSql:mocks.verifiedSql,isS10:false,testProfile:'t1'}));
 import {prepare} from '../../src/database/scripts/apply-test-migrations.js';
 const directory=resolve('backend/src/database/supabase/migrations');
 const migrations=readdirSync(directory).filter(name=>/^\d+_[a-z0-9_-]+\.sql$/.test(name)).sort().map(name=>({
@@ -20,8 +20,14 @@ beforeEach(()=>{
     return query.includes('select name, sha256')?mocks.history:[];
   },{
     unsafe:async(source:string)=>{
-        const migration=migrations.find(item=>item.source===source);
-        const operation=migration?.name??'seed';mocks.events.push(operation);
+        const migration=migrations.find(item=>{
+          const body=item.source.match(/^BEGIN;\s*([\s\S]*?)\s*COMMIT;\s*$/i)?.[1];
+          return (body ?? item.source)===source;
+        });
+        const seed=readFileSync(resolve('backend/src/database/supabase/seed.sql'),'utf8');
+        if (!migration && source!==seed) throw new Error('SQL do runner não reconhecido pelo teste.');
+        const operation=migration?.name??'seed';
+        mocks.events.push(operation);
         if(mocks.failure===operation)throw new Error('Falha sintética');
     },
     release:async()=>{mocks.events.push('release');},

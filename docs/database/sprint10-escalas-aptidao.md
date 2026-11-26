@@ -3,8 +3,8 @@
 Subtarefas: SCRUM-237 (jornada, indisponibilidade e matriz) e SCRUM-238
 (justificativa auditável de inativação/reativação). Bloqueia SCRUM-220/221.
 
-Migration: `backend/src/database/supabase/migrations/20261124000000_db_s10_03_escalas_aptidao_motoristas.sql`
-Rollback manual: `backend/src/database/supabase/rollbacks/20261124000000_db_s10_03_escalas_aptidao_motoristas.sql`
+Migration: `backend/src/database/supabase/migrations/20261124000100_db_s10_03_escalas_aptidao_motoristas.sql`
+Rollback manual: `backend/src/database/supabase/rollbacks/20261124000100_db_s10_03_escalas_aptidao_motoristas.sql`
 Prova: `backend/tests/database/escalas-aptidao-s10.test.ts`
 
 ## O que muda

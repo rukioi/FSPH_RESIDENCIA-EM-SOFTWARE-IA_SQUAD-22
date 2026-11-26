@@ -87,10 +87,10 @@ export function definirModoAdm(ativo: boolean) {
   window.dispatchEvent(new Event(EVENTO))
 }
 
-export function navegar(caminho: string, substituir = false) {
+export function navegar(caminho: string, substituir = false, estado: unknown = null) {
   const destino = enderecoVisivel(caminho)
-  if (substituir) window.history.replaceState(null, '', destino)
-  else window.history.pushState(null, '', destino)
+  if (substituir) window.history.replaceState(estado, '', destino)
+  else window.history.pushState(estado, '', destino)
   window.dispatchEvent(new Event(EVENTO))
 }
 
@@ -131,13 +131,14 @@ type LinkProps = {
   ariaCurrent?: boolean
   title?: string
   ariaLabel?: string
+  estado?: unknown
 }
 
-export function Link({ para, className, children, ariaCurrent, title, ariaLabel }: LinkProps) {
+export function Link({ para, className, children, ariaCurrent, title, ariaLabel, estado }: LinkProps) {
   function aoClicar(e: MouseEvent<HTMLAnchorElement>) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
     e.preventDefault()
-    navegar(para)
+    navegar(para, false, estado)
   }
   return (
     <a
