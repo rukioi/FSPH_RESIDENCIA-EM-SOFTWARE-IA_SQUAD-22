@@ -35,6 +35,8 @@ jobs:
       - run: npm run db:test:prepare
       - name: Ensaiar backup e restauração no PostgreSQL isolado
         run: npm run db:test:restore
+      - name: Ensaiar upgrade e recuperação de dados legados
+        run: npm run db:test:upgrade
       - run: npm run db:docs:check
       - run: npm run test:db
       - run: npm run api:check

@@ -24,12 +24,12 @@ interface Inspection {
 }
 
 /** Executa comandos locais sem shell e sem herdar URLs/segredos de banco. */
-export function command(file: string, args: string[]) {
+export function command(file: string, args: string[], input?: string) {
   const env = { ...process.env };
   for (const key of Object.keys(env)) {
     if (/^(DATABASE_URL|PG|SUPABASE_)/i.test(key)) delete env[key];
   }
-  return execFileSync(file, args, { cwd: root, encoding: 'utf8', env, stdio: ['pipe', 'pipe', 'pipe'] });
+  return execFileSync(file, args, { cwd: root, encoding: 'utf8', env, input, stdio: ['pipe', 'pipe', 'pipe'] });
 }
 
 /** Consulta somente identidade, labels e porta; nunca lê ambiente do container. */
