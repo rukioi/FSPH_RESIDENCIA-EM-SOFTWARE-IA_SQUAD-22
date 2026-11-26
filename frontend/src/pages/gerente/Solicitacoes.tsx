@@ -1,14 +1,13 @@
-import { DatePicker } from '../../shared/components/DatePicker';
-import { Select } from '../../shared/components/Select';
+import { DatePicker } from '../../shared/components/DatePicker'
+import { Select } from '../../shared/components/Select'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { navegar } from '../../app/routes/router'
-import { ROTAS, rotaSolicitacao } from '../../app/routes/rotas'
+import { ROTAS, rotaSolicitacao, rotaAprovarSolicitacao } from '../../app/routes/rotas'
 import { IconeGestor as Icone } from '../../shared/components/IconeGestor'
 import { Paginacao, usePaginacao } from '../../shared/components/Paginacao'
 import {
   listarSolicitacoes,
-  aprovarSolicitacao,
   rejeitarSolicitacao,
 } from '../../shared/services/solicitacoes.service'
 import { STATUS, formatarData } from '../../features/solicitacoes/regras'
@@ -17,6 +16,11 @@ import { StatusSolicitacao } from '../../features/solicitacoes/StatusSolicitacao
 import '../../features/solicitacoes/solicitacoes.css'
 
 const BASE = ROTAS.solicitacoesGestor
+
+type ItemSolicitacaoApi = Awaited<ReturnType<typeof listarSolicitacoes>>['data'][number] & {
+  viagem?: { status?: string | null } | null
+  viagemStatus?: string | null
+}
 
 type SolicitacaoGestor = {
   id: string
@@ -42,12 +46,25 @@ function converterStatus(status: string | null): Status {
     case 'PRONTA_PARA_INICIAR':
       return 'Agendada'
     case 'EM_ANDAMENTO':
+    case 'EM_TRANSPORTE':
       return 'Em andamento'
     case 'CONCLUIDA':
       return 'Concluída'
     default:
       return 'Não informado'
   }
+}
+
+function obterStatusSincronizado(item: ItemSolicitacaoApi): Status {
+  const statusViagem = item.viagem?.status ?? item.viagemStatus ?? null
+  if (
+    statusViagem === 'EM_ANDAMENTO' ||
+    statusViagem === 'EM_TRANSPORTE' ||
+    statusViagem === 'CONCLUIDA'
+  ) {
+    return converterStatus(statusViagem)
+  }
+  return converterStatus(item.status)
 }
 
 function converterDataHora(dataHora: string) {
@@ -66,14 +83,16 @@ export function Solicitacoes() {
   const [atualizacao, setAtualizacao] = useState(0)
   const geracao = useRef(0)
 
-  // Busca todas as páginas disponibilizadas pelo backend.
+  // Busca todas as páginas disponibilizadas pelo backend e mantém sincronizado.
   useEffect(() => {
     let ativo = true
-    const consulta = ++geracao.current
 
-    async function carregar() {
+    async function carregar(silencioso = false) {
+      const consulta = ++geracao.current
       try {
-        setCarregando(true)
+        if (!silencioso) {
+          setCarregando(true)
+        }
         setErro('')
 
         const primeiraPagina = await listarSolicitacoes({
@@ -81,7 +100,7 @@ export function Solicitacoes() {
           limit: 100,
         })
 
-        const resultados = [...primeiraPagina.data]
+        const resultados: ItemSolicitacaoApi[] = [...primeiraPagina.data]
 
         const totalPaginas = Math.ceil(
           primeiraPagina.meta.total / primeiraPagina.meta.limit,
@@ -108,7 +127,7 @@ export function Solicitacoes() {
             horario,
             origem: item.origem,
             destino: item.destino,
-            status: converterStatus(item.status),
+            status: obterStatusSincronizado(item),
           }
         })
 
@@ -116,7 +135,7 @@ export function Solicitacoes() {
           setLista(convertidas)
         }
       } catch (erroApi) {
-        if (ativo && consulta === geracao.current) {
+        if (ativo && consulta === geracao.current && !silencioso) {
           setErro(
             erroApi instanceof Error
               ? erroApi.message
@@ -124,16 +143,30 @@ export function Solicitacoes() {
           )
         }
       } finally {
-        if (ativo && consulta === geracao.current) {
+        if (ativo && consulta === geracao.current && !silencioso) {
           setCarregando(false)
         }
       }
     }
 
-    void carregar()
+    void carregar(false)
+
+    const sincronizarEmSegundoPlano = () => {
+      if (document.visibilityState === 'visible') {
+        void carregar(true)
+      }
+    }
+
+    window.addEventListener('focus', sincronizarEmSegundoPlano)
+    document.addEventListener('visibilitychange', sincronizarEmSegundoPlano)
+
+    const intervalo = window.setInterval(sincronizarEmSegundoPlano, 10000)
 
     return () => {
       ativo = false
+      window.removeEventListener('focus', sincronizarEmSegundoPlano)
+      document.removeEventListener('visibilitychange', sincronizarEmSegundoPlano)
+      window.clearInterval(intervalo)
     }
   }, [atualizacao])
 
@@ -157,22 +190,19 @@ export function Solicitacoes() {
 
   const pag = usePaginacao(filtradas, 8)
 
-  async function analisar(id: string, novoStatus: 'aprovar' | 'rejeitar') {
-    let motivo = ''
+  // A aprovação agora acontece na tela de escolha de veículo e motorista.
+  async function rejeitar(id: string) {
+    const resposta = window.prompt(
+      'Informe a justificativa para rejeitar esta solicitação:',
+    )
 
-    if (novoStatus === 'rejeitar') {
-      const resposta = window.prompt(
-        'Informe a justificativa para rejeitar esta solicitação:',
-      )
+    if (resposta === null) return
 
-      if (resposta === null) return
+    const motivo = resposta.trim()
 
-      motivo = resposta.trim()
-
-      if (!motivo) {
-        setAviso('A justificativa é obrigatória para rejeitar uma solicitação.')
-        return
-      }
+    if (!motivo) {
+      setAviso('A justificativa é obrigatória para rejeitar uma solicitação.')
+      return
     }
 
     if (processandoId) return
@@ -182,16 +212,11 @@ export function Solicitacoes() {
       setErro('')
       setAviso('')
 
-      if (novoStatus === 'aprovar') {
-        await aprovarSolicitacao(id)
-        setAviso(`Solicitação #${id} aprovada com sucesso.`)
-      } else {
-        await rejeitarSolicitacao(id, motivo)
-        setAviso(`Solicitação #${id} rejeitada com sucesso.`)
-      }
+      await rejeitarSolicitacao(id, motivo)
+      setAviso(`Solicitação #${id} rejeitada com sucesso.`)
 
       setLista((atual) => atual.map((item) => item.id === id
-        ? { ...item, status: novoStatus === 'aprovar' ? 'Aprovada' : 'Recusada' }
+        ? { ...item, status: 'Recusada' }
         : item))
       // Atualiza a lista com o estado confirmado pelo backend.
       setAtualizacao((valor) => valor + 1)
@@ -215,6 +240,16 @@ export function Solicitacoes() {
           <p className="pagina__descricao">
             Analise, aprove e acompanhe todo o ciclo das solicitações de transporte.
           </p>
+        </div>
+
+        <div className="pagina__acoes">
+          <button
+            type="button"
+            className="btn btn--primario"
+            onClick={() => navegar(ROTAS.novaSolicitacao)}
+          >
+            <span aria-hidden="true">+</span> Nova solicitação
+          </button>
         </div>
       </div>
 
@@ -359,7 +394,7 @@ export function Solicitacoes() {
                                 aria-label={`Aprovar #${s.codigo}`}
                                 title="Aprovar"
                                 disabled={Boolean(processandoId)}
-                                onClick={() => void analisar(s.id, 'aprovar')}
+                                onClick={() => navegar(rotaAprovarSolicitacao(s.id))}
                               >
                                 <Icone nome="check" tamanho={18} />
                               </button>
@@ -370,11 +405,24 @@ export function Solicitacoes() {
                                 aria-label={`Rejeitar #${s.codigo}`}
                                 title="Rejeitar"
                                 disabled={Boolean(processandoId)}
-                                onClick={() => void analisar(s.id, 'rejeitar')}
+                                onClick={() => void rejeitar(s.id)}
                               >
                                 <Icone nome="fechar" tamanho={18} />
                               </button>
                             </>
+                          )}
+
+                          {/* Aprovada sem veículo/motorista: permite concluir o agendamento */}
+                          {s.status === 'Aprovada' && (
+                            <button
+                              type="button"
+                              className="sol-acao sol-acao--aprovar"
+                              aria-label={`Escolher veículo e motorista para #${s.codigo}`}
+                              title="Escolher veículo e motorista"
+                              onClick={() => navegar(rotaAprovarSolicitacao(s.id))}
+                            >
+                              <Icone nome="calendario" tamanho={18} />
+                            </button>
                           )}
 
                           {(s.status === 'Pendente' || s.status === 'Aprovada') && (

@@ -1,4 +1,11 @@
-import { ROTAS, lerDetalheSvo, lerRotaSolicitacao, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo, lerRotaMotorista } from '../../app/routes/rotas'
+import {
+  ROTAS,
+  lerDetalheSvo,
+  lerRotaSolicitacao,
+  lerRotaAprovarSolicitacao,
+  lerRotaDetalheAbastecimento,
+  lerRotaHistoricoAbastecimentosVeiculo,
+} from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
   [ROTAS.relatoriosGestor]: ['ADM','GESTOR_FROTA'],
@@ -19,7 +26,7 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.indicadoresAbastecimentosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.solicitacoesGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.calendarioGestor]: ['ADM', 'GESTOR_FROTA'],
-  [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO'],
+  [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO', 'ADM', 'GESTOR_FROTA'],
   [ROTAS.minhasSolicitacoes]: ['SOLICITANTE_INTERNO'],
   [ROTAS.documentosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.svoRaiz]: ['ATENDENTE_SVO'],
@@ -33,21 +40,49 @@ const perfisPorRota: Record<string, string[]> = {
 /** Distingue uma URL inexistente de uma rota conhecida sem permissão. */
 export function rotaConhecida(caminho: string): boolean {
   if (perfisPorRota[caminho]) return true
-  if (lerRotaMotorista(caminho) !== null) return true
-  if (lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)) return true
-  if (lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)) return true
-  return lerRotaDetalheAbastecimento(caminho) !== null || lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null || lerDetalheSvo(caminho) !== null
+
+  // Novo: tela de aprovação "/gestor/solicitacoes/:id/aprovar"
+  if (lerRotaAprovarSolicitacao(caminho) !== null) return true
+
+  const solicitacaoGestor = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
+  if (solicitacaoGestor) return true
+
+  const solicitacaoSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)
+  if (solicitacaoSolicitante) return true
+
+  return (
+    lerRotaDetalheAbastecimento(caminho) !== null ||
+    lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null ||
+    lerDetalheSvo(caminho) !== null
+  )
 }
 
 /** Preserva as permissões existentes; o detalhe do motorista herda as da listagem. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
-  if (lerRotaMotorista(caminho) !== null) return perfisPorRota[ROTAS.motoristasGestor]?.includes(perfil) ?? false
-  if (lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)) return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false
-  if (lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes)) return perfisPorRota[ROTAS.minhasSolicitacoes]?.includes(perfil) ?? false
-  if (lerRotaDetalheAbastecimento(caminho) !== null) return perfisPorRota[ROTAS.abastecimentosGestor]?.includes(perfil) ?? false
-  if (lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null) return perfisPorRota[ROTAS.veiculosGestor]?.includes(perfil) ?? false
+  // Novo: aprovação segue as mesmas permissões da lista de solicitações do gestor
+  if (lerRotaAprovarSolicitacao(caminho) !== null) {
+    return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false;
+  }
+
+  const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor);
+  if (solicitacao) {
+    return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false;
+  }
+
+  const solicitacaoSolicitante = lerRotaSolicitacao(caminho, ROTAS.minhasSolicitacoes);
+  if (solicitacaoSolicitante) {
+    return perfisPorRota[ROTAS.minhasSolicitacoes]?.includes(perfil) ?? false;
+  }
+
+  if (lerRotaDetalheAbastecimento(caminho) !== null) {
+    return perfisPorRota[ROTAS.abastecimentosGestor].includes(perfil);
+  }
+  if (lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null) {
+    return perfisPorRota[ROTAS.veiculosGestor].includes(perfil);
+  }
+
   const perfisExatos = perfisPorRota[caminho]
   if (perfisExatos) return perfisExatos.includes(perfil)
   const detalhe = lerDetalheSvo(caminho)
-  return Boolean(detalhe && perfil === (detalhe.tela === 'execucao' ? 'MOTORISTA' : 'ATENDENTE_SVO'))
+  return !!detalhe && perfil === (detalhe.tela === 'execucao' ? 'MOTORISTA' : 'ATENDENTE_SVO')
 }

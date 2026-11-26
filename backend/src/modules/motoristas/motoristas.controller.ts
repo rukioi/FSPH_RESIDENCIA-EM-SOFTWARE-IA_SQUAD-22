@@ -118,7 +118,7 @@ function tratarErro(
   return enviarErro(res, 500, 'ERRO_INTERNO', mensagem);
 }
 
-/** Lista os motoristas cadastrados. */
+/** Lista os motoristas cadastrados, com o e-mail do usuário vinculado quando houver. */
 export async function listarMotoristas(
   _req: IncomingMessage,
   res: ServerResponse,
@@ -126,14 +126,17 @@ export async function listarMotoristas(
 ) {
   try {
     const motoristas = await sql`
-      SELECT * FROM motorista ORDER BY id DESC
+      SELECT m.*, u.email
+      FROM motorista m
+      LEFT JOIN usuario u ON u.id = m.usuario_id
+      ORDER BY m.id DESC
     `;
 
     const dados = perfil === 'ATENDENTE_SVO'
       ? motoristas.map((motorista) =>
           Object.fromEntries(
             Object.entries(motorista).filter(
-              ([campo]) => campo !== 'cpf' && campo !== 'telefone',
+              ([campo]) => campo !== 'cpf' && campo !== 'telefone' && campo !== 'email',
             ),
           ),
         )
@@ -145,7 +148,7 @@ enviarJson(res, 200, dados);
   }
 }
 
-/** Cadastra um motorista após validar seus dados. */
+/** Cadastra um motorista após validar seus dados e, se informado, vincula o usuário pelo e-mail. */
 export async function criarMotorista(
   req: IncomingMessage,
   res: ServerResponse,
@@ -171,6 +174,7 @@ export async function criarMotorista(
       status,
       cpf,
       telefone,
+      email,
     } = body;
 
     if (
@@ -284,6 +288,70 @@ export async function criarMotorista(
       }
     }
 
+    let usuarioId: string | null = null;
+    let emailVinculado: string | null = null;
+
+    if (email !== undefined && email !== null && email !== '') {
+      if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return enviarErro(
+          res,
+          400,
+          'EMAIL_INVALIDO',
+          'Informe um e-mail válido.',
+        );
+      }
+
+      const [usuario] = await sql`
+        SELECT id, email, perfil, ativo
+        FROM usuario
+        WHERE LOWER(email) = LOWER(${email.trim()})
+        LIMIT 1
+      `;
+
+      if (!usuario) {
+        return enviarErro(
+          res,
+          404,
+          'USUARIO_NAO_ENCONTRADO',
+          'Nenhum usuário com este e-mail. Crie-o antes em Administração › Usuários com perfil Motorista.',
+        );
+      }
+
+      if (usuario.perfil !== 'MOTORISTA') {
+        return enviarErro(
+          res,
+          400,
+          'PERFIL_INVALIDO',
+          'O usuário deste e-mail precisa ter o perfil Motorista.',
+        );
+      }
+
+      if (!usuario.ativo) {
+        return enviarErro(
+          res,
+          400,
+          'USUARIO_INATIVO',
+          'O usuário deste e-mail está inativo.',
+        );
+      }
+
+      const [jaVinculado] = await sql`
+        SELECT id FROM motorista WHERE usuario_id = ${usuario.id}
+      `;
+
+      if (jaVinculado) {
+        return enviarErro(
+          res,
+          409,
+          'USUARIO_JA_VINCULADO',
+          'Este e-mail já está vinculado a outro motorista.',
+        );
+      }
+
+      usuarioId = String(usuario.id);
+      emailVinculado = usuario.email;
+    }
+
     const novo = await sql.begin(async tx => {
       const [row] = await tx`
       INSERT INTO motorista (
@@ -293,7 +361,8 @@ export async function criarMotorista(
         validade_cnh,
         status,
         cpf,
-        telefone
+        telefone,
+        usuario_id
       )
       VALUES (
         ${nome},
@@ -302,7 +371,8 @@ export async function criarMotorista(
         ${validade_cnh},
         ${statusOp},
         ${cpfNormalizado},
-        ${telefoneNormalizado}
+        ${telefoneNormalizado},
+        ${usuarioId}
       )
       RETURNING *
     `;
@@ -310,7 +380,7 @@ export async function criarMotorista(
       await registrarVersaoDocumental(tx, 'CNH_MOTORISTA', row.id, autorId);
       return row;
     });
-    enviarJson(res, 201, novo);
+    enviarJson(res, 201, { ...novo, email: emailVinculado });
   } catch (err) {
     tratarErro(res, err, 'Falha ao cadastrar motorista.');
   }
