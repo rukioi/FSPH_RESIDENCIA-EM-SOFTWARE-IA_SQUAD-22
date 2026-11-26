@@ -1,0 +1,39 @@
+/* Extensão isolada: fonte herdada, mesmos tokens e tamanhos da tela recebida. */
+.md-area { min-width: 0; padding: 20px 0; border-block: 1px solid var(--borda); color: var(--texto); }
+.md-area h2 { margin: 0; font-size: 14px; font-weight: 700; }
+.md-area h3 { margin: 0; font-size: 14px; }
+.md-topo, .md-acoes, .md-paginacao, .md-registro-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.md-topo p, .md-ajuda, .md-dados, .md-vazio { color: var(--texto-suave); font-size: 13px; line-height: 1.6; }
+.md-topo p { margin: 6px 0; }
+.md-acoes { justify-content: flex-start; }
+.md-botao { min-height: 40px; height: auto; white-space: normal; line-height: 1.3; padding-block: 10px; }
+.md-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.md-tabs [aria-pressed="true"] { background: var(--azul-escuro); color: var(--branco); }
+.md-filtros, .md-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.md-filtros { margin-block: 16px; align-items: end; }
+.md-campo { display: grid; min-width: 0; gap: 6px; font-size: 13px; }
+.md-campo input, .md-campo select, .md-campo textarea { width: 100%; min-width: 0; min-height: 42px; border: 1px solid var(--borda); border-radius: 7px; padding: 9px 11px; background: var(--branco); color: var(--texto); font: inherit; font-size: 14px; }
+.md-campo textarea { resize: vertical; min-height: 112px; }
+.md-campo--inteiro { grid-column: 1 / -1; }
+.md-registros { list-style: none; padding: 0; margin: 0; }
+.md-registro { padding: 18px 0; border-bottom: 1px solid var(--borda); overflow-wrap: anywhere; }
+.md-registro p { margin-top: 6px; font-size: 13px; line-height: 1.6; }
+.md-motivo { white-space: pre-wrap; }
+.md-paginacao { padding-top: 16px; font-size: 13px; }
+.md-aviso { padding: 12px; margin-block: 12px; border-left: 3px solid var(--atencao-borda); color: var(--atencao-texto); background: var(--atencao-fundo); font-size: 13px; line-height: 1.6; }
+.md-erro { padding: 12px; margin-block: 12px; border-left: 3px solid var(--perigo-borda); color: var(--perigo-texto); background: var(--perigo-fundo); font-size: 14px; }
+.md-status { margin-block: 12px; font-size: 13px; line-height: 1.6; }
+.md-dialog-host { width: min(560px, calc(100% - 24px)); max-height: calc(100dvh - 24px); margin: auto; padding: 0; border: 0; border-radius: 14px; background: var(--branco); color: var(--texto); overflow: auto; }
+.md-dialog-host::backdrop { background: var(--azul-escuro); opacity: .52; }
+.md-dialog-host .motorista-modal { width: 100%; max-height: none; }
+.md-dialog-conteudo { padding: 26px; }
+.md-dialog-conteudo h2 { font-size: 22px; font-weight: 700; margin: 0 0 16px; }
+.md-dialog-conteudo .md-acoes { justify-content: flex-end; margin-top: 20px; }
+.md-botao:focus-visible, .md-campo :is(input,select,textarea):focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+.motorista-card__menu-wrap > .motorista-card__menu { width: 210px; }
+.motorista-card__menu .motorista-card__menu-item { min-height: 40px; }
+@media (max-width: 620px) { .md-filtros, .md-form { grid-template-columns: minmax(0, 1fr); } .md-dialog-conteudo { padding: 22px 18px; } .md-topo, .md-registro-topo { align-items: flex-start; } .md-paginacao .md-acoes { width: 100%; } }
+
+.md-fieldset { border: 0; padding: 0; margin: 16px 0 0; min-width: 0; }
+
+.md-dialog-host .motorista-modal__fechar { min-width: 40px; min-height: 40px; }
