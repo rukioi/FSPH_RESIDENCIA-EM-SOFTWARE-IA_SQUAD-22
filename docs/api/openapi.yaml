@@ -16614,6 +16614,10 @@ components:
           type:
             - string
             - "null"
+        email:
+          type:
+            - string
+            - "null"
       required:
         - id
         - usuario_id
@@ -16623,7 +16627,7 @@ components:
         - validade_cnh
         - status
         - criado_em
-      description: CPF/telefone ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
+      description: CPF/telefone/e-mail ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
     Motoristas:
       type: object
       properties:
@@ -16673,6 +16677,10 @@ components:
                 type:
                   - string
                   - "null"
+              email:
+                type:
+                  - string
+                  - "null"
             required:
               - id
               - usuario_id
@@ -16682,7 +16690,7 @@ components:
               - validade_cnh
               - status
               - criado_em
-            description: CPF/telefone ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
+            description: CPF/telefone/e-mail ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
       required:
         - data
     RespostaMotorista:
@@ -16732,6 +16740,10 @@ components:
               type:
                 - string
                 - "null"
+            email:
+              type:
+                - string
+                - "null"
           required:
             - id
             - usuario_id
@@ -16741,7 +16753,7 @@ components:
             - validade_cnh
             - status
             - criado_em
-          description: CPF/telefone ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
+          description: CPF/telefone/e-mail ausentes na consulta de ATENDENTE_SVO; demais perfis recebem esses campos.
       required:
         - data
     CriarMotorista:
@@ -16781,12 +16793,18 @@ components:
           type:
             - string
             - "null"
+        email:
+          anyOf:
+            - type: string
+              format: email
+              pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+            - type: "null"
       required:
         - nome
         - cnh
         - categoria_cnh
         - validade_cnh
-      description: "Legado não aplicado como validador HTTP: controller valida data de calendário, dígitos CPF/telefone, normaliza CPF/telefone e trim da CNH; não há validação uniforme de campos extras."
+      description: "Legado não aplicado como validador HTTP: controller valida data de calendário, dígitos CPF/telefone, normaliza CPF/telefone e trim da CNH; e-mail opcional vincula um usuário MOTORISTA existente."
     EditarMotorista:
       type: object
       properties:
@@ -16822,6 +16840,12 @@ components:
           type:
             - string
             - "null"
+        email:
+          anyOf:
+            - type: string
+              format: email
+              pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+            - type: "null"
     CriarEscalaMotorista:
       type: object
       properties:
@@ -21120,23 +21144,31 @@ components:
       type: object
       properties:
         inicio:
-          type: string
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
-          allOf:
-            - not:
-                pattern: ^0000-
-            - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+              allOf:
+                - not:
+                    pattern: ^0000-
+                - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         fim:
-          type: string
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
-          allOf:
-            - not:
-                pattern: ^0000-
-            - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+              allOf:
+                - not:
+                    pattern: ^0000-
+                - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         page:
           type: string
           pattern: ^[1-9][0-9]*$
@@ -21151,23 +21183,31 @@ components:
       type: object
       properties:
         inicio:
-          type: string
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
-          allOf:
-            - not:
-                pattern: ^0000-
-            - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+              allOf:
+                - not:
+                    pattern: ^0000-
+                - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         fim:
-          type: string
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-          description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
-          allOf:
-            - not:
-                pattern: ^0000-
-            - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              description: ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+              allOf:
+                - not:
+                    pattern: ^0000-
+                - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
       required:
         - inicio
         - fim
@@ -21328,11 +21368,17 @@ components:
                 type: object
                 properties:
                   id:
-                    type: string
-                    pattern: ^-?\d+$
-                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                    anyOf:
+                      - type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      - type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
                   nome:
-                    type: string
+                    type:
+                      - string
+                      - "null"
                 required:
                   - id
                   - nome
@@ -21342,13 +21388,21 @@ components:
                 type: object
                 properties:
                   id:
-                    type: string
-                    pattern: ^-?\d+$
-                    description: BIGINT serializado pelo postgres como string; não converter para Number.
+                    anyOf:
+                      - type: string
+                        pattern: ^-?\d+$
+                        description: BIGINT serializado pelo postgres como string; não converter para Number.
+                      - type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
                   placa:
-                    type: string
+                    type:
+                      - string
+                      - "null"
                   modelo:
-                    type: string
+                    type:
+                      - string
+                      - "null"
                 required:
                   - id
                   - placa
