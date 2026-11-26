@@ -209,9 +209,10 @@ async function buildEvidenciaArquivo(dataUrl: string, fallbackName: string) {
     img.src = dataUrl;
   });
 
+  const controlCharsRegex = new RegExp("[\\x00-\\x1f\\x7f]", "g");
   const cleanName = fallbackName
     .replace(/[/\\]/g, "_")
-    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .replace(controlCharsRegex, "")
     .replace(/\.[^.]+$/, ".jpg")
     .trim() || "odometro.jpg";
 
