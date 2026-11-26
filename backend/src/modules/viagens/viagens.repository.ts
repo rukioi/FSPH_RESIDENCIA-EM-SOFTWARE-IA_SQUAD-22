@@ -1,4 +1,5 @@
 import type postgres from 'postgres';
+import { manutencaoImpedeInicioViagem } from '../alocacao/manutencao-disponibilidade.js';
 import { inserirVersaoEvidencia } from './viagens.evidencias.repository.js';
 import type { evidenciaArquivoSchema } from './viagens.evidencias.schemas.js';
 import { registrarAtividades } from '../auditoria/auditoria.service.js';
@@ -70,14 +71,15 @@ export async function executarViagem(id:string, usuarioId:string, acao:'iniciar'
     if (!pedido || !pedido.motorista_id || !pedido.veiculo_id) throw new ErroHttp(409,'ESTADO_INCOMPATIVEL','Solicitação sem recursos válidos.');
     const [motorista] = await tx`SELECT id FROM public.motorista WHERE id=${pedido.motorista_id} AND usuario_id=${usuarioId} FOR UPDATE`;
     if (!motorista) throw new ErroHttp(404,'NAO_ENCONTRADO','Viagem n\u00e3o encontrada.');
-    const [veiculo] = await tx`SELECT quilometragem_atual FROM public.veiculo WHERE id=${pedido.veiculo_id} FOR UPDATE`;
+    const [veiculo] = await tx`SELECT quilometragem_atual,status FROM public.veiculo WHERE id=${pedido.veiculo_id} FOR UPDATE`;
     const [viagem] = await tx`SELECT status,motorista_id::text,veiculo_id::text,km_inicial FROM public.viagem WHERE id=${id} AND solicitacao_id=${referencia.solicitacao_id} FOR UPDATE`;
     if (!veiculo || !viagem || viagem.motorista_id!==pedido.motorista_id || viagem.veiculo_id!==pedido.veiculo_id) throw new ErroHttp(409,'ESTADO_INCOMPATIVEL','Recursos da viagem incompatíveis.');
     if (acao==='iniciar' ? viagem.status!=='AGENDADA' || !['AGENDADA','PRONTA_PARA_INICIAR'].includes(pedido.status) : viagem.status!=='EM_TRANSPORTE' || pedido.status!=='EM_ANDAMENTO') throw new ErroHttp(409,'ESTADO_INCOMPATIVEL','A viagem não está no estado esperado.');
     if ((veiculo.quilometragem_atual != null && km < veiculo.quilometragem_atual) || (acao==='concluir' && (viagem.km_inicial==null || km < viagem.km_inicial))) throw new ErroHttp(400,'QUILOMETRAGEM_INVALIDA','Quilometragem inferior à registrada.');
     if (acao==='iniciar') {
       const [ocupado] = await tx`SELECT EXISTS (SELECT 1 FROM public.ordem_coleta WHERE status IN ('EM_DESLOCAMENTO','EM_TRANSPORTE') AND (motorista_id=${pedido.motorista_id} OR veiculo_id=${pedido.veiculo_id})) OR EXISTS (SELECT 1 FROM public.solicitacao_viagem WHERE id<>${referencia.solicitacao_id} AND status='EM_ANDAMENTO' AND (motorista_id=${pedido.motorista_id} OR veiculo_id=${pedido.veiculo_id})) AS conflito`;
-      if (ocupado.conflito) throw new ErroHttp(409,'CONFLITO_ALOCACAO','Recurso em uso por outra operação.');
+      if (veiculo.status !== 'DISPONIVEL' || ocupado.conflito ||
+          await manutencaoImpedeInicioViagem(tx, pedido.veiculo_id, referencia.solicitacao_id)) throw new ErroHttp(409,'CONFLITO_ALOCACAO','Recurso em uso por outra operação.');
     }
     const [row] = acao==='iniciar' ? await tx`UPDATE public.viagem SET status='EM_TRANSPORTE',km_inicial=${km},data_inicio=clock_timestamp() AT TIME ZONE 'America/Maceio' WHERE id=${id} RETURNING id::text,status,km_inicial AS "kmInicial",km_final AS "kmFinal",to_char(data_inicio,'YYYY-MM-DD"T"HH24:MI:SS.US')||'-03:00' AS "dataInicio",NULL::text AS "dataFim"` : await tx`UPDATE public.viagem SET status='CONCLUIDA',km_final=${km},data_fim=clock_timestamp() AT TIME ZONE 'America/Maceio' WHERE id=${id} RETURNING id::text,status,km_inicial AS "kmInicial",km_final AS "kmFinal",to_char(data_inicio,'YYYY-MM-DD"T"HH24:MI:SS.US')||'-03:00' AS "dataInicio",to_char(data_fim,'YYYY-MM-DD"T"HH24:MI:SS.US')||'-03:00' AS "dataFim"`;
     await tx`UPDATE public.solicitacao_viagem SET status=${acao==='iniciar'?'EM_ANDAMENTO':'CONCLUIDA'}::public.status_solicitacao WHERE id=${referencia.solicitacao_id}`;

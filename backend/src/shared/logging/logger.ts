@@ -20,3 +20,10 @@ export function registrarEvento(evento: Evento, codigo?: string): void {
   };
   console.error(JSON.stringify(registro));
 }
+
+/** Registra apenas contadores operacionais, sem dados de ocorrências ou destinatários. */
+export function registrarExecucaoParcialManutencao(
+  { emitidas, falhas, adiadas, restantes }: { emitidas: number; falhas: number; adiadas: number; restantes: boolean },
+): void {
+  console.error(JSON.stringify({ event: 'maintenance_alerts_partial', emitidas, falhas, adiadas, restantes }));
+}

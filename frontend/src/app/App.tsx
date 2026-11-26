@@ -13,6 +13,9 @@ import {
   lerRotaDetalheAbastecimento,
   lerRotaHistoricoAbastecimentosVeiculo,
   lerRotaSolicitacao,
+  lerRotaManutencao,
+  lerRotaDetalheVeiculo,
+  baseManutencoes,
 } from "./routes/rotas";
 import { AuthSkeleton } from "./AuthSkeleton";
 
@@ -86,6 +89,10 @@ const DocumentosGestor = lazy(() =>
     default: module.DocumentosGestor,
   })),
 );
+
+const Manutencoes = lazy(() => import("../pages/manutencoes/Manutencoes").then(module => ({
+  default: module.Manutencoes,
+})));
 
 const Veiculos = lazy(() =>
   import("../pages/veiculos/Veiculos").then((module) => ({
@@ -526,6 +533,25 @@ function AppContent({
   }
 
   // Veículos
+  const manutencao = lerRotaManutencao(caminho);
+  if (manutencao) {
+    return (
+      <LayoutOperacional usuario={sessao}>
+        <Manutencoes key={JSON.stringify([caminho, obterToken(), sessao.id, sessao.perfil])} {...manutencao} />
+      </LayoutOperacional>
+    );
+  }
+
+  const veiculoId = lerRotaDetalheVeiculo(caminho);
+  if (veiculoId !== null) {
+    return (
+      <LayoutOperacional usuario={sessao}>
+        <Veiculos key={JSON.stringify([veiculoId, obterToken(), sessao.id, sessao.perfil])}
+          veiculoId={veiculoId} baseManutencoes={baseManutencoes(sessao.perfil)} />
+      </LayoutOperacional>
+    );
+  }
+
   if (caminho === ROTAS.veiculosGestor) {
     return (
       <LayoutOperacional usuario={sessao}>
@@ -536,7 +562,7 @@ function AppContent({
           Relatório de veículos
         </Link>
 
-        <Veiculos />
+        <Veiculos baseManutencoes={baseManutencoes(sessao.perfil)} />
       </LayoutOperacional>
     );
   }

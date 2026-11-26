@@ -138,3 +138,15 @@ paginação conserva campos legados documentados pela #32. Histórico anterior p
 nas descrições; não houve limpeza/backfill nem anonimização retroativa.
 As duas FKs foram preservadas; retenção/imutabilidade, política de exclusão,
 novos eventos e auditoria avançada exigem tarefa própria.
+
+
+## Revisões de alerta de manutenção
+
+A tabela de revisões usa RLS e revoga o acesso direto de PUBLIC, anon,
+authenticated e service_role. No PostgreSQL isolado o runtime postgres
+recebe SELECT, INSERT e UPDATE, com BYPASSRLS do harness. O papel
+compartilhado segue pendente de confirmação; um runtime diferente,
+sem BYPASSRLS, precisa de grants e policies explícitos. A prova usa papel
+sintético sem BYPASSRLS, verifica ACL efetiva e recusa DELETE e TRUNCATE.
+O consumidor mantém a ordem de locks ocorrência → revisões → destinatários,
+sem lock de veículo após a ocorrência.

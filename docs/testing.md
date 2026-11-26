@@ -436,3 +436,47 @@ A decisão RF40 adotada exige litragem e valor total positivos, com no máximo d
 Valores com precisão superior são rejeitados pela API, mesmo que o PostgreSQL pudesse arredondá-los ao armazenar em `numeric(10,2)`.
 
 Essa regra deve permanecer consistente entre API, testes e documentação.
+
+## PostgreSQL da worktree de integração da Sprint 10
+
+Os perfis s10-integracao-clean, s10-integracao-upgrade e
+s10-integracao-rollback usam PostgreSQL 17, com portas 55520, 55521 e
+55522 em 127.0.0.1, respectivamente. Cada perfil tem container,
+volume e rede fsph-<perfil>-2026. O banco usa o nome do perfil com
+prefixo fsph_ e underscores no lugar de hífens.
+
+Selecionar por FSPH_TEST_PROFILE e provisionar com
+npm run db:test:s10:provision. O manifesto é vinculado à worktree.
+O harness exige Docker local, imagem, container, labels, rede, volume,
+porta e nome do banco compatíveis e valida o marcador antes de retornar
+uma conexão. Os perfis originais mantêm suas próprias identidades.
+
+Usar db:test:prepare e fixtures sintéticas no clean. Para o upgrade,
+aplicar primeiro com --through=20261114000000, inserir fixtures legadas
+sintéticas e aplicar o restante da cadeia. As provas que exercitam
+scripts de rollback pertencem exclusivamente ao ambiente descartável
+s10-integracao-rollback. Capturas e traces não fazem parte desta validação.
+
+
+## Notificações de manutenção — SCRUM-234
+
+Usar exclusivamente s10-integracao-fresh, s10-integracao-clean, s10-integracao-upgrade e
+s10-integracao-rollback, após verificação do harness. O clean executa
+as provas de ACL, revisão e concorrência. O upgrade compara catálogo
+e registros 16→17. Reversões físicas são provadas somente no rollback,
+em transação que descarta as fixtures. Os casos de rollback das SCRUM-231
+e SCRUM-232 pertencem à cadeia anterior e ficam filtrados com a FK nova.
+Preservar as evidências anteriores. O emissor é ativado nas provas
+com MANUTENCAO_ALERTAS_ATIVOS=true, sem capturas.
+
+O perfil fixo s10-integracao-fresh usa 127.0.0.1:55523 e o banco
+fsph_s10_integracao_fresh. Confirme o catálogo vazio após provisionar,
+execute db:test:prepare com --no-seed, verifique o schema e repita o
+runner antes de carregar fixtures pelo comando oficial. As provas de
+rollback físico continuam reservadas ao perfil de rollback.
+
+
+## Interface de indicadores de manutenção
+
+Consultar [SCRUM-236](./testing-scrum-236.md) para execução local, roteiro
+manual e checklist integrado da Sprint 10.

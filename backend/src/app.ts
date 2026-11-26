@@ -1,3 +1,5 @@
+import { criarRotaManutencoes } from './modules/manutencoes/manutencoes.routes.js';
+import { guardarDisponibilidadeManutencao } from './modules/alocacao/manutencao-disponibilidade.js';
 import { anexosRoute } from './modules/anexos/anexos.routes.js';
 import { anotacoesRoute } from './modules/anotacoes/anotacoes.routes.js';
 import { createServer, type ServerResponse } from 'node:http';
@@ -26,7 +28,7 @@ export function isolarFalhaDaRequisicao(response: ServerResponse, operacao: Prom
   void operacao.catch((erro: unknown) => tratarErroTecnico(response, erro));
 }
 
-const handlers = { anotacoes: anotacoesRoute, anexos: anexosRoute, relatorios: relatoriosRoute, notificacoes: notificacoesRoute, auth: authRoute, usuarios: usuariosRoute, auditoria: auditoriaRoute,
+const handlers = { manutencoes: criarRotaManutencoes(guardarDisponibilidadeManutencao), anotacoes: anotacoesRoute, anexos: anexosRoute, relatorios: relatoriosRoute, notificacoes: notificacoesRoute, auth: authRoute, usuarios: usuariosRoute, auditoria: auditoriaRoute,
   dashboard: dashboardRoute, svo: svoRoute, veiculos: veiculosRoute, motoristas: motoristasRoute,
   abastecimentos: abastecimentosRoute, documentos: documentosRoute, solicitacoes: solicitacoesRoute, viagens: viagensRoute };
 const rotas = operations.map(operation => ({ path: routePattern(operation),

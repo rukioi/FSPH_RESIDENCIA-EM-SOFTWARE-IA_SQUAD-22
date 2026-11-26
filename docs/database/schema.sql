@@ -4,6 +4,8 @@
 SET search_path = public, pg_catalog;
 CREATE TYPE public."perfil_usuario" AS ENUM ('ADM', 'GESTOR_FROTA', 'SOLICITANTE_INTERNO', 'MOTORISTA', 'ATENDENTE_SVO');
 ALTER TYPE public."perfil_usuario" OWNER TO "postgres";
+CREATE TYPE public."status_manutencao_veiculo" AS ENUM ('AGENDADA', 'EM_ANDAMENTO', 'CONCLUIDA', 'CANCELADA');
+ALTER TYPE public."status_manutencao_veiculo" OWNER TO "supabase_admin";
 CREATE TYPE public."status_motorista" AS ENUM ('DISPONIVEL', 'EM_VIAGEM', 'FOLGA', 'AFASTADO');
 ALTER TYPE public."status_motorista" OWNER TO "postgres";
 CREATE TYPE public."status_ordem_coleta" AS ENUM ('PENDENTE_ALOCACAO', 'EM_DESLOCAMENTO', 'EM_TRANSPORTE', 'CONCLUIDA', 'CANCELADA');
@@ -16,6 +18,8 @@ CREATE TYPE public."status_veiculo" AS ENUM ('DISPONIVEL', 'EM_VIAGEM', 'EM_MANU
 ALTER TYPE public."status_veiculo" OWNER TO "postgres";
 CREATE TYPE public."status_viagem" AS ENUM ('AGENDADA', 'EM_TRANSPORTE', 'CONCLUIDA', 'CANCELADA');
 ALTER TYPE public."status_viagem" OWNER TO "postgres";
+CREATE TYPE public."tipo_manutencao_veiculo" AS ENUM ('PREVENTIVA', 'CORRETIVA');
+ALTER TYPE public."tipo_manutencao_veiculo" OWNER TO "supabase_admin";
 CREATE TYPE public."tipo_veiculo" AS ENUM ('PASSEIO', 'VAN', 'AMBULANCIA', 'RABECÃO_SVO');
 ALTER TYPE public."tipo_veiculo" OWNER TO "postgres";
 CREATE SEQUENCE public."abastecimento_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
@@ -36,6 +40,10 @@ CREATE SEQUENCE public."indisponibilidade_motorista_id_seq" AS bigint INCREMENT 
 ALTER SEQUENCE public."indisponibilidade_motorista_id_seq" OWNER TO "supabase_admin";
 CREATE SEQUENCE public."log_atividade_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
 ALTER SEQUENCE public."log_atividade_id_seq" OWNER TO "postgres";
+CREATE SEQUENCE public."manutencao_veiculo_historico_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
+ALTER SEQUENCE public."manutencao_veiculo_historico_id_seq" OWNER TO "supabase_admin";
+CREATE SEQUENCE public."manutencao_veiculo_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
+ALTER SEQUENCE public."manutencao_veiculo_id_seq" OWNER TO "supabase_admin";
 CREATE SEQUENCE public."motorista_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
 ALTER SEQUENCE public."motorista_id_seq" OWNER TO "postgres";
 CREATE SEQUENCE public."motorista_transicao_profissional_id_seq" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE;
@@ -186,6 +194,53 @@ CREATE TABLE public."log_atividade" (
   "tipo_evento" text
 );
 ALTER TABLE public."log_atividade" OWNER TO "postgres";
+CREATE TABLE public."manutencao_alerta_revisao" (
+  "manutencao_id" bigint NOT NULL,
+  "alerta" text NOT NULL,
+  "revisao" bigint DEFAULT 1 NOT NULL
+);
+ALTER TABLE public."manutencao_alerta_revisao" OWNER TO "supabase_admin";
+CREATE TABLE public."manutencao_veiculo" (
+  "id" bigint DEFAULT nextval('manutencao_veiculo_id_seq'::regclass) NOT NULL,
+  "veiculo_id" bigint NOT NULL,
+  "tipo" tipo_manutencao_veiculo NOT NULL,
+  "descricao" text NOT NULL,
+  "entrada_em" timestamp with time zone NOT NULL,
+  "conclusao_prevista_em" timestamp with time zone NOT NULL,
+  "iniciada_em" timestamp with time zone,
+  "concluida_em" timestamp with time zone,
+  "cancelada_em" timestamp with time zone,
+  "quilometragem" integer NOT NULL,
+  "custo" numeric,
+  "prestador" text,
+  "observacoes" text,
+  "status" status_manutencao_veiculo NOT NULL,
+  "criado_por_id" bigint NOT NULL,
+  "atualizado_por_id" bigint NOT NULL,
+  "criado_em" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  "atualizado_em" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+ALTER TABLE public."manutencao_veiculo" OWNER TO "supabase_admin";
+CREATE TABLE public."manutencao_veiculo_historico" (
+  "id" bigint DEFAULT nextval('manutencao_veiculo_historico_id_seq'::regclass) NOT NULL,
+  "manutencao_id" bigint NOT NULL,
+  "evento" text NOT NULL,
+  "status_anterior" status_manutencao_veiculo NOT NULL,
+  "status_posterior" status_manutencao_veiculo NOT NULL,
+  "anterior_entrada_em" timestamp with time zone NOT NULL,
+  "anterior_conclusao_prevista_em" timestamp with time zone NOT NULL,
+  "anterior_iniciada_em" timestamp with time zone,
+  "anterior_concluida_em" timestamp with time zone,
+  "posterior_entrada_em" timestamp with time zone NOT NULL,
+  "posterior_conclusao_prevista_em" timestamp with time zone NOT NULL,
+  "posterior_iniciada_em" timestamp with time zone,
+  "posterior_concluida_em" timestamp with time zone,
+  "autor_id" bigint NOT NULL,
+  "registrado_em" timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+  "anterior_cancelada_em" timestamp with time zone,
+  "posterior_cancelada_em" timestamp with time zone
+);
+ALTER TABLE public."manutencao_veiculo_historico" OWNER TO "supabase_admin";
 CREATE TABLE public."motorista" (
   "id" bigint DEFAULT nextval('motorista_id_seq'::regclass) NOT NULL,
   "usuario_id" bigint,
@@ -355,6 +410,8 @@ ALTER SEQUENCE public."escala_motorista_id_seq" OWNED BY public."escala_motorist
 ALTER SEQUENCE public."habilitacao_categoria_veiculo_id_seq" OWNED BY public."habilitacao_categoria_veiculo"."id";
 ALTER SEQUENCE public."indisponibilidade_motorista_id_seq" OWNED BY public."indisponibilidade_motorista"."id";
 ALTER SEQUENCE public."log_atividade_id_seq" OWNED BY public."log_atividade"."id";
+ALTER SEQUENCE public."manutencao_veiculo_historico_id_seq" OWNED BY public."manutencao_veiculo_historico"."id";
+ALTER SEQUENCE public."manutencao_veiculo_id_seq" OWNED BY public."manutencao_veiculo"."id";
 ALTER SEQUENCE public."motorista_id_seq" OWNED BY public."motorista"."id";
 ALTER SEQUENCE public."motorista_transicao_profissional_id_seq" OWNED BY public."motorista_transicao_profissional"."id";
 ALTER SEQUENCE public."notificacao_id_seq" OWNED BY public."notificacao"."id";
@@ -412,6 +469,35 @@ ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilida
 ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_sem_sobreposicao" EXCLUDE USING gist (int8range(motorista_id, motorista_id, '[]'::text) WITH =, tstzrange(inicio, fim, '[)'::text) WITH &&) WHERE (estado = 'VIGENTE'::text);
 ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilidade_motorista_tipo_check" CHECK (tipo = ANY (ARRAY['FOLGA'::text, 'AFASTADO'::text]));
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_pkey" PRIMARY KEY (id);
+ALTER TABLE public."manutencao_alerta_revisao" ADD CONSTRAINT "manutencao_alerta_revisao_alerta_check" CHECK (alerta = ANY (ARRAY['PREVENTIVA_PROXIMA'::text, 'ATRASO'::text]));
+ALTER TABLE public."manutencao_alerta_revisao" ADD CONSTRAINT "manutencao_alerta_revisao_pk" PRIMARY KEY (manutencao_id, alerta);
+ALTER TABLE public."manutencao_alerta_revisao" ADD CONSTRAINT "manutencao_alerta_revisao_revisao_check" CHECK (revisao > 0);
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_custo_check" CHECK (custo IS NULL OR custo >= 0::numeric AND custo < 'Infinity'::numeric);
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_descricao_check" CHECK (char_length(btrim(descricao)) >= 1 AND char_length(btrim(descricao)) <= 2000);
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_dias_check" CHECK (
+CASE
+    WHEN isfinite(entrada_em) AND isfinite(conclusao_prevista_em) THEN (entrada_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND (conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND conclusao_prevista_em >= entrada_em
+    ELSE false
+END);
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_estado_check" CHECK (status = 'AGENDADA'::status_manutencao_veiculo AND iniciada_em IS NULL AND concluida_em IS NULL AND cancelada_em IS NULL OR status = 'EM_ANDAMENTO'::status_manutencao_veiculo AND iniciada_em IS NOT NULL AND concluida_em IS NULL AND cancelada_em IS NULL OR status = 'CONCLUIDA'::status_manutencao_veiculo AND iniciada_em IS NOT NULL AND concluida_em IS NOT NULL AND cancelada_em IS NULL OR status = 'CANCELADA'::status_manutencao_veiculo AND iniciada_em IS NULL AND concluida_em IS NULL AND cancelada_em IS NOT NULL);
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_instantes_check" CHECK ((iniciada_em IS NULL OR isfinite(iniciada_em)) AND (concluida_em IS NULL OR isfinite(concluida_em) AND concluida_em >= iniciada_em) AND (cancelada_em IS NULL OR isfinite(cancelada_em)) AND isfinite(criado_em) AND isfinite(atualizado_em) AND atualizado_em >= criado_em);
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_observacoes_check" CHECK (char_length(btrim(observacoes)) >= 1 AND char_length(btrim(observacoes)) <= 2000);
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_pkey" PRIMARY KEY (id);
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_prestador_check" CHECK (char_length(btrim(prestador)) >= 1 AND char_length(btrim(prestador)) <= 255);
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_quilometragem_check" CHECK (quilometragem >= 0);
+ALTER TABLE public."manutencao_veiculo_historico" ADD CONSTRAINT "manutencao_veiculo_historico_dias_check" CHECK (
+CASE
+    WHEN isfinite(anterior_entrada_em) AND isfinite(anterior_conclusao_prevista_em) THEN (anterior_entrada_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND (anterior_conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND anterior_conclusao_prevista_em >= anterior_entrada_em
+    ELSE false
+END AND
+CASE
+    WHEN isfinite(posterior_entrada_em) AND isfinite(posterior_conclusao_prevista_em) THEN (posterior_entrada_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND (posterior_conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND posterior_conclusao_prevista_em >= posterior_entrada_em
+    ELSE false
+END);
+ALTER TABLE public."manutencao_veiculo_historico" ADD CONSTRAINT "manutencao_veiculo_historico_estado_check" CHECK ((anterior_iniciada_em IS NOT NULL) = (status_anterior = ANY (ARRAY['EM_ANDAMENTO'::status_manutencao_veiculo, 'CONCLUIDA'::status_manutencao_veiculo])) AND (anterior_concluida_em IS NOT NULL) = (status_anterior = 'CONCLUIDA'::status_manutencao_veiculo) AND (anterior_cancelada_em IS NOT NULL) = (status_anterior = 'CANCELADA'::status_manutencao_veiculo) AND (posterior_iniciada_em IS NOT NULL) = (status_posterior = ANY (ARRAY['EM_ANDAMENTO'::status_manutencao_veiculo, 'CONCLUIDA'::status_manutencao_veiculo])) AND (posterior_concluida_em IS NOT NULL) = (status_posterior = 'CONCLUIDA'::status_manutencao_veiculo) AND (posterior_cancelada_em IS NOT NULL) = (status_posterior = 'CANCELADA'::status_manutencao_veiculo));
+ALTER TABLE public."manutencao_veiculo_historico" ADD CONSTRAINT "manutencao_veiculo_historico_evento_check" CHECK (evento = 'CONCLUSAO'::text AND status_anterior = 'EM_ANDAMENTO'::status_manutencao_veiculo AND status_posterior = 'CONCLUIDA'::status_manutencao_veiculo OR evento = 'CORRECAO_DATAS'::text AND status_anterior = 'CONCLUIDA'::status_manutencao_veiculo AND status_posterior = 'CONCLUIDA'::status_manutencao_veiculo OR evento = 'REABERTURA'::text AND status_anterior = 'CONCLUIDA'::status_manutencao_veiculo AND (status_posterior = ANY (ARRAY['AGENDADA'::status_manutencao_veiculo, 'EM_ANDAMENTO'::status_manutencao_veiculo])) OR evento = 'CANCELAMENTO'::text AND status_anterior = 'AGENDADA'::status_manutencao_veiculo AND status_posterior = 'CANCELADA'::status_manutencao_veiculo OR evento = 'REATIVACAO'::text AND status_anterior = 'CANCELADA'::status_manutencao_veiculo AND (status_posterior = ANY (ARRAY['AGENDADA'::status_manutencao_veiculo, 'EM_ANDAMENTO'::status_manutencao_veiculo])));
+ALTER TABLE public."manutencao_veiculo_historico" ADD CONSTRAINT "manutencao_veiculo_historico_instantes_check" CHECK (isfinite(registrado_em) AND (anterior_iniciada_em IS NULL OR isfinite(anterior_iniciada_em)) AND (anterior_concluida_em IS NULL OR isfinite(anterior_concluida_em) AND anterior_concluida_em >= anterior_iniciada_em) AND (anterior_cancelada_em IS NULL OR isfinite(anterior_cancelada_em)) AND (posterior_iniciada_em IS NULL OR isfinite(posterior_iniciada_em)) AND (posterior_concluida_em IS NULL OR isfinite(posterior_concluida_em) AND posterior_concluida_em >= posterior_iniciada_em) AND (posterior_cancelada_em IS NULL OR isfinite(posterior_cancelada_em)));
+ALTER TABLE public."manutencao_veiculo_historico" ADD CONSTRAINT "manutencao_veiculo_historico_pkey" PRIMARY KEY (id);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_cnh_key" UNIQUE (cnh);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_cpf_key" UNIQUE (cpf);
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_pkey" PRIMARY KEY (id);
@@ -498,6 +584,12 @@ ALTER TABLE public."indisponibilidade_motorista" ADD CONSTRAINT "indisponibilida
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "fk_log_atividade_usuario" FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL;
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_solicitacao_viagem_id_fkey" FOREIGN KEY (solicitacao_viagem_id) REFERENCES solicitacao_viagem(id);
 ALTER TABLE public."log_atividade" ADD CONSTRAINT "log_atividade_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuario(id);
+ALTER TABLE public."manutencao_alerta_revisao" ADD CONSTRAINT "manutencao_alerta_revisao_manutencao_fk" FOREIGN KEY (manutencao_id) REFERENCES manutencao_veiculo(id) ON DELETE RESTRICT;
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_atualizado_por_id_fkey" FOREIGN KEY (atualizado_por_id) REFERENCES usuario(id) ON DELETE RESTRICT;
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_criado_por_id_fkey" FOREIGN KEY (criado_por_id) REFERENCES usuario(id) ON DELETE RESTRICT;
+ALTER TABLE public."manutencao_veiculo" ADD CONSTRAINT "manutencao_veiculo_veiculo_id_fkey" FOREIGN KEY (veiculo_id) REFERENCES veiculo(id) ON DELETE RESTRICT;
+ALTER TABLE public."manutencao_veiculo_historico" ADD CONSTRAINT "manutencao_veiculo_historico_autor_id_fkey" FOREIGN KEY (autor_id) REFERENCES usuario(id) ON DELETE RESTRICT;
+ALTER TABLE public."manutencao_veiculo_historico" ADD CONSTRAINT "manutencao_veiculo_historico_manutencao_id_fkey" FOREIGN KEY (manutencao_id) REFERENCES manutencao_veiculo(id) ON DELETE RESTRICT;
 ALTER TABLE public."motorista" ADD CONSTRAINT "motorista_usuario_id_fkey" FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE;
 ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_anterior_fk" FOREIGN KEY (motorista_id, versao_anterior) REFERENCES motorista_transicao_profissional(motorista_id, versao);
 ALTER TABLE public."motorista_transicao_profissional" ADD CONSTRAINT "motorista_transicao_profissional_autor_id_fkey" FOREIGN KEY (autor_id) REFERENCES usuario(id);
@@ -540,6 +632,11 @@ CREATE INDEX documento_veiculo_vencimento_idx ON public.documento_veiculo USING 
 CREATE INDEX escala_motorista_motorista_idx ON public.escala_motorista USING btree (motorista_id, inicio, id);
 CREATE INDEX indisponibilidade_motorista_motorista_idx ON public.indisponibilidade_motorista USING btree (motorista_id, inicio, id);
 CREATE INDEX idx_log_atividade_solicitacao_viagem_id ON public.log_atividade USING btree (solicitacao_viagem_id);
+CREATE INDEX manutencao_veiculo_bloqueios_idx ON public.manutencao_veiculo USING btree (veiculo_id, status, entrada_em) INCLUDE (conclusao_prevista_em, iniciada_em) WHERE (status = ANY (ARRAY['AGENDADA'::status_manutencao_veiculo, 'EM_ANDAMENTO'::status_manutencao_veiculo]));
+CREATE INDEX manutencao_veiculo_periodo_idx ON public.manutencao_veiculo USING btree (entrada_em DESC, id DESC);
+CREATE INDEX manutencao_veiculo_por_veiculo_idx ON public.manutencao_veiculo USING btree (veiculo_id, entrada_em DESC, id DESC);
+CREATE INDEX manutencao_veiculo_status_previsao_idx ON public.manutencao_veiculo USING btree (status, conclusao_prevista_em, id);
+CREATE INDEX manutencao_veiculo_historico_ocorrencia_idx ON public.manutencao_veiculo_historico USING btree (manutencao_id, registrado_em DESC, id DESC);
 CREATE INDEX motorista_validade_cnh_idx ON public.motorista USING btree (validade_cnh, id);
 CREATE INDEX notificacao_caixa_idx ON public.notificacao USING btree (usuario_id, criado_em DESC, id DESC);
 CREATE INDEX notificacao_nao_lida_idx ON public.notificacao USING btree (usuario_id) WHERE (lida_em IS NULL);
@@ -811,6 +908,47 @@ GRANT TRUNCATE ON TABLE public."log_atividade" TO "service_role";
 GRANT REFERENCES ON TABLE public."log_atividade" TO "service_role";
 GRANT TRIGGER ON TABLE public."log_atividade" TO "service_role";
 GRANT MAINTAIN ON TABLE public."log_atividade" TO "service_role";
+ALTER TABLE public."manutencao_alerta_revisao" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."manutencao_alerta_revisao" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."manutencao_alerta_revisao" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."manutencao_alerta_revisao" TO "postgres";
+GRANT SELECT ON TABLE public."manutencao_alerta_revisao" TO "postgres";
+GRANT UPDATE ON TABLE public."manutencao_alerta_revisao" TO "postgres";
+GRANT INSERT ON TABLE public."manutencao_alerta_revisao" TO "supabase_admin";
+GRANT SELECT ON TABLE public."manutencao_alerta_revisao" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."manutencao_alerta_revisao" TO "supabase_admin";
+GRANT DELETE ON TABLE public."manutencao_alerta_revisao" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."manutencao_alerta_revisao" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."manutencao_alerta_revisao" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."manutencao_alerta_revisao" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."manutencao_alerta_revisao" TO "supabase_admin";
+ALTER TABLE public."manutencao_veiculo" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."manutencao_veiculo" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."manutencao_veiculo" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."manutencao_veiculo" TO "postgres";
+GRANT SELECT ON TABLE public."manutencao_veiculo" TO "postgres";
+GRANT UPDATE ON TABLE public."manutencao_veiculo" TO "postgres";
+GRANT INSERT ON TABLE public."manutencao_veiculo" TO "supabase_admin";
+GRANT SELECT ON TABLE public."manutencao_veiculo" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."manutencao_veiculo" TO "supabase_admin";
+GRANT DELETE ON TABLE public."manutencao_veiculo" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."manutencao_veiculo" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."manutencao_veiculo" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."manutencao_veiculo" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."manutencao_veiculo" TO "supabase_admin";
+ALTER TABLE public."manutencao_veiculo_historico" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public."manutencao_veiculo_historico" NO FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public."manutencao_veiculo_historico" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT INSERT ON TABLE public."manutencao_veiculo_historico" TO "postgres";
+GRANT SELECT ON TABLE public."manutencao_veiculo_historico" TO "postgres";
+GRANT INSERT ON TABLE public."manutencao_veiculo_historico" TO "supabase_admin";
+GRANT SELECT ON TABLE public."manutencao_veiculo_historico" TO "supabase_admin";
+GRANT UPDATE ON TABLE public."manutencao_veiculo_historico" TO "supabase_admin";
+GRANT DELETE ON TABLE public."manutencao_veiculo_historico" TO "supabase_admin";
+GRANT TRUNCATE ON TABLE public."manutencao_veiculo_historico" TO "supabase_admin";
+GRANT REFERENCES ON TABLE public."manutencao_veiculo_historico" TO "supabase_admin";
+GRANT TRIGGER ON TABLE public."manutencao_veiculo_historico" TO "supabase_admin";
+GRANT MAINTAIN ON TABLE public."manutencao_veiculo_historico" TO "supabase_admin";
 ALTER TABLE public."motorista" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public."motorista" NO FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public."motorista" FROM PUBLIC, postgres, anon, authenticated, service_role;
@@ -1245,6 +1383,16 @@ GRANT USAGE ON SEQUENCE public."log_atividade_id_seq" TO "postgres";
 GRANT SELECT ON SEQUENCE public."log_atividade_id_seq" TO "service_role";
 GRANT UPDATE ON SEQUENCE public."log_atividade_id_seq" TO "service_role";
 GRANT USAGE ON SEQUENCE public."log_atividade_id_seq" TO "service_role";
+REVOKE ALL ON SEQUENCE public."manutencao_veiculo_historico_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT USAGE ON SEQUENCE public."manutencao_veiculo_historico_id_seq" TO "postgres";
+GRANT SELECT ON SEQUENCE public."manutencao_veiculo_historico_id_seq" TO "supabase_admin";
+GRANT UPDATE ON SEQUENCE public."manutencao_veiculo_historico_id_seq" TO "supabase_admin";
+GRANT USAGE ON SEQUENCE public."manutencao_veiculo_historico_id_seq" TO "supabase_admin";
+REVOKE ALL ON SEQUENCE public."manutencao_veiculo_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
+GRANT USAGE ON SEQUENCE public."manutencao_veiculo_id_seq" TO "postgres";
+GRANT SELECT ON SEQUENCE public."manutencao_veiculo_id_seq" TO "supabase_admin";
+GRANT UPDATE ON SEQUENCE public."manutencao_veiculo_id_seq" TO "supabase_admin";
+GRANT USAGE ON SEQUENCE public."manutencao_veiculo_id_seq" TO "supabase_admin";
 REVOKE ALL ON SEQUENCE public."motorista_id_seq" FROM PUBLIC, postgres, anon, authenticated, service_role;
 GRANT SELECT ON SEQUENCE public."motorista_id_seq" TO "anon";
 GRANT UPDATE ON SEQUENCE public."motorista_id_seq" TO "anon";

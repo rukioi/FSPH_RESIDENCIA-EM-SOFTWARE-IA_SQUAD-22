@@ -239,3 +239,39 @@ Ambiente, provas e limites estão em
 
 O [inventário de convergência de arquivos](./sprint10-convergencia-arquivos.md)
 registra o mapeamento do legado e as condições para o piloto da Sprint 10.
+
+## Sprint 10 — Especificação de manutenção (SCRUM-230)
+
+A [especificação do modelo de manutenção](./sprint10-manutencao-veiculo.md)
+registra as propostas e pendências de homologação para DB-S10-02-A.
+
+## Sprint 10 — Histórico de cancelamento e reativação (SCRUM-232)
+
+A [evolução incremental](./sprint10-manutencao-cancelamento-reativacao.md)
+documenta o upgrade da SCRUM-231 nos perfis S10, a preservação de histórico,
+ACL e RLS, e as provas de rollback. O `s10-clean` partiu das 15 versões já
+aplicadas. O schema, o DER e os metadados foram regenerados pelo harness
+após o avanço desse alvo para a versão 16.
+
+
+### SCRUM-234 — Revisão de alertas
+
+A migration 20261124000000 cria a revisão por ocorrência e tipo de alerta.
+Os 16 arquivos anteriores e seus rollbacks são preservados. O runner
+isolado mantém o corpo da migration e o checksum na mesma transação.
+O rollback correspondente é conservador e recusa se houver uma revisão
+ou um aviso da nova família. Em rollback de aplicação, preservar a tabela
+e desativar o emissor, seguindo os [procedimentos da caixa](../api/notificacoes.md).
+
+### Cadeia consolidada da Sprint 10
+
+A cadeia atual tem 18 migrations. As três versões de manutenção foram
+preservadas, incluindo a correção da FK em 20261124000000. A migration de
+Escalas e o rollback foram renumerados para 20261124000100, com conteúdo
+SQL preservado.
+
+No Supabase compartilhado, a aplicação manual registrou 18 versões,
+24 tabelas públicas e zero constraints ou índices inválidos, conforme a
+conferência do responsável. Os scripts de rollback foram mantidos sem
+execução nesse ambiente. A candidata confirmou a instalação limpa e o
+`db:docs:check` no perfil local `s10-candidata-clean`, porta 55527.

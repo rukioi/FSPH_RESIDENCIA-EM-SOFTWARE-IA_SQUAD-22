@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ifMatchManutencao, manutencaoId } from '../../modules/manutencoes/manutencoes.schemas.js';
 import { operations, schemas, possuiValidacaoRuntime } from './registry.js';
 
 /** Gera OpenAPI 3.1 exclusivamente dos schemas puros, sem importar aplicação, ambiente ou pool. */
@@ -12,10 +13,19 @@ export function openapi() {
   const paths: Record<string, Record<string, unknown>> = {};
   for (const operation of operations) {
     const parameters: unknown[] = (operation.query ?? []).map(q=>({name:q.name,in:'query',required:q.required,schema:z.toJSONSchema(q.schema)}));
-    if (operation.path.includes('{id}')) parameters.push({name:'id',in:'path',required:true,schema:{type:'string',pattern:operation.modulo==='viagens'?'^-?[0-9]+$':'^[0-9]+$'},description:'Identificador no caminho atual; limites numéricos variam por módulo.'});
+    if (operation.path.includes('{id}')) parameters.push({name:'id',in:'path',required:true,schema:operation.modulo==='manutencoes'?z.toJSONSchema(manutencaoId):{type:'string',pattern:operation.modulo==='viagens'?'^-?[0-9]+$':'^[0-9]+$'},description:'Identificador no caminho atual; limites numéricos variam por módulo.'});
     if (operation.path.includes('{registroId}')) parameters.push({name:'registroId',in:'path',required:true,schema:{type:'string',pattern:'^[0-9]+$'},description:'Identificador do registro do motorista no caminho.'});
     const response = (name: string, description: string) => ({ description, headers: {'X-Request-Id':{description:'UUID gerado pelo servidor; IDs recebidos não são confiados.',schema:{type:'string',format:'uuid'}}}, content:{'application/json':{schema:ref(name)}} });
     const responses: Record<string, unknown> = { [operation.status]: response(operation.response,'Sucesso no formato atual') };
+    if (operation.modulo === 'manutencoes') {
+      if (operation.method === 'patch') parameters.push({
+        name: 'If-Match', in: 'header', required: true, schema: z.toJSONSchema(ifMatchManutencao),
+        description: 'Versão retornada no detalhe. Ausente ou inválida: 400. Desatualizada: 409.',
+      });
+      const headers = (responses[operation.status] as {headers: Record<string,unknown>}).headers;
+      if (operation.response === 'RespostaManutencao') headers.ETag = {schema: {type:'string'}, description:'Versão opaca retornada também em data.versao.'};
+      if (operation.method === 'post') headers.Location = {schema: {type:'string'}, description:'Caminho da ocorrência após criação e commit.'};
+    }
     if (['ComprovanteAbastecimento','EvidenciaArquivo'].includes(operation.response)) {
       (responses[operation.status] as {content: unknown}).content = { 'image/jpeg': {schema:{type:'string',format:'binary'}}, 'image/png': {schema:{type:'string',format:'binary'}} };
     }
@@ -29,6 +39,16 @@ export function openapi() {
     responses[405] = { ...response('Erro','Método não permitido antes da autenticação'), headers:{Allow:{schema:{type:'string'}},'X-Request-Id':{schema:{type:'string'}}} };
     if (operation.errors.includes(429)) (responses[429] as {headers: Record<string,unknown>}).headers['Retry-After'] = {schema:{type:'string'},description:'Segundos até nova tentativa.'};
     const content: Record<string,unknown> = operation.body ? {'application/json':{schema:ref(operation.body)}} : {};
+    if (operation.modulo === 'manutencoes' && operation.body) {
+      const examples = {
+        CadastroManutencao: { veiculoId: '-27003', tipo: 'CORRETIVA', descricao: 'Serviço sintético',
+          entrada: '2026-12-10', conclusaoPrevista: '2026-12-10', quilometragem: 0, custo: null },
+        EditarManutencao: { custo: '0.00' },
+        TransicaoManutencao: { acao: 'REATIVAR', destino: 'AGENDADA', alteracoes: { entrada: '2026-12-10' } },
+      };
+      const example = examples[operation.body as keyof typeof examples];
+      content['application/json'] = {schema: ref(operation.body), example};
+    }
     if (operation.modulo === 'documentos' && operation.body) content['multipart/form-data'] = {schema:{allOf:[ref(operation.body),{type:'object',properties:{arquivo:{type:'string',format:'binary'}},required:['arquivo']}]}};
     if (operation.multipart && operation.body) {
       delete content['application/json'];

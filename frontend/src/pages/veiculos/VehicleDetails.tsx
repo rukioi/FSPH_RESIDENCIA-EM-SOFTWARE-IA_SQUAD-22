@@ -10,6 +10,7 @@ import { VehiclePhoto, VehiclePhotoInput } from './VehiclePhoto';
 import { salvarFotoVeiculo, type FotoVeiculo } from '../../shared/services/veiculos.service';
 import { VehicleStatusBadge, vehicleTitle, vehicleTypeLabel, formatarQuilometragem } from './VehiclePresentation';
 import { Anotacoes } from '../../shared/components/Anotacoes';
+import { ManutencoesVeiculo } from '../manutencoes/Manutencoes';
 import './VehicleDetails.css';
 
 function campo(valor: string | number | null | undefined) {
@@ -21,10 +22,11 @@ function data(valor: string | null) {
 }
 
 /** Apresenta os dados reais do veículo e as consultas disponíveis para a gestão da frota. */
-export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar, fotoVersao, aoSalvarFoto }: {
+export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar, fotoVersao, aoSalvarFoto, baseManutencoes = ROTAS.manutencoesGestor }: {
   veiculo: VeiculoDto;
   aoVoltar: () => void;
   fotoVersao: number;
+  baseManutencoes?: string;
   aoSalvarFoto: () => void;
   aoAtualizar?: (veiculo: VeiculoDto) => void;
 }) {
@@ -86,6 +88,7 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar, fotoVersao, aoS
         <p className="vehicle-details__eyebrow">Frota / Detalhes do veículo</p>
         <h1 ref={tituloRef} tabIndex={-1}>{vehicleTitle(veiculo.marca, veiculo.modelo)}</h1>
         <p className="vehicle-details__plate">{campo(veiculo.placa)}</p>
+        <p className="vehicle-details__note">Status cadastral</p>
         <div className="vehicle-details__tags"><VehicleStatusBadge status={veiculo.status} /><span>{vehicleTypeLabel(veiculo.tipo)}</span><span>{veiculo.is_svo === null ? 'Não informada' : veiculo.is_svo ? 'SVO' : 'Administrativo'}</span></div>
     {aoAtualizar && <button ref={botaoEditar} type="button" className="vehicle-details__edit" onClick={() => { setForm({ placa: veiculo.placa, marca: veiculo.marca, modelo: veiculo.modelo, status: veiculo.status ?? '', capacidade_passageiros: veiculo.capacidade_passageiros?.toString() ?? '', vinculo: veiculo.vinculo, fornecedor_locacao: veiculo.fornecedor_locacao ?? '' }); setErro(''); setEditando(true); }}>Editar veículo</button>}
       </div>
@@ -111,11 +114,9 @@ export function VehicleDetails({ veiculo, aoVoltar, aoAtualizar, fotoVersao, aoS
       </section>)}
     </article>
 
+    <p className="vehicle-details__note">A disponibilidade para viagens e despachos é verificada conforme a operação e pode ser bloqueada por manutenções ou reservas.</p>
+    <ManutencoesVeiculo key={veiculo.id} id={veiculo.id} base={baseManutencoes} />
     <div className="vehicle-details__columns">
-      <article className="vehicle-details__panel">
-        <div className="vehicle-details__heading"><div><h2><IconeGestor nome="manutencao" tamanho={18} /> Manutenção</h2><p>Acompanhamento do veículo</p></div></div>
-        <p className="vehicle-details__empty">A consulta de manutenção por veículo ainda não está disponível.</p>
-      </article>
       <article className="vehicle-details__panel">
         <div className="vehicle-details__heading"><div><h2><IconeGestor nome="abastecimentos" tamanho={18} /> Abastecimentos</h2><p>Registros associados a este veículo</p></div><a href={ROTAS.abastecimentosGestor}>Abrir abastecimentos →</a></div>
         {abastecimentos.loading && <p role="status">Carregando abastecimentos...</p>}

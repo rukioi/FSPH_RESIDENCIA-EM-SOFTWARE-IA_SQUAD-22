@@ -47,3 +47,22 @@ A rota existente `PATCH /api/svo/ordens-coleta/{id}/despachar`, perfil `ATENDENT
 - Contratos: `npm run api:generate`, `npm run client:generate`, `npm run api:check`, `npm run client:check`.
 - Geral: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run test:e2e`; testar portas 3000/5173 livres e manter o banco isolado ligado.
 - Documentar resultado e pendência de fotos antes de declarar SCRUM-148 totalmente concluída.
+
+## Disponibilidade e manutenção de veículos
+
+O despacho pode ocorrer antes da entrada de uma manutenção futura agendada.
+Da entrada em diante, inclusive com a janela vencida, a ocorrência agendada
+impede novos despachos. Manutenção em andamento também impede novos
+despachos. A guarda revalida depois do lock do veículo e retorna conflito
+409 no envelope vigente. Um atendimento já despachado segue operacional e
+impede o início de manutenção enquanto estiver ativo.
+
+As consultas de recursos e de ocupação indicam `disponivel: false` quando
+a manutenção impede novo despacho. O cálculo de ocupação continua baseado
+nas ordens ativas, com até quatro corpos e bloqueio quando alguma quantidade
+ativa é desconhecida. Os critérios de S10, vínculo, documentação e motorista
+continuam aplicáveis.
+
+### Modelo Chevrolet S10
+
+As consultas de recursos e ocupação e a confirmação sob lock reconhecem `S10` e `Chevrolet S10` no início do modelo, sem distinção de caixa, com espaços externos e complementos delimitados. `S100` e prefixos de outros modelos são inelegíveis. Marca, vínculo, capacidade, documentação, reservas, status, ocupação e manutenção mantêm seus critérios.

@@ -3,10 +3,12 @@ import { existsSync, mkdirSync, readdirSync, realpathSync, writeFileSync } from 
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { command, root, project, container, database, manifestPath, testPort, assertTarget, testProfile, verifyContainer, verifiedSql } from './verify-test-db.js';
+import { command, root, project, container, database, manifestPath, testPort, assertTarget, testProfile, verifyContainer, verifiedSql, isS10 } from './verify-test-db.js';
 import { prepare } from './apply-test-migrations.js';
 
-if (testProfile !== 's9-full' && testProfile !== 's9-full-repro' && testProfile !== 's9-mig-v3' && testProfile !== 's9-integracao-segura' && testProfile !== 's9-conciliacao-final') throw new Error('Selecione explicitamente um perfil isolado de suíte completa.');
+const wantsS10 = process.argv.includes('--s10-only');
+if (isS10 !== wantsS10) throw new Error('Comando de provisionamento incompatível com o perfil.');
+if (!isS10 && testProfile !== 's9-full' && testProfile !== 's9-full-repro' && testProfile !== 's9-mig-v3' && testProfile !== 's9-integracao-segura' && testProfile !== 's9-conciliacao-final') throw new Error('Selecione explicitamente um perfil isolado de suíte completa.');
 assertTarget(process.env.DATABASE_URL);
 if (existsSync(manifestPath)) throw new Error('Manifesto existente; provisionamento recusado.');
 const docker = (args:string[]) => command('docker',args).trim();
@@ -16,6 +18,14 @@ if (names.includes(container) || volumes.includes(project) ||
     docker(['ps','-aq','--filter','label=fsph.project='+project]) ||
     docker(['volume','ls','-q','--filter','label=fsph.project='+project])) {
   throw new Error('Recurso preexistente; provisionamento recusado.');
+}
+if (isS10) {
+  const networks = docker(['network', 'ls', '--format', '{{.Name}}']).split(/\r?\n/);
+  const ports = docker(['ps', '-a', '--format', '{{.Ports}}']);
+  if (networks.includes(project) || docker(['network', 'ls', '-q', '--filter', 'label=fsph.project=' + project]) ||
+      new RegExp(':' + testPort + '->').test(ports)) {
+    throw new Error('Rede ou porta Sprint 10 já reservada.');
+  }
 }
 const versions = readdirSync(resolve(root,'backend/src/database/supabase/migrations'))
   .filter(name=>/^\d+_[a-z0-9_-]+\.sql$/.test(name)).map(name=>name.split('_')[0]);
@@ -33,7 +43,9 @@ const volume=JSON.parse(docker(['volume','inspect',project]))[0];
 if(volume.Name!==project || volume.Driver!=='local' || volume.Scope!=='local' ||
    volume.Labels?.['fsph.project']!==project || volume.Labels?.['fsph.workspace']!==workspaceHash ||
    volume.Labels?.['fsph.nonce']!==nonce) throw new Error('Identidade do volume divergente.');
-const containerId=docker(['run','-d','--name',container,...labels,'-p','127.0.0.1:'+testPort+':5432',
+const networkArgs = isS10 ? ['--network', project] : [];
+if (isS10) docker(['network', 'create', '--driver', 'bridge', ...labels, project]);
+const containerId=docker(['run','-d','--name',container,...labels,...networkArgs,'-p','127.0.0.1:'+testPort+':5432',
   '-v',project+':/var/lib/postgresql/data','-e','POSTGRES_USER=supabase_admin','-e','POSTGRES_PASSWORD=postgres',
   '-e','POSTGRES_DB='+database,imageId]);
 if(!/^[a-f0-9]{64}$/.test(containerId)) throw new Error('Identificador Docker inválido.');
@@ -64,10 +76,16 @@ try {
   await sql.unsafe("CREATE ROLE postgres LOGIN BYPASSRLS PASSWORD 'postgres'");
   for(const role of ['anon','authenticated','service_role']) await sql.unsafe('CREATE ROLE '+role);
 } finally {await sql.end();}
-await prepare();
-const admin=await verifiedSql(true);
-try {
-  await admin.unsafe('GRANT USAGE ON SCHEMA fsph_test_harness TO postgres');
-  await admin.unsafe('GRANT SELECT ON fsph_test_harness.migrations TO postgres');
-} finally {await admin.end();}
-console.log('Banco dedicado preparado com migrations e seed de testes.');
+if (isS10) {
+  const local = await verifiedSql();
+  await local.end();
+  console.log('Banco Sprint 10 provisionado e verificado, sem migrations ou seed.');
+} else {
+  await prepare();
+  const admin=await verifiedSql(true);
+  try {
+    await admin.unsafe('GRANT USAGE ON SCHEMA fsph_test_harness TO postgres');
+    await admin.unsafe('GRANT SELECT ON fsph_test_harness.migrations TO postgres');
+  } finally {await admin.end();}
+  console.log('Banco dedicado preparado com migrations e seed de testes.');
+}

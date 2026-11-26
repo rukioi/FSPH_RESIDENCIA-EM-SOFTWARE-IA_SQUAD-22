@@ -42,11 +42,14 @@ test('agenda normaliza período e usa o mesmo filtro temporal em lista e total',
 });
 test('disponibilidade verifica cada recurso contra os dois fluxos sem locks ou horários SVO inventados',async()=>{
   expect(await consultarDisponibilidade(query)).toEqual({motoristas:[{id:'2',nome:'Motorista'}],veiculos:[{id:'4',placa:'TEST123',modelo:'Modelo'}]});
-  const [parts,...values]=mocks.tx.mock.calls[1];const sql=parts.join('?');
+  const [parts,...values]=mocks.tx.mock.calls.find(([partes])=>partes[0].includes('WITH recursos'))!;
+  const sql=parts.join('?');
   expect(sql).toContain("r.status='DISPONIVEL'");expect(sql).toContain("'EM_DESLOCAMENTO','EM_TRANSPORTE'");
   expect(sql).toContain("'AGENDADA','PRONTA_PARA_INICIAR','EM_ANDAMENTO'");
   expect(sql).toContain('s.data_hora_retorno_previsto IS NULL');expect(sql).not.toContain('FOR UPDATE');
-  expect(sql).not.toContain('o.data_fim');expect(values).toEqual([intervalo.fim,intervalo.inicio]);
+  expect(sql).not.toContain('o.data_fim');expect(values).toEqual([intervalo.fim,intervalo.inicio,expect.anything()]);
+  expect(sql).toContain("r.tipo <> 'veiculo'");
+  expect(mocks.tx.mock.calls.some(([partes])=>partes.join('?').includes('public.manutencao_veiculo'))).toBe(true);
 });
 test('reagendamento bloqueia recursos antigos/novos em ordem numérica e ignora só a própria reserva',async()=>{
   expect(await reagendarSolicitacao('1024','42',dados)).toEqual(resultado);

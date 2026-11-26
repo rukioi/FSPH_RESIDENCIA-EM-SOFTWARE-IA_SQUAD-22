@@ -49,7 +49,18 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npm run test:e2e
+      - name: Executar E2E dos fluxos existentes
+        run: npm run test:e2e -- '^(?!.*manutencoes(?:-indicadores)?\.spec\.ts$)'
+      - name: Executar E2E de Manutenções no perfil S10 dedicado
+        env:
+          FSPH_TEST_PROFILE: s10-candidata-e2e
+          MANUTENCAO_ALERTAS_ATIVOS: 'false'
+        run: |
+          docker image inspect postgres:17 >/dev/null 2>&1 || docker pull postgres:17
+          npm run db:test:s10:provision
+          npm run db:test:start
+          npm run db:test:prepare
+          npm run test:e2e -- --output=test-results/sprint10 'manutencoes(?:-indicadores)?\.spec\.ts$'
       - name: Conferir ausência de deriva e compilados rastreados
         shell: bash
         run: |

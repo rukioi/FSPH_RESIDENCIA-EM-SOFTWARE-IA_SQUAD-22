@@ -1,4 +1,4 @@
-import { ROTAS, lerDetalheSvo, lerRotaSolicitacao, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo } from '../../app/routes/rotas'
+import { ROTAS, lerRotaManutencao, lerRotaDetalheVeiculo, lerDetalheSvo, lerRotaSolicitacao, lerRotaDetalheAbastecimento, lerRotaHistoricoAbastecimentosVeiculo } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
   [ROTAS.relatoriosGestor]: ['ADM','GESTOR_FROTA'],
@@ -35,7 +35,7 @@ const perfisPorRota: Record<string, string[]> = {
 
 /** Distingue uma URL inexistente de uma rota conhecida sem permissão. */
 export function rotaConhecida(caminho: string): boolean {
-  if (perfisPorRota[caminho]) return true
+  if (perfisPorRota[caminho] || lerRotaManutencao(caminho) || lerRotaDetalheVeiculo(caminho) !== null) return true
 
   const solicitacaoGestor = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor)
   if (solicitacaoGestor) return true
@@ -52,6 +52,10 @@ export function rotaConhecida(caminho: string): boolean {
 
 /** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
+  const manutencao = lerRotaManutencao(caminho);
+  if (manutencao) return perfil === (manutencao.base === ROTAS.manutencoesAdm ? 'ADM' : 'GESTOR_FROTA');
+  if (lerRotaDetalheVeiculo(caminho) !== null) return perfisPorRota[ROTAS.veiculosGestor].includes(perfil);
+
   const solicitacao = lerRotaSolicitacao(caminho, ROTAS.solicitacoesGestor);
   if (solicitacao) {
     return perfisPorRota[ROTAS.solicitacoesGestor]?.includes(perfil) ?? false;

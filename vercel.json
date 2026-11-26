@@ -4,6 +4,8 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build --workspace frontend",
   "outputDirectory": "frontend/dist",
+  "functions": { "api/index.ts": { "maxDuration": 60 } },
+  "crons": [{ "path": "/api/cron/manutencao-alertas", "schedule": "0 12 * * *" }],
   "rewrites": [
     {
       "source": "/api/:path*",

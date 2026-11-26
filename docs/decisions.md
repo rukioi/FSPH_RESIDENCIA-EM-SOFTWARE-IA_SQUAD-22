@@ -294,3 +294,83 @@ além de frontend, backend e testes; não introduz outro processo de build.
 `docs/reorganization/deferred.md` é exigido pela coordenação #22. Nenhuma migration,
 enum, schema, perfil ou regra operacional foi modificada. Próximo ticket: #30;
 somente #33 abre/reutiliza o PR final para main.
+
+## Sprint 10 — Modelo de manutenção de veículos (SCRUM-230)
+
+- **DEFINIÇÕES DO RESPONSÁVEL:** histórico por veículo, entrada, previsão e
+  quilometragem obrigatórias, custo único em NUMERIC e bloqueio de manutenções
+  agendadas vencidas ou em andamento. Corretiva imediata, edição após conclusão
+  e reabertura são permitidas. Cancelamento é permitido em AGENDADA. ADM e
+  GESTOR_FROTA operam mediante autorização e autoria no backend.
+- **DEFINIÇÕES TÉCNICAS LOCAIS:** custo NUMERIC sem precisão fixa, dias completos em
+  America/Maceio, histórico em tabela própria, reabertura para AGENDADA ou
+  EM_ANDAMENTO e correção de datas operacionais após conclusão com auditoria e validação.
+- **PROPOSTAS:** revalidar a disponibilidade e auditar a reabertura na mesma
+  transação, preservando reservas, ordens SVO e conclusões anteriores.
+- **PENDENTES:** homologação institucional formal, limites monetários de negócio,
+  retenção e papel de runtime. A revisão SCRUM-232 detalha os campos editáveis.
+  A [especificação DB-S10-02-A](./database/sprint10-manutencao-veiculo.md)
+  detalha as regras e as decisões em aberto.
+
+## Sprint 10 — Contrato de manutenção (SCRUM-232)
+
+- **Confirmado pelo responsável:** edição de canceladas com transições validadas,
+  veículo fixo após o cadastro, cancelamento sem motivo obrigatório, início
+  antecipado sujeito à disponibilidade, novas datas planejadas na reabertura e
+  período por data civil de entrada, inclusivo em America/Maceio.
+- **Propostas:** busca literal por placa, descrição e prestador, autoria reservada
+  ao histórico e à auditoria, PATCH com If-Match e versão em microssegundos,
+  edição e transição atômicas.
+- **Definições técnicas locais:** reativar para AGENDADA ou EM_ANDAMENTO com
+  guarda, editar tipo em todos os estados com auditoria e permitir edição dos
+  campos de negócio, inclusive quando concluída. Alterar entrada em andamento
+  exige disponibilidade e auditoria. Veículo e campos internos ficam protegidos.
+- **Pendências:** homologação institucional, prova da migration incremental,
+  formato da auditoria de antes e depois e confirmação do runtime.
+  A escrita da SCRUM-232 foi conectada localmente à guarda da SCRUM-233, conforme registro abaixo.
+  A [consolidação do contrato](./database/sprint10-manutencao-veiculo.md#consolidação-do-contrato--scrum-232)
+  registra o impacto no esquema aplicado, o contrato proposto e os insumos
+  reservados à SCRUM-234.
+
+## Sprint 10 — Guarda de alocação (SCRUM-233)
+
+Definições confirmadas pelo responsável para implementação local. A
+homologação institucional formal da FSPH permanece pendente.
+
+- Ocorrências de manutenção podem se sobrepor e coexistir em andamento.
+  Cada uma libera apenas o bloqueio que produz. O status manual é independente
+  e bloqueia o início de viagem quando incompatível.
+- Reservas são preservadas. Conflitos de janela ou uso efetivo retornam
+  409. Manutenção futura agendada pode coexistir com operação ativa sem fim
+  conhecido, e o SVO pode despachar antes da entrada de uma manutenção
+  futura. As operações já iniciadas continuam até encerramento regular.
+- A linha do veículo serializa as mutações em READ COMMITTED. A consulta
+  ocorre depois do lock. Permitir edição que reduza, mas mantenha conflito
+  legado conhecido segue pendente. A guarda mantém a recusa nesses casos.
+- A descrição da SCRUM-233 menciona SCRUM-240. O responsável confirmou que
+  o item inexiste. A referência é inconsistente e não é dependência.
+
+## Sprint 10 — Indicadores de manutenção (SCRUM-234)
+
+Definições aprovadas para implementação local. A homologação institucional
+formal da FSPH permanece pendente. O endpoint próprio mantém dashboards
+vigentes e consumidores anteriores. Estoque e alertas independem do
+período. Concluídas usam a conclusão efetiva do estado corrente e custo
+usa a entrada planejada de ocorrências não canceladas. A contagem de
+veículos inclui ocorrências em andamento e estado manual sem backfill.
+Com tipo informado entram somente veículos com ocorrência em andamento
+daquele tipo. O contrato expõe emAndamento sem definir novo card.
+
+A emissão persistida de preventiva próxima e atraso usa revisão por ocorrência e evento. Alertas no GET são
+derivados e o aviso manual existente continua independente.
+
+
+### Ativação dos avisos de manutenção
+
+O responsável aprovou a primeira emissão para ocorrências já elegíveis.
+Emissões repetidas usam a mesma chave por destinatário. Uma edição
+continuamente elegível preserva a revisão, enquanto A–B–A cria uma nova
+revisão quando B retira a elegibilidade. INICIAR também encerra o alerta
+de atraso de entrada quando a previsão ainda não venceu. A ativação
+operacional e a homologação formal permanecem condicionadas à revisão
+do runtime e à implantação coordenada.

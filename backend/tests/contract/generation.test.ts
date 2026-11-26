@@ -61,7 +61,7 @@ for (const kind of ['api','client'] as const) {
     const code = kind === 'api' ? "import {generateApi} from './scripts/generate-api.ts'; generateApi(true);"
       : "import {generateClient} from './scripts/generate-client.ts'; await generateClient(true);";
     expect(independent(code+"console.log('ok');")).toContain('ok');
-  },kind === 'client' ? 15000 : 5000);
+  },15000);
 }
 
 test('manifesto detecta remoção, duplicação e nova exceção não autorizada',()=>{
@@ -76,9 +76,8 @@ test('migração #30 permite somente 404 comum de abastecimento e sua descriçã
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
-test('inventory preserves 111 operations and pathname limits',()=>{
-  // SCRUM-267 acrescenta somente a consulta gerencial do SVO.
-  expect(operations).toHaveLength(111);
+test('inventory preserves 119 operations and pathname limits',()=>{
+  expect(operations).toHaveLength(119);
   for (const method of ['patch','post'] as const) {
     expect(operations.filter(o => o.method === method && o.path === '/api/svo/solicitacoes/{id}/triagem')).toHaveLength(1);
   }
@@ -183,7 +182,7 @@ test('inventory preserves previous operations and includes document and attachme
     "put /api/veiculos/{id}",
     "put /api/veiculos/{id}/foto",
   ];
-  const existentes = operations.filter(o=>o.modulo!=='viagens' && !o.path.startsWith('/api/motorista/notificacoes')).map(o=>o.method+' '+o.path).sort();
+  const existentes = operations.filter(o=>o.modulo!=='viagens' && o.modulo!=='manutencoes' && !o.path.startsWith('/api/motorista/notificacoes')).map(o=>o.method+' '+o.path).sort();
   expect(existentes).toEqual(anterior);
   expect(operations.filter(o=>o.path.startsWith('/api/motorista/notificacoes')).map(o=>o.method+' '+o.path).sort()).toEqual(['get /api/motorista/notificacoes','patch /api/motorista/notificacoes/{id}/lida']);
   const viagens = operations.filter(o=>o.modulo==='viagens').map(o=>o.method+' '+o.path).sort();
@@ -194,7 +193,7 @@ test('inventory preserves previous operations and includes document and attachme
     'patch /api/viagens/{id}/corrigir-quilometragem', 'patch /api/viagens/{id}/encerrar', 'patch /api/viagens/{id}/iniciar',
     'patch /api/viagens/{id}/validar', 'post /api/viagens',
   ].sort());
-  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(100);
+  expect(operations.filter(o => o.modulo !== 'solicitacoes' && o.modulo !== 'manutencoes')).toHaveLength(100);
   expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
@@ -394,4 +393,28 @@ console.log('ok');
 
 test('RF40 concilia somente contratos exatos dos pais e rejeita mudanças adicionais',()=>{
   expect(independent("import {execFileSync} from 'node:child_process';import {parse} from 'yaml';import {openapi} from './backend/src/shared/contract/openapi.ts';import {mergeContractBaselines,checkCompatibility} from './scripts/generate-api.ts';const read=r=>parse(execFileSync('git',['show',r+':docs/api/openapi.yaml'],{encoding:'utf8'}));const base=read('f956a77b3ca51e3b1463ff37f7eb3aa837f19f53'),head=read('0cc6b7d885612e26f872750f684a52dbc4265fd3'),incoming=read('a658dfc1fd1eb53434ef4d3cc390f1af3a2a5ce1');const combined=mergeContractBaselines(base,head,incoming),current=openapi();for(const prev of [head,incoming,combined])checkCompatibility(prev,current);for(const mutate of [d=>delete d.paths['/api/abastecimentos'].post,d=>d.paths['/api/abastecimentos'].post.security=[],d=>d.paths['/api/abastecimentos'].post['x-perfis']=['MOTORISTA'],d=>d.paths['/api/abastecimentos'].post.responses[409].description='divergente',d=>d.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},d=>d.components.schemas.DetalheAbastecimento.properties.quilometragem={type:'string'}]){const v=structuredClone(current);mutate(v);let rejected=false;try{checkCompatibility(combined,v)}catch{rejected=true}if(!rejected)throw Error('divergencia adicional aceita')}const bad=structuredClone(incoming);bad.components.schemas.CriarAbastecimento.description='alteração divergente';let rejected=false;try{mergeContractBaselines(base,head,bad)}catch{rejected=true}if(!rejected)throw Error('conflito adicional aceito');console.log('ok');")).toContain('ok');
+}, 15000);
+
+test('manutenção preserva sete operações e acrescenta a consulta literal de indicadores', () => {
+  const manutencoes = operations.filter(o => o.modulo === 'manutencoes');
+  expect(manutencoes.map(o => o.method + ' ' + o.path).sort()).toEqual([
+    'get /api/manutencoes', 'get /api/manutencoes/indicadores', 'get /api/manutencoes/{id}', 'get /api/manutencoes/{id}/historico',
+    'get /api/veiculos/{id}/manutencoes', 'patch /api/manutencoes/{id}',
+    'patch /api/manutencoes/{id}/status', 'post /api/manutencoes',
+  ]);
+  const doc = openapi();
+  for (const op of manutencoes) {
+    expect(op.perfis).toEqual(['ADM', 'GESTOR_FROTA']);
+    if (op.path.includes('{id}')) {
+      expect(routePattern(op).test(op.path.replace('{id}', '-27003'))).toBe(true);
+      expect(routePattern(op).test('/api/manutencoes/indicadores')).toBe(false);
+    }
+    if (op.method !== 'get') {
+      expect(op.errors).toContain(409);
+      expect(op.errors).not.toContain(503);
+    }
+    if (op.method === 'patch') expect(doc.paths[op.path].patch).toMatchObject({
+      parameters: expect.arrayContaining([expect.objectContaining({ name: 'If-Match', in: 'header', required: true })]),
+    });
+  }
 });

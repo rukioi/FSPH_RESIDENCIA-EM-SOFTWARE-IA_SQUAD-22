@@ -443,5 +443,37 @@ export const apiOperations = {
   "documentos_get__api_documentos_pendencias": {
     "method": "GET",
     "path": "/api/documentos/pendencias"
+  },
+  "manutencoes_get__api_manutencoes": {
+    "method": "GET",
+    "path": "/api/manutencoes"
+  },
+  "manutencoes_post__api_manutencoes": {
+    "method": "POST",
+    "path": "/api/manutencoes"
+  },
+  "manutencoes_get__api_manutencoes_indicadores": {
+    "method": "GET",
+    "path": "/api/manutencoes/indicadores"
+  },
+  "manutencoes_get__api_manutencoes_id_": {
+    "method": "GET",
+    "path": "/api/manutencoes/{id}"
+  },
+  "manutencoes_patch__api_manutencoes_id_": {
+    "method": "PATCH",
+    "path": "/api/manutencoes/{id}"
+  },
+  "manutencoes_patch__api_manutencoes_id_status": {
+    "method": "PATCH",
+    "path": "/api/manutencoes/{id}/status"
+  },
+  "manutencoes_get__api_veiculos_id_manutencoes": {
+    "method": "GET",
+    "path": "/api/veiculos/{id}/manutencoes"
+  },
+  "manutencoes_get__api_manutencoes_id_historico": {
+    "method": "GET",
+    "path": "/api/manutencoes/{id}/historico"
   }
 } as const;

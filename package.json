@@ -22,6 +22,7 @@
     "db:test:s9-full:provision": "tsx backend/src/database/scripts/provision-s9-full.ts",
     "db:test:s9-full:repro:provision": "tsx backend/src/database/scripts/provision-s9-full.ts",
     "db:test:s9-mig-v3:provision": "tsx backend/src/database/scripts/provision-s9-full.ts",
+    "db:test:s10:provision": "tsx backend/src/database/scripts/provision-s9-full.ts --s10-only",
     "db:test:prepare": "tsx backend/src/database/scripts/apply-test-migrations.ts",
     "db:test:restore": "tsx backend/src/database/scripts/rehearse-test-restore.ts",
     "db:test:upgrade": "tsx backend/src/database/scripts/rehearse-test-restore.ts --upgrade",

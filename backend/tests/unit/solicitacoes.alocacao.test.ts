@@ -10,6 +10,9 @@ vi.mock('../../src/database/connection.js', () => ({sql:{begin:mocks.begin}}));
 import { agendarSolicitacao } from '../../src/modules/solicitacoes/solicitacoes.repository.js';
 import { verificarDisponibilidade } from '../../src/modules/alocacao/alocacao.repository.js';
 const tx = mocks.tx as unknown as postgres.TransactionSql;
+// Fragmentos do postgres.js são construídos pelo mesmo tag, mas só a consulta externa é enviada.
+const consultas = () => mocks.tx.mock.calls.filter(([parts]) =>
+  /^\s*(SELECT|UPDATE|INSERT|WITH)\s/.test(parts[0]) && !parts[0].includes('SELECT 1 FROM public.manutencao_veiculo'));
 const dados = {motoristaId:'12',veiculoId:'34',dataHoraRetornoPrevisto:'2026-11-10T20:00:00Z'};
 const intervalo = {inicio:'2026-11-10T08:00:00.000000',fim:'2026-11-10T17:00:00.000000'};
 const resultado = {id:'1024',status:'AGENDADA',motoristaId:'12',veiculoId:'34',dataHoraSaida:intervalo.inicio+'-03:00',dataHoraRetornoPrevisto:intervalo.fim+'-03:00'};
@@ -32,21 +35,21 @@ beforeEach(() => {
 test('agendamento bloqueia pedido, motorista e veículo antes de conferir conflitos e auditar', async () => {
   expect(await agendarSolicitacao('1024','42',dados)).toEqual(resultado);
   expect(mocks.begin.mock.calls[0][0]).toBe('isolation level read committed');
-  const queries = mocks.tx.mock.calls.map(([parts]) => parts.join('?'));
+  const queries = consultas().map(([parts]) => parts.join('?'));
   expect(queries[0]).toContain('FOR UPDATE');
   expect(queries[0]).toContain("AT TIME ZONE 'America/Maceio'");
-  expect(mocks.tx.mock.calls[0].slice(1)).toEqual([dados.dataHoraRetornoPrevisto,dados.dataHoraRetornoPrevisto,'1024']);
+  expect(consultas()[0].slice(1)).toEqual([dados.dataHoraRetornoPrevisto,dados.dataHoraRetornoPrevisto,'1024']);
   expect(queries[1]).toContain('public.motorista'); expect(queries[1]).toContain('FOR UPDATE');
   expect(queries[2]).toContain('public.veiculo'); expect(queries[2]).toContain('FOR UPDATE');
   expect(queries[3]).toContain('EM_TRANSPORTE');
   expect(queries[4]).toContain('AGENDADA');
   // SCRUM-240: impedimento é consulta própria, depois dos locks e dos conflitos.
   expect(queries[5]).toContain('motorista_transicao_profissional');
-  expect(mocks.tx.mock.calls[5].slice(1)).toEqual([intervalo.inicio,intervalo.inicio,intervalo.fim,['12'],['12']]);
+  expect(consultas()[5].slice(1)).toEqual([intervalo.inicio,intervalo.inicio,intervalo.fim,['12'],['12']]);
   expect(queries[8]).toContain("WHERE id=? AND status='APROVADA'");
-  expect(mocks.tx.mock.calls[8].slice(1)).toEqual(['12','34',intervalo.fim,'1024']);
+  expect(consultas()[8].slice(1)).toEqual(['12','34',intervalo.fim,'1024']);
   expect(queries[9]).toContain('INSERT INTO public.viagem');
-  expect(mocks.tx.mock.calls[10].slice(1)).toEqual(['42',['Agendou a solicitação de transporte ID 1024'],['solicitacao_viagem_agendada'],['1024']]);
+  expect(consultas()[10].slice(1)).toEqual(['42',['Agendou a solicitação de transporte ID 1024'],['solicitacao_viagem_agendada'],['1024']]);
 });
 
 test.each([['ausente',[],404],['pendente',[{status:'PENDENTE'}],409],['agendada',[{status:'AGENDADA'}],409],['retorno inválido',[{status:'APROVADA',retorno_valido:false}],400]])('não agenda pedido %s', async (_caso,rows,status) => {
@@ -90,7 +93,7 @@ test.each(['ordem_coleta','solicitacao_viagem'])('conflito em %s impede agendame
 
 test('intervalo usa desigualdades estritas, protege reservas sem fim e compara motorista OU veículo', async () => {
   expect(await verificarDisponibilidade(tx,'12','34',intervalo)).toBe('disponivel');
-  const [parts,...values] = mocks.tx.mock.calls[3];
+  const [parts,...values] = consultas()[3];
   const query = parts.join('?');
   expect(query).toContain('motorista_id=? OR veiculo_id=?');
   expect(query).toContain('data_hora_saida < ?::text::timestamp');
@@ -98,11 +101,11 @@ test('intervalo usa desigualdades estritas, protege reservas sem fim e compara m
   expect(query).toContain('data_hora_retorno_previsto IS NULL');
   expect(query).toContain('PRONTA_PARA_INICIAR'); expect(query).toContain('EM_ANDAMENTO');
   expect(query).not.toContain('FOR UPDATE');
-  expect(values).toEqual([null,null,'12','34',intervalo.inicio,intervalo.fim,intervalo.inicio]);
+  expect(values).toEqual([null,null,'12','34',intervalo.inicio,intervalo.fim,intervalo.inicio,expect.anything()]);
 });
 
 test('SVO sem intervalo consulta toda reserva ativa, incluindo futura, sob os mesmos locks', async () => {
   expect(await verificarDisponibilidade(tx,'12','34',null)).toBe('disponivel');
-  expect(mocks.tx.mock.calls[3].slice(1)).toEqual([null,null,'12','34',null,null,null]);
-  expect(mocks.tx.mock.calls[2][0].join('')).toContain("'EM_DESLOCAMENTO', 'EM_TRANSPORTE'");
+  expect(consultas()[3].slice(1)).toEqual([null,null,'12','34',null,null,null,expect.anything()]);
+  expect(consultas()[2][0].join('')).toContain("'EM_DESLOCAMENTO', 'EM_TRANSPORTE'");
 });

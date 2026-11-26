@@ -3,7 +3,14 @@ import type postgres from 'postgres';
 import { notificarAtividades } from '../notificacoes/notificacoes.service.js';
 import { consultarAtividades, inserirAtividades, type PaginacaoAtividades } from './auditoria.repository.js';
 
+export type AlteracaoManutencaoAuditada = {
+  campo: 'tipo' | 'entrada' | 'conclusaoPrevista' | 'iniciadaEm' | 'concluidaEm' | 'canceladaEm';
+  anterior: string | null;
+  posterior: string | null;
+};
+
 export type EventoAtividade =
+  | { operacao: 'manutencao_mutacao'; recursoId: string; acao: 'CADASTRAR' | 'EDITAR' | 'INICIAR' | 'CONCLUIR' | 'CANCELAR' | 'REABRIR' | 'REATIVAR'; alteracoes: AlteracaoManutencaoAuditada[] }
   | { operacao: 'abastecimento_criado'; recursoId: string }
   | { operacao: 'usuario_criado' | 'usuario_editado'; recursoId: string }
   | { operacao: 'anotacao_criada'; recursoId: string }
@@ -44,6 +51,11 @@ function identificador(valor: string): string {
 function descrever(evento: EventoAtividade): string {
   const id = identificador(evento.recursoId);
   switch (evento.operacao) {
+    case 'manutencao_mutacao': {
+      const mudancas = evento.alteracoes.map(({ campo, anterior, posterior }) =>
+        campo + '=' + JSON.stringify([anterior, posterior]));
+      return 'Manutenção ID ' + id + ' — ' + evento.acao + (mudancas.length ? ': ' + mudancas.join(', ') : '');
+    }
     case 'abastecimento_criado': return `Registrou abastecimento ID ${id}`;
     case 'anotacao_criada': return `Registrou anotação ID ${id}`;
     // SCRUM-239: sem motivo/texto livre na trilha; o motivo fica no registro próprio.
@@ -91,7 +103,7 @@ function descrever(evento: EventoAtividade): string {
 }
 
 /** Registra apenas os eventos existentes, sem interpolar payload, nome ou contato pessoal. */
-export async function registrarAtividades(tx: postgres.TransactionSql, usuarioId: string, eventos: EventoAtividade[]): Promise<string[]> {
+export async function registrarAtividades(tx: postgres.TransactionSql, usuarioId: string, eventos: EventoAtividade[], instante?: string): Promise<string[]> {
   const descricoes = eventos.map(descrever);
   const solicitacoes = eventos.map(evento => {
     switch (evento.operacao) {
@@ -116,8 +128,9 @@ export async function registrarAtividades(tx: postgres.TransactionSql, usuarioId
       tx,
       identificador(usuarioId),
       descricoes,
-      eventos.map(evento => evento.operacao),
-      solicitacoes.some(id => id !== null) ? solicitacoes : undefined
+      eventos.map(evento => evento.operacao === 'manutencao_mutacao' ? 'manutencao_' + evento.acao.toLowerCase() : evento.operacao),
+      solicitacoes.some(id => id !== null) ? solicitacoes : undefined,
+      instante
     );
   }
   await notificarAtividades(tx,eventos);

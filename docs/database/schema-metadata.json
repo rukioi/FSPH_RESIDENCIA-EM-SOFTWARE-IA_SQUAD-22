@@ -14,6 +14,17 @@
     },
     {
       "acl": null,
+      "name": "status_manutencao_veiculo",
+      "owner": "supabase_admin",
+      "values": [
+        "AGENDADA",
+        "EM_ANDAMENTO",
+        "CONCLUIDA",
+        "CANCELADA"
+      ]
+    },
+    {
+      "acl": null,
       "name": "status_motorista",
       "owner": "postgres",
       "values": [
@@ -79,6 +90,15 @@
         "EM_TRANSPORTE",
         "CONCLUIDA",
         "CANCELADA"
+      ]
+    },
+    {
+      "acl": null,
+      "name": "tipo_manutencao_veiculo",
+      "owner": "supabase_admin",
+      "values": [
+        "PREVENTIVA",
+        "CORRETIVA"
       ]
     },
     {
@@ -167,6 +187,27 @@
       "rls": false,
       "name": "log_atividade",
       "owner": "postgres",
+      "forceRls": false
+    },
+    {
+      "acl": "{postgres=arw/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "manutencao_alerta_revisao",
+      "owner": "supabase_admin",
+      "forceRls": false
+    },
+    {
+      "acl": "{postgres=arw/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "manutencao_veiculo",
+      "owner": "supabase_admin",
+      "forceRls": false
+    },
+    {
+      "acl": "{postgres=ar/supabase_admin,supabase_admin=arwdDxtm/supabase_admin}",
+      "rls": true,
+      "name": "manutencao_veiculo_historico",
+      "owner": "supabase_admin",
       "forceRls": false
     },
     {
@@ -1226,6 +1267,386 @@
       "identity": "",
       "nullable": true,
       "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "manutencao_id",
+      "type": "bigint",
+      "table": "manutencao_alerta_revisao",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "alerta",
+      "type": "text",
+      "table": "manutencao_alerta_revisao",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "revisao",
+      "type": "bigint",
+      "table": "manutencao_alerta_revisao",
+      "default": "1",
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "manutencao_veiculo",
+      "default": "nextval('manutencao_veiculo_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "veiculo_id",
+      "type": "bigint",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "tipo",
+      "type": "tipo_manutencao_veiculo",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "descricao",
+      "type": "text",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "entrada_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "conclusao_prevista_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "iniciada_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "concluida_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "cancelada_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "quilometragem",
+      "type": "integer",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "custo",
+      "type": "numeric",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "prestador",
+      "type": "text",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 12,
+      "generated": ""
+    },
+    {
+      "name": "observacoes",
+      "type": "text",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 13,
+      "generated": ""
+    },
+    {
+      "name": "status",
+      "type": "status_manutencao_veiculo",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 14,
+      "generated": ""
+    },
+    {
+      "name": "criado_por_id",
+      "type": "bigint",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 15,
+      "generated": ""
+    },
+    {
+      "name": "atualizado_por_id",
+      "type": "bigint",
+      "table": "manutencao_veiculo",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 16,
+      "generated": ""
+    },
+    {
+      "name": "criado_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo",
+      "default": "CURRENT_TIMESTAMP",
+      "identity": "",
+      "nullable": false,
+      "position": 17,
+      "generated": ""
+    },
+    {
+      "name": "atualizado_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo",
+      "default": "CURRENT_TIMESTAMP",
+      "identity": "",
+      "nullable": false,
+      "position": 18,
+      "generated": ""
+    },
+    {
+      "name": "id",
+      "type": "bigint",
+      "table": "manutencao_veiculo_historico",
+      "default": "nextval('manutencao_veiculo_historico_id_seq'::regclass)",
+      "identity": "",
+      "nullable": false,
+      "position": 1,
+      "generated": ""
+    },
+    {
+      "name": "manutencao_id",
+      "type": "bigint",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 2,
+      "generated": ""
+    },
+    {
+      "name": "evento",
+      "type": "text",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 3,
+      "generated": ""
+    },
+    {
+      "name": "status_anterior",
+      "type": "status_manutencao_veiculo",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 4,
+      "generated": ""
+    },
+    {
+      "name": "status_posterior",
+      "type": "status_manutencao_veiculo",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 5,
+      "generated": ""
+    },
+    {
+      "name": "anterior_entrada_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 6,
+      "generated": ""
+    },
+    {
+      "name": "anterior_conclusao_prevista_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 7,
+      "generated": ""
+    },
+    {
+      "name": "anterior_iniciada_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 8,
+      "generated": ""
+    },
+    {
+      "name": "anterior_concluida_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 9,
+      "generated": ""
+    },
+    {
+      "name": "posterior_entrada_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 10,
+      "generated": ""
+    },
+    {
+      "name": "posterior_conclusao_prevista_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 11,
+      "generated": ""
+    },
+    {
+      "name": "posterior_iniciada_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 12,
+      "generated": ""
+    },
+    {
+      "name": "posterior_concluida_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 13,
+      "generated": ""
+    },
+    {
+      "name": "autor_id",
+      "type": "bigint",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": false,
+      "position": 14,
+      "generated": ""
+    },
+    {
+      "name": "registrado_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": "clock_timestamp()",
+      "identity": "",
+      "nullable": false,
+      "position": 15,
+      "generated": ""
+    },
+    {
+      "name": "anterior_cancelada_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 16,
+      "generated": ""
+    },
+    {
+      "name": "posterior_cancelada_em",
+      "type": "timestamp with time zone",
+      "table": "manutencao_veiculo_historico",
+      "default": null,
+      "identity": "",
+      "nullable": true,
+      "position": 17,
       "generated": ""
     },
     {
@@ -2691,6 +3112,46 @@
       "definition": "CREATE UNIQUE INDEX log_atividade_pkey ON public.log_atividade USING btree (id)"
     },
     {
+      "name": "manutencao_alerta_revisao_pk",
+      "table": "manutencao_alerta_revisao",
+      "definition": "CREATE UNIQUE INDEX manutencao_alerta_revisao_pk ON public.manutencao_alerta_revisao USING btree (manutencao_id, alerta)"
+    },
+    {
+      "name": "manutencao_veiculo_bloqueios_idx",
+      "table": "manutencao_veiculo",
+      "definition": "CREATE INDEX manutencao_veiculo_bloqueios_idx ON public.manutencao_veiculo USING btree (veiculo_id, status, entrada_em) INCLUDE (conclusao_prevista_em, iniciada_em) WHERE (status = ANY (ARRAY['AGENDADA'::status_manutencao_veiculo, 'EM_ANDAMENTO'::status_manutencao_veiculo]))"
+    },
+    {
+      "name": "manutencao_veiculo_periodo_idx",
+      "table": "manutencao_veiculo",
+      "definition": "CREATE INDEX manutencao_veiculo_periodo_idx ON public.manutencao_veiculo USING btree (entrada_em DESC, id DESC)"
+    },
+    {
+      "name": "manutencao_veiculo_pkey",
+      "table": "manutencao_veiculo",
+      "definition": "CREATE UNIQUE INDEX manutencao_veiculo_pkey ON public.manutencao_veiculo USING btree (id)"
+    },
+    {
+      "name": "manutencao_veiculo_por_veiculo_idx",
+      "table": "manutencao_veiculo",
+      "definition": "CREATE INDEX manutencao_veiculo_por_veiculo_idx ON public.manutencao_veiculo USING btree (veiculo_id, entrada_em DESC, id DESC)"
+    },
+    {
+      "name": "manutencao_veiculo_status_previsao_idx",
+      "table": "manutencao_veiculo",
+      "definition": "CREATE INDEX manutencao_veiculo_status_previsao_idx ON public.manutencao_veiculo USING btree (status, conclusao_prevista_em, id)"
+    },
+    {
+      "name": "manutencao_veiculo_historico_ocorrencia_idx",
+      "table": "manutencao_veiculo_historico",
+      "definition": "CREATE INDEX manutencao_veiculo_historico_ocorrencia_idx ON public.manutencao_veiculo_historico USING btree (manutencao_id, registrado_em DESC, id DESC)"
+    },
+    {
+      "name": "manutencao_veiculo_historico_pkey",
+      "table": "manutencao_veiculo_historico",
+      "definition": "CREATE UNIQUE INDEX manutencao_veiculo_historico_pkey ON public.manutencao_veiculo_historico USING btree (id)"
+    },
+    {
       "name": "motorista_cnh_key",
       "table": "motorista",
       "definition": "CREATE UNIQUE INDEX motorista_cnh_key ON public.motorista USING btree (cnh)"
@@ -3002,6 +3463,34 @@
       "owner": "postgres",
       "start": "1",
       "table": "log_atividade",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{postgres=U/supabase_admin,supabase_admin=rwU/supabase_admin}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "manutencao_veiculo_historico_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "supabase_admin",
+      "start": "1",
+      "table": "manutencao_veiculo_historico",
+      "column": "id",
+      "increment": "1"
+    },
+    {
+      "acl": "{postgres=U/supabase_admin,supabase_admin=rwU/supabase_admin}",
+      "max": "9223372036854775807",
+      "min": "1",
+      "name": "manutencao_veiculo_id_seq",
+      "type": "bigint",
+      "cache": "1",
+      "cycle": false,
+      "owner": "supabase_admin",
+      "start": "1",
+      "table": "manutencao_veiculo",
       "column": "id",
       "increment": "1"
     },
@@ -4433,6 +4922,367 @@
       "referencedColumns": [
         "id"
       ]
+    },
+    {
+      "name": "manutencao_alerta_revisao_alerta_check",
+      "type": "c",
+      "table": "manutencao_alerta_revisao",
+      "columns": [
+        "alerta"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (alerta = ANY (ARRAY['PREVENTIVA_PROXIMA'::text, 'ATRASO'::text]))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_alerta_revisao_manutencao_fk",
+      "type": "f",
+      "table": "manutencao_alerta_revisao",
+      "columns": [
+        "manutencao_id"
+      ],
+      "onDelete": "r",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (manutencao_id) REFERENCES manutencao_veiculo(id) ON DELETE RESTRICT",
+      "references": "manutencao_veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "manutencao_alerta_revisao_pk",
+      "type": "p",
+      "table": "manutencao_alerta_revisao",
+      "columns": [
+        "manutencao_id",
+        "alerta"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (manutencao_id, alerta)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_alerta_revisao_revisao_check",
+      "type": "c",
+      "table": "manutencao_alerta_revisao",
+      "columns": [
+        "revisao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (revisao > 0)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_atualizado_por_id_fkey",
+      "type": "f",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "atualizado_por_id"
+      ],
+      "onDelete": "r",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (atualizado_por_id) REFERENCES usuario(id) ON DELETE RESTRICT",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "manutencao_veiculo_criado_por_id_fkey",
+      "type": "f",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "criado_por_id"
+      ],
+      "onDelete": "r",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (criado_por_id) REFERENCES usuario(id) ON DELETE RESTRICT",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "manutencao_veiculo_custo_check",
+      "type": "c",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "custo"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (custo IS NULL OR custo >= 0::numeric AND custo < 'Infinity'::numeric)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_descricao_check",
+      "type": "c",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "descricao"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (char_length(btrim(descricao)) >= 1 AND char_length(btrim(descricao)) <= 2000)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_dias_check",
+      "type": "c",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "entrada_em",
+        "conclusao_prevista_em"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (\nCASE\n    WHEN isfinite(entrada_em) AND isfinite(conclusao_prevista_em) THEN (entrada_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND (conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND conclusao_prevista_em >= entrada_em\n    ELSE false\nEND)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_estado_check",
+      "type": "c",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "status",
+        "iniciada_em",
+        "concluida_em",
+        "cancelada_em"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (status = 'AGENDADA'::status_manutencao_veiculo AND iniciada_em IS NULL AND concluida_em IS NULL AND cancelada_em IS NULL OR status = 'EM_ANDAMENTO'::status_manutencao_veiculo AND iniciada_em IS NOT NULL AND concluida_em IS NULL AND cancelada_em IS NULL OR status = 'CONCLUIDA'::status_manutencao_veiculo AND iniciada_em IS NOT NULL AND concluida_em IS NOT NULL AND cancelada_em IS NULL OR status = 'CANCELADA'::status_manutencao_veiculo AND iniciada_em IS NULL AND concluida_em IS NULL AND cancelada_em IS NOT NULL)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_instantes_check",
+      "type": "c",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "iniciada_em",
+        "concluida_em",
+        "cancelada_em",
+        "criado_em",
+        "atualizado_em"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK ((iniciada_em IS NULL OR isfinite(iniciada_em)) AND (concluida_em IS NULL OR isfinite(concluida_em) AND concluida_em >= iniciada_em) AND (cancelada_em IS NULL OR isfinite(cancelada_em)) AND isfinite(criado_em) AND isfinite(atualizado_em) AND atualizado_em >= criado_em)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_observacoes_check",
+      "type": "c",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "observacoes"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (char_length(btrim(observacoes)) >= 1 AND char_length(btrim(observacoes)) <= 2000)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_pkey",
+      "type": "p",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_prestador_check",
+      "type": "c",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "prestador"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (char_length(btrim(prestador)) >= 1 AND char_length(btrim(prestador)) <= 255)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_quilometragem_check",
+      "type": "c",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "quilometragem"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (quilometragem >= 0)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_veiculo_id_fkey",
+      "type": "f",
+      "table": "manutencao_veiculo",
+      "columns": [
+        "veiculo_id"
+      ],
+      "onDelete": "r",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (veiculo_id) REFERENCES veiculo(id) ON DELETE RESTRICT",
+      "references": "veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "manutencao_veiculo_historico_autor_id_fkey",
+      "type": "f",
+      "table": "manutencao_veiculo_historico",
+      "columns": [
+        "autor_id"
+      ],
+      "onDelete": "r",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (autor_id) REFERENCES usuario(id) ON DELETE RESTRICT",
+      "references": "usuario",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "manutencao_veiculo_historico_dias_check",
+      "type": "c",
+      "table": "manutencao_veiculo_historico",
+      "columns": [
+        "anterior_entrada_em",
+        "anterior_conclusao_prevista_em",
+        "posterior_entrada_em",
+        "posterior_conclusao_prevista_em"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (\nCASE\n    WHEN isfinite(anterior_entrada_em) AND isfinite(anterior_conclusao_prevista_em) THEN (anterior_entrada_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND (anterior_conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND anterior_conclusao_prevista_em >= anterior_entrada_em\n    ELSE false\nEND AND\nCASE\n    WHEN isfinite(posterior_entrada_em) AND isfinite(posterior_conclusao_prevista_em) THEN (posterior_entrada_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND (posterior_conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND posterior_conclusao_prevista_em >= posterior_entrada_em\n    ELSE false\nEND)",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_historico_estado_check",
+      "type": "c",
+      "table": "manutencao_veiculo_historico",
+      "columns": [
+        "anterior_iniciada_em",
+        "status_anterior",
+        "anterior_concluida_em",
+        "anterior_cancelada_em",
+        "posterior_iniciada_em",
+        "status_posterior",
+        "posterior_concluida_em",
+        "posterior_cancelada_em"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK ((anterior_iniciada_em IS NOT NULL) = (status_anterior = ANY (ARRAY['EM_ANDAMENTO'::status_manutencao_veiculo, 'CONCLUIDA'::status_manutencao_veiculo])) AND (anterior_concluida_em IS NOT NULL) = (status_anterior = 'CONCLUIDA'::status_manutencao_veiculo) AND (anterior_cancelada_em IS NOT NULL) = (status_anterior = 'CANCELADA'::status_manutencao_veiculo) AND (posterior_iniciada_em IS NOT NULL) = (status_posterior = ANY (ARRAY['EM_ANDAMENTO'::status_manutencao_veiculo, 'CONCLUIDA'::status_manutencao_veiculo])) AND (posterior_concluida_em IS NOT NULL) = (status_posterior = 'CONCLUIDA'::status_manutencao_veiculo) AND (posterior_cancelada_em IS NOT NULL) = (status_posterior = 'CANCELADA'::status_manutencao_veiculo))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_historico_evento_check",
+      "type": "c",
+      "table": "manutencao_veiculo_historico",
+      "columns": [
+        "evento",
+        "status_anterior",
+        "status_posterior"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (evento = 'CONCLUSAO'::text AND status_anterior = 'EM_ANDAMENTO'::status_manutencao_veiculo AND status_posterior = 'CONCLUIDA'::status_manutencao_veiculo OR evento = 'CORRECAO_DATAS'::text AND status_anterior = 'CONCLUIDA'::status_manutencao_veiculo AND status_posterior = 'CONCLUIDA'::status_manutencao_veiculo OR evento = 'REABERTURA'::text AND status_anterior = 'CONCLUIDA'::status_manutencao_veiculo AND (status_posterior = ANY (ARRAY['AGENDADA'::status_manutencao_veiculo, 'EM_ANDAMENTO'::status_manutencao_veiculo])) OR evento = 'CANCELAMENTO'::text AND status_anterior = 'AGENDADA'::status_manutencao_veiculo AND status_posterior = 'CANCELADA'::status_manutencao_veiculo OR evento = 'REATIVACAO'::text AND status_anterior = 'CANCELADA'::status_manutencao_veiculo AND (status_posterior = ANY (ARRAY['AGENDADA'::status_manutencao_veiculo, 'EM_ANDAMENTO'::status_manutencao_veiculo])))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_historico_instantes_check",
+      "type": "c",
+      "table": "manutencao_veiculo_historico",
+      "columns": [
+        "registrado_em",
+        "anterior_iniciada_em",
+        "anterior_concluida_em",
+        "anterior_cancelada_em",
+        "posterior_iniciada_em",
+        "posterior_concluida_em",
+        "posterior_cancelada_em"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "CHECK (isfinite(registrado_em) AND (anterior_iniciada_em IS NULL OR isfinite(anterior_iniciada_em)) AND (anterior_concluida_em IS NULL OR isfinite(anterior_concluida_em) AND anterior_concluida_em >= anterior_iniciada_em) AND (anterior_cancelada_em IS NULL OR isfinite(anterior_cancelada_em)) AND (posterior_iniciada_em IS NULL OR isfinite(posterior_iniciada_em)) AND (posterior_concluida_em IS NULL OR isfinite(posterior_concluida_em) AND posterior_concluida_em >= posterior_iniciada_em) AND (posterior_cancelada_em IS NULL OR isfinite(posterior_cancelada_em)))",
+      "references": null,
+      "referencedColumns": null
+    },
+    {
+      "name": "manutencao_veiculo_historico_manutencao_id_fkey",
+      "type": "f",
+      "table": "manutencao_veiculo_historico",
+      "columns": [
+        "manutencao_id"
+      ],
+      "onDelete": "r",
+      "onUpdate": "a",
+      "validated": true,
+      "definition": "FOREIGN KEY (manutencao_id) REFERENCES manutencao_veiculo(id) ON DELETE RESTRICT",
+      "references": "manutencao_veiculo",
+      "referencedColumns": [
+        "id"
+      ]
+    },
+    {
+      "name": "manutencao_veiculo_historico_pkey",
+      "type": "p",
+      "table": "manutencao_veiculo_historico",
+      "columns": [
+        "id"
+      ],
+      "onDelete": " ",
+      "onUpdate": " ",
+      "validated": true,
+      "definition": "PRIMARY KEY (id)",
+      "references": null,
+      "referencedColumns": null
     },
     {
       "name": "motorista_cnh_key",

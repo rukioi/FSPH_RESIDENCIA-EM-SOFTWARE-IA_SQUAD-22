@@ -177,3 +177,20 @@ O reagendamento atualiza na mesma transação os recursos da viagem vinculada AG
 O motorista selecionado deve possuir conta de usuário vinculada e ativa; caso contrário, o agendamento ou reagendamento retorna HTTP 409. A verificação é feita na transação da reserva.
 
 SCRUM-240: motorista com impedimento conhecido no intervalo da reserva (inativação profissional, ausência `FOLGA`/`AFASTADO` vigente ou escala `FORA_DE_ESCALA` sobreposta) retorna `409 MOTORISTA_IMPEDIDO`, verificado após os locks. Ausência de escala registrada não bloqueia; a matriz CNH × classe veicular não é avaliada. A consulta `/disponibilidade` omite esses motoristas pelo mesmo predicado.
+
+## Disponibilidade e manutenção de veículos
+
+A disponibilidade, o agendamento e o reagendamento (inclusive troca e
+permanência no veículo) consideram ocorrências estruturadas de manutenção.
+Para uma manutenção agendada dentro do prazo, a interseção usa intervalos
+semiabertos em America/Maceio. O dia de previsão pertence à janela de
+manutenção. Adjacência é permitida. Manutenção agendada vencida ou em
+andamento impede novas alocações, inclusive futuras. A agenda continua
+exibindo reservas existentes.
+
+O início efetivo da viagem considera o instante do banco, inclusive para
+saída antecipada. Sem retorno previsto confiável, a janela é aberta. O
+status manual do veículo também é revalidado. Conflitos retornam 409,
+preservam a reserva vigente e revertem a tentativa sem realocação. Os fluxos
+de alocação usam READ COMMITTED com locks na ordem demanda, motoristas em
+ordem de ID, veículos em ordem de ID e viagem vinculada quando aplicável.

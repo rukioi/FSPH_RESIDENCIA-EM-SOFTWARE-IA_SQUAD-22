@@ -198,6 +198,78 @@ export type FinalizarTriagemSvo =
       decisao: 'ENCAMINHADA_IML';
       triagemObservacoes: string;
     };
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "TransicaoManutencao".
+ */
+export type TransicaoManutencao =
+  | {
+      acao: 'INICIAR';
+      alteracoes?: {
+        tipo?: 'PREVENTIVA' | 'CORRETIVA';
+        descricao?: string;
+        entrada?: string;
+        conclusaoPrevista?: string;
+        quilometragem?: number;
+        prestador?: string | null;
+        custo?: string | null;
+        observacoes?: string | null;
+      };
+    }
+  | {
+      acao: 'CONCLUIR';
+      alteracoes?: {
+        tipo?: 'PREVENTIVA' | 'CORRETIVA';
+        descricao?: string;
+        entrada?: string;
+        conclusaoPrevista?: string;
+        quilometragem?: number;
+        prestador?: string | null;
+        custo?: string | null;
+        observacoes?: string | null;
+      };
+    }
+  | {
+      acao: 'CANCELAR';
+      alteracoes?: {
+        tipo?: 'PREVENTIVA' | 'CORRETIVA';
+        descricao?: string;
+        entrada?: string;
+        conclusaoPrevista?: string;
+        quilometragem?: number;
+        prestador?: string | null;
+        custo?: string | null;
+        observacoes?: string | null;
+      };
+    }
+  | {
+      acao: 'REABRIR';
+      destino: 'AGENDADA' | 'EM_ANDAMENTO';
+      alteracoes?: {
+        tipo?: 'PREVENTIVA' | 'CORRETIVA';
+        descricao?: string;
+        entrada?: string;
+        conclusaoPrevista?: string;
+        quilometragem?: number;
+        prestador?: string | null;
+        custo?: string | null;
+        observacoes?: string | null;
+      };
+    }
+  | {
+      acao: 'REATIVAR';
+      destino: 'AGENDADA' | 'EM_ANDAMENTO';
+      alteracoes?: {
+        tipo?: 'PREVENTIVA' | 'CORRETIVA';
+        descricao?: string;
+        entrada?: string;
+        conclusaoPrevista?: string;
+        quilometragem?: number;
+        prestador?: string | null;
+        custo?: string | null;
+        observacoes?: string | null;
+      };
+    };
 
 export interface ApiSchemas {
   DashboardConsolidado: DashboardConsolidado;
@@ -338,6 +410,13 @@ export interface ApiSchemas {
   ReagendarSolicitacaoViagem: ReagendarSolicitacaoViagem;
   RespostaAgendaViagem: RespostaAgendaViagem;
   RespostaDisponibilidadeViagem: RespostaDisponibilidadeViagem;
+  IndicadoresManutencao: IndicadoresManutencao;
+  CadastroManutencao: CadastroManutencao;
+  EditarManutencao: EditarManutencao;
+  TransicaoManutencao: TransicaoManutencao;
+  RespostaManutencao: RespostaManutencao;
+  ListaManutencoes: ListaManutencoes;
+  HistoricoManutencao: HistoricoManutencao;
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
@@ -3356,6 +3435,223 @@ export interface RespostaDisponibilidadeViagem {
     }[];
   };
 }
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "IndicadoresManutencao".
+ */
+export interface IndicadoresManutencao {
+  data: {
+    referencia: {
+      /**
+       * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+       */
+      instante: string;
+      dataCivil: string;
+      fuso: 'America/Maceio';
+    };
+    filtros: {
+      veiculoId: string | null;
+      tipo: ('PREVENTIVA' | 'CORRETIVA') | null;
+    };
+    estoqueAtual: {
+      veiculosEmManutencao: number;
+      agendadas: number;
+      emAndamento: number;
+      atrasadas: number;
+    };
+    periodo: {
+      inicio: string | null;
+      fim: string | null;
+      fimExclusivo: string | null;
+      criterioConcluidas: 'CONCLUSAO_EFETIVA';
+      criterioCusto: 'ENTRADA_PLANEJADA';
+      concluidas: number;
+      custo: {
+        totalConhecido: string | null;
+        comCustoInformado: number;
+        comCustoDesconhecido: number;
+      };
+    };
+    alertas: {
+      preventivasProximos7Dias: {
+        total: number;
+        limite: 20;
+        /**
+         * No máximo 20 itens, em ordem determinística.
+         */
+        itens: {
+          id: string;
+          veiculo: {
+            id: string;
+            placa: string;
+          };
+          tipo: 'PREVENTIVA' | 'CORRETIVA';
+          status: 'AGENDADA' | 'EM_ANDAMENTO';
+          entrada: string;
+          conclusaoPrevista: string;
+        }[];
+        inicio: string;
+        fimExclusivo: string;
+      };
+      atrasos: {
+        total: number;
+        limite: 20;
+        /**
+         * No máximo 20 itens, em ordem determinística.
+         */
+        itens: {
+          id: string;
+          veiculo: {
+            id: string;
+            placa: string;
+          };
+          tipo: 'PREVENTIVA' | 'CORRETIVA';
+          status: 'AGENDADA' | 'EM_ANDAMENTO';
+          entrada: string;
+          conclusaoPrevista: string;
+        }[];
+      };
+    };
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "CadastroManutencao".
+ */
+export interface CadastroManutencao {
+  tipo: 'PREVENTIVA' | 'CORRETIVA';
+  descricao: string;
+  entrada: string;
+  conclusaoPrevista: string;
+  quilometragem: number;
+  prestador?: string | null;
+  custo?: string | null;
+  observacoes?: string | null;
+  veiculoId: string;
+  iniciarImediatamente?: boolean;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "EditarManutencao".
+ */
+export interface EditarManutencao {
+  tipo?: 'PREVENTIVA' | 'CORRETIVA';
+  descricao?: string;
+  entrada?: string;
+  conclusaoPrevista?: string;
+  quilometragem?: number;
+  prestador?: string | null;
+  custo?: string | null;
+  observacoes?: string | null;
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  iniciadaEm?: string;
+  /**
+   * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+   */
+  concluidaEm?: string;
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "RespostaManutencao".
+ */
+export interface RespostaManutencao {
+  data: {
+    id: string;
+    veiculo: {
+      id: string;
+      placa: string;
+      vinculo: 'PROPRIO' | 'LOCADO';
+    };
+    tipo: 'PREVENTIVA' | 'CORRETIVA';
+    descricao: string;
+    status: 'AGENDADA' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'CANCELADA';
+    entrada: string;
+    conclusaoPrevista: string;
+    prestador: string | null;
+    custo: string | null;
+    atrasada: boolean;
+    quilometragem: number;
+    observacoes: string | null;
+    iniciadaEm: string | null;
+    concluidaEm: string | null;
+    canceladaEm: string | null;
+    /**
+     * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+     */
+    criadoEm: string;
+    /**
+     * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+     */
+    atualizadoEm: string;
+    versao: string;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaManutencoes".
+ */
+export interface ListaManutencoes {
+  data: {
+    id: string;
+    veiculo: {
+      id: string;
+      placa: string;
+      vinculo: 'PROPRIO' | 'LOCADO';
+    };
+    tipo: 'PREVENTIVA' | 'CORRETIVA';
+    descricao: string;
+    status: 'AGENDADA' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'CANCELADA';
+    entrada: string;
+    conclusaoPrevista: string;
+    prestador: string | null;
+    custo: string | null;
+    atrasada: boolean;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "HistoricoManutencao".
+ */
+export interface HistoricoManutencao {
+  data: {
+    id: string;
+    manutencaoId: string;
+    evento: 'CONCLUSAO' | 'CORRECAO_DATAS' | 'REABERTURA' | 'CANCELAMENTO' | 'REATIVACAO';
+    statusAnterior: 'AGENDADA' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'CANCELADA';
+    statusPosterior: 'AGENDADA' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'CANCELADA';
+    anterior: {
+      entrada: string;
+      conclusaoPrevista: string;
+      iniciadaEm: string | null;
+      concluidaEm: string | null;
+      canceladaEm: string | null;
+    };
+    posterior: {
+      entrada: string;
+      conclusaoPrevista: string;
+      iniciadaEm: string | null;
+      concluidaEm: string | null;
+      canceladaEm: string | null;
+    };
+    autorId: string;
+    /**
+     * ISO com offset explícito até ±15:59, sem ano zero; a normalização institucional deve permanecer entre os anos 0001 e 9999.
+     */
+    registradoEm: string;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
 
 export interface ApiOperations {
   'viagens_post__api_viagens': { body: ApiSchemas['CriarViagem']; response: ApiSchemas['DetalheViagem'] };
@@ -3469,4 +3765,12 @@ export interface ApiOperations {
   'documentos_post__api_documentos': { body: ApiSchemas['CriarDocumento']; response: ApiSchemas['RespostaDocumento'] };
   'documentos_get__api_documentos_alertas': { body: undefined; response: ApiSchemas['AlertasDocumentais'] };
   'documentos_get__api_documentos_pendencias': { body: undefined; response: ApiSchemas['PendenciasDocumentos'] };
+  'manutencoes_get__api_manutencoes': { body: undefined; response: ApiSchemas['ListaManutencoes'] };
+  'manutencoes_post__api_manutencoes': { body: ApiSchemas['CadastroManutencao']; response: ApiSchemas['RespostaManutencao'] };
+  'manutencoes_get__api_manutencoes_indicadores': { body: undefined; response: ApiSchemas['IndicadoresManutencao'] };
+  'manutencoes_get__api_manutencoes_id_': { body: undefined; response: ApiSchemas['RespostaManutencao'] };
+  'manutencoes_patch__api_manutencoes_id_': { body: ApiSchemas['EditarManutencao']; response: ApiSchemas['RespostaManutencao'] };
+  'manutencoes_patch__api_manutencoes_id_status': { body: ApiSchemas['TransicaoManutencao']; response: ApiSchemas['RespostaManutencao'] };
+  'manutencoes_get__api_veiculos_id_manutencoes': { body: undefined; response: ApiSchemas['ListaManutencoes'] };
+  'manutencoes_get__api_manutencoes_id_historico': { body: undefined; response: ApiSchemas['HistoricoManutencao'] };
 }

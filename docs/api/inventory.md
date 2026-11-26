@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 111 operações.
+Gerado por api:generate; não editar manualmente. 119 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -115,5 +115,13 @@ Gerado por api:generate; não editar manualmente. 111 operações.
 | GET | /api/documentos/alertas | ADM, GESTOR_FROTA | sem corpo | 200 AlertasDocumentais | 400, 401, 403, 500, 405 | validado | SCRUM-193 RF46: fases no fuso America/Maceio por mês-calendário, sete dias e dia da validade. Lista paginada com responsável mínimo e vencidos; leitura sem efeitos. |
 | GET | /api/documentos/pendencias | ADM, GESTOR_FROTA | sem corpo | 200 PendenciasDocumentos | 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
 | POST | /api/documentos | ADM, GESTOR_FROTA | CriarDocumento | 201 RespostaDocumento | 400, 413, 415, 401, 403, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| GET | /api/manutencoes | ADM, GESTOR_FROTA | sem corpo | 200 ListaManutencoes | 400, 401, 403, 500, 405 | validado | Lista paginada por entrada civil inclusiva em America/Maceio. Busca literal por placa, descrição e prestador. |
+| POST | /api/manutencoes | ADM, GESTOR_FROTA | CadastroManutencao | 201 RespostaManutencao | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Conflitos de disponibilidade retornam 409 e preservam compromissos existentes. |
+| GET | /api/manutencoes/indicadores | ADM, GESTOR_FROTA | sem corpo | 200 IndicadoresManutencao | 400, 401, 403, 404, 500, 405 | validado | Estoque atual e alertas independem do período. Concluídas por conclusão efetiva, custo de não canceladas por entrada planejada. Fuso America/Maceio. |
+| GET | /api/manutencoes/{id} | ADM, GESTOR_FROTA | sem corpo | 200 RespostaManutencao | 400, 401, 403, 404, 500, 405 | validado | Detalhe sem autoria, com versão opaca de precisão de microssegundos. |
+| PATCH | /api/manutencoes/{id} | ADM, GESTOR_FROTA | EditarManutencao | 200 RespostaManutencao | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Conflitos de disponibilidade retornam 409 e preservam compromissos existentes. |
+| PATCH | /api/manutencoes/{id}/status | ADM, GESTOR_FROTA | TransicaoManutencao | 200 RespostaManutencao | 400, 401, 403, 404, 409, 413, 415, 500, 405 | validado | Conflitos de disponibilidade retornam 409 e preservam compromissos existentes. |
+| GET | /api/veiculos/{id}/manutencoes | ADM, GESTOR_FROTA | sem corpo | 200 ListaManutencoes | 400, 401, 403, 404, 500, 405 | validado | Ocorrências por veículo. Veículo inexistente retorna 404. |
+| GET | /api/manutencoes/{id}/historico | ADM, GESTOR_FROTA | sem corpo | 200 HistoricoManutencao | 400, 401, 403, 404, 500, 405 | validado | Eventos persistidos em ordem decrescente por data e ID. |
 
 Caminho desconhecido: 404 comum. Método não permitido: 405 + Allow, antes de auth. Todas as respostas recebem X-Request-Id. As exceções fechadas estão em [legacy-manifest.json](./legacy-manifest.json). Schemas legados documentam o transporte; não substituem os validadores existentes.

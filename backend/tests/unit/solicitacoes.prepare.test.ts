@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 
 const mocks=vi.hoisted(()=>({verifiedSql:vi.fn(),events:[] as string[],history:[] as {name:string;sha256:string}[],failure:''}));
-vi.mock('../../src/database/scripts/verify-test-db.js',()=>({root:process.cwd(),verifiedSql:mocks.verifiedSql}));
+vi.mock('../../src/database/scripts/verify-test-db.js',()=>({root:process.cwd(),verifiedSql:mocks.verifiedSql,isS10:false,testProfile:'t1'}));
 import {prepare} from '../../src/database/scripts/apply-test-migrations.js';
 const directory=resolve('backend/src/database/supabase/migrations');
 const migrations=readdirSync(directory).filter(name=>/^\d+_[a-z0-9_-]+\.sql$/.test(name)).sort().map(name=>({
@@ -20,7 +20,11 @@ beforeEach(()=>{
     return query.includes('select name, sha256')?mocks.history:[];
   },{
     unsafe:async(source:string)=>{
-        const migration=migrations.find(item=>item.source===source);
+        const migration=migrations.find(item=>item.source===source ||
+          (source.startsWith("SET LOCAL lock_timeout") &&
+            source.includes('CREATE TABLE public.manutencao_alerta_revisao') &&
+            !source.includes('COMMIT;') &&
+            item.name==='20261124000000_be_s10_02_c_manutencao_alerta_revisao.sql'));
         const operation=migration?.name??'seed';mocks.events.push(operation);
         if(mocks.failure===operation)throw new Error('Falha sintética');
     },
