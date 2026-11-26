@@ -22,6 +22,8 @@ export const agendamentoSolicitacao = z.object({
   dataHoraSaida: z.iso.datetime({ offset: true }), dataHoraRetornoPrevisto: z.iso.datetime({ offset: true }),
 });
 
+export const perfisCriacaoSolicitacao = ['SOLICITANTE_INTERNO', 'GESTOR_FROTA', 'ADM'];
+
 export const criarSolicitacaoSchema = z.strictObject({
   origem: texto.max(255),
   destino: texto.max(255),

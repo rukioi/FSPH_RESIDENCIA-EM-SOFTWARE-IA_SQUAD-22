@@ -69,11 +69,8 @@ function useCaixa(ativo: boolean) {
 const Contexto = createContext<ReturnType<typeof useCaixa> | null>(null);
 /** Compartilha caixa e contador entre o cabeçalho e a página, somente em memória. */
 export function NotificacoesProvider({children,ativo}:{children:ReactNode;ativo:boolean}) {
-  // Remonta a caixa antes de renderizar outra sessão; nenhuma caixa anterior é reutilizada.
-  const token = obterToken();
-  return <CaixaDaSessao key={ativo && token ? token : 'sem-sessao'} ativo={ativo}>{children}</CaixaDaSessao>;
-}
-function CaixaDaSessao({children,ativo}:{children:ReactNode;ativo:boolean}) {
+  // App troca a chave quando muda o token. Confirmar outra rota da mesma sessão
+  // só ativa a caixa, mantendo a página e a verificação de sessão montadas.
   const caixa = useCaixa(ativo);
   return <Contexto.Provider value={caixa}>{children}</Contexto.Provider>;
 }

@@ -2,7 +2,7 @@ import {comValidacaoTemporal} from './solicitacoes.erros.js';
 import {instanteEmMicrosPostgres} from './solicitacoes.datas.js';
 import type { UsuarioAutenticado } from '../../security/jwt.js';
 import { ErroHttp } from '../../shared/http/errors.js';
-import { criarSolicitacaoSchema, listarSolicitacoesSchema, solicitacao, rejeitarSolicitacaoSchema, idDecisaoSchema, decisaoSolicitacao, agendarSolicitacaoSchema, agendamentoSolicitacao, editarSolicitacaoSchema } from './solicitacoes.schemas.js';
+import { criarSolicitacaoSchema, listarSolicitacoesSchema, solicitacao, rejeitarSolicitacaoSchema, idDecisaoSchema, decisaoSolicitacao, agendarSolicitacaoSchema, agendamentoSolicitacao, editarSolicitacaoSchema, perfisCriacaoSolicitacao } from './solicitacoes.schemas.js';
 import { inserirSolicitacao, consultarSolicitacoes, decidirSolicitacao, agendarSolicitacao, editarSolicitacao, type LinhaSolicitacao, type ConsultaSolicitacoes, type NovaSolicitacao } from './solicitacoes.repository.js';
 import type { z } from 'zod';
 import { consultarAgendaSchema,consultarDisponibilidadeSchema,reagendarSolicitacaoSchema,respostaAgenda,respostaDisponibilidade } from './solicitacoes.schemas.js';
@@ -22,7 +22,7 @@ function validar<T>(schema: z.ZodType<T>, entrada: unknown): T {
 
 /** Prepara a criação sem persistir; identidade e estado nunca vêm do corpo. */
 export function prepararCriacao(body: unknown, usuario: UsuarioAutenticado): NovaSolicitacao {
-  if (usuario.perfil !== 'SOLICITANTE_INTERNO') throw new ErroHttp(403, 'ACESSO_NEGADO', 'Acesso não permitido.');
+  if (!perfisCriacaoSolicitacao.includes(usuario.perfil)) throw new ErroHttp(403, 'ACESSO_NEGADO', 'Acesso não permitido.');
   return { dados: validar(criarSolicitacaoSchema, body), solicitanteId: usuario.id, status: 'PENDENTE' };
 }
 

@@ -24,6 +24,7 @@ function compartilhada(caminho: string, base: '/gestor' | '/admin') {
 }
 
 function lerModoInicial(): boolean {
+  if (typeof window === 'undefined') return false
   try {
     if (window.location.pathname.startsWith('/admin/')) return true
     if (window.location.pathname.startsWith('/gestor/')) return false

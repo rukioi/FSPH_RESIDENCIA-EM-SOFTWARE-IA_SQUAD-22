@@ -283,26 +283,18 @@ function AppContent({
   const [caminhoVerificado, setCaminhoVerificado] = useState<string | null>(
     null,
   );
+  const [tentativaSessao, setTentativaSessao] = useState(0);
 
   const previewSvo =
     import.meta.env.DEV && telaPreviewSvo(caminho) !== null;
 
   useEffect(() => {
-    let ativa = true;
-
     if (previewSvo) {
       window.location.reload();
-
-      return () => {
-        ativa = false;
-      };
+      return;
     }
 
-    if (caminho === ROTAS.loginMotorista) {
-      return () => {
-        ativa = false;
-      };
-    }
+    if (caminho === ROTAS.loginMotorista) return;
 
     const tokenAoIniciar = obterToken();
 
@@ -316,16 +308,21 @@ function AppContent({
         navegar(ROTAS.login, true);
       }
 
-      return () => {
-        ativa = false;
-      };
+      return;
     }
 
     setCaminhoVerificado(null);
+    const controller = new AbortController();
+    const cancelar = () => controller.abort();
+    const restaurar = (event: PageTransitionEvent) => {
+      if (event.persisted) setTentativaSessao(tentativa => tentativa + 1);
+    };
+    window.addEventListener("pagehide", cancelar);
+    window.addEventListener("pageshow", restaurar);
 
-    void buscarSessao()
+    void buscarSessao(controller.signal)
       .then((usuario) => {
-        if (!ativa || obterToken() !== tokenAoIniciar) return;
+        if (controller.signal.aborted || obterToken() !== tokenAoIniciar) return;
 
         // ADM usa as telas do Gestor, mas com endereços /admin/... na barra.
         definirModoAdm(usuario?.perfil === "ADM");
@@ -374,7 +371,7 @@ function AppContent({
         }
       })
       .catch(() => {
-        if (!ativa || obterToken() !== tokenAoIniciar) return;
+        if (controller.signal.aborted || obterToken() !== tokenAoIniciar) return;
 
         onSessaoConfirmada(null);
         sair();
@@ -384,9 +381,11 @@ function AppContent({
       });
 
     return () => {
-      ativa = false;
+      cancelar();
+      window.removeEventListener("pagehide", cancelar);
+      window.removeEventListener("pageshow", restaurar);
     };
-  }, [caminho, previewSvo, onSessaoConfirmada]);
+  }, [caminho, previewSvo, onSessaoConfirmada, tentativaSessao]);
 
   if (previewSvo) return null;
 

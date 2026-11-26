@@ -31,7 +31,8 @@ As regras são aplicadas no backend; o guarda de rotas no frontend melhora a nav
 
 ## Ao entregar uma funcionalidade
 
-SCRUM-137: POST /api/solicitacoes-viagem é exclusivo de SOLICITANTE_INTERNO.
+SCRUM-137/260: POST /api/solicitacoes-viagem permite SOLICITANTE_INTERNO, ADM e
+GESTOR_FROTA em nome próprio. Solicitante e ator da auditoria vêm da sessão.
 GET permite SOLICITANTE_INTERNO somente nos próprios pedidos e ADM/GESTOR_FROTA
 em todos os pedidos, incluindo nome/ID do solicitante. ATENDENTE_SVO e MOTORISTA
 não acessam esse recurso. Não há endpoint de cancelamento.
