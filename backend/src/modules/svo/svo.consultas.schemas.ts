@@ -9,13 +9,20 @@ const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(valor => {
 const pagina = z.string().regex(/^[1-9]\d*$/).default('1');
 const limite = z.string().regex(/^[1-9]\d*$/).default('20');
 export const consultaSvoPaginacao = z.strictObject({ page: pagina, limit: limite });
+export const perfisAcompanhamentoSvo = ['ADM', 'GESTOR_FROTA'];
+export const queryAcompanhamentoSvo = [
+  { name: 'page', required: false, schema: pagina },
+  { name: 'limit', required: false, schema: limite },
+];
+const statusTriagem = z.enum(['AGUARDANDO_TRIAGEM', 'CONFIRMADA_SVO', 'ENCAMINHADA_IML']);
+const statusOrdem = z.enum(['PENDENTE_ALOCACAO', 'EM_DESLOCAMENTO', 'EM_TRANSPORTE', 'CONCLUIDA', 'CANCELADA']);
 export const consultaSvoFiltroSolicitacoes = consultaSvoPaginacao.extend({
-  status: z.enum(['AGUARDANDO_TRIAGEM', 'CONFIRMADA_SVO', 'ENCAMINHADA_IML']).optional(),
+  status: statusTriagem.optional(),
   inicio: data.optional(),
   fim: data.optional(),
 }).refine(valor => !valor.inicio || !valor.fim || valor.inicio <= valor.fim, 'Período inválido.');
 export const consultaSvoFiltroOrdens = consultaSvoPaginacao.extend({
-  status: z.enum(['PENDENTE_ALOCACAO', 'EM_DESLOCAMENTO', 'EM_TRANSPORTE', 'CONCLUIDA', 'CANCELADA']).optional(),
+  status: statusOrdem.optional(),
 });
 
 const numero = z.number().int().nonnegative();
@@ -37,6 +44,14 @@ const evento = z.object({
 });
 
 export const svoConsultasSchemas = {
+  ListaAcompanhamentoSvo: z.object({
+    data: z.array(z.strictObject({
+      protocolo: z.string(),
+      statusTriagem: statusTriagem.nullable(),
+      statusOrdem: statusOrdem.nullable(),
+    })),
+    meta,
+  }),
   ListaSolicitacoesSvoPaginada: z.object({ data: z.array(resumoSolicitacao), meta }),
   ListaOrdensSvoPaginada: z.object({ data: z.array(resumoOrdem), meta }),
   DetalheSolicitacaoSvo: resumoSolicitacao.extend({

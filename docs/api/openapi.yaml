@@ -7136,6 +7136,109 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
+  /api/svo/acompanhamento:
+    get:
+      operationId: svo_get__api_svo_acompanhamento
+      tags:
+        - svo
+      description: "RF53: protocolo e estados distintos de triagem e ordem, paginados. Consulta gerencial sem dados pessoais ou clínicos."
+      security:
+        - bearerAuth: []
+      x-perfis:
+        - ADM
+        - GESTOR_FROTA
+      x-runtime-validation: true
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            default: "1"
+            type: string
+            pattern: ^[1-9]\d*$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            default: "20"
+            type: string
+            pattern: ^[1-9]\d*$
+      responses:
+        "200":
+          description: Sucesso no formato atual
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListaAcompanhamentoSvo"
+        "400":
+          description: Falha atual HTTP 400
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "401":
+          description: Falha atual HTTP 401
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "403":
+          description: Falha atual HTTP 403
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "405":
+          description: Método não permitido antes da autenticação
+          headers:
+            Allow:
+              schema:
+                type: string
+            X-Request-Id:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
+        "500":
+          description: Falha atual HTTP 500
+          headers:
+            X-Request-Id:
+              description: UUID gerado pelo servidor; IDs recebidos não são confiados.
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Erro"
   /api/svo/solicitacoes/paginadas:
     get:
       operationId: svo_get__api_svo_solicitacoes_paginadas
@@ -19574,6 +19677,61 @@ components:
         - veiculo_id
         - status
       description: Conversão legada explícita para Number; precisão de BIGINT acima de MAX_SAFE_INTEGER não é garantida.
+    ListaAcompanhamentoSvo:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              protocolo:
+                type: string
+              statusTriagem:
+                anyOf:
+                  - type: string
+                    enum:
+                      - AGUARDANDO_TRIAGEM
+                      - CONFIRMADA_SVO
+                      - ENCAMINHADA_IML
+                  - type: "null"
+              statusOrdem:
+                anyOf:
+                  - type: string
+                    enum:
+                      - PENDENTE_ALOCACAO
+                      - EM_DESLOCAMENTO
+                      - EM_TRANSPORTE
+                      - CONCLUIDA
+                      - CANCELADA
+                  - type: "null"
+            required:
+              - protocolo
+              - statusTriagem
+              - statusOrdem
+            additionalProperties: false
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            limit:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            total:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+          required:
+            - page
+            - limit
+            - total
+      required:
+        - data
+        - meta
     ListaSolicitacoesSvoPaginada:
       type: object
       properties:

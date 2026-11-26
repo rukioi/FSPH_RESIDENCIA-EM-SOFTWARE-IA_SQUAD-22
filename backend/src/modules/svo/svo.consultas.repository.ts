@@ -23,6 +23,22 @@ function totalSeguro(valor: unknown): number {
   return total;
 }
 
+/** Retorna uma linha por solicitação, consultando apenas o protocolo e os estados persistidos. */
+export async function consultarAcompanhamentoSvo(p: ConsultaPagina) {
+  return sql.begin('isolation level repeatable read read only', async tx => {
+    const data = await tx`
+      SELECT so.codigo AS protocolo, so.status_triagem::text AS "statusTriagem",
+             oc.status::text AS "statusOrdem"
+      FROM public.solicitacao_obito so
+      LEFT JOIN public.ordem_coleta oc ON oc.solicitacao_obito_id = so.id
+      ORDER BY so.criado_em DESC NULLS LAST, so.id DESC
+      LIMIT ${p.limit} OFFSET ${p.offset}
+    `;
+    const [contagem] = await tx`SELECT count(*)::text AS total FROM public.solicitacao_obito`;
+    return { data, meta: { page: p.page, limit: p.limit, total: totalSeguro(contagem.total) } };
+  });
+}
+
 /** Consulta e total dentro do mesmo snapshot; resultados ordenados por data e ID. */
 export async function consultarSolicitacoesPaginadas(f: FiltroSolicitacoes) {
   const status = f.status ?? null, inicio = f.inicio ?? null, fim = f.fim ?? null;
