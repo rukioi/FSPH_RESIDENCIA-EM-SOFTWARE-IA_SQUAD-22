@@ -91,7 +91,7 @@ test.each(['GET', 'POST'])('%s sem sessão ou com usuário inexistente retorna 4
   expect((await call(method, '99')).status).toBe(401);
 });
 
-test.each([['POST', '2'], ['POST', '3'], ['POST', '4'], ['POST', '5'], ['GET', '4'], ['GET', '5']])('%s nega perfil da identidade %s com 403', async (method, id) => {
+test.each([['POST', '4'], ['POST', '5'], ['GET', '4'], ['GET', '5']])('%s nega perfil da identidade %s com 403', async (method, id) => {
   expect((await call(method, id)).status).toBe(403);
 });
 
@@ -102,12 +102,13 @@ test('entrada inválida nunca chega à persistência', async () => {
   expect(consultarSolicitacoes).not.toHaveBeenCalled();
 });
 
-test('POST publicado retorna 201, identidade efetiva, código de apresentação e finalidade', async () => {
-  const response = await call('POST', '1');
+test.each(['1', '2', '3'])('POST da sessão %s cria em nome próprio e inicia PENDENTE', async id => {
+  vi.mocked(inserirSolicitacao).mockResolvedValueOnce({ ...row, solicitante_id: id });
+  const response = await call('POST', id);
   expect(response.status).toBe(201);
   expect(response.headers.get('X-Request-Id')).toBeTruthy();
-  expect(await response.json()).toMatchObject({ data: { id: '1024', codigo: 'TRP-1024', codigoExibicao: '#TRP-1024', solicitante: { id: '1', nome: 'Fixture' }, finalidade: body.finalidade, dataHoraSaida: row.data_hora_saida, status: 'PENDENTE' } });
-  expect(inserirSolicitacao).toHaveBeenCalledWith({ dados: body, solicitanteId: '1', status: 'PENDENTE' });
+  expect(await response.json()).toMatchObject({ data: { id: '1024', codigo: 'TRP-1024', codigoExibicao: '#TRP-1024', solicitante: { id, nome: 'Fixture' }, finalidade: body.finalidade, dataHoraSaida: row.data_hora_saida, status: 'PENDENTE' } });
+  expect(inserirSolicitacao).toHaveBeenCalledWith({ dados: body, solicitanteId: id, status: 'PENDENTE' });
 });
 
 test.each([['1', { tipo: 'proprias', solicitanteId: '1' }], ['2', { tipo: 'gestao' }], ['3', { tipo: 'gestao' }]])('GET da identidade %s aplica escopo e paginação no repository', async (id, escopo) => {

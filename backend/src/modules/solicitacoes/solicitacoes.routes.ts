@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { autenticarRequisicao } from '../../security/session.js';
 import { autorizarPerfis } from '../../security/authorization.js';
 import { enviarErro } from '../../shared/http/json.js';
+import { perfisCriacaoSolicitacao } from './solicitacoes.schemas.js';
 import { criarSolicitacao, listarSolicitacoes, decidirPedido, agendarPedido, editarPedido,consultarAgendaPedido,reagendarPedido,detalharPedido,historicoPedido } from './solicitacoes.controller.js';
 
 /** Aplica sessão atual e permissões aos endpoints institucionais, separados do SVO. */
@@ -22,7 +23,7 @@ export async function solicitacoesRoute(req: IncomingMessage, res: ServerRespons
   }
   const usuario = await autenticarRequisicao(req, res);
   if (!usuario) return;
-  const perfis = decisao || (edicao && req.method==='PATCH') || consulta ? ['ADM', 'GESTOR_FROTA'] : req.method === 'POST' ? ['SOLICITANTE_INTERNO'] : ['SOLICITANTE_INTERNO', 'GESTOR_FROTA', 'ADM'];
+  const perfis = decisao || (edicao && req.method==='PATCH') || consulta ? ['ADM', 'GESTOR_FROTA'] : perfisCriacaoSolicitacao;
   if (!autorizarPerfis(usuario, perfis, res)) return;
   if(historico){await historicoPedido(req,res,usuario,historico[1]);return;}
   if (consulta) {

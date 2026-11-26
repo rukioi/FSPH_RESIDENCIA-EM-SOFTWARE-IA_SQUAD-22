@@ -44,7 +44,7 @@ afterAll(async()=>{
       await tx`DELETE FROM public.log_atividade WHERE usuario_id IN (7137001,7137002,7137003,7137004,7137005)`;
       await tx`DELETE FROM public.notificacao WHERE viagem_id IN (SELECT id FROM public.viagem WHERE solicitacao_id IN (SELECT id FROM public.solicitacao_viagem WHERE solicitante_id IN (7137003,7137004)))`;
       await tx`DELETE FROM public.viagem WHERE solicitacao_id IN (SELECT id FROM public.solicitacao_viagem WHERE solicitante_id IN (7137003,7137004))`;
-      await tx`DELETE FROM public.solicitacao_viagem WHERE solicitante_id IN (7137003,7137004)`;
+      await tx`DELETE FROM public.solicitacao_viagem WHERE solicitante_id IN (7137001,7137002,7137003,7137004)`;
       await tx`DELETE FROM public.motorista WHERE id=7137101`;
       await tx`DELETE FROM public.veiculo WHERE id=7137201`;
       await tx`DELETE FROM public.usuario WHERE id IN (7137001,7137002,7137003,7137004,7137005)`;
@@ -106,9 +106,22 @@ test('HTTP exige autenticação em todas as onze operações institucionais',asy
     expect(response.status,operation.id).toBe(401);
   }
 });
+test.each(['adm','gestor'] as const)('HTTP persiste pedido e autoria em nome próprio para %s',async actor=>{
+  const pedido=await create({},actor);
+  expect(pedido).toMatchObject({status:'PENDENTE',solicitante:{id:ids[actor]}});
+  const [stored]=await sql`SELECT solicitante_id::text,status,motorista_id,veiculo_id FROM public.solicitacao_viagem WHERE id=${pedido.id}`;
+  expect(stored).toEqual({solicitante_id:ids[actor],status:'PENDENTE',motorista_id:null,veiculo_id:null});
+  const logs=await sql`SELECT usuario_id::text,tipo_evento FROM public.log_atividade WHERE solicitacao_viagem_id=${pedido.id}`;
+  expect([...logs]).toEqual([{usuario_id:ids[actor],tipo_evento:'solicitacao_viagem_criada'}]);
+  expect((await call('/'+pedido.id)).status).toBe(200);
+  expect((await call('/'+pedido.id,'GET',undefined,'a')).status).toBe(404);
+  expect((await call('','POST',{...input,solicitanteId:ids.b},actor)).status).toBe(400);
+  expect((await call('','POST',{...input,status:'APROVADA'},actor)).status).toBe(400);
+});
+
 test('HTTP valida perfis efetivos e rejeita entradas com 400 antes da persistência',async()=>{
   const pedido=await create();
-  expect((await call('','POST',input,'adm')).status).toBe(403);
+  expect((await call('','POST',input,'negado')).status).toBe(403);
   for(const path of ['/'+pedido.id+'/aprovar','/'+pedido.id+'/rejeitar','/'+pedido.id+'/agendar','/'+pedido.id+'/reagendar'])expect((await call(path,'POST',{},'a')).status).toBe(403);
   expect((await call('/'+pedido.id,'PATCH',{origem:'Proibido'},'a')).status).toBe(403);
   expect((await call('/agenda','GET',undefined,'a')).status).toBe(403);

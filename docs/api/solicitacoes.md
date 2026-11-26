@@ -2,7 +2,7 @@
 
 | Método | Rota | Autenticação | Perfis | Corpo |
 | --- | --- | --- | --- | --- |
-| POST | /api/solicitacoes-viagem | Bearer JWT e usuário ativo atual | SOLICITANTE_INTERNO | JSON até 64 KiB |
+| POST | /api/solicitacoes-viagem | Bearer JWT e usuário ativo atual | SOLICITANTE_INTERNO, GESTOR_FROTA, ADM | JSON até 64 KiB |
 | GET | /api/solicitacoes-viagem | Bearer JWT e usuário ativo atual | SOLICITANTE_INTERNO, GESTOR_FROTA, ADM | Sem corpo |
 
 Aprovação e rejeição: [contrato SCRUM-138](./solicitacoes-decisoes.md).
@@ -14,7 +14,9 @@ Detalhes e histórico por vínculo estruturado: [contrato SCRUM-157](./solicitac
 POST estrito: origem/destino não vazios até 255 caracteres; finalidade não vazia;
 dataHoraSaida ISO 8601 com offset explícito; qtdPassageiros inteiro entre 1 e
 2147483647. Sem retorno previsto, identidade, código, status ou recursos no corpo.
-Campos extras rejeitados. Identidade vem exclusivamente da sessão.
+Campos extras rejeitados. A sessão identifica simultaneamente o solicitante e o
+autor da criação, inclusive para ADM e Gestor. O pedido nasce interno e PENDENTE.
+Veja a [matriz da SCRUM-259](../solicitacoes/sprint10-abertura-gestao.md).
 
 GET aceita somente page, limit e status, sem duplicatas. Defaults: page=1,
 limit=20, máximo 100; offset deve ser inteiro seguro. Status usa o enum existente:

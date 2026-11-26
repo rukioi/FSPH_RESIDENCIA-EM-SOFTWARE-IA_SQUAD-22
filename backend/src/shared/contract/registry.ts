@@ -22,7 +22,7 @@ import { svoSchemas } from '../../modules/svo/svo.schemas.js';
 import { svoConsultasSchemas } from '../../modules/svo/svo.consultas.schemas.js';
 import { svoDashboardSchemas } from '../../modules/svo/svo.dashboard.schemas.js';
 import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas.js';
-import { solicitacoesSchemas, statusSolicitacao, idRecursoSchema } from '../../modules/solicitacoes/solicitacoes.schemas.js';
+import { solicitacoesSchemas, statusSolicitacao, idRecursoSchema, perfisCriacaoSolicitacao } from '../../modules/solicitacoes/solicitacoes.schemas.js';
 import { dataHoraInstitucionalSchema } from '../../modules/solicitacoes/solicitacoes.datas.js';
 
 export const schemas = { ...dashboardConsolidadoSchemas, ...anotacoesSchemas, ...anexosSchemas, ListaEvidenciasViagem:z.object({data:z.array(evidenciaMetadadosSchema),meta:schemasMeta}), EvidenciaArquivo:z.string(), ...viagensSchemas, ...relatoriosSchemas, ...notificacoesSchemas, Erro: erro, ErroString: erroString, ErroSvo: erroSvo,
@@ -108,7 +108,7 @@ export const operations: Operacao[] = [
     status:200, errors:[400,401,403,404,409,500], notes:'Sem corpo (conteúdo recebido é ignorado). Somente PENDENTE → APROVADA; decisão e auditoria na mesma transação com bloqueio de linha. Não agenda nem aloca recursos.'}),
   op('solicitacoes','post','/api/solicitacoes-viagem/{id}/rejeitar','RespostaDecisaoSolicitacaoViagem',gestor,{
     status:200, body:'RejeitarSolicitacaoViagem', errors:[400,401,403,404,409,413,415,500], notes:'Corpo estrito {motivo}, texto não vazio após trim. Somente PENDENTE → REPROVADA. Motivo persistido; ator pela sessão; auditoria transacional sem motivo privado na descrição.'}),
-  op('solicitacoes','post','/api/solicitacoes-viagem','RespostaSolicitacaoViagem',['SOLICITANTE_INTERNO'],{
+  op('solicitacoes','post','/api/solicitacoes-viagem','RespostaSolicitacaoViagem',perfisCriacaoSolicitacao,{
     body:'CriarSolicitacaoViagem', errors:[400,401,403,404,409,413,415,500],
     notes:'Corpo estrito; identidade pela sessão; PENDENTE. Código armazenado TRP-n, apresentação #TRP-n. Saída normalizada para America/Maceio sem fuso no banco. Criação e auditoria atômicas.'}),
   op('solicitacoes','get','/api/solicitacoes-viagem','ListaSolicitacoesViagem',['SOLICITANTE_INTERNO','GESTOR_FROTA','ADM'],{

@@ -208,6 +208,15 @@ export function checkCompatibility(previous: Document, current: Document) {
         (candidate as {description?:string}).description = anterior;
       }
     }
+    // SCRUM-260: ampliação aprovada de perfis para criação institucional em nome próprio.
+    if (path === '/api/solicitacoes-viagem' && method === 'post' && candidate) {
+      const before = definition as { 'x-perfis'?: string[] };
+      const after = candidate as typeof before;
+      if (JSON.stringify(before['x-perfis']) === '["SOLICITANTE_INTERNO"]'
+        && JSON.stringify(after['x-perfis']) === '["SOLICITANTE_INTERNO","GESTOR_FROTA","ADM"]') {
+        after['x-perfis'] = before['x-perfis'];
+      }
+    }
     if (JSON.stringify(definition) !== JSON.stringify(candidate)) throw new Error(`Contrato existente alterado: ${method.toUpperCase()} ${path}. Planeje compatibilidade explicitamente.`);
   }
   for (const [name,schema] of Object.entries(previous.components.schemas)) {

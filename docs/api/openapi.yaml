@@ -4008,6 +4008,8 @@ paths:
         - bearerAuth: []
       x-perfis:
         - SOLICITANTE_INTERNO
+        - GESTOR_FROTA
+        - ADM
       x-runtime-validation: true
       parameters: []
       requestBody:
