@@ -25,6 +25,7 @@
     "db:test:prepare": "tsx backend/src/database/scripts/apply-test-migrations.ts",
     "db:test:restore": "tsx backend/src/database/scripts/rehearse-test-restore.ts",
     "db:test:upgrade": "tsx backend/src/database/scripts/rehearse-test-restore.ts --upgrade",
+    "db:test:file-pilot": "tsx backend/src/database/scripts/rehearse-test-restore.ts --file-pilot",
     "db:test:audit": "tsx backend/src/database/scripts/audit-sprint10.ts",
     "db:migrate": "supabase db push --workdir backend/src/database --skip-vault",
     "db:docs:generate": "tsx backend/src/database/scripts/generate-db-docs.ts",

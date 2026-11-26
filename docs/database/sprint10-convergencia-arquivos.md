@@ -74,3 +74,39 @@ espaço das tabelas, índices, TOAST, WAL e backup. Medir o acréscimo físico d
 propor rollout. O número de arquivos elegíveis no ambiente compartilhado
 continua sem medição. Planejar margem para a coexistência das duas cópias,
 sem pressupor deduplicação por hash.
+
+## Execução da SCRUM-245
+
+```sh
+npm run db:test:start
+npm run db:test:prepare
+npm run db:test:file-pilot
+npm run db:docs:check
+npm run test:db
+```
+
+O comando e o CI verificam container, marcador e hashes do histórico antes
+de criar um banco descartável. Ele é montado com as migrations e comparado
+com a instalação limpa. O script aplica a ponte dentro dessa cópia
+descartável. O [SQL de cópia](../../backend/tests/database/fixtures/scrum-245-copy.sql)
+transfere somente as evidências selecionadas pelo validador de viagem e pelas
+regras atuais de nome. O mesmo lote pode rodar novamente sem criar um segundo
+anexo para uma evidência. O hash idêntico entre viagens gera IDs e vínculos
+distintos.
+
+As [fixtures](../../backend/tests/database/fixtures/scrum-245-files.sql)
+incluem duas versões da foto inicial, uma foto com os mesmos bytes em outra
+viagem, um PNG truncado, um nome incompatível, um documento PDF legado, um
+comprovante legado e um anexo documental existente. A validação confere
+ausência de cópia por falta de proveniência ou arquivo inválido. Também
+confere os hashes e vínculos, incluindo a recusa de cruzar viagens ou
+associar ao histórico o anexo de outro documento. A ponte tem RLS habilitada
+e os papéis `anon` e `authenticated` têm a leitura recusada em SQL.
+
+O rollback da ponte vazia recupera o catálogo original. Com cópias já
+confirmadas, a guarda recusa a reversão e preserva a origem, os bytes e a
+correspondência de IDs. Uma falha simulada antes do commit comprova o
+rollback atômico da inserção. O backup do estado pós-cópia é restaurado em
+outro banco descartável, com comparação de schema, permissões, contagens e
+SHA-256. O log registra volume lógico copiado, variação física, tempos de
+backup e restore e as exclusões por categoria.
