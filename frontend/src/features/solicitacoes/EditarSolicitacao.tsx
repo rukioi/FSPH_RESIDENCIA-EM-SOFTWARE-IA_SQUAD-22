@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { navegar } from '../../app/routes/router'
+import { lerRetornoAgenda, navegarComRetornoAgenda } from './retornoAgenda'
 import { rotaSolicitacao } from '../../app/routes/rotas'
 import { Icone } from '../../shared/components/Icone'
 import {
@@ -73,6 +73,7 @@ export function EditarSolicitacao({ id, perfil, base }: Props) {
   const geracao = useRef(0)
 
   const rotaDetalhe = rotaSolicitacao(base, id)
+  const retornoAgenda = perfil === 'gestor' ? lerRetornoAgenda() : null
 
   const carregar = useCallback(async () => {
     const consulta = ++geracao.current
@@ -157,7 +158,7 @@ export function EditarSolicitacao({ id, perfil, base }: Props) {
           type="button"
           className="btn btn--secundario"
           style={{ marginTop: 16 }}
-          onClick={() => navegar(base)}
+          onClick={() => navegarComRetornoAgenda(retornoAgenda?.caminho ?? base, retornoAgenda)}
         >
           Voltar
         </button>
@@ -173,7 +174,7 @@ export function EditarSolicitacao({ id, perfil, base }: Props) {
       <button
         type="button"
         className="sol-voltar"
-        onClick={() => navegar(rotaDetalhe)}
+        onClick={() => navegarComRetornoAgenda(rotaDetalhe, retornoAgenda)}
       >
         <Icone nome="seta" tamanho={18} />
         Chamado #{(dados.codigoExibicao || dados.codigo).replace(/^#/, '')}
@@ -213,7 +214,7 @@ export function EditarSolicitacao({ id, perfil, base }: Props) {
             valoresIniciais={montarValores(dados)}
             desabilitado={salvando}
             rotuloEnviar={salvando ? 'Salvando...' : 'Salvar alterações'}
-            aoCancelar={() => navegar(rotaDetalhe)}
+            aoCancelar={() => navegarComRetornoAgenda(rotaDetalhe, retornoAgenda)}
             aoEnviar={salvar}
           />
         </>

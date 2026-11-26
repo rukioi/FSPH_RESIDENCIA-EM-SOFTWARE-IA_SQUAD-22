@@ -24,6 +24,12 @@ function useCaixa(ativo: boolean) {
     return buscarNotificacoes(filtro,page,signal);
   },[ativo,token,caminho,filtro,page]);
   const remote = useRemoteData(carregar,vazia);
+  // A última página pode desaparecer após leituras ou mudanças no servidor.
+  useEffect(()=>{
+    if (!ativo || remote.loading || remote.error || remote.data.meta.page !== page) return;
+    const ultimaPagina = Math.max(1, Math.ceil(remote.data.meta.total / remote.data.meta.limit));
+    if (page > ultimaPagina) setPage(ultimaPagina);
+  },[ativo,remote.loading,remote.error,remote.data.meta.page,remote.data.meta.total,remote.data.meta.limit,page]);
   const retryRef = useRef(remote.retry);
   retryRef.current = remote.retry;
   useEffect(()=>{
@@ -34,7 +40,8 @@ function useCaixa(ativo: boolean) {
       if (!sincronizacoes.current && !escrita.current) retryRef.current();
     });
     window.addEventListener('focus',atualizar);
-    return ()=>{cancelar();window.clearInterval(timer);window.removeEventListener('focus',atualizar);};
+    document.addEventListener('visibilitychange',atualizar);
+    return ()=>{cancelar();window.clearInterval(timer);window.removeEventListener('focus',atualizar);document.removeEventListener('visibilitychange',atualizar);};
   },[ativo]);
   useEffect(()=>{
     if (!ativo) remote.setData(vazia);
@@ -48,21 +55,10 @@ function useCaixa(ativo: boolean) {
     try {
       await lerNotificacoes(id,controller.signal);
       if (!controller.signal.aborted) {
-        const lidaEm = new Date().toISOString();
-        remote.setData(atual => {
-          const atualizadas = id ? atual.data.filter(n => n.id === id && !n.lidaEm).length : atual.data.filter(n => !n.lidaEm).length;
-          if (id && !atualizadas) return atual;
-          const data = id
-            ? atual.data.map(n => n.id === id ? {...n,lidaEm} : n)
-            : atual.data.map(n => n.lidaEm ? n : {...n,lidaEm});
-          if (!id) return { ...atual, data: filtro === 'nao-lidas' ? [] : data,
-            meta: { ...atual.meta, total: filtro === 'nao-lidas' ? 0 : atual.meta.total, naoLidas: 0 } };
-          const removidas = filtro === 'nao-lidas' ? atualizadas : 0;
-          return { ...atual, data: removidas ? data.filter(n => n.id !== id) : data,
-            meta: { ...atual.meta, total: atual.meta.total - removidas,
-              naoLidas: Math.max(0, atual.meta.naoLidas - atualizadas) } };
-        });
-        if (!id && filtro === 'lidas') remote.retry();
+        // O GET confirma datas, contador global, filtro e paginação no servidor.
+        // Não cria lidaEm no navegador nem deixa uma página parcialmente vazia.
+        remote.setData(atual => atual);
+        remote.retry();
       }
     } catch (erro) { if (!controller.signal.aborted) setErroAcao(errorMessage(erro)); }
     finally { if (!controller.signal.aborted) {escrita.current=null;setSalvando(false);} }
@@ -73,6 +69,11 @@ function useCaixa(ativo: boolean) {
 const Contexto = createContext<ReturnType<typeof useCaixa> | null>(null);
 /** Compartilha caixa e contador entre o cabeçalho e a página, somente em memória. */
 export function NotificacoesProvider({children,ativo}:{children:ReactNode;ativo:boolean}) {
+  // Remonta a caixa antes de renderizar outra sessão; nenhuma caixa anterior é reutilizada.
+  const token = obterToken();
+  return <CaixaDaSessao key={ativo && token ? token : 'sem-sessao'} ativo={ativo}>{children}</CaixaDaSessao>;
+}
+function CaixaDaSessao({children,ativo}:{children:ReactNode;ativo:boolean}) {
   const caixa = useCaixa(ativo);
   return <Contexto.Provider value={caixa}>{children}</Contexto.Provider>;
 }
