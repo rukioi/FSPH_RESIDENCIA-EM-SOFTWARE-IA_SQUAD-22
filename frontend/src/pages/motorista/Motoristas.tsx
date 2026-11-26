@@ -909,7 +909,7 @@ export function Motoristas() {
               <IconeGestor nome="confirmado" tamanho={18} />
             </span>
           </div>
-          <strong>{disponiveis}</strong>
+          <strong>disponiveis</strong>
           <small>Livres para atribuição</small>
         </article>
 
