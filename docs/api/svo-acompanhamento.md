@@ -16,7 +16,7 @@ Os itens são ordenados por data de criação decrescente, datas nulas no fim e 
 {
   "data": [
     {
-      "protocolo": "SVO-42",
+      "protocolo": "#SVO-42",
       "statusTriagem": "CONFIRMADA_SVO",
       "statusOrdem": "PENDENTE_ALOCACAO"
     }

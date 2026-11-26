@@ -305,6 +305,7 @@ export interface ApiSchemas {
   TriagemFinalSvo: TriagemFinalSvo;
   DespacharSvo: DespacharSvo;
   OrdemDespachada: OrdemDespachada;
+  ListaAcompanhamentoSvo: ListaAcompanhamentoSvo;
   ListaSolicitacoesSvoPaginada: ListaSolicitacoesSvoPaginada;
   ListaOrdensSvoPaginada: ListaOrdensSvoPaginada;
   DetalheSolicitacaoSvo: DetalheSolicitacaoSvo;
@@ -2663,6 +2664,22 @@ export interface OrdemDespachada {
 }
 /**
  * This interface was referenced by `ApiSchemas`'s JSON-Schema
+ * via the `definition` "ListaAcompanhamentoSvo".
+ */
+export interface ListaAcompanhamentoSvo {
+  data: {
+    protocolo: string;
+    statusTriagem: ('AGUARDANDO_TRIAGEM' | 'CONFIRMADA_SVO' | 'ENCAMINHADA_IML') | null;
+    statusOrdem: ('PENDENTE_ALOCACAO' | 'EM_DESLOCAMENTO' | 'EM_TRANSPORTE' | 'CONCLUIDA' | 'CANCELADA') | null;
+  }[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+/**
+ * This interface was referenced by `ApiSchemas`'s JSON-Schema
  * via the `definition` "ListaSolicitacoesSvoPaginada".
  */
 export interface ListaSolicitacoesSvoPaginada {
@@ -3401,6 +3418,7 @@ export interface ApiOperations {
   'svo_patch__api_svo_solicitacoes_id_triagem': { body: ApiSchemas['SalvarTriagemParcialSvo']; response: ApiSchemas['TriagemParcialSvo'] };
   'svo_post__api_svo_solicitacoes_id_triagem': { body: ApiSchemas['FinalizarTriagemSvo']; response: ApiSchemas['TriagemFinalSvo'] };
   'svo_patch__api_svo_ordens_coleta_id_despachar': { body: ApiSchemas['DespacharSvo']; response: ApiSchemas['OrdemDespachada'] };
+  'svo_get__api_svo_acompanhamento': { body: undefined; response: ApiSchemas['ListaAcompanhamentoSvo'] };
   'svo_get__api_svo_solicitacoes_paginadas': { body: undefined; response: ApiSchemas['ListaSolicitacoesSvoPaginada'] };
   'svo_get__api_svo_solicitacoes_id_': { body: undefined; response: ApiSchemas['DetalheSolicitacaoSvo'] };
   'svo_get__api_svo_solicitacoes_id_historico': { body: undefined; response: ApiSchemas['HistoricoSvo'] };

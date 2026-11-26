@@ -13,8 +13,9 @@ import {
 } from './svo.controller.js';
 import {
   listarSolicitacoesPaginadasController, listarOrdensPaginadasController,
-  detalharSvoController, historicoSvoController,
+  detalharSvoController, historicoSvoController, acompanharSvoController,
 } from './svo.consultas.controller.js';
+import { perfisAcompanhamentoSvo } from './svo.consultas.schemas.js';
 import { dashboardSvoController, filasSvoController, atividadesSvoController } from './svo.dashboard.controller.js';
 import { recursosSvoController, ocupacaoSvoController, minhasOrdensController,
   minhaOrdemController, executarOrdemController, cancelarOrdemController } from './svo.operacional.controller.js';
@@ -32,6 +33,14 @@ export async function svoRoute(
   const usuario = await autenticarRequisicao(request, response);
 
   if (!usuario) {
+    return;
+  }
+
+  const url = new URL(request.url ?? '/', 'http://localhost');
+  const caminho = url.pathname;
+  if (request.method === 'GET' && caminho === '/api/svo/acompanhamento') {
+    if (!autorizarPerfis(usuario, perfisAcompanhamentoSvo, response)) return;
+    await acompanharSvoController(response, url.searchParams);
     return;
   }
 
@@ -65,9 +74,6 @@ try {
   return;
 }
 
-
-  const url = new URL(request.url ?? '/', 'http://localhost');
-  const caminho = url.pathname;
 
   // SCRUM-145/148: MOTORISTA só acessa ordem própria, vinculada via motorista.usuario_id.
   const propria = caminho.match(/^\/api\/svo\/ordens-coleta\/minhas\/([0-9]+)$/);

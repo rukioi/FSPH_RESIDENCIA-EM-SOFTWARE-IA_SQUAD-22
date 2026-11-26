@@ -121,6 +121,7 @@ test('inventory preserves previous operations and includes document and attachme
     "get /api/solicitacoes-viagem/disponibilidade",
     "get /api/solicitacoes-viagem/{id}",
     "get /api/solicitacoes-viagem/{id}/historico",
+    "get /api/svo/acompanhamento",
     "get /api/svo/dashboard",
     "get /api/svo/dashboard/atividades",
     "get /api/svo/dashboard/filas",

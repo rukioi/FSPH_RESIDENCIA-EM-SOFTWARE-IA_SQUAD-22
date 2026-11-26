@@ -1,6 +1,6 @@
 # Inventário da API atual — #32
 
-Gerado por api:generate; não editar manualmente. 110 operações.
+Gerado por api:generate; não editar manualmente. 111 operações.
 
 | Método | Caminho | Perfis | Entrada | Sucesso | Erros | Runtime | Observações |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -64,6 +64,7 @@ Gerado por api:generate; não editar manualmente. 110 operações.
 | PATCH | /api/svo/solicitacoes/{id}/triagem | ATENDENTE_SVO | SalvarTriagemParcialSvo | 200 TriagemParcialSvo | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Salva triagem parcial sem decisão ou ordem. Apenas AGUARDANDO_TRIAGEM. |
 | POST | /api/svo/solicitacoes/{id}/triagem | ATENDENTE_SVO | FinalizarTriagemSvo | 200 TriagemFinalSvo | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Decisão SVO/IML transacional. SVO exige quantidadeCorpos de 1 a 4 e gera uma ordem; IML não gera ordem. Nova decisão após finalização: 409. |
 | PATCH | /api/svo/ordens-coleta/{id}/despachar | ATENDENTE_SVO | DespacharSvo | 200 OrdemDespachada | 400, 401, 403, 404, 409, 413, 415, 500, 405 | legado | Formato atual preservado; query params não declarados são ignorados. |
+| GET | /api/svo/acompanhamento | ADM, GESTOR_FROTA | sem corpo | 200 ListaAcompanhamentoSvo | 400, 401, 403, 500, 405 | validado | RF53: protocolo e estados distintos de triagem e ordem, paginados. Consulta gerencial sem dados pessoais ou clínicos. |
 | GET | /api/svo/solicitacoes/paginadas | ATENDENTE_SVO | sem corpo | 200 ListaSolicitacoesSvoPaginada | 400, 401, 403, 500, 405 | legado | SCRUM-146: lista paginada sem dados pessoais; datas civis inclusivas, filtro status e ordenação determinística. |
 | GET | /api/svo/solicitacoes/{id} | ATENDENTE_SVO | sem corpo | 200 DetalheSolicitacaoSvo | 400, 401, 403, 404, 500, 405 | legado | SCRUM-146: detalhe restrito ao atendente; recupera rascunho salvo sem finalizar decisão. |
 | GET | /api/svo/solicitacoes/{id}/historico | ATENDENTE_SVO | sem corpo | 200 HistoricoSvo | 400, 401, 403, 404, 500, 405 | legado | SCRUM-146: somente eventos reais com descrições exatas da auditoria legada; sem eventos artificiais. |

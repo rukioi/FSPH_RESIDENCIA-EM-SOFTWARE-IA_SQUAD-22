@@ -19,7 +19,7 @@ import { alertasDocumentais, gestaoDocumentalSchemas, parametrosDocumentais, tip
 import { documentosSchemas } from '../../modules/documentos/documentos.schemas.js';
 import { dashboardSchemas } from '../../modules/dashboard/dashboard.schemas.js';
 import { svoSchemas } from '../../modules/svo/svo.schemas.js';
-import { svoConsultasSchemas } from '../../modules/svo/svo.consultas.schemas.js';
+import { perfisAcompanhamentoSvo, queryAcompanhamentoSvo, svoConsultasSchemas } from '../../modules/svo/svo.consultas.schemas.js';
 import { svoDashboardSchemas } from '../../modules/svo/svo.dashboard.schemas.js';
 import { svoOperacionalSchemas } from '../../modules/svo/svo.operacional.schemas.js';
 import { solicitacoesSchemas, statusSolicitacao, idRecursoSchema } from '../../modules/solicitacoes/solicitacoes.schemas.js';
@@ -166,6 +166,9 @@ export const operations: Operacao[] = [
     body:'FinalizarTriagemSvo',status:200,errors:[400,401,403,404,409,413,415,500],errorSchema:'ErroOperacionalSvo',
     notes:'Decisão SVO/IML transacional. SVO exige quantidadeCorpos de 1 a 4 e gera uma ordem; IML não gera ordem. Nova decisão após finalização: 409.'}),
   op('svo','patch','/api/svo/ordens-coleta/{id}/despachar','OrdemDespachada',['ATENDENTE_SVO'],{body:'DespacharSvo',errors:[400,401,403,404,409,413,415,500],errorSchema:'ErroOperacionalSvo'}),
+  op('svo','get','/api/svo/acompanhamento','ListaAcompanhamentoSvo',perfisAcompanhamentoSvo,{
+    runtimeValidation:true, errors:[400,401,403,500], query:queryAcompanhamentoSvo,
+    notes:'RF53: protocolo e estados distintos de triagem e ordem, paginados. Consulta gerencial sem dados pessoais ou clínicos.'}),
   op('svo','get','/api/svo/solicitacoes/paginadas','ListaSolicitacoesSvoPaginada',['ATENDENTE_SVO'],{
     errors:[400,401,403,500], notes:'SCRUM-146: lista paginada sem dados pessoais; datas civis inclusivas, filtro status e ordenação determinística.',
     query:[{name:'page',required:false,schema:z.string().regex(/^[1-9]\d*$/)},

@@ -1,13 +1,13 @@
 import type { ServerResponse } from 'node:http';
-import { enviarJson } from '../../shared/http/json.js';
+import { enviarErro, enviarJson } from '../../shared/http/json.js';
 import { registrarFalha } from '../../shared/logging/logger.js';
 import {
   consultaSvoFiltroSolicitacoes, consultaSvoFiltroOrdens,
-  consultaSvoPaginacao, parsePaginacao,
+  consultaSvoPaginacao, parsePaginacao, svoConsultasSchemas,
 } from './svo.consultas.schemas.js';
 import {
   consultarSolicitacoesPaginadas, consultarOrdensPaginadas,
-  consultarSolicitacaoDetalhada, consultarOrdemDetalhada, consultarHistoricoSvo,
+  consultarSolicitacaoDetalhada, consultarOrdemDetalhada, consultarHistoricoSvo, consultarAcompanhamentoSvo,
 } from './svo.consultas.repository.js';
 
 /** Rejeita chaves repetidas e não declaradas para evitar filtros ambíguos. */
@@ -25,6 +25,18 @@ function erroConsulta(response: ServerResponse, erro: unknown): void {
   enviarJson(response, 500, {
     error: { code: 'ERRO_INTERNO', message: 'Não foi possível consultar os registros SVO.' },
   });
+}
+
+/** Valida a paginação e publica apenas os campos do contrato gerencial. */
+export async function acompanharSvoController(response: ServerResponse, params: URLSearchParams): Promise<void> {
+  const parsed = consultaSvoPaginacao.safeParse(parametros(params));
+  const pagina = parsed.success ? parsePaginacao(parsed.data) : null;
+  if (!pagina) {
+    enviarErro(response, 400, 'DADOS_INVALIDOS', 'Paginação inválida.');
+    return;
+  }
+  const resultado = await consultarAcompanhamentoSvo(pagina);
+  enviarJson(response, 200, svoConsultasSchemas.ListaAcompanhamentoSvo.parse(resultado));
 }
 
 /** Endpoint novo, preservando o GET legado que devolve array direto. */

@@ -240,6 +240,10 @@ export const apiOperations = {
     "method": "PATCH",
     "path": "/api/svo/ordens-coleta/{id}/despachar"
   },
+  "svo_get__api_svo_acompanhamento": {
+    "method": "GET",
+    "path": "/api/svo/acompanhamento"
+  },
   "svo_get__api_svo_solicitacoes_paginadas": {
     "method": "GET",
     "path": "/api/svo/solicitacoes/paginadas"

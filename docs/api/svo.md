@@ -2,7 +2,7 @@
 
 ## Registro telefônico e consulta inicial
 
-Todas as rotas SVO exigem JWT Bearer de usuário ativo. Registro telefônico, triagem, consultas administrativas, dashboard, elegibilidade, despacho e cancelamento exigem o perfil `ATENDENTE_SVO`. A consulta das próprias ordens e as etapas de execução exigem `MOTORISTA`, com vínculo obrigatório por `motorista.usuario_id`. A população comunica ocorrências por telefone, sem conta ou token. O backend extrai `atendente_id` da sessão autenticada, nunca do corpo JSON.
+Todas as rotas SVO exigem JWT Bearer de usuário ativo. Registro telefônico, triagem, consultas operacionais, dashboard, elegibilidade, despacho e cancelamento exigem o perfil `ATENDENTE_SVO`. A consulta das próprias ordens e as etapas de execução exigem `MOTORISTA`, com vínculo obrigatório por `motorista.usuario_id`. A população comunica ocorrências por telefone, sem conta ou token. O backend extrai `atendente_id` da sessão autenticada, nunca do corpo JSON.
 
 | Método | Rota | Responsabilidade |
 | --- | --- | --- |
@@ -166,3 +166,8 @@ Os seis GETs de consulta, detalhe e histórico, sem mudança de comportamento da
 ## Indicadores operacionais — SCRUM-149
 
 As três rotas de dashboard, filas e atividades próprias do SVO estão documentadas em [svo-dashboard-scrum149.md](./svo-dashboard-scrum149.md). Nenhum contrato do Dashboard institucional foi alterado.
+
+## Acompanhamento gerencial — SCRUM-265
+
+O [contrato RF53](./svo-acompanhamento.md) descreve a consulta de protocolo e
+estados para ADM e Gestor.
