@@ -97,6 +97,31 @@ for (const falha of ['401', 'rede']) {
   });
 }
 
+test('descarta a confirmação ao sair da página e revalida quando o histórico a restaura', async ({ page }) => {
+  const token = 'fixture-sessao-historico';
+  await page.addInitScript(value => sessionStorage.setItem('token', value), token);
+  let restaurada = false;
+  await page.route('**/api/auth/sessao', async route => {
+    if (restaurada) await route.fulfill({ json: { data: usuario } });
+    // A verificação inicial continua pendente até o evento de saída.
+  });
+  await page.route('**/api/notificacoes/sincronizar', route => route.fulfill({ json: { data: { atualizadas: 0 } } }));
+  await page.route(url => url.pathname === '/api/notificacoes', route => route.fulfill({ json: { data: [], meta: { page: 1, limit: 20, total: 0, naoLidas: 0 } } }));
+  await page.route('**/api/admin/auditoria/logs', route => route.fulfill({ status: 503, json: { error: { message: 'Fixture indisponível' } } }));
+  const pendente = page.waitForRequest('**/api/auth/sessao');
+  await page.goto('/admin/auditoria');
+  await pendente;
+  const abortada = page.waitForEvent('requestfailed', request => request.url().endsWith('/api/auth/sessao'));
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })));
+  await abortada;
+  await expect(page.getByRole('status', { name: 'Carregando página' })).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem('token'))).toBe(token);
+
+  restaurada = true;
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+  await expect(page.getByRole('heading', { name: 'Auditoria', exact: true })).toBeVisible();
+});
+
 test('sessão sem permissão redireciona sem revelar a página solicitada', async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem('token', 'fixture-skeleton-token'));
   await page.route('**/api/auth/sessao', route => route.fulfill({ json: { data: { ...usuario, perfil: 'GESTOR_FROTA' } } }));

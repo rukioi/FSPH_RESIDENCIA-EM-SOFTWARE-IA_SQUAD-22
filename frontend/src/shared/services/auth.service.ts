@@ -73,7 +73,7 @@ export async function fetchAutenticada(
 
   const resposta = await fetch(input, { ...init, headers })
 
-  if (resposta.status === 401) {
+  if (resposta.status === 401 && !init.signal?.aborted && obterToken() === token) {
     sair()
     redirecionarParaLogin()
   }
@@ -105,12 +105,12 @@ export async function entrar(
 }
 
 /** Confirma a sessão com validação runtime e normalização comum das falhas HTTP. */
-export async function buscarSessao(): Promise<UsuarioSessao | null> {
+export async function buscarSessao(signal?: AbortSignal): Promise<UsuarioSessao | null> {
   if (!obterToken()) return null
 
   let usuario
   try {
-    const resultado = await requestApi('/api/auth/sessao', {}, value => authSchemas.Sessao.parse(value))
+    const resultado = await requestApi('/api/auth/sessao', { signal }, value => authSchemas.Sessao.parse(value))
     usuario = resultado.data
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) return null
