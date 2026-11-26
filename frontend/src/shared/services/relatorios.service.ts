@@ -5,6 +5,11 @@ import { parseResponse } from '../api/validation';
 export type { Relatorio, ConsultaRelatorio } from '../../../../backend/src/modules/relatorios/relatorios.schemas';
 export { statusPorRelatorio } from '../../../../backend/src/modules/relatorios/relatorios.schemas';
 
+/** Reutiliza o contrato da consulta para identificar recursos selecionáveis no catálogo. */
+export function recursoRelatorioValido(campo: 'veiculoId' | 'motoristaId', id: string): boolean {
+  return consultaRelatorioSchema.shape[campo].safeParse(id).success;
+}
+
 /** Consulta um snapshot completo com filtros validados, cancelável pelo estado remoto. */
 export async function buscarRelatorio(filtros: ConsultaRelatorio, signal: AbortSignal) {
   const consulta = consultaRelatorioSchema.parse(filtros);
