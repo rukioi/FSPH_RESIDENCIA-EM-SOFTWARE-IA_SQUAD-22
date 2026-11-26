@@ -76,9 +76,9 @@ test('migração #30 permite somente 404 comum de abastecimento e sua descriçã
   expect(independent("import {openapi} from './backend/src/shared/contract/openapi.ts'; import {checkCompatibility} from './scripts/generate-api.ts'; const current=openapi();const previous=structuredClone(current);delete previous.paths['/api/abastecimentos'].post.responses[404];previous.components.schemas.CriarAbastecimento.description='legado';checkCompatibility(previous,current);for(const mutation of [doc=>doc.paths['/api/abastecimentos'].post.responses[404].content['application/json'].schema.$ref='#/components/schemas/Usuario',doc=>doc.components.schemas.CriarAbastecimento.properties.veiculo_id={type:'boolean'},doc=>delete doc.paths['/api/abastecimentos'].post.responses[201]]){const doc=structuredClone(current);mutation(doc);try{checkCompatibility(previous,doc);throw Error('aceitou');}catch(e){if(e.message==='aceitou')throw e;}}console.log('ok');")).toContain('ok');
 });
 
-test('inventory preserves 110 operations and pathname limits',()=>{
-  // SCRUM-220: +9 operações de escala, impedimento e transição profissional.
-  expect(operations).toHaveLength(110);
+test('inventory preserves 111 operations and pathname limits',()=>{
+  // SCRUM-267 acrescenta somente a consulta gerencial do SVO.
+  expect(operations).toHaveLength(111);
   for (const method of ['patch','post'] as const) {
     expect(operations.filter(o => o.method === method && o.path === '/api/svo/solicitacoes/{id}/triagem')).toHaveLength(1);
   }
@@ -194,7 +194,7 @@ test('inventory preserves previous operations and includes document and attachme
     'patch /api/viagens/{id}/corrigir-quilometragem', 'patch /api/viagens/{id}/encerrar', 'patch /api/viagens/{id}/iniciar',
     'patch /api/viagens/{id}/validar', 'post /api/viagens',
   ].sort());
-  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(99);
+  expect(operations.filter(o => o.modulo !== 'solicitacoes')).toHaveLength(100);
   expect(operations.filter(o => o.modulo === 'solicitacoes')).toHaveLength(11);
   const paths = operations.filter(o=>o.path.includes('{id}'));
   for (const operation of paths) {
