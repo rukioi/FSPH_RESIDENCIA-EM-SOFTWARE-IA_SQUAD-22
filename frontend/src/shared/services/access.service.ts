@@ -5,6 +5,7 @@ import {
   lerRotaAprovarSolicitacao,
   lerRotaDetalheAbastecimento,
   lerRotaHistoricoAbastecimentosVeiculo,
+  lerRotaMotorista,
 } from '../../app/routes/rotas'
 
 const perfisPorRota: Record<string, string[]> = {
@@ -53,6 +54,7 @@ export function rotaConhecida(caminho: string): boolean {
   return (
     lerRotaDetalheAbastecimento(caminho) !== null ||
     lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null ||
+    lerRotaMotorista(caminho) !== null ||
     lerDetalheSvo(caminho) !== null
   )
 }
@@ -79,6 +81,9 @@ export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
   }
   if (lerRotaHistoricoAbastecimentosVeiculo(caminho) !== null) {
     return perfisPorRota[ROTAS.veiculosGestor].includes(perfil);
+  }
+  if (lerRotaMotorista(caminho) !== null) {
+    return perfisPorRota[ROTAS.motoristasGestor].includes(perfil);
   }
 
   const perfisExatos = perfisPorRota[caminho]

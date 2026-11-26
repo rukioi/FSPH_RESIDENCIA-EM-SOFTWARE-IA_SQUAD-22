@@ -3,6 +3,23 @@ import { perfilPodeAcessar, rotaConhecida } from './access.service'
 
 const perfis = ['ADM', 'GESTOR_FROTA', 'SOLICITANTE_INTERNO', 'MOTORISTA', 'ATENDENTE_SVO']
 
+describe('acesso a detalhes de motoristas', () => {
+  it('reconhece o detalhe e aplica as mesmas permissões da listagem', () => {
+    const caminho = '/gestor/motoristas/9223372036854775807'
+    expect(rotaConhecida(caminho)).toBe(true)
+    for (const perfil of perfis) {
+      expect(perfilPodeAcessar(caminho, perfil)).toBe(perfilPodeAcessar('/gestor/motoristas', perfil))
+    }
+  })
+
+  it.each(['/gestor/motoristas/9223372036854775808', '/gestor/motoristas/invalido'])(
+    'não reconhece nem autoriza o detalhe inválido %s', caminho => {
+      expect(rotaConhecida(caminho)).toBe(false)
+      for (const perfil of perfis) expect(perfilPodeAcessar(caminho, perfil)).toBe(false)
+    },
+  )
+})
+
 describe('acesso aos detalhes e edição de solicitações', () => {
   it.each(['/solicitante/minhas-solicitacoes/12', '/solicitante/minhas-solicitacoes/12/editar'])(
     'restaura acesso SOLICITANTE_INTERNO a %s', caminho => {

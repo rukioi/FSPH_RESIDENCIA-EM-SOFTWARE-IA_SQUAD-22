@@ -12,6 +12,7 @@ import {
   lerRotaHistoricoAbastecimentosVeiculo,
   lerRotaSolicitacao,
   lerRotaAprovarSolicitacao,
+  lerRotaMotorista,
 } from "./routes/rotas";
 import { AuthSkeleton } from "./AuthSkeleton";
 import { AdminLayout } from "../layouts/administrador/AdminLayout";
@@ -481,7 +482,8 @@ function AppContent({
     );
   }
   // Motoristas
-  if (caminho === ROTAS.motoristasGestor) {
+  const motoristaId = lerRotaMotorista(caminho);
+  if (caminho === ROTAS.motoristasGestor || motoristaId !== null) {
     return (
       <LayoutOperacional usuario={sessao}>
         <Link
@@ -490,7 +492,7 @@ function AppContent({
         >
           Relatório de motoristas
         </Link>
-        <Motoristas />
+        <Motoristas perfil={sessao.perfil} {...(motoristaId !== null ? { motoristaId } : {})} />
       </LayoutOperacional>
     );
   }
