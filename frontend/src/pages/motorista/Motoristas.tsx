@@ -1,9 +1,15 @@
 import { DatePicker } from '../../shared/components/DatePicker';
 import { Select } from '../../shared/components/Select';
 import { IconeGestor } from '../../shared/components/IconeGestor'
-import { useRemoteData } from '../../shared/api/useRemoteData';
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { buscarMotoristas, cadastrarMotorista as salvarMotorista, removerMotorista as excluirMotorista } from "../../shared/services/motoristas.service";
+import { StatusMotorista } from '../../features/motoristas/StatusMotorista'
+import { useConsultaMotorista } from '../../features/motoristas/useConsultaMotorista';
+import { MotoristaDisponibilidade } from '../../features/motoristas/MotoristaDisponibilidade';
+import { BotaoMotorista, DialogMotorista } from '../../features/motoristas/DialogMotorista';
+import { navegar } from '../../app/routes/router';
+import { ROTAS, rotaMotorista } from '../../app/routes/rotas';
+import { obterToken } from '../../shared/services/auth.service';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { buscarMotoristas, cadastrarMotorista as salvarMotorista, editarMotorista as atualizarMotorista, removerMotorista as excluirMotorista } from "../../shared/services/motoristas.service";
 import type { MotoristaDto, CriarMotoristaDto } from "../../shared/services/motoristas.service";
 import "./Motoristas.css";
 import '../../shared/styles/cartao-identidade.css';
@@ -43,7 +49,7 @@ type NovoMotorista = {
   telefone: string;
   email: string;
   cnh: string;
-  categoria_cnh: string;
+  categoria_cnh: CriarMotoristaDto['categoria_cnh'] | '';
   validade_cnh: string;
   status: StatusFormularioMotorista;
 };
@@ -200,8 +206,17 @@ function historicoMotorista(motorista: Motorista) {
 }
 
 /** Separa a consulta validada da seleção, dos filtros e do cadastro confirmado. */
-export function Motoristas() {
-  const {data:motoristas,setData:setMotoristas,loading:carregando,error:erro,retry} = useRemoteData<Motorista[]>(buscarMotoristas, []);
+export function Motoristas({ motoristaId, perfil = '' }: { motoristaId?: string; perfil?: string }) {
+  if (!['ADM', 'GESTOR_FROTA'].includes(perfil)) return <p role="alert">Seu perfil não tem acesso à gestão de motoristas.</p>;
+  return <MotoristasConteudo key={`${obterToken() ?? 'sem-sessao'}:${motoristaId ?? 'lista'}`} {...(motoristaId ? { motoristaId } : {})} perfil={perfil} />;
+}
+
+function MotoristasConteudo({ motoristaId, perfil }: { motoristaId?: string; perfil: string }) {
+  const { data: registros, carregando, erro, atualizar: retry } = useConsultaMotorista(buscarMotoristas);
+  const motoristas: Motorista[] = registros ?? [];
+  const vivo = useRef(false);
+  const enviando = useRef(false);
+  useEffect(() => { vivo.current = true; return () => { vivo.current = false; }; }, []);
   const [aviso, setAviso] = useState('');
   const [busca, setBusca] = useState("");
   const [filtroDisponibilidade, setFiltroDisponibilidade] = useState("TODOS");
@@ -307,8 +322,13 @@ export function Motoristas() {
 
   async function cadastrarMotorista(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (enviando.current) return;
+    if (!novoMotorista.nome.trim() || !novoMotorista.cnh.trim()) { setErroCadastro('Nome e CNH são obrigatórios e não podem conter somente espaços.'); return; }
+    if (!novoMotorista.categoria_cnh) { setErroCadastro('Selecione uma categoria de CNH aceita pelo contrato.'); return; }
     setErroCadastro("");
+    enviando.current = true;
     setSalvandoCadastro(true);
+    const token = obterToken();
 
     try {
       const emailLimpo = novoMotorista.email.trim().toLowerCase() || null;
@@ -370,7 +390,9 @@ export function Motoristas() {
       );
       setNovoMotorista(cadastroInicial);
       setModalCadastroAberto(false);
+      setMotoristaEmEdicao(null);
     } catch (erroEnvio) {
+      if (!vivo.current || obterToken() !== token) return;
       setErroCadastro(
         erroEnvio instanceof Error
           ? erroEnvio.message
@@ -379,12 +401,16 @@ export function Motoristas() {
             : "Não foi possível cadastrar o motorista.",
       );
     } finally {
-      setSalvandoCadastro(false);
+      enviando.current = false;
+      if (vivo.current && obterToken() === token) setSalvandoCadastro(false);
     }
   }
 
   async function removerMotoristaSelecionado() {
     if (!confirmacaoRemocao || confirmacaoRemocao.etapa !== 2 || removendoMotorista) return;
+    if (enviando.current) return;
+    enviando.current = true;
+    const token = obterToken();
     setRemovendoMotorista(true);
     setErroRemocao('');
     try {
@@ -396,9 +422,11 @@ export function Motoristas() {
       setAviso(`Motorista ${confirmacaoRemocao.motorista.nome} removido com sucesso.`);
       setConfirmacaoRemocao(null);
     } catch (erroEnvio) {
+      if (!vivo.current || obterToken() !== token) return;
       setErroRemocao(erroEnvio instanceof Error ? erroEnvio.message : 'Não foi possível remover o motorista.');
     } finally {
-      setRemovendoMotorista(false);
+      enviando.current = false;
+      if (vivo.current && obterToken() === token) setRemovendoMotorista(false);
     }
   }
 
@@ -455,6 +483,11 @@ export function Motoristas() {
     return dias !== null && dias <= 30;
   }).length;
 
+  if (motoristaId && erro) return <p role="alert" className="motoristas-aviso motoristas-aviso--erro">{erro} <BotaoMotorista onClick={retry}>Tentar novamente</BotaoMotorista><BotaoMotorista onClick={() => navegar(ROTAS.motoristasGestor)}>Motoristas</BotaoMotorista></p>;
+  if (motoristaId && !motoristaSelecionado) {
+    return carregando ? <p role="status">Carregando motorista…</p> : <div><h1>Motorista não encontrado</h1><p role="alert">O motorista não foi encontrado na consulta permitida ao seu perfil.</p><BotaoMotorista onClick={() => navegar(ROTAS.motoristasGestor)}>Motoristas</BotaoMotorista></div>;
+  }
+
   if (motoristaSelecionado) {
     const motorista = motoristaSelecionado;
     const pendenciasDetalhadas = listaPendencias(motorista);
@@ -468,11 +501,12 @@ export function Motoristas() {
         <button
           type="button"
           className="motorista-voltar"
-          onClick={() => setMotoristaSelecionado(null)}
+          onClick={() => navegar(ROTAS.motoristasGestor)}
         >
           <span aria-hidden="true">←</span> Motoristas
         </button>
 
+        {carregando && <p role="status">Atualizando cadastro do motorista…</p>}
         <section className="motorista-detalhe-painel motorista-detalhe-perfil cartao-identidade">
           <header className="cartao-identidade__principal">
             <span className="cartao-identidade__avatar" aria-hidden="true">{iniciais(motorista.nome)}</span>
@@ -481,13 +515,7 @@ export function Motoristas() {
               <p>{motorista.email || "E-mail não informado"}</p>
             </div>
 
-            <span
-              className={`motorista-status motorista-status--${classeStatus(
-                motorista.status,
-              )}`}
-            >
-              {statusLegivel(motorista.status)}
-            </span>
+            <StatusMotorista motoristaId={motorista.id} status={motorista.status} legivel={statusLegivel} classe={classeStatus} />
           </header>
 
           <div className="motorista-detalhe-campos cartao-identidade__conteudo">
@@ -537,6 +565,8 @@ export function Motoristas() {
             </div>
           </div>
         </section>
+
+        <MotoristaDisponibilidade motorista={motorista} perfil={perfil} onAtualizarCadastro={retry} />
 
         <section className="motorista-detalhe-painel">
           <header className="motorista-detalhe-secao__cabecalho">
@@ -640,8 +670,8 @@ export function Motoristas() {
   return (
     <section className="motoristas-pagina">
       {confirmacaoRemocao && (
-        <div className="motorista-remocao-overlay">
-          <section className="motorista-remocao-dialog" role="alertdialog" aria-modal="true" aria-labelledby="motorista-remocao-titulo" aria-describedby="motorista-remocao-descricao">
+        <DialogMotorista rotulo="motorista-remocao-titulo" descricao="motorista-remocao-descricao" ocupado={removendoMotorista} onFechar={() => setConfirmacaoRemocao(null)}>
+          <section className="motorista-remocao-dialog">
             <h2 id="motorista-remocao-titulo">{confirmacaoRemocao.etapa === 1 ? 'Confirmar remoção' : 'Confirmação final'}</h2>
             <p id="motorista-remocao-descricao">{confirmacaoRemocao.etapa === 1 ? `Deseja iniciar a remoção de ${confirmacaoRemocao.motorista.nome}?` : `Esta ação removerá ${confirmacaoRemocao.motorista.nome} do cadastro. Deseja concluir?`}</p>
             {erroRemocao && <p role="alert">{erroRemocao}</p>}
@@ -654,7 +684,7 @@ export function Motoristas() {
               )}
             </div>
           </section>
-        </div>
+        </DialogMotorista>
       )}
       <header className="motoristas-cabecalho">
         <div>
@@ -711,7 +741,7 @@ export function Motoristas() {
             </p>
 
             <form onSubmit={cadastrarMotorista}>
-              <div className="motorista-modal__grade">
+              <fieldset disabled={salvandoCadastro} className="motorista-modal__grade md-fieldset">
                 <label>
                   Nome completo
                   <input
@@ -795,11 +825,12 @@ export function Motoristas() {
                     onChange={(evento) =>
                       setNovoMotorista({
                         ...novoMotorista,
-                        categoria_cnh: evento.target.value,
+                        categoria_cnh: ["A", "B", "C", "D", "E"].includes(evento.target.value) ? evento.target.value as CriarMotoristaDto["categoria_cnh"] : "",
                       })
                     }
                   >
-                    {["A", "B", "C", "D", "E", "AB", "AC", "AD", "AE"].map(
+                    <option value="" disabled>Selecione a categoria</option>
+                    {["A", "B", "C", "D", "E"].map(
                       (categoria) => (
                         <option key={categoria} value={categoria}>
                           {categoria}
@@ -835,13 +866,14 @@ export function Motoristas() {
                       })
                     }
                   >
+                    <option value="">Não informado</option>
                     <option value="DISPONIVEL">Disponível</option>
                     <option value="EM_VIAGEM">Em viagem</option>
                     <option value="FOLGA">Folga</option>
                     <option value="AFASTADO">Afastado</option>
                   </Select>
                 </label>
-              </div>
+              </fieldset>
 
               {salvandoCadastro && (
                 <p role="status">
@@ -878,7 +910,7 @@ export function Motoristas() {
               </footer>
             </form>
           </section>
-        </div>
+        </DialogMotorista>
       )}
 
       <section
@@ -910,7 +942,7 @@ export function Motoristas() {
             </span>
           </div>
           <strong>{disponiveis}</strong>
-          <small>Livres para atribuição</small>
+          <small>Status operacional disponível</small>
         </article>
 
         <article className="motoristas-indicador">
@@ -1016,7 +1048,7 @@ export function Motoristas() {
         </div>
       )}
 
-      {!carregando && motoristasFiltrados.length > 0 && (
+      {!carregando && !erro && motoristasFiltrados.length > 0 && (
         <div className="motoristas-grade">
           {motoristasFiltrados.map((motorista, indice) => {
             const chave =
@@ -1038,13 +1070,7 @@ export function Motoristas() {
                   <span className="motorista-avatar" aria-hidden="true">
                     {iniciais(motorista.nome)}
                   </span>
-                  <span
-                    className={`motorista-status motorista-status--${classeStatus(
-                      motorista.status,
-                    )}`}
-                  >
-                    {statusLegivel(motorista.status)}
-                  </span>
+                  <StatusMotorista motoristaId={motorista.id} status={motorista.status} legivel={statusLegivel} classe={classeStatus} />
                 </div>
 
                 <h2>{motorista.nome || "Motorista"}</h2>
@@ -1140,7 +1166,7 @@ export function Motoristas() {
                     className="motorista-detalhes-botao"
                     onClick={() => {
                       setMenuMotoristaAberto(null);
-                      setMotoristaSelecionado(motorista);
+                      navegar(rotaMotorista(motorista.id));
                     }}
                   >
                     Ver detalhes
@@ -1226,6 +1252,10 @@ export function Motoristas() {
                             />
                           </svg>
                           <span>Remover</span>
+                        </button>
+                        <button type="button" className="motorista-card__menu-item" role="menuitem" onClick={() => { setMenuMotoristaAberto(null); navegar(rotaMotorista(motorista.id)); }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M8 15h2M14 15h2" /></svg>
+                          Escalas e situação profissional
                         </button>
                       </div>
                     )}

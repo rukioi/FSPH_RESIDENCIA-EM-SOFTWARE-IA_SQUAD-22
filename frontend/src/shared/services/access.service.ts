@@ -19,7 +19,6 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.configuracoes]: ['ADM'],
   [ROTAS.auditoria]: ['ADM'],
   [ROTAS.documentosAdm]: ['ADM'],
-
   [ROTAS.dashboardGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.veiculosGestor]: ['ADM', 'GESTOR_FROTA'],
   [ROTAS.motoristasGestor]: ['ADM', 'GESTOR_FROTA'],
@@ -30,8 +29,6 @@ const perfisPorRota: Record<string, string[]> = {
   [ROTAS.novaSolicitacao]: ['SOLICITANTE_INTERNO', 'ADM', 'GESTOR_FROTA'],
   [ROTAS.minhasSolicitacoes]: ['SOLICITANTE_INTERNO'],
   [ROTAS.documentosGestor]: ['ADM', 'GESTOR_FROTA'],
-
-  // Mantida temporariamente para links antigos.
   [ROTAS.svoRaiz]: ['ATENDENTE_SVO'],
   [ROTAS.svoDashboard]: ['ATENDENTE_SVO'],
   [ROTAS.svoSolicitacoes]: ['ATENDENTE_SVO'],
@@ -60,7 +57,7 @@ export function rotaConhecida(caminho: string): boolean {
   )
 }
 
-/** Preserva as telas compartilhadas e separa atendimento SVO da execução da equipe. */
+/** Preserva as permissões existentes; o detalhe do motorista herda as da listagem. */
 export function perfilPodeAcessar(caminho: string, perfil: string): boolean {
   // Novo: aprovação segue as mesmas permissões da lista de solicitações do gestor
   if (lerRotaAprovarSolicitacao(caminho) !== null) {
