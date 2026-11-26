@@ -232,7 +232,7 @@ export function ManutencaoModal(props: Props) {
           <p className="manutencoes__largo">{acao === 'CANCELAR' ? 'Confirme o cancelamento desta manutenção.' : 'Confirme a ação para esta manutenção.'}</p>
           {destinoObrigatorio && <>
             <label className="manutencoes__largo">Estado de destino
-              <Select value={destino} onChange={e => setDestino(e.target.value as typeof destino)}>
+              <Select required value={destino} onChange={e => setDestino(e.target.value as typeof destino)}>
                 <option value="">Selecione o estado de destino</option><option value="AGENDADA">Agendada</option><option value="EM_ANDAMENTO">Em andamento</option>
               </Select>
             </label>

@@ -418,3 +418,13 @@ test('manutenção preserva sete operações e acrescenta a consulta literal de 
     });
   }
 });
+
+test('contratos de Manutenções publicam o limite 100 e rejeitam edição vazia', () => {
+  const doc = openapi();
+  for (const path of ['/api/manutencoes','/api/manutencoes/{id}/historico','/api/veiculos/{id}/manutencoes']) {
+    expect(doc.paths[path].get).toMatchObject({parameters: expect.arrayContaining([
+      expect.objectContaining({name:'limit', required:false, schema:expect.objectContaining({type:'string',pattern:'^(?:[1-9][0-9]?|100)$'})}),
+    ])});
+  }
+  expect(doc.components.schemas.EditarManutencao).toMatchObject({minProperties:1});
+});

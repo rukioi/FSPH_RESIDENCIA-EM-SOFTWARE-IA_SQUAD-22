@@ -55,7 +55,9 @@ test('papel sintético sem BYPASSRLS opera com policies e grants mínimos; FK e 
       .rejects.toMatchObject({code:'23514'});
     await expect(tx.savepoint(sp=>sp`INSERT INTO public.manutencao_alerta_revisao VALUES (-23442900,'ATRASO',0)`))
       .rejects.toMatchObject({code:'23514'});
-    await tx`INSERT INTO public.manutencao_alerta_revisao(manutencao_id,alerta) VALUES (-23442900,'ATRASO')`;
+    const inicial = await tx`INSERT INTO public.manutencao_alerta_revisao(manutencao_id,alerta)
+      VALUES (-23442900,'ATRASO') RETURNING revisao::text`;
+    expect(inicial).toEqual([{revisao:'1'}]);
     await tx`UPDATE public.manutencao_alerta_revisao SET revisao=2 WHERE manutencao_id=-23442900`;
     expect(await tx`SELECT revisao::text FROM public.manutencao_alerta_revisao WHERE manutencao_id=-23442900`)
       .toEqual([{revisao:'2'}]);

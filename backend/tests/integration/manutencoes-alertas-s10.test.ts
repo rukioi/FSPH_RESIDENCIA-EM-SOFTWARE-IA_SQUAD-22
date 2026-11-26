@@ -1,11 +1,17 @@
 import type { AddressInfo } from 'node:net';
-import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import { createApp } from '../../src/app.js';
 import { verifiedSql } from '../../src/database/scripts/verify-test-db.js';
 import { criarJwt } from '../../src/security/jwt.js';
 import { atualizarRevisoesManutencao, processarAlertasManutencao } from '../../src/modules/manutencoes/manutencoes.alertas.js';
 import { criarEscritaManutencao } from '../../src/modules/manutencoes/manutencoes.service.js';
 import { iniciarLembretes } from '../../src/modules/notificacoes/lembretes.service.js';
+
+vi.mock('../../src/modules/manutencoes/manutencoes.alertas-criterios.js', async importOriginal => ({
+  ...await importOriginal<typeof import('../../src/modules/manutencoes/manutencoes.alertas-criterios.js')>(),
+  hojeManutencao: (tx: Parameters<typeof import('../../src/modules/manutencoes/manutencoes.alertas-criterios.js').hojeManutencao>[0]) =>
+    tx`DATE '2026-11-26'`,
+}));
 
 const app = createApp();
 const veiculo = '-23441001';
@@ -21,7 +27,7 @@ beforeAll(async () => {
   await db.begin(async tx => {
     const [dias] = await tx`SELECT d::text AS hoje, (d-1)::text AS ontem, (d+1)::text AS amanha,
       (d+6)::text AS dia6, (d+7)::text AS dia7
-      FROM (SELECT (statement_timestamp() AT TIME ZONE 'America/Maceio')::date AS d) r`;
+      FROM (SELECT DATE '2026-11-26' AS d) r`;
     ({hoje,ontem,amanha,dia6,dia7} = dias as typeof dias & {hoje:string;ontem:string;amanha:string;dia6:string;dia7:string});
     await tx`INSERT INTO public.veiculo(id,placa,marca,modelo,ano,tipo,status)
       VALUES (${veiculo},'S34A011','Fixture','Manutenção',2026,'PASSEIO','DISPONIVEL')`;
@@ -168,14 +174,16 @@ test('cancelamento e conclusão ficam inelegíveis; reativação e reabertura in
 test('lotes progridem e processadores concorrentes deixam uma chave por destinatário', async () => {
   const ids=Array.from({length:28},(_,i)=>id-i);
   for(const ocorrencia of ids) await fixture(ocorrencia,hoje);
-  await processarAlertasManutencao();
-  expect((await db`SELECT DISTINCT chave FROM public.notificacao WHERE chave LIKE 'manutencao:-23442%:PREVENTIVA_PROXIMA:1'`).length).toBe(28);
   await Promise.all([processarAlertasManutencao(),processarAlertasManutencao()]);
   expect((await db`SELECT DISTINCT chave FROM public.notificacao WHERE chave LIKE 'manutencao:-23442%:PREVENTIVA_PROXIMA:1'`).length).toBe(28);
   const [duplicadas] = await db`SELECT count(*)::int AS n FROM (
     SELECT usuario_id,chave FROM public.notificacao WHERE chave LIKE 'manutencao:-23442%:%'
     GROUP BY usuario_id,chave HAVING count(*)>1) d`;
   expect(duplicadas.n).toBe(0);
+  const [cobertura] = await db`SELECT count(*)::int AS total FROM public.notificacao
+    WHERE chave LIKE 'manutencao:-23442%:PREVENTIVA_PROXIMA:1'`;
+  const [destinatarios] = await db`SELECT count(*)::int AS total FROM public.usuario WHERE ativo AND perfil IN ('ADM','GESTOR_FROTA')`;
+  expect(cobertura.total).toBe(ids.length * destinatarios.total);
 });
 
 test('edição travada é ignorada pelo consumidor; emissão anterior mantém aviso válido', async () => {
@@ -215,7 +223,7 @@ test('falhas de auditoria e inserção da caixa revertem a revisão e permitem r
     await gate`BEGIN`;
     await gate`INSERT INTO public.notificacao(usuario_id,chave,titulo,descricao,categoria)
       VALUES (-27001,${chave},'Bloqueio sintético','Fixture','atencao')`;
-    await processarAlertasManutencao();
+    expect(await processarAlertasManutencao()).toMatchObject({ falhas: 1, emitidas: 0 });
   } finally { await gate`ROLLBACK`; gate.release(); }
   expect(await revisoes(id)).toEqual([]);
   expect(await avisos(id)).toEqual([]);

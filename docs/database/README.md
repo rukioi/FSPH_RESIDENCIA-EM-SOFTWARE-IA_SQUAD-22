@@ -275,3 +275,23 @@ No Supabase compartilhado, a aplicação manual registrou 18 versões,
 conferência do responsável. Os scripts de rollback foram mantidos sem
 execução nesse ambiente. A candidata confirmou a instalação limpa e o
 `db:docs:check` no perfil local `s10-candidata-clean`, porta 55527.
+
+### Reversão física das revisões de alerta
+
+Antes de qualquer reversão física, desligue o emissor em todos os
+processos, suspenda as escritas de manutenção e aguarde o fim das
+transações em curso. Reabertura, reativação e uma edição relevante
+podem escrever revisões mesmo com a flag desligada. Só retome
+escritas depois de confirmar que nenhuma instância em execução depende
+da tabela. Na reversão apenas da aplicação, preserve a tabela.
+
+### Perfil isolado com o nome anterior da migration de Escalas
+
+Consulte em READ ONLY `fsph_test_harness.migrations` do perfil verificado.
+Se existir `20261124000000_db_s10_03_escalas_aptidao_motoristas.sql`,
+não use `db:test:prepare` nesse banco. O runner compara nomes completos;
+o nome novo pode parecer pendente e tentar recriar as tabelas que já
+existem. Preserve esse perfil e seus dados. Escolha um perfil S10 dedicado
+e livre na lista do harness, execute `db:test:s10:provision`, confirme
+com `db:test:start` e só então execute `db:test:prepare` no novo perfil.
+Não edite o ledger antigo. Essa recuperação é exclusiva do harness local.

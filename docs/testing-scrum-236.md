@@ -140,3 +140,10 @@ consolidada. Essa validação antecede a candidata e não comprova execução
 do cron ou novas escritas nela. A chave do Storage foi rejeitada pelo
 gateway na conferência das fotos de veículos. O ponto segue separado da
 entrega de Manutenções.
+
+### Capturas a coletar no encerramento da revisão
+
+Em 390, 768 e 1280 px, capture o painel com indicadores, banner e filtros,
+o formulário de manutenção e o detalhe com histórico. Confira foco,
+navegação por teclado e ausência de rolagem horizontal. Use dados
+sintéticos ou sanitizados e mantenha as capturas fora do repositório.

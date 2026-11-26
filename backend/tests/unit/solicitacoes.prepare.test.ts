@@ -20,12 +20,14 @@ beforeEach(()=>{
     return query.includes('select name, sha256')?mocks.history:[];
   },{
     unsafe:async(source:string)=>{
-        const migration=migrations.find(item=>item.source===source ||
-          (source.startsWith("SET LOCAL lock_timeout") &&
-            source.includes('CREATE TABLE public.manutencao_alerta_revisao') &&
-            !source.includes('COMMIT;') &&
-            item.name==='20261124000000_be_s10_02_c_manutencao_alerta_revisao.sql'));
-        const operation=migration?.name??'seed';mocks.events.push(operation);
+        const migration=migrations.find(item=>{
+          const body=item.source.match(/^BEGIN;\s*([\s\S]*?)\s*COMMIT;\s*$/i)?.[1];
+          return (body ?? item.source)===source;
+        });
+        const seed=readFileSync(resolve('backend/src/database/supabase/seed.sql'),'utf8');
+        if (!migration && source!==seed) throw new Error('SQL do runner não reconhecido pelo teste.');
+        const operation=migration?.name??'seed';
+        mocks.events.push(operation);
         if(mocks.failure===operation)throw new Error('Falha sintética');
     },
     release:async()=>{mocks.events.push('release');},

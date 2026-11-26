@@ -187,3 +187,7 @@ tentativa no mesmo dia. Monitore 503 e dimensione a frequência antes de
 ativar a flag. Se for necessário escoar volume superior ao limite diário,
 use o agendador Node contínuo. Ambos usam o lock por ocorrência e a
 unicidade por destinatário, preservando a primeira leitura.
+
+Antes de um rollback físico das revisões, suspenda e drene também as escritas
+de manutenção. Retome as escritas somente com instâncias que já dispensam a
+tabela. Para reverter apenas a aplicação, preserve a tabela.

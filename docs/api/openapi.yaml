@@ -13396,7 +13396,7 @@ paths:
           schema:
             $schema: https://json-schema.org/draft/2020-12/schema
             type: string
-            pattern: ^[1-9][0-9]*$
+            pattern: ^(?:[1-9][0-9]?|100)$
         - name: tipo
           in: query
           required: false
@@ -14267,7 +14267,7 @@ paths:
           schema:
             $schema: https://json-schema.org/draft/2020-12/schema
             type: string
-            pattern: ^[1-9][0-9]*$
+            pattern: ^(?:[1-9][0-9]?|100)$
         - name: tipo
           in: query
           required: false
@@ -14431,7 +14431,7 @@ paths:
           schema:
             $schema: https://json-schema.org/draft/2020-12/schema
             type: string
-            pattern: ^[1-9][0-9]*$
+            pattern: ^(?:[1-9][0-9]?|100)$
         - name: id
           in: path
           required: true
@@ -22927,6 +22927,7 @@ components:
                 pattern: ^0000-
             - pattern: (?:Z|[+-](?:0\d|1[0-5]):[0-5]\d)$
       additionalProperties: false
+      minProperties: 1
     TransicaoManutencao:
       oneOf:
         - type: object

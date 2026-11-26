@@ -217,6 +217,17 @@ export function checkCompatibility(previous: Document, current: Document) {
         after['x-perfis'] = before['x-perfis'];
       }
     }
+    // SCRUM-232: refletir somente o limite 100 já imposto pela API.
+    if (candidate && method === 'get' && ['/api/manutencoes', '/api/manutencoes/{id}/historico', '/api/veiculos/{id}/manutencoes'].includes(path)) {
+      type Param = { name?: string; in?: string; required?: boolean; schema?: { pattern?: string } };
+      const anterior = (definition as { parameters?: Param[] }).parameters?.find(p => p.in === 'query' && p.name === 'limit');
+      const atual = (candidate as { parameters?: Param[] }).parameters;
+      if (anterior?.required === false && anterior.schema?.pattern === '^[1-9][0-9]*$' && atual) {
+        const esperado = { ...anterior, schema: { ...anterior.schema, pattern: '^(?:[1-9][0-9]?|100)$' } };
+        const index = atual.findIndex(p => JSON.stringify(p) === JSON.stringify(esperado));
+        if (index >= 0) atual[index] = anterior;
+      }
+    }
     if (JSON.stringify(definition) !== JSON.stringify(candidate)) throw new Error(`Contrato existente alterado: ${method.toUpperCase()} ${path}. Planeje compatibilidade explicitamente.`);
   }
   for (const [name,schema] of Object.entries(previous.components.schemas)) {
@@ -254,6 +265,11 @@ export function checkCompatibility(previous: Document, current: Document) {
       }
     }
     // Transicao exata aprovada: o runtime ja exigia ao menos um km.
+    // SCRUM-232: refletir a rejeição de PATCH vazio já vigente em runtime.
+    if (name === 'EditarManutencao' && candidate && !Object.hasOwn(schema, 'minProperties') &&
+        JSON.stringify(candidate) === JSON.stringify({ ...schema, minProperties: 1 })) {
+      candidate = structuredClone(schema);
+    }
     if(name==='CorrigirQuilometragem' && candidate) {
       const km={type:'integer',minimum:0,maximum:2147483647};
       const properties={kmInicial:km,kmFinal:km,confirmarOdometroAtual:{type:'boolean'},justificativa:{type:'string',minLength:1,maxLength:2000}};

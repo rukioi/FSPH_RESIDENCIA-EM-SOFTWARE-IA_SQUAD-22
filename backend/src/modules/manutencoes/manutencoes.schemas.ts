@@ -44,7 +44,7 @@ export const transicaoManutencao = z.discriminatedUnion('acao', [
 ]);
 
 const natural = z.string().regex(/^[1-9][0-9]*$/).refine(s => Number.isSafeInteger(Number(s)));
-const pagina = z.strictObject({ page: natural.optional(), limit: natural.refine(s => Number(s) <= 100).optional() });
+const pagina = z.strictObject({ page: natural.optional(), limit: z.string().regex(/^(?:[1-9][0-9]?|100)$/).optional() });
 export const consultaHistoricoManutencao = pagina;
 export const consultaManutencaoVeiculo = pagina.extend({
   tipo: tipoManutencao.optional(), status: statusManutencao.optional(), inicio: dataCivil.optional(),

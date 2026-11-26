@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { evidenciaArquivoSchema } from '../../modules/viagens/viagens.evidencias.schemas.js';
-import { command, database, root, verifiedSql, verifyContainer } from './verify-test-db.js';
+import { command, database, isS10, root, verifiedSql, verifyContainer } from './verify-test-db.js';
 
 const { containerId } = verifyContainer();
 const supabase = resolve(root, 'backend/src/database/supabase');
@@ -173,11 +173,20 @@ function verifyRecovery(db: string, checkUpgrade?: () => void, task = 'SCRUM-204
   });
 }
 
-function rehearseFilePilot() {
-  transaction(pilot, `
+function criarLedgerDeEnsaio(db: string) {
+  const grants = isS10 ? `
+    GRANT USAGE ON SCHEMA fsph_test_harness TO postgres;
+    GRANT SELECT ON fsph_test_harness.migrations TO postgres;
+  ` : '';
+  transaction(db, `
     CREATE SCHEMA fsph_test_harness;
     CREATE TABLE fsph_test_harness.migrations (name text PRIMARY KEY, sha256 text NOT NULL);
+    ${grants}
   `);
+}
+
+function rehearseFilePilot() {
+  criarLedgerDeEnsaio(pilot);
   applyMigrations(pilot, migrations);
   transaction(pilot, readFileSync(resolve(supabase, 'seed.sql'), 'utf8'));
   const fixtures = resolve(root, 'backend/tests/database/fixtures');
@@ -325,10 +334,7 @@ function rehearseUpgrade() {
   const approval = migrations.findIndex(({ name }) => name === '20261104000001_add_status_aprovada.sql');
   assert.ok(approval > 0 && approval < cutoff && cutoff < migrations.length, 'Verifique as revisões no manifesto.');
   const pending = migrations.slice(cutoff);
-  transaction(legacy, `
-    CREATE SCHEMA fsph_test_harness;
-    CREATE TABLE fsph_test_harness.migrations (name text PRIMARY KEY, sha256 text NOT NULL);
-  `);
+  criarLedgerDeEnsaio(legacy);
   applyMigrations(legacy, migrations.slice(0, approval));
   transaction(legacy, `
     INSERT INTO public.solicitacao_viagem

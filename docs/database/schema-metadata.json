@@ -5053,7 +5053,7 @@
       "onDelete": " ",
       "onUpdate": " ",
       "validated": true,
-      "definition": "CHECK (\nCASE\n    WHEN isfinite(entrada_em) AND isfinite(conclusao_prevista_em) THEN (entrada_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND (conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND conclusao_prevista_em >= entrada_em\n    ELSE false\nEND)",
+      "definition": "CHECK (\nCASE\n    WHEN isfinite(entrada_em) AND isfinite(conclusao_prevista_em) THEN entrada_em = ((entrada_em AT TIME ZONE 'America/Maceio'::text)::date::timestamp without time zone AT TIME ZONE 'America/Maceio'::text) AND conclusao_prevista_em = ((conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::date::timestamp without time zone AT TIME ZONE 'America/Maceio'::text) AND conclusao_prevista_em >= entrada_em\n    ELSE false\nEND)",
       "references": null,
       "referencedColumns": null
     },
@@ -5193,7 +5193,7 @@
       "onDelete": " ",
       "onUpdate": " ",
       "validated": true,
-      "definition": "CHECK (\nCASE\n    WHEN isfinite(anterior_entrada_em) AND isfinite(anterior_conclusao_prevista_em) THEN (anterior_entrada_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND (anterior_conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND anterior_conclusao_prevista_em >= anterior_entrada_em\n    ELSE false\nEND AND\nCASE\n    WHEN isfinite(posterior_entrada_em) AND isfinite(posterior_conclusao_prevista_em) THEN (posterior_entrada_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND (posterior_conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::time without time zone = '00:00:00'::time without time zone AND posterior_conclusao_prevista_em >= posterior_entrada_em\n    ELSE false\nEND)",
+      "definition": "CHECK (\nCASE\n    WHEN isfinite(anterior_entrada_em) AND isfinite(anterior_conclusao_prevista_em) THEN anterior_entrada_em = ((anterior_entrada_em AT TIME ZONE 'America/Maceio'::text)::date::timestamp without time zone AT TIME ZONE 'America/Maceio'::text) AND anterior_conclusao_prevista_em = ((anterior_conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::date::timestamp without time zone AT TIME ZONE 'America/Maceio'::text) AND anterior_conclusao_prevista_em >= anterior_entrada_em\n    ELSE false\nEND AND\nCASE\n    WHEN isfinite(posterior_entrada_em) AND isfinite(posterior_conclusao_prevista_em) THEN posterior_entrada_em = ((posterior_entrada_em AT TIME ZONE 'America/Maceio'::text)::date::timestamp without time zone AT TIME ZONE 'America/Maceio'::text) AND posterior_conclusao_prevista_em = ((posterior_conclusao_prevista_em AT TIME ZONE 'America/Maceio'::text)::date::timestamp without time zone AT TIME ZONE 'America/Maceio'::text) AND posterior_conclusao_prevista_em >= posterior_entrada_em\n    ELSE false\nEND)",
       "references": null,
       "referencedColumns": null
     },

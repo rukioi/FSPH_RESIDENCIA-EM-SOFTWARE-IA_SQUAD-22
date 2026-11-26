@@ -29,8 +29,10 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 
-function chamar(authorization?: string, method = 'GET') {
-  return fetch(origin + path, { method, headers: authorization ? { authorization } : {} });
+async function chamar(authorization?: string, method = 'GET') {
+  const response = await fetch(origin + path, { method, headers: { ...(authorization ? { authorization } : {}), 'X-Request-Id': 'cliente' } });
+  expect(response.headers.get('X-Request-Id')).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i);
+  return response;
 }
 
 test.each([undefined, 'conta-comum', 'Bearer errado'])('recusa autorização %s', async authorization => {

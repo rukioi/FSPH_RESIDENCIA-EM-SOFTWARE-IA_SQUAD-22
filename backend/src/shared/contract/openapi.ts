@@ -7,7 +7,7 @@ export function openapi() {
   const components = Object.fromEntries(Object.entries(schemas).map(([name,schema]) => {
     const { $schema: _dialect, ...json } = z.toJSONSchema(schema, { io: 'input' });
     void _dialect;
-    return [name,json];
+    return [name, name === 'EditarManutencao' ? { ...json, minProperties: 1 } : json];
   }));
   const ref = (name: string) => ({ $ref: '#/components/schemas/' + name });
   const paths: Record<string, Record<string, unknown>> = {};

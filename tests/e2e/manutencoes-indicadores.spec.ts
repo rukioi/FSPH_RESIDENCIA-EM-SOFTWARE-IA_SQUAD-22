@@ -155,6 +155,7 @@ test('cancelamento exclui o custo e mantém o evento após reload',async({page,c
 });
 
 test('atrasos têm acesso compacto, status preservado e limite real; filtros exclusivos não repetem o GET',async({page,cenario:c})=>{
+  const [{ anterior }] = await c.db<{anterior:string}[]>`SELECT (${c.hoje}::date-1)::text AS anterior`;
   await c.db`INSERT INTO public.manutencao_veiculo
     (veiculo_id,tipo,descricao,entrada_em,conclusao_prevista_em,quilometragem,status,criado_por_id,atualizado_por_id)
     SELECT ${c.veiculo},'PREVENTIVA','Vencida S236 '||g,
@@ -164,9 +165,9 @@ test('atrasos têm acesso compacto, status preservado e limite real; filtros exc
   page.on('request',r=>{const u=new URL(r.url());if(u.pathname===endpoint)chamadas.push(u);});
   await abrir(page,c.veiculo);
   await selecionarOpcao(page.getByRole('combobox',{name:'Tipo',exact:true}),'PREVENTIVA');
-  await page.getByLabel('Entrada a partir de').fill(c.hoje.slice(0,4)+'-01-01');
+  await page.getByLabel('Entrada a partir de').fill(anterior);
   await expect(painel(page).getByRole('button',{name:'Atrasadas: 21 ocorrências'})).toBeVisible();
-  await expect.poll(()=>chamadas.at(-1)?.searchParams.get('inicio')).toBe(c.hoje.slice(0,4)+'-01-01');
+  await expect.poll(()=>chamadas.at(-1)?.searchParams.get('inicio')).toBe(anterior);
   const antes=chamadas.length;
   await selecionarOpcao(page.getByRole('combobox',{name:'Status',exact:true}),'AGENDADA');
   await page.getByRole('searchbox',{name:'Buscar',exact:true}).fill('Vencida S236');

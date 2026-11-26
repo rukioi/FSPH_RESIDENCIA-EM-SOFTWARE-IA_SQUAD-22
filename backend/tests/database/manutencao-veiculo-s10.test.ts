@@ -316,3 +316,72 @@ test('rollback vazio e reaplicação preservam a frota legada e não criam hist�
     expect(await tx`SELECT id FROM public.manutencao_veiculo_historico`).toEqual([]);
   });
 });
+
+function sqlDeRollback(nome: string) {
+  const fonte = readFileSync(resolve(base, 'rollbacks', nome), 'utf8');
+  const corpo = fonte.match(/(?:^|\n)BEGIN;\s*([\s\S]*?)\s*COMMIT;\s*$/)?.[1];
+  if (!corpo) throw new Error('Rollback sem envelope explícito.');
+  return corpo;
+}
+
+test.each(['revisao', 'aviso'] as const)('rollback dos alertas recusa %s independentemente', async modo => {
+  await isolated(async tx => {
+    await insert(tx);
+    if (modo === 'revisao') {
+      await tx`INSERT INTO public.manutencao_alerta_revisao (manutencao_id,alerta) VALUES (-231001,'ATRASO')`;
+    } else {
+      await tx`INSERT INTO public.notificacao (usuario_id,chave,titulo,descricao,categoria)
+        VALUES (-27002,'manutencao:-231001:ATRASO:1','Fixture','Fixture','atencao')`;
+    }
+    const rollback = sqlDeRollback('20261124000000_be_s10_02_c_manutencao_alerta_revisao.sql');
+    await expect(tx.savepoint(sp => sp.unsafe(rollback))).rejects.toThrow('Rollback SCRUM-234 recusado');
+    const [row] = await tx`SELECT
+      (SELECT count(*)::int FROM public.manutencao_alerta_revisao WHERE manutencao_id=-231001) AS revisoes,
+      (SELECT count(*)::int FROM public.notificacao WHERE chave='manutencao:-231001:ATRASO:1') AS avisos`;
+    expect(row).toEqual({revisoes:modo==='revisao'?1:0, avisos:modo==='aviso'?1:0});
+  });
+});
+
+test.each(['1999-10-03','2000-10-08','2001-10-14'])('data civil histórica %s é canônica mesmo sem meia-noite', async dia => {
+  await isolated(async tx => {
+    const [{ instante }] = await tx`SELECT ${dia}::date::timestamp AT TIME ZONE 'America/Maceio' AS instante`;
+    await insert(tx, { status: 'CONCLUIDA', entrada_em: instante.toISOString(),
+      conclusao_prevista_em: instante.toISOString(), iniciada_em:'2026-11-26T09:00:00-03:00',
+      concluida_em:'2026-11-26T10:00:00-03:00' });
+    const atual = await snapshot(tx);
+    const anterior = { ...atual, status:'EM_ANDAMENTO' as const, concluida_em:null };
+    await logEvent(tx, 'CONCLUSAO', anterior, atual);
+    for (const campo of ['anterior_entrada_em','anterior_conclusao_prevista_em','posterior_entrada_em','posterior_conclusao_prevista_em']) {
+      await expect(tx.savepoint(sp => sp`UPDATE public.manutencao_veiculo_historico
+        SET ${sp(campo)}=${sp(campo)}+interval '1 minute' WHERE manutencao_id=-231001`))
+        .rejects.toMatchObject({code:'23514'});
+    }
+    const [local] = await tx`SELECT (entrada_em AT TIME ZONE 'America/Maceio')::time::text AS hora
+      FROM public.manutencao_veiculo WHERE id=-231001`;
+    expect(local.hora).toBe('01:00:00');
+    await expect(tx.savepoint(sp => sp`UPDATE public.manutencao_veiculo
+      SET conclusao_prevista_em=conclusao_prevista_em+interval '1 minute' WHERE id=-231001`))
+      .rejects.toMatchObject({code:'23514'});
+    const rollback=sqlDeRollback('20261126000000_db_s10_02_datas_civis_manutencao.sql');
+    await expect(tx.savepoint(sp => sp.unsafe(rollback))).rejects.toMatchObject({code:'23514'});
+    expect((await tx`SELECT id FROM public.manutencao_veiculo WHERE id=-231001`).length).toBe(1);
+  });
+});
+
+test('rollback físico de datas civis restaura a regra anterior e permite reaplicação', async () => {
+  await isolated(async tx => {
+    const nome='20261126000000_db_s10_02_datas_civis_manutencao.sql';
+    const restricoes = () => tx`SELECT conname,pg_get_constraintdef(oid) AS definicao
+      FROM pg_constraint WHERE conname IN ('manutencao_veiculo_dias_check','manutencao_veiculo_historico_dias_check')
+      ORDER BY conname`;
+    const antes = await restricoes();
+    expect(antes).toHaveLength(2);
+    await tx.unsafe(sqlDeRollback(nome));
+    expect(await restricoes()).not.toEqual(antes);
+    const texto = readFileSync(resolve(base, 'migrations', nome), 'utf8');
+    const corpo = texto.match(/^BEGIN;\s*([\s\S]*?)\s*COMMIT;\s*$/)?.[1];
+    if (!corpo) throw new Error('Migration sem transação.');
+    await tx.unsafe(corpo);
+    expect(await restricoes()).toEqual(antes);
+  });
+});
