@@ -1,0 +1,43 @@
+[build]
+  command = "npm --workspace frontend run build"
+  publish = "frontend/dist"
+
+[[redirects]]
+  from = "/login"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/notificacoes"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/gestor/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/motorista/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/solicitante/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/svo"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/svo/*"
+  to = "/index.html"
+  status = 200
