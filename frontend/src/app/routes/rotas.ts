@@ -165,3 +165,16 @@ export function rotaDetalheVeiculo(id: string) {
 export function lerRotaDetalheVeiculo(caminho: string) {
   return lerId(caminho, ROTAS.veiculosGestor);
 }
+
+/** Detalhe compartilhado de motorista: mesma validação na rota, no guard e no App. */
+export function rotaMotorista(id: string): string {
+  if (!/^[0-9]+$/.test(id) || BigInt(id) > 9223372036854775807n) throw new Error('ID de motorista inválido.');
+  return `${ROTAS.motoristasGestor}/${BigInt(id).toString()}`;
+}
+export function lerRotaMotorista(caminho: string): string | null {
+  const prefixo = `${ROTAS.motoristasGestor}/`;
+  if (!caminho.startsWith(prefixo)) return null;
+  const id = caminho.slice(prefixo.length);
+  if (!/^[0-9]+$/.test(id) || BigInt(id) > 9223372036854775807n) return null;
+  return BigInt(id).toString();
+}

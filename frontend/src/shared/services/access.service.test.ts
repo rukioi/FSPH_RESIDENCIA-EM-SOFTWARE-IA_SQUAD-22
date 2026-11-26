@@ -46,3 +46,25 @@ describe('acesso aos detalhes e edição de solicitações', () => {
     }
   })
 })
+
+
+describe('acesso integrado a motoristas, veículos e manutenções', () => {
+  it.each([
+    ['/gestor/motoristas/12', ['ADM', 'GESTOR_FROTA']],
+    ['/gestor/veiculos/12', ['ADM', 'GESTOR_FROTA']],
+    ['/admin/manutencoes/12', ['ADM']],
+    ['/gestor/manutencoes/12', ['GESTOR_FROTA']],
+  ] as const)('aplica os perfis da rota %s', (caminho, permitidos) => {
+    expect(rotaConhecida(caminho)).toBe(true)
+    for (const perfil of perfis) {
+      expect(perfilPodeAcessar(caminho, perfil)).toBe(permitidos.some(item => item === perfil))
+    }
+  })
+
+  it.each(['/gestor/motoristas/12/editar', '/gestor/motoristas/9223372036854775808'])(
+    'recusa detalhe de motorista inválido %s', caminho => {
+      expect(rotaConhecida(caminho)).toBe(false)
+      for (const perfil of perfis) expect(perfilPodeAcessar(caminho, perfil)).toBe(false)
+    },
+  )
+})
